@@ -49,17 +49,22 @@ func (b *BPF) Load() error {
 
 func (b *BPF) Close() {
 	for _, lk := range b.links {
-		lk.Close()
+		if err := lk.Close(); err != nil {
+			log.Printf("[bpf] close link %v failed: %+v", lk, err)
+		}
 	}
 	for i := len(b.closeFuncs) - 1; i > 0; i-- {
 		f := b.closeFuncs[i]
 		f()
 	}
-	b.objs.Close()
+	if err := b.objs.Close(); err != nil {
+		log.Printf("[bpf] close objects failed: %+v", err)
+	}
 }
 
 func (b *BPF) AttachKprobes() error {
-	lk, err := link.Kprobe("security_sk_classify_flow", b.objs.KprobeSecuritySkClassifyFlow, &link.KprobeOptions{})
+	lk, err := link.Kprobe("security_sk_classify_flow",
+		b.objs.KprobeSecuritySkClassifyFlow, &link.KprobeOptions{})
 	if err != nil {
 		return xerrors.Errorf("attach kprobe/security_sk_classify_flow: %w", err)
 	}

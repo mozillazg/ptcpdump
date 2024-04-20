@@ -1,11 +1,18 @@
 package main
 
 import (
-	"bytes"
 	"context"
-	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/cilium/ebpf"
+	"github.com/cilium/ebpf/perf"
+	"github.com/cilium/ebpf/rlimit"
+	"github.com/gopacket/gopacket/layers"
+	"github.com/gopacket/gopacket/pcapgo"
+	"github.com/mozillazg/ptcpdump/bpf"
+	"github.com/mozillazg/ptcpdump/internal/event"
+	"github.com/mozillazg/ptcpdump/internal/writer"
+	"golang.org/x/xerrors"
 	"io"
 	"log"
 	"math"
@@ -13,17 +20,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
-	"unsafe"
-
-	"github.com/cilium/ebpf"
-	"github.com/cilium/ebpf/perf"
-	"github.com/cilium/ebpf/rlimit"
-	"github.com/gopacket/gopacket"
-	"github.com/gopacket/gopacket/layers"
-	"github.com/gopacket/gopacket/pcapgo"
-	"github.com/mozillazg/ptcpdump/bpf"
-	"golang.org/x/xerrors"
 )
 
 func logErr(err error) {
@@ -36,71 +32,23 @@ func logErr(err error) {
 	log.Printf("%+v", err)
 }
 
-func parseEvent(pcapWriter *pcapgo.NgWriter, rawSample []byte) {
-	event := bpf.BpfPacketEventT{}
-	if err := binary.Read(bytes.NewBuffer(rawSample), binary.LittleEndian, &event.Meta); err != nil {
-		log.Printf("parse event failed: %+v", err)
+func parseEvent(pcapWriter *writer.PcapNGWriter, rawSample []byte) {
+	pevent, err := event.ParsePacketEvent(rawSample)
+	if err != nil {
+		logErr(err)
 		return
 	}
-	copy(event.Payload[:], rawSample[unsafe.Offsetof(event.Payload):])
 
-	packetType := "=>·  "
-	if event.Meta.PacketType == 1 {
-		packetType = "  ·=>"
+	if err := writer.NewStdoutWriter().Write(pevent); err != nil {
+		logErr(err)
 	}
 
-	// Decode a packet
-	data := event.Payload[:]
-	packet := gopacket.NewPacket(data, layers.LayerTypeEthernet, gopacket.Default)
-	var ipv4 *layers.IPv4
-	if ipv4Layer := packet.Layer(layers.LayerTypeIPv4); ipv4Layer != nil {
-		ipv4, _ = ipv4Layer.(*layers.IPv4)
+	if err := pcapWriter.Write(pevent); err != nil {
+		logErr(err)
 	}
-	if tcpLayer := packet.Layer(layers.LayerTypeTCP); tcpLayer != nil {
-		tcp, _ := tcpLayer.(*layers.TCP)
-		log.Printf("%s %s-%d %s:%d => %s:%d",
-			packetType, strComm(event.Meta.Comm), event.Meta.Pid,
-			ipv4.SrcIP.String(), tcp.SrcPort,
-			ipv4.DstIP.String(), tcp.DstPort)
-	}
-	if udpLayer := packet.Layer(layers.LayerTypeUDP); udpLayer != nil {
-		udp, _ := udpLayer.(*layers.UDP)
-		log.Printf("%s %s-%d %s:%d => %s:%d",
-			packetType, strComm(event.Meta.Comm), event.Meta.Pid,
-			ipv4.SrcIP.String(), udp.SrcPort,
-			ipv4.DstIP.String(), udp.DstPort)
-	}
-
-	payloadLen := int(event.Meta.PayloadLen)
-	info := gopacket.CaptureInfo{
-		Timestamp:      time.Now(),
-		CaptureLength:  payloadLen,
-		Length:         payloadLen,
-		InterfaceIndex: 0,
-	}
-	packetData := make([]byte, payloadLen)
-	copy(packetData, data[:payloadLen])
-	log.Printf("len1: %d, len2: %d", len(packetData), len(data[:payloadLen]))
-	opts := pcapgo.NgPacketOptions{
-		Comment: fmt.Sprintf("PID: %d\nCOMMAND: %s", event.Meta.Pid, strComm(event.Meta.Comm)),
-	}
-
-	if err := pcapWriter.WritePacketWithOptions(info, packetData, opts); err != nil {
-		// if err := pcapWriter.WritePacket(info, packetData); err != nil {
-		log.Printf("Error writing packet: %+v", err)
-	}
-	pcapWriter.Flush()
 }
 
-func strComm(comm [16]int8) string {
-	b := []byte{}
-	for _, c := range comm {
-		b = append(b, byte(c))
-	}
-	return string(b)
-}
-
-func newPcapWriter(w io.Writer, ifaceNames []string) (*pcapgo.NgWriter, map[string]int, error) {
+func newPcapWriter(w io.Writer, ifaceNames []string) (*writer.PcapNGWriter, map[string]int, error) {
 	if len(ifaceNames) == 0 {
 		return nil, nil, xerrors.New("can't create pcap with no ifaceNames")
 	}
@@ -135,7 +83,7 @@ func newPcapWriter(w io.Writer, ifaceNames []string) (*pcapgo.NgWriter, map[stri
 		return nil, nil, xerrors.Errorf("writing pcap header: %w", err)
 	}
 
-	return pcapWriter, nameIfcs, nil
+	return writer.NewPcapNGWriter(pcapWriter), nameIfcs, nil
 }
 
 func main() {
@@ -143,12 +91,12 @@ func main() {
 		logErr(err)
 		return
 	}
-	pcapFile, err := os.Create("test.pcapng")
+	pcapFile, err := os.Create("ptcpdump.pcapng")
 	if err != nil {
 		logErr(err)
 		return
 	}
-	pcapWriter, _, err := newPcapWriter(pcapFile, []string{"lo", "enp0s3", "docker0"})
+	pcapWriter, _, err := newPcapWriter(pcapFile, []string{"lo", "enp0s3", "docker0", "wlp4s0", "enp5s0"})
 	if err != nil {
 		logErr(err)
 		return
@@ -171,7 +119,7 @@ func main() {
 		return
 	}
 
-	for _, ifaceName := range []string{"lo", "enp0s3", "docker0"} {
+	for _, ifaceName := range []string{"lo", "enp0s3", "docker0", "wlp4s0", "enp5s0"} {
 		dev, err := net.InterfaceByName(ifaceName)
 		if err != nil {
 			log.Printf("get interface by name %s failed: %+v", ifaceName, err)
