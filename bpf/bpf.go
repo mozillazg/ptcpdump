@@ -26,6 +26,10 @@ type BPF struct {
 	closeFuncs []func()
 }
 
+type LoadOptions struct {
+	Pid uint32
+}
+
 func NewBPF() (*BPF, error) {
 	spec, err := LoadBpf()
 	if err != nil {
@@ -37,7 +41,13 @@ func NewBPF() (*BPF, error) {
 	}, nil
 }
 
-func (b *BPF) Load() error {
+func (b *BPF) Load(opts LoadOptions) error {
+	if err := b.spec.RewriteConstants(map[string]interface{}{
+		"filter_pid": opts.Pid,
+	}); err != nil {
+		return xerrors.Errorf("rewrite constants: %w", err)
+	}
+
 	err := b.spec.LoadAndAssign(b.objs, &ebpf.CollectionOptions{
 		Programs: ebpf.ProgramOptions{
 			LogLevel: ebpf.LogLevelInstruction,

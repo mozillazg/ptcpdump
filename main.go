@@ -25,6 +25,7 @@ import (
 
 type Options struct {
 	iface         string
+	pid           uint
 	writeFilePath string
 }
 
@@ -45,8 +46,8 @@ func logErr(err error) {
 	log.Printf("%+v", err)
 }
 
-func parseNetEvent(writers []writer.PacketWriter, rawSample []byte) {
-	pevent, err := event.ParsePacketEvent(rawSample)
+func parseNetEvent(devices map[int]dev.Device, writers []writer.PacketWriter, rawSample []byte) {
+	pevent, err := event.ParsePacketEvent(devices, rawSample)
 	if err != nil {
 		logErr(err)
 		return
@@ -68,10 +69,8 @@ func parseExecEvent(pcache *metadata.ProcessCache, rawSample []byte) {
 	pcache.AddItem(*e)
 }
 
-func newPcapWriter(w io.Writer, devices []dev.Device, pcache *metadata.ProcessCache) (*writer.PcapNGWriter, error) {
-	if len(devices) == 0 {
-		return nil, xerrors.New("can't create pcap with no interface")
-	}
+func newPcapWriter(w io.Writer, pcache *metadata.ProcessCache) (*writer.PcapNGWriter, error) {
+	devices, err := dev.GetDevices("any")
 
 	var interfaces []pcapgo.NgInterface
 	for _, dev := range devices {
@@ -104,10 +103,13 @@ func newPcapWriter(w io.Writer, devices []dev.Device, pcache *metadata.ProcessCa
 
 func setupFlags() *Options {
 	opts := &Options{}
+
 	flag.StringVar(&opts.writeFilePath, "w", "",
 		"Write the raw packets to file rather than parsing and printing them out. e.g. ptcpdump.pcapng")
 	flag.StringVar(&opts.iface, "i", "eth0", "")
+	flag.UintVar(&opts.pid, "pid", 0, "")
 	flag.Parse()
+
 	return opts
 }
 
@@ -133,7 +135,7 @@ func main() {
 			logErr(err)
 			return
 		}
-		pcapWriter, err := newPcapWriter(pcapFile, devices, pcache)
+		pcapWriter, err := newPcapWriter(pcapFile, pcache)
 		if err != nil {
 			logErr(err)
 			return
@@ -153,7 +155,7 @@ func main() {
 		logErr(err)
 		return
 	}
-	if err := bf.Load(); err != nil {
+	if err := bf.Load(bpf.LoadOptions{Pid: uint32(opts.pid)}); err != nil {
 		logErr(err)
 		return
 	}
@@ -215,7 +217,7 @@ func main() {
 				log.Printf("lost %d events", record.LostSamples)
 				continue
 			}
-			parseNetEvent(writers, record.RawSample)
+			parseNetEvent(devices, writers, record.RawSample)
 		}
 	}()
 	go func() {

@@ -28,6 +28,8 @@
 #define EXEC_FILENAME_LEN 512
 #define EXEC_ARGS_LEN 4096
 
+static volatile const u32 filter_pid = 0;
+
 char _license[] SEC("license") = "Dual MIT/GPL";
 
 struct l2_t {
@@ -71,6 +73,7 @@ struct flow_pid_value_t {
 
 struct packet_event_meta_t {
     u8 packet_type;
+    u32 ifindex;
     u32 pid;
     u64 payload_len;
     char comm[TASK_COMM_LEN];
@@ -276,6 +279,11 @@ int BPF_KPROBE(kprobe__security_sk_classify_flow, struct sock *sk) {
     struct flow_pid_value_t value = {0};
     struct task_struct *task =  (struct task_struct*)bpf_get_current_task();
 
+    u32 pid = BPF_CORE_READ(task, tgid);
+    if (filter_pid != 0 && pid != filter_pid) {
+        return 0;
+    }
+
     fill_sk_meta(sk, &key);
     fill_process_meta(task, &value);
 
@@ -344,6 +352,7 @@ static __always_inline int handle_tc(struct __sk_buff *skb, bool egress) {
     } else {
         event->meta.packet_type = INGRESS_PACKET;
     }
+    event->meta.ifindex = packet_meta.ifindex;
     event->meta.pid = value->pid;
     __builtin_memcpy(&event->meta.comm, &value->comm, sizeof(value->comm));
 
@@ -358,6 +367,11 @@ static __always_inline int handle_tc(struct __sk_buff *skb, bool egress) {
 }
 
 static __always_inline void handle_exec(struct trace_event_raw_sched_process_exec *ctx) {
+    u32 pid = bpf_get_current_pid_tgid() >> 32;
+    if (filter_pid != 0 && pid != filter_pid) {
+        return;
+    }
+
     struct exec_event_t *event;
     event = bpf_ringbuf_reserve(&exec_events, sizeof(*event), 0);
     if (!event) {

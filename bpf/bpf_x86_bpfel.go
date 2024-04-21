@@ -38,7 +38,9 @@ type BpfPacketEventT struct {
 	Meta struct {
 		PacketType uint8
 		_          [3]byte
+		Ifindex    uint32
 		Pid        uint32
+		_          [4]byte
 		PayloadLen uint64
 		Comm       [16]int8
 	}
