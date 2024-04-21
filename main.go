@@ -107,6 +107,7 @@ func main() {
 		return
 	}
 	pcache := metadata.NewProcessCache()
+	go pcache.Start()
 	pcapWriter, _, err := newPcapWriter(pcapFile, []string{"lo", "enp0s3", "docker0", "wlp4s0", "enp5s0"}, pcache)
 	if err != nil {
 		logErr(err)

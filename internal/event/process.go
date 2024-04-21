@@ -5,15 +5,16 @@ import (
 	"encoding/binary"
 	"github.com/mozillazg/ptcpdump/bpf"
 	"golang.org/x/xerrors"
+	"strings"
 )
 
 type ProcessExec struct {
 	Pid int
 
-	Filename          []byte
+	Filename          string
 	FilenameTruncated bool
 
-	Args          []byte
+	Args          []string
 	ArgsTruncated bool
 }
 
@@ -31,20 +32,26 @@ func ParseProcessExecEvent(rawSample []byte) (*ProcessExec, error) {
 		p.FilenameTruncated = true
 	}
 	p.Pid = int(event.Pid)
+	bs := strings.Builder{}
 	for i := 0; i < int(event.ArgsSize); i++ {
 		b := byte(event.Args[i])
 		if b == '\x00' {
-			b = ' '
+			p.Args = append(p.Args, bs.String())
+			bs.Reset()
+		} else {
+			bs.WriteByte(b)
 		}
-		p.Args = append(p.Args, b)
 	}
+
+	bs.Reset()
 	for _, i := range event.Filename {
 		b := byte(i)
 		if b == '\x00' {
 			break
 		}
-		p.Filename = append(p.Filename, b)
+		bs.WriteByte(b)
 	}
+	p.Filename = bs.String()
 
 	return &p, nil
 }
@@ -58,7 +65,7 @@ func (p ProcessExec) FilenameStr() string {
 }
 
 func (p ProcessExec) ArgsStr() string {
-	s := string(p.Args)
+	s := strings.Join(p.Args, " ")
 	if p.ArgsTruncated {
 		s += "..."
 	}
