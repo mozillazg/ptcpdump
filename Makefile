@@ -1,7 +1,7 @@
 
 .PHONY: build
 build: generate
-	go build
+	CGO_ENABLED=0 go build -ldflags '-extldflags "-static"'
 
 .PHONY: generate
 generate:
