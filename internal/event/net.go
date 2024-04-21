@@ -17,10 +17,12 @@ const (
 )
 
 type Packet struct {
-	Type   packetType
-	Device dev.Device
-	Pid    int
-	Comm   string
+	Type      packetType
+	Device    dev.Device
+	Pid       int
+	Comm      string
+	Truncated bool
+	Len       int
 
 	Data []byte
 }
@@ -38,6 +40,10 @@ func ParsePacketEvent(devices map[int]dev.Device, rawSample []byte) (*Packet, er
 	if event.Meta.PacketType == 1 {
 		p.Type = packetTypeEgress
 	}
+	if event.Meta.PacketSize > event.Meta.PayloadLen {
+		p.Truncated = true
+	}
+	p.Len = int(event.Meta.PacketSize)
 	p.Device = devices[int(event.Meta.Ifindex)]
 	p.Data = make([]byte, event.Meta.PayloadLen)
 	copy(p.Data[:], event.Payload[:event.Meta.PayloadLen])

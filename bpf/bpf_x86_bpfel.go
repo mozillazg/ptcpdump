@@ -42,6 +42,7 @@ type BpfPacketEventT struct {
 		Pid        uint32
 		_          [4]byte
 		PayloadLen uint64
+		PacketSize uint64
 		Comm       [16]int8
 	}
 	Payload [1500]uint8

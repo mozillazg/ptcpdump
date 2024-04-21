@@ -77,6 +77,7 @@ struct packet_event_meta_t {
     u32 ifindex;
     u32 pid;
     u64 payload_len;
+    u64 packet_size;
     char comm[TASK_COMM_LEN];
 };
 
@@ -400,6 +401,7 @@ static __always_inline int handle_tc(struct __sk_buff *skb, bool egress) {
     __builtin_memcpy(&event->meta.comm, &value->comm, sizeof(value->comm));
 
     u64 payload_len = (u64)skb->len;
+    event->meta.packet_size = payload_len;
     payload_len = payload_len < MAX_PAYLOAD_SIZE ? payload_len : MAX_PAYLOAD_SIZE;
     event->meta.payload_len = payload_len;
 
