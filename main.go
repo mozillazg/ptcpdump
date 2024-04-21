@@ -26,6 +26,7 @@ import (
 type Options struct {
 	iface         string
 	pid           uint
+	comm          string
 	writeFilePath string
 }
 
@@ -108,6 +109,7 @@ func setupFlags() *Options {
 		"Write the raw packets to file rather than parsing and printing them out. e.g. ptcpdump.pcapng")
 	flag.StringVar(&opts.iface, "i", "eth0", "")
 	flag.UintVar(&opts.pid, "pid", 0, "")
+	flag.StringVar(&opts.comm, "comm", "", "")
 	flag.Parse()
 
 	return opts
@@ -155,7 +157,7 @@ func main() {
 		logErr(err)
 		return
 	}
-	if err := bf.Load(bpf.LoadOptions{Pid: uint32(opts.pid)}); err != nil {
+	if err := bf.Load(bpf.NewLoadOptions(opts.pid, opts.comm)); err != nil {
 		logErr(err)
 		return
 	}

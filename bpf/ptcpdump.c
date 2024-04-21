@@ -29,6 +29,7 @@
 #define EXEC_ARGS_LEN 4096
 
 static volatile const u32 filter_pid = 0;
+volatile const char filter_comm[TASK_COMM_LEN];
 
 char _license[] SEC("license") = "Dual MIT/GPL";
 
@@ -273,14 +274,56 @@ static __always_inline void fill_sk_meta(struct sock *sk, struct flow_pid_key_t 
     }
 };
 
+static __always_inline bool str_cmp(const char *a, const volatile char *b, int len)
+{
+#pragma unroll
+    for (int i = 0; i < len; i++) {
+        if (a[i] != b[i])
+            return -1;
+        if (a[i] == '\0')
+            break;
+    }
+    return 0;
+}
+
+static __always_inline int str_len(const volatile char *s, int max_len)
+{
+#pragma unroll
+    for (int i = 0; i < max_len; i++) {
+        if (s[i] == '\0')
+            return i;
+    }
+    if (s[max_len - 1] != '\0')
+        return max_len;
+    return 0;
+}
+
+static __always_inline int process_filter(struct task_struct *task) {
+    if (filter_pid != 0) {
+        u32 pid = BPF_CORE_READ(task, tgid);
+        if (pid != filter_pid) {
+            return -1;
+        }
+    }
+
+    if (str_len(filter_comm, TASK_COMM_LEN) > 1) {
+        char comm[TASK_COMM_LEN];
+        BPF_CORE_READ_STR_INTO(&comm, task, comm);
+        if (str_cmp(comm, filter_comm, TASK_COMM_LEN) != 0) {
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
 SEC("kprobe/security_sk_classify_flow")
 int BPF_KPROBE(kprobe__security_sk_classify_flow, struct sock *sk) {
     struct flow_pid_key_t key = {0};
     struct flow_pid_value_t value = {0};
     struct task_struct *task =  (struct task_struct*)bpf_get_current_task();
 
-    u32 pid = BPF_CORE_READ(task, tgid);
-    if (filter_pid != 0 && pid != filter_pid) {
+    if (process_filter(task) < 0) {
         return 0;
     }
 
@@ -367,8 +410,8 @@ static __always_inline int handle_tc(struct __sk_buff *skb, bool egress) {
 }
 
 static __always_inline void handle_exec(struct trace_event_raw_sched_process_exec *ctx) {
-    u32 pid = bpf_get_current_pid_tgid() >> 32;
-    if (filter_pid != 0 && pid != filter_pid) {
+    struct task_struct *task = (struct task_struct *)bpf_get_current_task();
+    if (process_filter(task) < 0) {
         return;
     }
 
@@ -379,7 +422,6 @@ static __always_inline void handle_exec(struct trace_event_raw_sched_process_exe
         return;
     }
 
-    struct task_struct *task = (struct task_struct *)bpf_get_current_task();
     event->pid = bpf_get_current_pid_tgid() >> 32;
 
     unsigned int filename_loc = BPF_CORE_READ(ctx, __data_loc_filename) & 0xFFFF;

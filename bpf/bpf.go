@@ -27,7 +27,8 @@ type BPF struct {
 }
 
 type LoadOptions struct {
-	Pid uint32
+	Pid  uint32
+	Comm [16]int8
 }
 
 func NewBPF() (*BPF, error) {
@@ -41,9 +42,28 @@ func NewBPF() (*BPF, error) {
 	}, nil
 }
 
+func NewLoadOptions(pid uint, comm string) LoadOptions {
+	opts := LoadOptions{
+		Pid: uint32(pid),
+	}
+	opts.Comm = [16]int8{}
+	if len(comm) > 0 {
+		for i, s := range comm {
+			if i == 15 {
+				break
+			}
+			opts.Comm[i] = int8(s)
+		}
+		opts.Comm[15] = '\x00'
+	}
+
+	return opts
+}
+
 func (b *BPF) Load(opts LoadOptions) error {
 	if err := b.spec.RewriteConstants(map[string]interface{}{
-		"filter_pid": opts.Pid,
+		"filter_pid":  opts.Pid,
+		"filter_comm": opts.Comm,
 	}); err != nil {
 		return xerrors.Errorf("rewrite constants: %w", err)
 	}
