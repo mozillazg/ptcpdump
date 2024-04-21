@@ -114,7 +114,7 @@ func main() {
 		return
 	}
 	defer pcapWriter.Flush()
-	stdoutWriter := writer.NewStdoutWriter(pcache)
+	stdoutWriter := writer.NewStdoutWriter(os.Stdout, pcache)
 
 	bf, err := bpf.NewBPF()
 	if err != nil {

@@ -7,6 +7,7 @@ require (
 	github.com/florianl/go-tc v0.4.3
 	github.com/gopacket/gopacket v1.2.0
 	github.com/shirou/gopsutil/v3 v3.24.3
+	github.com/x-way/pktdump v0.0.5
 	golang.org/x/sys v0.18.0
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028
 )
@@ -28,4 +29,7 @@ require (
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 )
 
-replace github.com/gopacket/gopacket => github.com/mozillazg/gopacket v0.0.0-20240420072046-71afeafe42df
+replace (
+	github.com/gopacket/gopacket => github.com/mozillazg/gopacket v0.0.0-20240420072046-71afeafe42df
+	github.com/x-way/pktdump => github.com/mozillazg/pktdump v0.0.0-20240421054319-759ababbd329
+)
