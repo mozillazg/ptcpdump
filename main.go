@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"flag"
-	"fmt"
 	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/perf"
 	"github.com/cilium/ebpf/rlimit"
 	"github.com/gopacket/gopacket/layers"
 	"github.com/gopacket/gopacket/pcapgo"
 	"github.com/mozillazg/ptcpdump/bpf"
+	"github.com/mozillazg/ptcpdump/internal/dev"
 	"github.com/mozillazg/ptcpdump/internal/event"
 	"github.com/mozillazg/ptcpdump/internal/metadata"
 	"github.com/mozillazg/ptcpdump/internal/writer"
@@ -18,13 +18,13 @@ import (
 	"io"
 	"log"
 	"math"
-	"net"
 	"os"
 	"os/signal"
 	"syscall"
 )
 
 type Options struct {
+	iface         string
 	writeFilePath string
 }
 
@@ -68,54 +68,57 @@ func parseExecEvent(pcache *metadata.ProcessCache, rawSample []byte) {
 	pcache.AddItem(*e)
 }
 
-func newPcapWriter(w io.Writer, ifaceNames []string, pcache *metadata.ProcessCache) (*writer.PcapNGWriter, map[string]int, error) {
-	if len(ifaceNames) == 0 {
-		return nil, nil, xerrors.New("can't create pcap with no ifaceNames")
+func newPcapWriter(w io.Writer, devices []dev.Device, pcache *metadata.ProcessCache) (*writer.PcapNGWriter, error) {
+	if len(devices) == 0 {
+		return nil, xerrors.New("can't create pcap with no interface")
 	}
 
 	var interfaces []pcapgo.NgInterface
-	nameIfcs := make(map[string]int)
-
-	for id, name := range ifaceNames {
+	for _, dev := range devices {
 		interfaces = append(interfaces, pcapgo.NgInterface{
-			Name:       fmt.Sprintf("ptcpdump-%s", name),
-			Comment:    "ptcpdump iface name",
+			Name:       dev.Name,
+			Comment:    "ptcpdump interface name",
 			LinkType:   layers.LinkTypeEthernet,
 			SnapLength: uint32(math.MaxUint16),
 		})
-		nameIfcs[name] = id
 	}
 
 	pcapWriter, err := pcapgo.NewNgWriterInterface(w, interfaces[0], pcapgo.NgWriterOptions{})
 	if err != nil {
-		return nil, nil, err
+		return nil, xerrors.Errorf(": %w", err)
 	}
-
 	for _, ifc := range interfaces[1:] {
 		_, err := pcapWriter.AddInterface(ifc)
 		if err != nil {
-			return nil, nil, err
+			return nil, xerrors.Errorf(": %w", err)
 		}
 	}
 
 	// Flush the header out in case we're writing to stdout, this lets tcpdump print a reassuring message
 	if err := pcapWriter.Flush(); err != nil {
-		return nil, nil, xerrors.Errorf("writing pcap header: %w", err)
+		return nil, xerrors.Errorf("writing pcap header: %w", err)
 	}
 
-	return writer.NewPcapNGWriter(pcapWriter, pcache), nameIfcs, nil
+	return writer.NewPcapNGWriter(pcapWriter, pcache), nil
 }
 
 func setupFlags() *Options {
 	opts := &Options{}
 	flag.StringVar(&opts.writeFilePath, "w", "",
 		"Write the raw packets to file rather than parsing and printing them out. e.g. ptcpdump.pcapng")
+	flag.StringVar(&opts.iface, "i", "eth0", "")
 	flag.Parse()
 	return opts
 }
 
 func main() {
 	opts := setupFlags()
+	devices, err := dev.GetDevices(opts.iface)
+	if err != nil {
+		logErr(err)
+		return
+	}
+
 	if err := rlimit.RemoveMemlock(); err != nil {
 		logErr(err)
 		return
@@ -130,7 +133,7 @@ func main() {
 			logErr(err)
 			return
 		}
-		pcapWriter, _, err := newPcapWriter(pcapFile, []string{"lo", "enp0s3", "docker0", "wlp4s0", "enp5s0"}, pcache)
+		pcapWriter, err := newPcapWriter(pcapFile, devices, pcache)
 		if err != nil {
 			logErr(err)
 			return
@@ -165,13 +168,8 @@ func main() {
 		return
 	}
 
-	for _, ifaceName := range []string{"lo", "enp0s3", "docker0", "wlp4s0", "enp5s0"} {
-		dev, err := net.InterfaceByName(ifaceName)
-		if err != nil {
-			log.Printf("get interface by name %s failed: %+v", ifaceName, err)
-			continue
-		}
-		if err := bf.AttachTcHooks(dev); err != nil {
+	for _, dev := range devices {
+		if err := bf.AttachTcHooks(dev.Ifindex); err != nil {
 			logErr(err)
 			return
 		}

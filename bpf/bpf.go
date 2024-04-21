@@ -3,7 +3,6 @@ package bpf
 import (
 	"encoding/binary"
 	"log"
-	"net"
 	"unsafe"
 
 	"github.com/cilium/ebpf"
@@ -83,8 +82,8 @@ func (b *BPF) AttachTracepoints() error {
 	return nil
 }
 
-func (b *BPF) AttachTcHooks(dev *net.Interface) error {
-	closeFunc, err := ensureTcQdisc(dev)
+func (b *BPF) AttachTcHooks(ifindex int) error {
+	closeFunc, err := ensureTcQdisc(ifindex)
 	if err != nil {
 		if closeFunc != nil {
 			closeFunc()
@@ -92,13 +91,13 @@ func (b *BPF) AttachTcHooks(dev *net.Interface) error {
 		return xerrors.Errorf("attach tc hooks: %w", err)
 	}
 
-	c1, err := attachTcHook(dev, b.objs.TcEgress, false)
+	c1, err := attachTcHook(ifindex, b.objs.TcEgress, false)
 	if err != nil {
 		closeFunc()
 		return xerrors.Errorf("attach tc hooks: %w", err)
 	}
 
-	c2, err := attachTcHook(dev, b.objs.TcIngress, true)
+	c2, err := attachTcHook(ifindex, b.objs.TcIngress, true)
 	if err != nil {
 		c1()
 		closeFunc()
@@ -125,7 +124,7 @@ func (b *BPF) NewExecEventReader() (*ringbuf.Reader, error) {
 	return reader, nil
 }
 
-func attachTcHook(dev *net.Interface, prog *ebpf.Program, ingress bool) (func(), error) {
+func attachTcHook(ifindex int, prog *ebpf.Program, ingress bool) (func(), error) {
 	tcnl, err := tc.Open(&tc.Config{})
 	if err != nil {
 		return nil, err
@@ -146,7 +145,7 @@ func attachTcHook(dev *net.Interface, prog *ebpf.Program, ingress bool) (func(),
 	filter := tc.Object{
 		tc.Msg{
 			Family:  unix.AF_UNSPEC,
-			Ifindex: uint32(dev.Index),
+			Ifindex: uint32(ifindex),
 			Handle:  0,
 			Parent:  core.BuildHandle(tc.HandleRoot, parent),
 			Info:    1<<16 | uint32(htons(unix.ETH_P_ALL)),
@@ -172,7 +171,7 @@ func attachTcHook(dev *net.Interface, prog *ebpf.Program, ingress bool) (func(),
 	return newCloseFunc, nil
 }
 
-func ensureTcQdisc(dev *net.Interface) (func(), error) {
+func ensureTcQdisc(ifindex int) (func(), error) {
 	tcnl, err := tc.Open(&tc.Config{})
 	if err != nil {
 		return nil, err
@@ -186,7 +185,7 @@ func ensureTcQdisc(dev *net.Interface) (func(), error) {
 	qdisc := tc.Object{
 		Msg: tc.Msg{
 			Family:  unix.AF_UNSPEC,
-			Ifindex: uint32(dev.Index),
+			Ifindex: uint32(ifindex),
 			Handle:  core.BuildHandle(tc.HandleRoot, 0x0000),
 			Parent:  tc.HandleIngress,
 		},

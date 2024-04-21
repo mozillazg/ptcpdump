@@ -26,7 +26,7 @@ func (w *PcapNGWriter) Write(e *event.Packet) error {
 		Timestamp:      time.Now(),
 		CaptureLength:  payloadLen,
 		Length:         payloadLen,
-		InterfaceIndex: 0,
+		InterfaceIndex: e.Device.Ifindex,
 	}
 	p := w.pcache.Get(e.Pid)
 	if p.Pid == 0 {
