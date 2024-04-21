@@ -11,6 +11,7 @@ import (
 	"github.com/gopacket/gopacket/pcapgo"
 	"github.com/mozillazg/ptcpdump/bpf"
 	"github.com/mozillazg/ptcpdump/internal/event"
+	"github.com/mozillazg/ptcpdump/internal/metadata"
 	"github.com/mozillazg/ptcpdump/internal/writer"
 	"golang.org/x/xerrors"
 	"io"
@@ -32,7 +33,7 @@ func logErr(err error) {
 	log.Printf("%+v", err)
 }
 
-func parseEvent(pcapWriter *writer.PcapNGWriter, rawSample []byte) {
+func parseNetEvent(pcapWriter *writer.PcapNGWriter, rawSample []byte) {
 	pevent, err := event.ParsePacketEvent(rawSample)
 	if err != nil {
 		logErr(err)
@@ -48,7 +49,16 @@ func parseEvent(pcapWriter *writer.PcapNGWriter, rawSample []byte) {
 	}
 }
 
-func newPcapWriter(w io.Writer, ifaceNames []string) (*writer.PcapNGWriter, map[string]int, error) {
+func parseExecEvent(pcache *metadata.ProcessCache, rawSample []byte) {
+	e, err := event.ParseProcessExecEvent(rawSample)
+	if err != nil {
+		logErr(err)
+		return
+	}
+	pcache.AddItem(*e)
+}
+
+func newPcapWriter(w io.Writer, ifaceNames []string, pcache *metadata.ProcessCache) (*writer.PcapNGWriter, map[string]int, error) {
 	if len(ifaceNames) == 0 {
 		return nil, nil, xerrors.New("can't create pcap with no ifaceNames")
 	}
@@ -83,7 +93,7 @@ func newPcapWriter(w io.Writer, ifaceNames []string) (*writer.PcapNGWriter, map[
 		return nil, nil, xerrors.Errorf("writing pcap header: %w", err)
 	}
 
-	return writer.NewPcapNGWriter(pcapWriter), nameIfcs, nil
+	return writer.NewPcapNGWriter(pcapWriter, pcache), nameIfcs, nil
 }
 
 func main() {
@@ -96,7 +106,8 @@ func main() {
 		logErr(err)
 		return
 	}
-	pcapWriter, _, err := newPcapWriter(pcapFile, []string{"lo", "enp0s3", "docker0", "wlp4s0", "enp5s0"})
+	pcache := metadata.NewProcessCache()
+	pcapWriter, _, err := newPcapWriter(pcapFile, []string{"lo", "enp0s3", "docker0", "wlp4s0", "enp5s0"}, pcache)
 	if err != nil {
 		logErr(err)
 		return
@@ -118,6 +129,10 @@ func main() {
 		logErr(err)
 		return
 	}
+	if err := bf.AttachTracepoints(); err != nil {
+		logErr(err)
+		return
+	}
 
 	for _, ifaceName := range []string{"lo", "enp0s3", "docker0", "wlp4s0", "enp5s0"} {
 		dev, err := net.InterfaceByName(ifaceName)
@@ -131,12 +146,18 @@ func main() {
 		}
 	}
 
-	reader, err := bf.NewPacketEventReader()
+	packetEventReader, err := bf.NewPacketEventReader()
 	if err != nil {
 		logErr(err)
 		return
 	}
-	defer reader.Close()
+	defer packetEventReader.Close()
+	execEventReader, err := bf.NewExecEventReader()
+	if err != nil {
+		logErr(err)
+		return
+	}
+	defer execEventReader.Close()
 
 	ctx, stop := signal.NotifyContext(
 		context.Background(), syscall.SIGINT, syscall.SIGTERM,
@@ -145,21 +166,47 @@ func main() {
 
 	log.Println("tracing...")
 	go func() {
+	loop:
 		for {
-			record, err := reader.Read()
+			select {
+			case <-ctx.Done():
+				break loop
+			default:
+			}
+			record, err := packetEventReader.Read()
 			if err != nil {
 				if errors.Is(err, perf.ErrClosed) {
 					log.Println("Received signal, exiting...")
 					return
 				}
-				log.Printf("reading from reader: %s", err)
+				log.Printf("reading from packetEventReader: %s", err)
 				continue
 			}
 			if record.LostSamples > 0 {
 				log.Printf("lost %d events", record.LostSamples)
 				continue
 			}
-			parseEvent(pcapWriter, record.RawSample)
+			parseNetEvent(pcapWriter, record.RawSample)
+		}
+	}()
+	go func() {
+	loop:
+		for {
+			select {
+			case <-ctx.Done():
+				break loop
+			default:
+			}
+			record, err := execEventReader.Read()
+			if err != nil {
+				if errors.Is(err, perf.ErrClosed) {
+					log.Println("Received signal, exiting...")
+					return
+				}
+				log.Printf("reading from execEventReader: %s", err)
+				continue
+			}
+			parseExecEvent(pcache, record.RawSample)
 		}
 	}()
 

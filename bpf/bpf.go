@@ -9,13 +9,14 @@ import (
 	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/link"
 	"github.com/cilium/ebpf/perf"
+	"github.com/cilium/ebpf/ringbuf"
 	"github.com/florianl/go-tc"
 	"github.com/florianl/go-tc/core"
 	"golang.org/x/sys/unix"
 	"golang.org/x/xerrors"
 )
 
-//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc clang -no-strip -target native -type packet_event_t Bpf ./ptcpdump.c -- -I./headers -I. -Wall
+//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc clang -no-strip -target native -type packet_event_t -type exec_event_t Bpf ./ptcpdump.c -- -I./headers -I. -Wall
 
 const tcFilterName = "ptcpdump"
 
@@ -72,6 +73,16 @@ func (b *BPF) AttachKprobes() error {
 	return nil
 }
 
+func (b *BPF) AttachTracepoints() error {
+	lk, err := link.Tracepoint("sched", "sched_process_exec",
+		b.objs.TracepointSchedSchedProcessExec, nil)
+	if err != nil {
+		return xerrors.Errorf("attach tracepoint/sched/sched_process_exec: %w", err)
+	}
+	b.links = append(b.links, lk)
+	return nil
+}
+
 func (b *BPF) AttachTcHooks(dev *net.Interface) error {
 	closeFunc, err := ensureTcQdisc(dev)
 	if err != nil {
@@ -100,6 +111,14 @@ func (b *BPF) AttachTcHooks(dev *net.Interface) error {
 
 func (b *BPF) NewPacketEventReader() (*perf.Reader, error) {
 	reader, err := perf.NewReader(b.objs.PacketEvents, 1500*1000)
+	if err != nil {
+		return nil, xerrors.Errorf(": %w", err)
+	}
+	return reader, nil
+}
+
+func (b *BPF) NewExecEventReader() (*ringbuf.Reader, error) {
+	reader, err := ringbuf.NewReader(b.objs.ExecEvents)
 	if err != nil {
 		return nil, xerrors.Errorf(": %w", err)
 	}

@@ -25,6 +25,7 @@
 #define MAX_PAYLOAD_SIZE 1500
 #define INGRESS_PACKET 0
 #define EGRESS_PACKET 1
+#define EXEC_ARGS_LEN 4096
 
 char _license[] SEC("license") = "Dual MIT/GPL";
 
@@ -79,6 +80,17 @@ struct packet_event_t {
     u8 payload[MAX_PAYLOAD_SIZE];
 };
 
+struct exec_event_t {
+    u32 pid;
+    u8 truncated;
+    unsigned int args_size;
+    char args[EXEC_ARGS_LEN];
+};
+
+struct {
+    __uint(type, BPF_MAP_TYPE_RINGBUF);
+    __uint(max_entries, 1024 * 512);
+} exec_events SEC(".maps");
 
 struct {
     __uint(type, BPF_MAP_TYPE_LRU_HASH);
@@ -99,6 +111,13 @@ struct {
     __uint(key_size, sizeof(u32));
     __uint(value_size, sizeof(u32));
 } packet_events SEC(".maps");
+
+// force emitting struct into the ELF.
+// the `-type` flag of bpf2go need this
+// avoid "Error: collect C types: type name XXX: not found"
+const struct packet_event_t *unused1 __attribute__((unused));
+const struct exec_event_t *unused2 __attribute__((unused));
+
 
 static __always_inline int parse_skb_l2(struct __sk_buff *skb, struct l2_t *l2, u32 *offset) {
     if (bpf_skb_load_bytes(skb, *offset + offsetof(struct ethhdr, h_proto), &l2->h_protocol, sizeof(l2->h_protocol)) < 0 ) {
@@ -270,7 +289,7 @@ int BPF_KPROBE(kprobe__security_sk_classify_flow, struct sock *sk) {
     return 0;
 };
 
-static __always_inline int handel_tc(struct __sk_buff *skb, bool egress) {
+static __always_inline int handle_tc(struct __sk_buff *skb, bool egress) {
     bpf_skb_pull_data(skb, 0);
 
     struct packet_meta_t packet_meta = {0};
@@ -304,7 +323,7 @@ static __always_inline int handel_tc(struct __sk_buff *skb, bool egress) {
 
     struct flow_pid_value_t *value = bpf_map_lookup_elem(&flow_pid_map, &key);
     if (value) {
-        bpf_printk("[tc] (%s) %pI4 %d", value->comm, &key.saddr[0], key.sport);
+//        bpf_printk("[tc] (%s) %pI4 %d", value->comm, &key.saddr[0], key.sport);
     } else {
         /* bpf_printk("[tc] %pI4 %d bpf_map_lookup_elem is empty", &key.saddr[0], key.sport); */
         return TC_ACT_OK;
@@ -335,12 +354,47 @@ static __always_inline int handel_tc(struct __sk_buff *skb, bool egress) {
     return TC_ACT_OK;
 }
 
+static __always_inline void handle_exec(struct trace_event_raw_sched_process_exec *ctx) {
+    struct exec_event_t *event;
+    event = bpf_ringbuf_reserve(&exec_events, sizeof(*event), 0);
+    if (!event) {
+        bpf_printk("[ptcpdump] bpf_ringbuf_reserve failed");
+        return;
+    }
+
+    struct task_struct *task = (struct task_struct *)bpf_get_current_task();
+    event->pid = bpf_get_current_pid_tgid() >> 32;
+
+    void *arg_start = (void *)BPF_CORE_READ(task, mm, arg_start);
+    void *arg_end = (void *)BPF_CORE_READ(task, mm, arg_end);
+    unsigned long arg_length = arg_end - arg_start;
+    if (arg_length > EXEC_ARGS_LEN) {
+        arg_length = EXEC_ARGS_LEN;
+        event->truncated = 1;
+    }
+    int arg_ret = bpf_probe_read(&event->args, arg_length, arg_start);
+    if (arg_ret < 0) {
+        bpf_printk("[ptcpdump] read exec args failed: %d", arg_ret);
+    } else {
+        event->args_size = arg_length;
+    }
+
+    bpf_ringbuf_submit(event, 0);
+    return;
+}
+
+SEC("tracepoint/sched/sched_process_exec")
+int tracepoint__sched__sched_process_exec(struct trace_event_raw_sched_process_exec *ctx) {
+    handle_exec(ctx);
+    return 0;
+}
+
 SEC("tc")
 int tc_ingress(struct __sk_buff *skb) {
-    return handel_tc(skb, false);
+    return handle_tc(skb, false);
 };
 
 SEC("tc")
 int tc_egress(struct __sk_buff *skb) {
-    return handel_tc(skb, true);
+    return handle_tc(skb, true);
 };

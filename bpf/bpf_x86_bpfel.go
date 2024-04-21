@@ -12,6 +12,14 @@ import (
 	"github.com/cilium/ebpf"
 )
 
+type BpfExecEventT struct {
+	Pid       uint32
+	Truncated uint8
+	_         [3]byte
+	ArgsSize  uint32
+	Args      [4096]int8
+}
+
 type BpfFlowPidKeyT struct {
 	Saddr [4]uint32
 	Sport uint16
@@ -77,9 +85,10 @@ type BpfSpecs struct {
 //
 // It can be passed ebpf.CollectionSpec.Assign.
 type BpfProgramSpecs struct {
-	KprobeSecuritySkClassifyFlow *ebpf.ProgramSpec `ebpf:"kprobe__security_sk_classify_flow"`
-	TcEgress                     *ebpf.ProgramSpec `ebpf:"tc_egress"`
-	TcIngress                    *ebpf.ProgramSpec `ebpf:"tc_ingress"`
+	KprobeSecuritySkClassifyFlow    *ebpf.ProgramSpec `ebpf:"kprobe__security_sk_classify_flow"`
+	TcEgress                        *ebpf.ProgramSpec `ebpf:"tc_egress"`
+	TcIngress                       *ebpf.ProgramSpec `ebpf:"tc_ingress"`
+	TracepointSchedSchedProcessExec *ebpf.ProgramSpec `ebpf:"tracepoint__sched__sched_process_exec"`
 }
 
 // BpfMapSpecs contains maps before they are loaded into the kernel.
@@ -87,6 +96,7 @@ type BpfProgramSpecs struct {
 // It can be passed ebpf.CollectionSpec.Assign.
 type BpfMapSpecs struct {
 	BpfStack     *ebpf.MapSpec `ebpf:"bpf_stack"`
+	ExecEvents   *ebpf.MapSpec `ebpf:"exec_events"`
 	FlowPidMap   *ebpf.MapSpec `ebpf:"flow_pid_map"`
 	PacketEvents *ebpf.MapSpec `ebpf:"packet_events"`
 }
@@ -111,6 +121,7 @@ func (o *BpfObjects) Close() error {
 // It can be passed to LoadBpfObjects or ebpf.CollectionSpec.LoadAndAssign.
 type BpfMaps struct {
 	BpfStack     *ebpf.Map `ebpf:"bpf_stack"`
+	ExecEvents   *ebpf.Map `ebpf:"exec_events"`
 	FlowPidMap   *ebpf.Map `ebpf:"flow_pid_map"`
 	PacketEvents *ebpf.Map `ebpf:"packet_events"`
 }
@@ -118,6 +129,7 @@ type BpfMaps struct {
 func (m *BpfMaps) Close() error {
 	return _BpfClose(
 		m.BpfStack,
+		m.ExecEvents,
 		m.FlowPidMap,
 		m.PacketEvents,
 	)
@@ -127,9 +139,10 @@ func (m *BpfMaps) Close() error {
 //
 // It can be passed to LoadBpfObjects or ebpf.CollectionSpec.LoadAndAssign.
 type BpfPrograms struct {
-	KprobeSecuritySkClassifyFlow *ebpf.Program `ebpf:"kprobe__security_sk_classify_flow"`
-	TcEgress                     *ebpf.Program `ebpf:"tc_egress"`
-	TcIngress                    *ebpf.Program `ebpf:"tc_ingress"`
+	KprobeSecuritySkClassifyFlow    *ebpf.Program `ebpf:"kprobe__security_sk_classify_flow"`
+	TcEgress                        *ebpf.Program `ebpf:"tc_egress"`
+	TcIngress                       *ebpf.Program `ebpf:"tc_ingress"`
+	TracepointSchedSchedProcessExec *ebpf.Program `ebpf:"tracepoint__sched__sched_process_exec"`
 }
 
 func (p *BpfPrograms) Close() error {
@@ -137,6 +150,7 @@ func (p *BpfPrograms) Close() error {
 		p.KprobeSecuritySkClassifyFlow,
 		p.TcEgress,
 		p.TcIngress,
+		p.TracepointSchedSchedProcessExec,
 	)
 }
 
