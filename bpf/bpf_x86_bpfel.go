@@ -36,6 +36,7 @@ type BpfFlowPidValueT struct {
 
 type BpfPacketEventT struct {
 	Meta struct {
+		Timestamp  uint64
 		PacketType uint8
 		_          [3]byte
 		Ifindex    uint32

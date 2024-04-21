@@ -73,6 +73,7 @@ struct flow_pid_value_t {
 };
 
 struct packet_event_meta_t {
+    u64 timestamp;
     u8 packet_type;
     u32 ifindex;
     u32 pid;
@@ -396,6 +397,7 @@ static __always_inline int handle_tc(struct __sk_buff *skb, bool egress) {
     } else {
         event->meta.packet_type = INGRESS_PACKET;
     }
+    event->meta.timestamp = bpf_ktime_get_ns();
     event->meta.ifindex = packet_meta.ifindex;
     event->meta.pid = value->pid;
     __builtin_memcpy(&event->meta.comm, &value->comm, sizeof(value->comm));

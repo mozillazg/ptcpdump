@@ -8,7 +8,6 @@ import (
 	"github.com/mozillazg/ptcpdump/internal/metadata"
 	"golang.org/x/xerrors"
 	"log"
-	"time"
 )
 
 type PcapNGWriter struct {
@@ -23,7 +22,7 @@ func NewPcapNGWriter(pw *pcapgo.NgWriter, pcache *metadata.ProcessCache) *PcapNG
 func (w *PcapNGWriter) Write(e *event.Packet) error {
 	payloadLen := len(e.Data)
 	info := gopacket.CaptureInfo{
-		Timestamp:      time.Now(),
+		Timestamp:      e.Time.Local(),
 		CaptureLength:  payloadLen,
 		Length:         e.Len,
 		InterfaceIndex: e.Device.Ifindex,

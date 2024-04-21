@@ -8,7 +8,7 @@ import (
 	"github.com/mozillazg/ptcpdump/internal/metadata"
 	"github.com/x-way/pktdump"
 	"io"
-	"time"
+	"log"
 )
 
 type StdoutWriter struct {
@@ -37,11 +37,12 @@ func (w *StdoutWriter) Write(e *event.Packet) error {
 	formated := pktdump.Format(packet)
 
 	msg := fmt.Sprintf("%s %s %s, %s\n",
-		//packet.Metadata().CaptureInfo.Timestamp.Format("15:04:05.000000"),
-		time.Now().Local().Format("15:04:05.000000"),
+		e.Time.Local().Format("15:04:05.000000"),
 		packetType, formated, pidInfo)
 
-	w.w.Write([]byte(msg))
+	if _, err := w.w.Write([]byte(msg)); err != nil {
+		log.Printf("write packet failed: %+v", err)
+	}
 
 	return nil
 }

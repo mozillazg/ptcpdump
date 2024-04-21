@@ -3,9 +3,13 @@ package event
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"github.com/mozillazg/ptcpdump/bpf"
 	"github.com/mozillazg/ptcpdump/internal/dev"
+	"golang.org/x/sys/unix"
 	"golang.org/x/xerrors"
+	"log"
+	"time"
 	"unsafe"
 )
 
@@ -17,6 +21,7 @@ const (
 )
 
 type Packet struct {
+	Time      time.Time
 	Type      packetType
 	Device    dev.Device
 	Pid       int
@@ -35,8 +40,16 @@ func ParsePacketEvent(devices map[int]dev.Device, rawSample []byte) (*Packet, er
 	}
 	copy(event.Payload[:], rawSample[unsafe.Offsetof(event.Payload):])
 
+	if t, err := convertBpfKTimeNs(event.Meta.Timestamp); err != nil {
+		log.Printf("convert bpf time failed: %+v", err)
+		p.Time = time.Now().UTC()
+	} else {
+		p.Time = t.UTC()
+	}
 	p.Pid = int(event.Meta.Pid)
 	p.Comm = strComm(event.Meta.Comm)
+	p.Device = devices[int(event.Meta.Ifindex)]
+
 	if event.Meta.PacketType == 1 {
 		p.Type = packetTypeEgress
 	}
@@ -44,7 +57,6 @@ func ParsePacketEvent(devices map[int]dev.Device, rawSample []byte) (*Packet, er
 		p.Truncated = true
 	}
 	p.Len = int(event.Meta.PacketSize)
-	p.Device = devices[int(event.Meta.Ifindex)]
 	p.Data = make([]byte, event.Meta.PayloadLen)
 	copy(p.Data[:], event.Payload[:event.Meta.PayloadLen])
 
@@ -65,4 +77,23 @@ func strComm(comm [16]int8) string {
 		b[i] = byte(c)
 	}
 	return string(b)
+}
+
+func convertBpfKTimeNs(t uint64) (time.Time, error) {
+	b, err := getBootTimeNs()
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	return time.Now().Add(-time.Duration(b - int64(t))), nil
+}
+
+func getBootTimeNs() (int64, error) {
+	var ts unix.Timespec
+	err := unix.ClockGettime(unix.CLOCK_MONOTONIC, &ts)
+	if err != nil {
+		return 0, fmt.Errorf("could not get time: %s", err)
+	}
+
+	return unix.TimespecToNsec(ts), nil
 }
