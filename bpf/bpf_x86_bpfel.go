@@ -13,11 +13,13 @@ import (
 )
 
 type BpfExecEventT struct {
-	Pid       uint32
-	Truncated uint8
-	_         [3]byte
-	ArgsSize  uint32
-	Args      [4096]int8
+	Pid               uint32
+	FilenameTruncated uint8
+	ArgsTruncated     uint8
+	_                 [2]byte
+	ArgsSize          uint32
+	Filename          [512]int8
+	Args              [4096]int8
 }
 
 type BpfFlowPidKeyT struct {

@@ -7,7 +7,6 @@ import (
 	"github.com/mozillazg/ptcpdump/internal/event"
 	"github.com/mozillazg/ptcpdump/internal/metadata"
 	"golang.org/x/xerrors"
-	"log"
 	"time"
 )
 
@@ -30,10 +29,11 @@ func (w *PcapNGWriter) Write(e *event.Packet) error {
 	}
 	p := w.pcache.Get(e.Pid)
 	if p.Pid == 0 {
-		log.Printf("not found pid from cache: %d", e.Pid)
+		//log.Printf("not found pid from cache: %d", e.Pid)
 	}
 	opts := pcapgo.NgPacketOptions{
-		Comment: fmt.Sprintf("PID: %d\nCOMMAND: %s", e.Pid, string(p.Args)),
+		Comment: fmt.Sprintf("PID: %d\nCommand: %s\nArgs: %s",
+			e.Pid, p.FilenameStr(), p.ArgsStr()),
 	}
 
 	if err := w.pw.WritePacketWithOptions(info, e.Data, opts); err != nil {

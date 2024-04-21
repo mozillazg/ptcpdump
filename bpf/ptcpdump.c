@@ -25,6 +25,7 @@
 #define MAX_PAYLOAD_SIZE 1500
 #define INGRESS_PACKET 0
 #define EGRESS_PACKET 1
+#define EXEC_FILENAME_LEN 512
 #define EXEC_ARGS_LEN 4096
 
 char _license[] SEC("license") = "Dual MIT/GPL";
@@ -82,8 +83,10 @@ struct packet_event_t {
 
 struct exec_event_t {
     u32 pid;
-    u8 truncated;
+    u8 filename_truncated;
+    u8 args_truncated;
     unsigned int args_size;
+    char filename[EXEC_FILENAME_LEN];
     char args[EXEC_ARGS_LEN];
 };
 
@@ -365,12 +368,25 @@ static __always_inline void handle_exec(struct trace_event_raw_sched_process_exe
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
     event->pid = bpf_get_current_pid_tgid() >> 32;
 
+    unsigned int filename_loc = BPF_CORE_READ(ctx, __data_loc_filename) & 0xFFFF;
+    int f_ret = bpf_probe_read_str(&event->filename, sizeof(event->filename), (void *)ctx + filename_loc);
+    if (f_ret < 0 ) {
+        bpf_printk("[ptcpdump] read exec filename failed: %d", f_ret);
+    }
+    if (f_ret == EXEC_FILENAME_LEN) {
+        event->filename_truncated = 1;
+//        char tmp[EXEC_FILENAME_LEN+1];
+//        if (bpf_probe_read_str(&tmp, sizeof(tmp), (void *)ctx + filename_loc) > EXEC_FILENAME_LEN) {
+//            event->filename_truncated = 1;
+//        }
+    }
+
     void *arg_start = (void *)BPF_CORE_READ(task, mm, arg_start);
     void *arg_end = (void *)BPF_CORE_READ(task, mm, arg_end);
     unsigned long arg_length = arg_end - arg_start;
     if (arg_length > EXEC_ARGS_LEN) {
         arg_length = EXEC_ARGS_LEN;
-        event->truncated = 1;
+        event->args_truncated = 1;
     }
     int arg_ret = bpf_probe_read(&event->args, arg_length, arg_start);
     if (arg_ret < 0) {

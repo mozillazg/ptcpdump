@@ -33,14 +33,14 @@ func logErr(err error) {
 	log.Printf("%+v", err)
 }
 
-func parseNetEvent(pcapWriter *writer.PcapNGWriter, rawSample []byte) {
+func parseNetEvent(stdoutWriter *writer.StdoutWriter, pcapWriter *writer.PcapNGWriter, rawSample []byte) {
 	pevent, err := event.ParsePacketEvent(rawSample)
 	if err != nil {
 		logErr(err)
 		return
 	}
 
-	if err := writer.NewStdoutWriter().Write(pevent); err != nil {
+	if err := stdoutWriter.Write(pevent); err != nil {
 		logErr(err)
 	}
 
@@ -113,6 +113,7 @@ func main() {
 		return
 	}
 	defer pcapWriter.Flush()
+	stdoutWriter := writer.NewStdoutWriter(pcache)
 
 	bf, err := bpf.NewBPF()
 	if err != nil {
@@ -186,7 +187,7 @@ func main() {
 				log.Printf("lost %d events", record.LostSamples)
 				continue
 			}
-			parseNetEvent(pcapWriter, record.RawSample)
+			parseNetEvent(stdoutWriter, pcapWriter, record.RawSample)
 		}
 	}()
 	go func() {
