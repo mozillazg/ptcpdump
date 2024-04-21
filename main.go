@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/perf"
@@ -23,6 +24,17 @@ import (
 	"syscall"
 )
 
+type Options struct {
+	writeFilePath string
+}
+
+func (o Options) WritePath() string {
+	if o.writeFilePath == "" || o.writeFilePath == "-" {
+		return ""
+	}
+	return o.writeFilePath
+}
+
 func logErr(err error) {
 	var ve *ebpf.VerifierError
 	if errors.As(err, &ve) {
@@ -33,19 +45,17 @@ func logErr(err error) {
 	log.Printf("%+v", err)
 }
 
-func parseNetEvent(stdoutWriter *writer.StdoutWriter, pcapWriter *writer.PcapNGWriter, rawSample []byte) {
+func parseNetEvent(writers []writer.PacketWriter, rawSample []byte) {
 	pevent, err := event.ParsePacketEvent(rawSample)
 	if err != nil {
 		logErr(err)
 		return
 	}
 
-	if err := stdoutWriter.Write(pevent); err != nil {
-		logErr(err)
-	}
-
-	if err := pcapWriter.Write(pevent); err != nil {
-		logErr(err)
+	for _, w := range writers {
+		if err := w.Write(pevent); err != nil {
+			logErr(err)
+		}
 	}
 }
 
@@ -96,25 +106,44 @@ func newPcapWriter(w io.Writer, ifaceNames []string, pcache *metadata.ProcessCac
 	return writer.NewPcapNGWriter(pcapWriter, pcache), nameIfcs, nil
 }
 
+func setupFlags() *Options {
+	opts := &Options{}
+	flag.StringVar(&opts.writeFilePath, "w", "",
+		"Write the raw packets to file rather than parsing and printing them out. e.g. ptcpdump.pcapng")
+	flag.Parse()
+	return opts
+}
+
 func main() {
+	opts := setupFlags()
 	if err := rlimit.RemoveMemlock(); err != nil {
 		logErr(err)
 		return
 	}
-	pcapFile, err := os.Create("ptcpdump.pcapng")
-	if err != nil {
-		logErr(err)
-		return
-	}
+	var writers []writer.PacketWriter
 	pcache := metadata.NewProcessCache()
 	go pcache.Start()
-	pcapWriter, _, err := newPcapWriter(pcapFile, []string{"lo", "enp0s3", "docker0", "wlp4s0", "enp5s0"}, pcache)
-	if err != nil {
-		logErr(err)
-		return
+
+	if opts.WritePath() != "" {
+		pcapFile, err := os.Create(opts.WritePath())
+		if err != nil {
+			logErr(err)
+			return
+		}
+		pcapWriter, _, err := newPcapWriter(pcapFile, []string{"lo", "enp0s3", "docker0", "wlp4s0", "enp5s0"}, pcache)
+		if err != nil {
+			logErr(err)
+			return
+		}
+		defer func() {
+			if err := pcapWriter.Flush(); err != nil {
+				logErr(err)
+			}
+		}()
+		writers = append(writers, pcapWriter)
 	}
-	defer pcapWriter.Flush()
 	stdoutWriter := writer.NewStdoutWriter(os.Stdout, pcache)
+	writers = append(writers, stdoutWriter)
 
 	bf, err := bpf.NewBPF()
 	if err != nil {
@@ -188,7 +217,7 @@ func main() {
 				log.Printf("lost %d events", record.LostSamples)
 				continue
 			}
-			parseNetEvent(stdoutWriter, pcapWriter, record.RawSample)
+			parseNetEvent(writers, record.RawSample)
 		}
 	}()
 	go func() {

@@ -47,3 +47,7 @@ func (w *PcapNGWriter) Write(e *event.Packet) error {
 func (w *PcapNGWriter) Flush() error {
 	return w.pw.Flush()
 }
+
+func (w *PcapNGWriter) Close() error {
+	return nil
+}

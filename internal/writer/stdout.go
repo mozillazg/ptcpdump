@@ -45,3 +45,7 @@ func (w *StdoutWriter) Write(e *event.Packet) error {
 
 	return nil
 }
+
+func (w *StdoutWriter) Close() error {
+	return nil
+}
