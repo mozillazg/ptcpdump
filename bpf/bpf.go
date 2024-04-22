@@ -23,12 +23,14 @@ type BPF struct {
 	spec       *ebpf.CollectionSpec
 	objs       *BpfObjects
 	links      []link.Link
+	opts       Options
 	closeFuncs []func()
 }
 
-type LoadOptions struct {
-	Pid  uint32
-	Comm [16]int8
+type Options struct {
+	Pid         uint32
+	Comm        [16]int8
+	FollowForks uint8
 }
 
 func NewBPF() (*BPF, error) {
@@ -42,8 +44,8 @@ func NewBPF() (*BPF, error) {
 	}, nil
 }
 
-func NewLoadOptions(pid uint, comm string) LoadOptions {
-	opts := LoadOptions{
+func NewOptions(pid uint, comm string, followForks bool) Options {
+	opts := Options{
 		Pid: uint32(pid),
 	}
 	opts.Comm = [16]int8{}
@@ -56,14 +58,19 @@ func NewLoadOptions(pid uint, comm string) LoadOptions {
 		}
 		opts.Comm[15] = '\x00'
 	}
+	opts.FollowForks = 0
+	if followForks {
+		opts.FollowForks = 1
+	}
 
 	return opts
 }
 
-func (b *BPF) Load(opts LoadOptions) error {
+func (b *BPF) Load(opts Options) error {
 	if err := b.spec.RewriteConstants(map[string]interface{}{
-		"filter_pid":  opts.Pid,
-		"filter_comm": opts.Comm,
+		"filter_pid":          opts.Pid,
+		"filter_comm":         opts.Comm,
+		"filter_follow_forks": opts.FollowForks,
 	}); err != nil {
 		return xerrors.Errorf("rewrite constants: %w", err)
 	}
@@ -74,7 +81,12 @@ func (b *BPF) Load(opts LoadOptions) error {
 			LogSize:  ebpf.DefaultVerifierLogSize * 8,
 		},
 	})
-	return err
+	if err != nil {
+		return err
+	}
+	b.opts = opts
+
+	return nil
 }
 
 func (b *BPF) Close() {
@@ -109,6 +121,18 @@ func (b *BPF) AttachTracepoints() error {
 		return xerrors.Errorf("attach tracepoint/sched/sched_process_exec: %w", err)
 	}
 	b.links = append(b.links, lk)
+
+	if b.opts.attachForks() {
+		for _, name := range []string{"sys_exit_fork", "sys_exit_vfork", "sys_exit_clone", "sys_exit_clone3"} {
+			lk, err := link.Tracepoint("syscalls", name,
+				b.objs.TracepointSyscallsSysExitFork, nil)
+			if err != nil {
+				return xerrors.Errorf("attach tracepoint/syscalls/%s: %w", name, err)
+			}
+			b.links = append(b.links, lk)
+		}
+	}
+
 	return nil
 }
 
@@ -152,6 +176,10 @@ func (b *BPF) NewExecEventReader() (*ringbuf.Reader, error) {
 		return nil, xerrors.Errorf(": %w", err)
 	}
 	return reader, nil
+}
+
+func (o Options) attachForks() bool {
+	return o.FollowForks == 1
 }
 
 func attachTcHook(ifindex int, prog *ebpf.Program, ingress bool) (func(), error) {

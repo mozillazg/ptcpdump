@@ -27,6 +27,7 @@ type Options struct {
 	iface         string
 	pid           uint
 	comm          string
+	followForks   bool
 	writeFilePath string
 }
 
@@ -110,6 +111,7 @@ func setupFlags() *Options {
 	flag.StringVar(&opts.iface, "i", "eth0", "")
 	flag.UintVar(&opts.pid, "pid", 0, "")
 	flag.StringVar(&opts.comm, "comm", "", "")
+	flag.BoolVar(&opts.followForks, "follow-forks", false, "Trace child processes when filter by process")
 	flag.Parse()
 
 	return opts
@@ -157,7 +159,7 @@ func main() {
 		logErr(err)
 		return
 	}
-	if err := bf.Load(bpf.NewLoadOptions(opts.pid, opts.comm)); err != nil {
+	if err := bf.Load(bpf.NewOptions(opts.pid, opts.comm, opts.followForks)); err != nil {
 		logErr(err)
 		return
 	}

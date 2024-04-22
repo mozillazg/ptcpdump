@@ -95,6 +95,10 @@ type BpfProgramSpecs struct {
 	TcEgress                        *ebpf.ProgramSpec `ebpf:"tc_egress"`
 	TcIngress                       *ebpf.ProgramSpec `ebpf:"tc_ingress"`
 	TracepointSchedSchedProcessExec *ebpf.ProgramSpec `ebpf:"tracepoint__sched__sched_process_exec"`
+	TracepointSyscallsSysExitClone  *ebpf.ProgramSpec `ebpf:"tracepoint__syscalls__sys_exit_clone"`
+	TracepointSyscallsSysExitClone3 *ebpf.ProgramSpec `ebpf:"tracepoint__syscalls__sys_exit_clone3"`
+	TracepointSyscallsSysExitFork   *ebpf.ProgramSpec `ebpf:"tracepoint__syscalls__sys_exit_fork"`
+	TracepointSyscallsSysExitVfork  *ebpf.ProgramSpec `ebpf:"tracepoint__syscalls__sys_exit_vfork"`
 }
 
 // BpfMapSpecs contains maps before they are loaded into the kernel.
@@ -103,6 +107,7 @@ type BpfProgramSpecs struct {
 type BpfMapSpecs struct {
 	BpfStack     *ebpf.MapSpec `ebpf:"bpf_stack"`
 	ExecEvents   *ebpf.MapSpec `ebpf:"exec_events"`
+	FilterPidMap *ebpf.MapSpec `ebpf:"filter_pid_map"`
 	FlowPidMap   *ebpf.MapSpec `ebpf:"flow_pid_map"`
 	PacketEvents *ebpf.MapSpec `ebpf:"packet_events"`
 }
@@ -128,6 +133,7 @@ func (o *BpfObjects) Close() error {
 type BpfMaps struct {
 	BpfStack     *ebpf.Map `ebpf:"bpf_stack"`
 	ExecEvents   *ebpf.Map `ebpf:"exec_events"`
+	FilterPidMap *ebpf.Map `ebpf:"filter_pid_map"`
 	FlowPidMap   *ebpf.Map `ebpf:"flow_pid_map"`
 	PacketEvents *ebpf.Map `ebpf:"packet_events"`
 }
@@ -136,6 +142,7 @@ func (m *BpfMaps) Close() error {
 	return _BpfClose(
 		m.BpfStack,
 		m.ExecEvents,
+		m.FilterPidMap,
 		m.FlowPidMap,
 		m.PacketEvents,
 	)
@@ -149,6 +156,10 @@ type BpfPrograms struct {
 	TcEgress                        *ebpf.Program `ebpf:"tc_egress"`
 	TcIngress                       *ebpf.Program `ebpf:"tc_ingress"`
 	TracepointSchedSchedProcessExec *ebpf.Program `ebpf:"tracepoint__sched__sched_process_exec"`
+	TracepointSyscallsSysExitClone  *ebpf.Program `ebpf:"tracepoint__syscalls__sys_exit_clone"`
+	TracepointSyscallsSysExitClone3 *ebpf.Program `ebpf:"tracepoint__syscalls__sys_exit_clone3"`
+	TracepointSyscallsSysExitFork   *ebpf.Program `ebpf:"tracepoint__syscalls__sys_exit_fork"`
+	TracepointSyscallsSysExitVfork  *ebpf.Program `ebpf:"tracepoint__syscalls__sys_exit_vfork"`
 }
 
 func (p *BpfPrograms) Close() error {
@@ -157,6 +168,10 @@ func (p *BpfPrograms) Close() error {
 		p.TcEgress,
 		p.TcIngress,
 		p.TracepointSchedSchedProcessExec,
+		p.TracepointSyscallsSysExitClone,
+		p.TracepointSyscallsSysExitClone3,
+		p.TracepointSyscallsSysExitFork,
+		p.TracepointSyscallsSysExitVfork,
 	)
 }
 
