@@ -20,6 +20,7 @@ import (
 	"math"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 )
 
@@ -29,6 +30,7 @@ type Options struct {
 	comm          string
 	followForks   bool
 	writeFilePath string
+	pcapFilter    string
 }
 
 func (o Options) WritePath() string {
@@ -114,6 +116,7 @@ func setupFlags() *Options {
 	flag.BoolVar(&opts.followForks, "follow-forks", false, "Trace child processes when filter by process")
 	flag.Parse()
 
+	opts.pcapFilter = strings.Join(flag.Args(), " ")
 	return opts
 }
 
@@ -159,7 +162,7 @@ func main() {
 		logErr(err)
 		return
 	}
-	if err := bf.Load(bpf.NewOptions(opts.pid, opts.comm, opts.followForks)); err != nil {
+	if err := bf.Load(bpf.NewOptions(opts.pid, opts.comm, opts.followForks, opts.pcapFilter)); err != nil {
 		logErr(err)
 		return
 	}

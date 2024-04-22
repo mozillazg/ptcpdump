@@ -3,6 +3,7 @@ package bpf
 import (
 	"encoding/binary"
 	"log"
+	"strings"
 	"unsafe"
 
 	"github.com/cilium/ebpf"
@@ -11,6 +12,7 @@ import (
 	"github.com/cilium/ebpf/ringbuf"
 	"github.com/florianl/go-tc"
 	"github.com/florianl/go-tc/core"
+	"github.com/jschwinger233/elibpcap"
 	"golang.org/x/sys/unix"
 	"golang.org/x/xerrors"
 )
@@ -31,6 +33,7 @@ type Options struct {
 	Pid         uint32
 	Comm        [16]int8
 	FollowForks uint8
+	PcapFilter  string
 }
 
 func NewBPF() (*BPF, error) {
@@ -44,7 +47,7 @@ func NewBPF() (*BPF, error) {
 	}, nil
 }
 
-func NewOptions(pid uint, comm string, followForks bool) Options {
+func NewOptions(pid uint, comm string, followForks bool, pcapFilter string) Options {
 	opts := Options{
 		Pid: uint32(pid),
 	}
@@ -62,20 +65,43 @@ func NewOptions(pid uint, comm string, followForks bool) Options {
 	if followForks {
 		opts.FollowForks = 1
 	}
+	opts.PcapFilter = strings.TrimSpace(pcapFilter)
 
 	return opts
 }
 
 func (b *BPF) Load(opts Options) error {
-	if err := b.spec.RewriteConstants(map[string]interface{}{
+	err := b.spec.RewriteConstants(map[string]interface{}{
 		"filter_pid":          opts.Pid,
 		"filter_comm":         opts.Comm,
 		"filter_follow_forks": opts.FollowForks,
-	}); err != nil {
+	})
+	if err != nil {
 		return xerrors.Errorf("rewrite constants: %w", err)
 	}
 
-	err := b.spec.LoadAndAssign(b.objs, &ebpf.CollectionOptions{
+	if opts.PcapFilter != "" {
+		for _, progName := range []string{"tc_ingress", "tc_egress"} {
+			prog, ok := b.spec.Programs[progName]
+			if !ok {
+				return xerrors.Errorf("program %s not found", progName)
+			}
+			prog.Instructions, err = elibpcap.Inject(
+				opts.PcapFilter,
+				prog.Instructions,
+				elibpcap.Options{
+					AtBpf2Bpf:  "pcap_filter",
+					DirectRead: true,
+					L2Skb:      true,
+				},
+			)
+			if err != nil {
+				return xerrors.Errorf("inject pcap filter: %w", err)
+			}
+		}
+	}
+
+	err = b.spec.LoadAndAssign(b.objs, &ebpf.CollectionOptions{
 		Programs: ebpf.ProgramOptions{
 			LogLevel: ebpf.LogLevelInstruction,
 			LogSize:  ebpf.DefaultVerifierLogSize * 8,

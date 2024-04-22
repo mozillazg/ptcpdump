@@ -6,6 +6,7 @@ require (
 	github.com/cilium/ebpf v0.14.0
 	github.com/florianl/go-tc v0.4.3
 	github.com/gopacket/gopacket v1.2.0
+	github.com/jschwinger233/elibpcap v0.0.0-20231010035657-e99300096f5e
 	github.com/shirou/gopsutil/v3 v3.24.3
 	github.com/vishvananda/netlink v1.1.0
 	github.com/x-way/pktdump v0.0.5
@@ -14,12 +15,14 @@ require (
 )
 
 require (
+	github.com/cloudflare/cbpfc v0.0.0-20230809125630-31aa294050ff // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/josharian/native v1.1.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/mdlayher/netlink v1.6.0 // indirect
 	github.com/mdlayher/socket v0.1.1 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect

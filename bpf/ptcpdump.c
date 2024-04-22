@@ -420,13 +420,21 @@ int BPF_KPROBE(kprobe__security_sk_classify_flow, struct sock *sk) {
     return 0;
 };
 
-static __always_inline int handle_tc(struct __sk_buff *skb, bool egress) {
+static __noinline bool pcap_filter(void *_skb, void *__skb, void *___skb, void *data, void* data_end) {
+	return data != data_end && _skb == __skb && __skb == ___skb;
+};
+
+static __always_inline void handle_tc(struct __sk_buff *skb, bool egress) {
     bpf_skb_pull_data(skb, 0);
+
+    if (!pcap_filter((void *)skb, (void *)skb, (void *)skb, (void *)(long)skb->data, (void *)(long)skb->data_end)) {
+        return;
+    }
 
     struct packet_meta_t packet_meta = {0};
     int ret = parse_skb_meta(skb, &packet_meta);
     if (ret < 0) {
-        return TC_ACT_OK;
+        return;
     }
 
 
@@ -446,7 +454,7 @@ static __always_inline int handle_tc(struct __sk_buff *skb, bool egress) {
     }
 
     if (key.sport == 0) {
-        return TC_ACT_OK;
+        return;
     }
 
 
@@ -457,15 +465,16 @@ static __always_inline int handle_tc(struct __sk_buff *skb, bool egress) {
 //        bpf_printk("[tc] (%s) %pI4 %d", value->comm, &key.saddr[0], key.sport);
     } else {
         /* bpf_printk("[tc] %pI4 %d bpf_map_lookup_elem is empty", &key.saddr[0], key.sport); */
-        return TC_ACT_OK;
+        return;
     }
 
     struct packet_event_t *event;
     u32 zero = 0;
     event = bpf_map_lookup_elem(&bpf_stack, &zero);
     if (!event) {
-        return TC_ACT_OK;
+        return;
     }
+//    __builtin_memset(event, 0, sizeof(*event));
 
     if (egress) {
         event->meta.packet_type = EGRESS_PACKET;
@@ -485,7 +494,7 @@ static __always_inline int handle_tc(struct __sk_buff *skb, bool egress) {
     bpf_perf_event_output(skb, &packet_events, BPF_F_CURRENT_CPU | (payload_len <<32),
                           event, offsetof(struct packet_event_t, payload));
 
-    return TC_ACT_OK;
+    return;
 }
 
 static __always_inline void handle_exec(struct trace_event_raw_sched_process_exec *ctx) {
@@ -542,10 +551,12 @@ int tracepoint__sched__sched_process_exec(struct trace_event_raw_sched_process_e
 
 SEC("tc")
 int tc_ingress(struct __sk_buff *skb) {
-    return handle_tc(skb, false);
+    handle_tc(skb, false);
+    return TC_ACT_OK;
 };
 
 SEC("tc")
 int tc_egress(struct __sk_buff *skb) {
-    return handle_tc(skb, true);
+    handle_tc(skb, true);
+    return TC_ACT_OK;
 };

@@ -13,6 +13,6 @@
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
-test.pcapng
-ptcpdump
-ptcpdump.pcapng
+/ptcpdump
+/output/
+/*.pcapng
