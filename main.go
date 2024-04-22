@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"fmt"
 	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/perf"
 	"github.com/cilium/ebpf/rlimit"
@@ -20,17 +21,19 @@ import (
 	"math"
 	"os"
 	"os/signal"
+	"sort"
 	"strings"
 	"syscall"
 )
 
 type Options struct {
-	iface         string
-	pid           uint
-	comm          string
-	followForks   bool
-	writeFilePath string
-	pcapFilter    string
+	iface          string
+	pid            uint
+	comm           string
+	followForks    bool
+	writeFilePath  string
+	pcapFilter     string
+	listInterfaces bool
 }
 
 func (o Options) WritePath() string {
@@ -114,14 +117,34 @@ func setupFlags() *Options {
 	flag.UintVar(&opts.pid, "pid", 0, "")
 	flag.StringVar(&opts.comm, "comm", "", "")
 	flag.BoolVar(&opts.followForks, "follow-forks", false, "Trace child processes when filter by process")
+	flag.BoolVar(&opts.listInterfaces, "list-interfaces", false, "Print the list of the network interfaces available on the system")
 	flag.Parse()
 
 	opts.pcapFilter = strings.Join(flag.Args(), " ")
 	return opts
 }
 
+func listInterfaces() {
+	devices, err := dev.GetDevices("any")
+	if err != nil {
+		logErr(err)
+		return
+	}
+	outputs := []string{}
+	for _, d := range devices {
+		outputs = append(outputs, fmt.Sprintf("%d.%s", d.Ifindex, d.Name))
+	}
+	sort.Strings(outputs)
+	fmt.Printf("%s\n", strings.Join(outputs, "\n"))
+}
+
 func main() {
 	opts := setupFlags()
+	if opts.listInterfaces {
+		listInterfaces()
+		return
+	}
+
 	devices, err := dev.GetDevices(opts.iface)
 	if err != nil {
 		logErr(err)
