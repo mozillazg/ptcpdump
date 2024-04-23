@@ -74,8 +74,8 @@ github.com/mdlayher/socket v0.1.1 h1:q3uOGirUPfAV2MUoaC7BavjQ154J7+JOkTWyiV+intI
 github.com/mdlayher/socket v0.1.1/go.mod h1:mYV5YIZAfHh4dzDVzI8x8tWLWCliuX8Mon5Awbj+qDs=
 github.com/mozillazg/gopacket v0.0.0-20240420072046-71afeafe42df h1:dP09t/Mu44X7itTtVKr0H+NCCvpROItG5FMkPkzUhT4=
 github.com/mozillazg/gopacket v0.0.0-20240420072046-71afeafe42df/go.mod h1:lnXM4VDqJTe4d2NoZr8DZMtidkhss2Y82QFlamXWfXo=
-github.com/mozillazg/pktdump v0.0.0-20240421054319-759ababbd329 h1:mZ5vMcl+pQG4u1lotN3Me9T99n3dNv+xWjhZy+tVmdE=
-github.com/mozillazg/pktdump v0.0.0-20240421054319-759ababbd329/go.mod h1:InLCDK8kgkk26VtyPZ51e0igf15eiXDMvvQuV62Wqmw=
+github.com/mozillazg/pktdump v0.0.0-20240422135914-a9ab652291b1 h1:hAP2PH4czj22vr78Dh6dPlXlxDsKK/uYNxPiE9jvRUM=
+github.com/mozillazg/pktdump v0.0.0-20240422135914-a9ab652291b1/go.mod h1:InLCDK8kgkk26VtyPZ51e0igf15eiXDMvvQuV62Wqmw=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=

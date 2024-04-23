@@ -36,5 +36,5 @@ require (
 
 replace (
 	github.com/gopacket/gopacket => github.com/mozillazg/gopacket v0.0.0-20240420072046-71afeafe42df
-	github.com/x-way/pktdump => github.com/mozillazg/pktdump v0.0.0-20240421054319-759ababbd329
+	github.com/x-way/pktdump => github.com/mozillazg/pktdump v0.0.0-20240422135914-a9ab652291b1
 )

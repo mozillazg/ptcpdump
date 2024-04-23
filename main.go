@@ -78,6 +78,9 @@ func parseExecEvent(pcache *metadata.ProcessCache, rawSample []byte) {
 
 func newPcapWriter(w io.Writer, pcache *metadata.ProcessCache) (*writer.PcapNGWriter, error) {
 	devices, err := dev.GetDevices("any")
+	if err != nil {
+		return nil, err
+	}
 
 	var interfaces []pcapgo.NgInterface
 	for _, dev := range devices {

@@ -24,20 +24,21 @@ func NewStdoutWriter(writer io.Writer, pcache *metadata.ProcessCache) *StdoutWri
 }
 
 func (w *StdoutWriter) Write(e *event.Packet) error {
+	ifName := e.Device.Name
 	packetType := "In"
 	if e.Egress() {
 		packetType = "Out"
 	}
 	p := w.pcache.Get(e.Pid)
-	pidInfo := fmt.Sprintf("Process [pid %d, cmd %s, args %s]",
+	pidInfo := fmt.Sprintf("Process (pid %d, cmd %s, args %s)",
 		e.Pid, p.FilenameStr(), p.ArgsStr())
 
 	// Decode a packet
 	packet := gopacket.NewPacket(e.Data, layers.LayerTypeEthernet, gopacket.NoCopy)
 	formated := pktdump.Format(packet)
 
-	msg := fmt.Sprintf("%s %s %s, %s\n",
-		e.Time.Local().Format("15:04:05.000000"),
+	msg := fmt.Sprintf("%s %s %s %s\n    %s\n",
+		e.Time.Local().Format("15:04:05.000000"), ifName,
 		packetType, formated, pidInfo)
 
 	if _, err := w.w.Write([]byte(msg)); err != nil {
