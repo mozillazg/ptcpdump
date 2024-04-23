@@ -34,7 +34,7 @@ func getWriters(opts Options, pcache *metadata.ProcessCache) ([]writer.PacketWri
 }
 
 func newPcapWriter(w io.Writer, pcache *metadata.ProcessCache) (*writer.PcapNGWriter, error) {
-	devices, err := dev.GetDevices("any")
+	devices, err := dev.GetDevices(nil)
 	if err != nil {
 		return nil, err
 	}

@@ -10,21 +10,25 @@ type Device struct {
 	Ifindex int
 }
 
-func GetDevices(name string) (map[int]Device, error) {
+func GetDevices(names []string) (map[int]Device, error) {
 	var links []netlink.Link
 	var err error
 	ifindexMap := make(map[int]Device)
 
-	if name == "any" {
-		if links, err = netlink.LinkList(); err != nil {
-			return nil, xerrors.Errorf(": %w", err)
-		}
+	allLinks, err := netlink.LinkList()
+	if err != nil {
+		return nil, xerrors.Errorf(": %w", err)
+	}
+	if len(names) == 0 || names[0] == "any" {
+		links = append(links, allLinks...)
 	} else {
-		link, err := netlink.LinkByName(name)
-		if err != nil {
-			return nil, xerrors.Errorf("get device by name (%s): %w", name, err)
+		for _, name := range names {
+			for _, lk := range allLinks {
+				if lk.Attrs().Name == name {
+					links = append(links, lk)
+				}
+			}
 		}
-		links = append(links, link)
 	}
 
 	for _, link := range links {

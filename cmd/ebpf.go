@@ -7,7 +7,7 @@ import (
 )
 
 func attachHooks(opts Options) (map[int]dev.Device, *bpf.BPF, error) {
-	devices, err := dev.GetDevices(opts.iface)
+	devices, err := dev.GetDevices(opts.ifaces)
 	if err != nil {
 		return nil, nil, err
 	}

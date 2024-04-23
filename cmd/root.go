@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"log"
 	"os/signal"
+	"runtime"
 	"syscall"
 )
 
@@ -27,7 +28,7 @@ var rootCmd = &cobra.Command{
 func init() {
 	rootCmd.Flags().StringVarP(&opts.writeFilePath, "write-file", "w", "",
 		"Write the raw packets to file rather than parsing and printing them out. e.g. ptcpdump.pcapng")
-	rootCmd.Flags().StringVarP(&opts.iface, "interface", "i", "lo", "")
+	rootCmd.Flags().StringSliceVarP(&opts.ifaces, "interface", "i", []string{"lo"}, "")
 	rootCmd.Flags().UintVar(&opts.pid, "pid", 0, "")
 	rootCmd.Flags().StringVar(&opts.comm, "pname", "", "")
 	rootCmd.Flags().BoolVarP(&opts.followForks, "follow-forks", "f", false,
@@ -78,6 +79,8 @@ func run(cmd *cobra.Command, args []string) error {
 	go execConsumer.Start(ctx, execEventReader)
 	packetConsumer := consumer.NewPacketEventConsumer(writers, devices)
 	go packetConsumer.Start(ctx, packetEventReader)
+
+	runtime.Gosched()
 
 	log.Println("tracing...")
 	<-ctx.Done()

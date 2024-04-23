@@ -1,7 +1,7 @@
 package cmd
 
 type Options struct {
-	iface          string
+	ifaces         []string
 	pid            uint
 	comm           string
 	followForks    bool

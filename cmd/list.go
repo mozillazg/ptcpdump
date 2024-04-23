@@ -8,7 +8,7 @@ import (
 )
 
 func listInterfaces() error {
-	devices, err := dev.GetDevices("any")
+	devices, err := dev.GetDevices(nil)
 	if err != nil {
 		return err
 	}
