@@ -20,13 +20,13 @@ CGO_LDFLAGS_STATIC = "-L$(LIBPCAP_OBJ_DIR) -lelf -lz $(LIBPCAP_OBJ)"
 .PHONY: libpcap
 libpcap: $(LIBPCAP_OBJ)
 
-$(LIBPCAP_OBJ): $(LIBPCAP_SRC) $(wildcard $(LIBPCAP_SRC)/*.[ch]) | $(LIBPCAP_DIST_DIR)
+$(LIBPCAP_OBJ): $(LIBPCAP_SRC)/configure $(wildcard $(LIBPCAP_SRC)/*.[ch]) | $(LIBPCAP_DIST_DIR)
 	cd $(LIBPCAP_SRC) && \
 	  ./configure --enable-dbus=no && \
 	  $(MAKE) && \
 	  $(MAKE) install prefix=$(LIBPCAP_DIST_DIR)
 
-$(LIBPCAP_SRC):
+$(LIBPCAP_SRC)/configure:
 ifeq ($(wildcard $@), )
 	echo "INFO: updating submodule 'libpcap'"
 	$(GIT) submodule update --init --recursive
@@ -43,7 +43,13 @@ $(OUTPUT):
 build: generate libpcap
 	CGO_CFLAGS=$(CGO_CFLAGS_STATIC) \
 	CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) \
-	CGO_ENABLED=1 go build -tags static -ldflags '-extldflags "-static"'
+	CGO_ENABLED=1 go build -tags=static -ldflags '-extldflags "-static"'
+
+.PHONY: test
+test:
+	CGO_CFLAGS=$(CGO_CFLAGS_STATIC) \
+	CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) \
+	CGO_ENABLED=1 go test -v ./...
 
 .PHONY: generate
 generate:
