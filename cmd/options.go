@@ -8,6 +8,7 @@ type Options struct {
 	writeFilePath  string
 	pcapFilter     string
 	listInterfaces bool
+	version        bool
 }
 
 func (o Options) WritePath() string {

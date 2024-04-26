@@ -1,8 +1,10 @@
 package cmd
 
 import (
+	"fmt"
 	"github.com/gopacket/gopacket/layers"
 	"github.com/gopacket/gopacket/pcapgo"
+	"github.com/mozillazg/ptcpdump/internal"
 	"github.com/mozillazg/ptcpdump/internal/dev"
 	"github.com/mozillazg/ptcpdump/internal/metadata"
 	"github.com/mozillazg/ptcpdump/internal/writer"
@@ -10,6 +12,7 @@ import (
 	"io"
 	"math"
 	"os"
+	"runtime"
 )
 
 func getWriters(opts Options, pcache *metadata.ProcessCache) ([]writer.PacketWriter, error) {
@@ -43,13 +46,20 @@ func newPcapWriter(w io.Writer, pcache *metadata.ProcessCache) (*writer.PcapNGWr
 	for _, dev := range devices {
 		interfaces = append(interfaces, pcapgo.NgInterface{
 			Name:       dev.Name,
-			Comment:    "ptcpdump interface name",
+			Filter:     opts.pcapFilter,
+			OS:         runtime.GOOS,
 			LinkType:   layers.LinkTypeEthernet,
 			SnapLength: uint32(math.MaxUint16),
 		})
 	}
 
-	pcapWriter, err := pcapgo.NewNgWriterInterface(w, interfaces[0], pcapgo.NgWriterOptions{})
+	pcapWriter, err := pcapgo.NewNgWriterInterface(w, interfaces[0], pcapgo.NgWriterOptions{
+		SectionInfo: pcapgo.NgSectionInfo{
+			Hardware:    runtime.GOARCH,
+			OS:          runtime.GOOS,
+			Application: fmt.Sprintf("ptcpdump %s", internal.Version),
+		},
+	})
 	if err != nil {
 		return nil, xerrors.Errorf(": %w", err)
 	}

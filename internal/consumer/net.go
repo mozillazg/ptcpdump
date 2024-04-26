@@ -57,6 +57,7 @@ func (c *PacketEventConsumer) parsePacketEvent(rawSample []byte) {
 		if err := w.Write(pevent); err != nil {
 			log.Printf("[PacketEventConsumer] write packet failed: %s", err)
 		}
+		w.Flush()
 	}
 }
 

@@ -35,6 +35,7 @@ func init() {
 		"Include child processes when filter by process")
 	rootCmd.Flags().BoolVar(&opts.listInterfaces, "list-interfaces", false,
 		"Print the list of the network interfaces available on the system")
+	rootCmd.Flags().BoolVar(&opts.version, "version", false, "")
 }
 
 func Execute() error {
@@ -42,8 +43,11 @@ func Execute() error {
 }
 
 func run(cmd *cobra.Command, args []string) error {
-	if opts.listInterfaces {
+	switch {
+	case opts.listInterfaces:
 		return listInterfaces()
+	case opts.version:
+		return printVersion()
 	}
 
 	pcache := metadata.NewProcessCache()
@@ -51,6 +55,11 @@ func run(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	defer func() {
+		for _, w := range writers {
+			w.Flush()
+		}
+	}()
 	go pcache.Start()
 
 	devices, bf, err := attachHooks(opts)
