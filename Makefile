@@ -7,7 +7,7 @@ OUTPUT = ./output
 BPF_SRC = ./bpf
 LIBPCAP = ./lib/libpcap
 LIBPCAP_SRC =  $(abspath $(LIBPCAP))
-LIBPCAP_DIST_DIR = $(abspath $(OUTPUT)/libpcap)
+LIBPCAP_DIST_DIR ?= $(abspath $(OUTPUT)/libpcap)
 LIBPCAP_HEADER_DIR = $(abspath $(LIBPCAP_DIST_DIR)/include)
 LIBPCAP_OBJ_DIR = $(abspath $(LIBPCAP_DIST_DIR)/lib)
 LIBPCAP_OBJ = $(abspath $(LIBPCAP_OBJ_DIR)/libpcap.a)
@@ -15,11 +15,11 @@ LIBPCAP_OBJ = $(abspath $(LIBPCAP_OBJ_DIR)/libpcap.a)
 GIT_COMMIT ?= $(shell git rev-parse --short HEAD)
 VERSION ?= $(shell git describe --tags --abbrev=0)
 CGO_CFLAGS_STATIC = "-I$(LIBPCAP_HEADER_DIR)"
-CGO_LDFLAGS_STATIC = "-L$(LIBPCAP_OBJ_DIR) -lelf -lz $(LIBPCAP_OBJ)"
+CGO_LDFLAGS_STATIC = "-L$(LIBPCAP_OBJ_DIR) -lpcap $(LIBPCAP_OBJ)"
 CGO_ENABLED ?= 1
 GOARCH ?= $(shell go env GOARCH)
 GOOS ?= $(shell go env GOOS)
-LDFLAGS := -extldflags "-static"
+LDFLAGS := -linkmode "external" -extldflags "-static"
 LDFLAGS += -X github.com/mozillazg/ptcpdump/internal.Version=$(VERSION)
 LDFLAGS += -X github.com/mozillazg/ptcpdump/internal.GitCommit=$(GIT_COMMIT)
 

@@ -1,0 +1,30 @@
+before:
+  hooks:
+    - sudo apt-get install -y gcc flex bison make libelf-dev
+    - sudo make libpcap LIBPCAP_DIST_DIR=/usr/local
+
+builds:
+  - id: ptcpdump
+    binary: ptcpdump
+    env:
+      - CGO_ENABLED=1
+    flags:
+      - -tags=static
+    ldflags:
+      - -linkmode 'external'
+      - -extldflags "-static"
+      - -X github.com/mozillazg/ptcpdump/internal.Version={{.Version}}
+      - -X github.com/mozillazg/ptcpdump/internal.GitCommit={{.Commit}}
+    goos:
+      - linux
+    goarch:
+      - amd64
+
+checksum:
+  name_template: 'checksums.txt'
+
+release:
+  prerelease: auto
+
+snapshot:
+  name_template: "{{ .Tag }}-next"
