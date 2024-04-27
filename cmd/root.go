@@ -51,6 +51,8 @@ func init() {
 		"Print the list of the network interfaces available on the system")
 	rootCmd.Flags().BoolVar(&opts.version, "version", false,
 		"Print the ptcpdump and libpcap version strings and exit")
+	rootCmd.Flags().BoolVar(&opts.print, "print", false,
+		"Print parsed packet output, even if the raw packets are being saved to a file with the -w flag")
 }
 
 func Execute() error {

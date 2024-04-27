@@ -9,11 +9,9 @@ type Options struct {
 	pcapFilter     string
 	listInterfaces bool
 	version        bool
+	print          bool
 }
 
 func (o Options) WritePath() string {
-	if o.writeFilePath == "" || o.writeFilePath == "-" {
-		return ""
-	}
 	return o.writeFilePath
 }

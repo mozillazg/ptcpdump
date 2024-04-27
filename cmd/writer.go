@@ -28,7 +28,8 @@ func getWriters(opts Options, pcache *metadata.ProcessCache) ([]writer.PacketWri
 			return nil, err
 		}
 		writers = append(writers, pcapWriter)
-	} else {
+	}
+	if opts.writeFilePath == "" || opts.print {
 		stdoutWriter := writer.NewStdoutWriter(os.Stdout, pcache)
 		writers = append(writers, stdoutWriter)
 	}
