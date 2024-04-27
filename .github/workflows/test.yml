@@ -32,6 +32,86 @@ jobs:
     - name: Test
       run: make test
 
+    - name: Store executable
+      uses: actions/upload-artifact@v4
+      with:
+        name: ptcpdump
+        path: ptcpdump
+
+
+  e2e-test:
+    runs-on: ubuntu-latest
+    name: e2e-test
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        kernel: [ '5.10-v0.3', '5.15-v0.3', '6.3-main', 'bpf-next-20231030.012704' ]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Retrieve stored ptcpdump executable
+        uses: actions/download-artifact@v4
+        with:
+          name: ptcpdump
+          path: ptcpdump
+
+      - name: Provision LVH VMs
+        uses: cilium/little-vm-helper@v0.0.12
+        with:
+          test-name: ptcpdump-test
+          image-version: ${{ matrix.kernel }}
+          host-mount: ./
+          dns-resolver: '1.1.1.1'
+          install-dependencies: 'true'
+          cmd: |
+            chmod +x /host/ptcpdump/ptcpdump
+
+      - name: Test base
+        uses: cilium/little-vm-helper@v0.0.12
+        with:
+          provision: 'false'
+          dns-resolver: '1.1.1.1'
+          cmd: |
+            set -ex
+            uname -a
+            cat /etc/issue
+
+            timeout 20s /host/ptcpdump/ptcpdump -c 1 -i any --print -w ptcpdump.pcapng 'dst host 1.1.1.1 and tcp[tcpflags] = tcp-syn' 2>&1 1>/tmp/log | (read _; curl -m 10 1.1.1.1 &>/dev/null || true)
+
+            cat /tmp/log
+            cat /tmp/log | grep '/usr/bin/curl'
+            cat /tmp/log | grep -F ' > 1.1.1.1.80: Flags [S],'
+
+            apt update || true
+            apt install -y tcpdump
+            tcpdump -nr ./ptcpdump.pcapng
+            tcpdump -nr ./ptcpdump.pcapng | grep -F ' > 1.1.1.1.80: Flags [S],'
+
+      - name: Test filter by process
+        uses: cilium/little-vm-helper@v0.0.12
+        with:
+          provision: 'false'
+          dns-resolver: '1.1.1.1'
+          cmd: |
+            set -ex
+            uname -a
+            cat /etc/issue
+
+            timeout 20s /host/ptcpdump/ptcpdump -c 3 --pname curl -i any --print -w ptcpdump.pcapng 2>&1 1>/tmp/log | (read _; curl -m 10 1.1.1.1 &>/dev/null || true)
+
+            cat /tmp/log
+            cat /tmp/log | grep '/usr/bin/curl'
+            cat /tmp/log | grep -F ' > 1.1.1.1.80: Flags [S],'
+            cat /tmp/log | grep -P '1.1.1.1.80 > .*: Flags \[S.\],'
+
+            apt update || true
+            apt install -y tcpdump
+            tcpdump -nr ./ptcpdump.pcapng
+            tcpdump -nr ./ptcpdump.pcapng | grep -F ' > 1.1.1.1.80: Flags [S],'
+            tcpdump -nr ./ptcpdump.pcapng | grep -P '1.1.1.1.80 > .*: Flags \[S.\],'
+      
 
   releaser-test:
     runs-on: ubuntu-latest
