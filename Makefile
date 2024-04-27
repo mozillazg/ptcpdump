@@ -32,8 +32,7 @@ ifeq ($(wildcard $@), )
 	$(GIT) submodule update --init --recursive
 endif
 
-$(LIBPCAP_DIST_DIR): $(OUTPUT)
-	mkdir -p $(LIBPCAP_DIST_DIR)
+$(LIBPCAP_DIST_DIR): $(LIBPCAP_SRC)
 
 $(OUTPUT):
 	mkdir -p $(OUTPUT)
