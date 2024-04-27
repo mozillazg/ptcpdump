@@ -4,7 +4,6 @@ SHELL = /bin/sh
 GIT = $(shell which git || /bin/false)
 OUTPUT = ./output
 
-
 BPF_SRC = ./bpf
 LIBPCAP = ./lib/libpcap
 LIBPCAP_SRC =  $(abspath $(LIBPCAP))
@@ -13,9 +12,16 @@ LIBPCAP_HEADER_DIR = $(abspath $(LIBPCAP_DIST_DIR)/include)
 LIBPCAP_OBJ_DIR = $(abspath $(LIBPCAP_DIST_DIR)/lib)
 LIBPCAP_OBJ = $(abspath $(LIBPCAP_OBJ_DIR)/libpcap.a)
 
+GIT_COMMIT ?= $(shell git rev-parse --short HEAD)
+VERSION ?= $(shell git describe --tags --abbrev=0)
 CGO_CFLAGS_STATIC = "-I$(LIBPCAP_HEADER_DIR)"
 CGO_LDFLAGS_STATIC = "-L$(LIBPCAP_OBJ_DIR) -lelf -lz $(LIBPCAP_OBJ)"
-
+CGO_ENABLED ?= 1
+GOARCH ?= $(shell go env GOARCH)
+GOOS ?= $(shell go env GOOS)
+LDFLAGS := -extldflags "-static"
+LDFLAGS += -X github.com/mozillazg/ptcpdump/internal.Version=$(VERSION)
+LDFLAGS += -X github.com/mozillazg/ptcpdump/internal.GitCommit=$(GIT_COMMIT)
 
 .PHONY: libpcap
 libpcap: $(LIBPCAP_OBJ)
@@ -42,7 +48,7 @@ $(OUTPUT):
 build: generate libpcap
 	CGO_CFLAGS=$(CGO_CFLAGS_STATIC) \
 	CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) \
-	CGO_ENABLED=1 go build -tags=static -ldflags '-extldflags "-static"'
+	CGO_ENABLED=1 go build -tags static -ldflags "$(LDFLAGS)"
 
 .PHONY: test
 test:
