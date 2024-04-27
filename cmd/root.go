@@ -8,6 +8,7 @@ import (
 	"log"
 	"os/signal"
 	"runtime"
+	"strings"
 	"syscall"
 )
 
@@ -18,6 +19,7 @@ var rootCmd = &cobra.Command{
 	Short: "XXX",
 	Long:  `XXX.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		opts.pcapFilter = strings.Join(args, " ")
 		err := run(cmd, args)
 		if err != nil {
 			logErr(err)
