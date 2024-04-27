@@ -22,7 +22,8 @@ func NewPacketEventConsumer(writers []writer.PacketWriter, devices map[int]dev.D
 	}
 }
 
-func (c *PacketEventConsumer) Start(ctx context.Context, reader *perf.Reader) {
+func (c *PacketEventConsumer) Start(ctx context.Context, reader *perf.Reader, maxPacketCount uint) {
+	var n uint
 	for {
 		select {
 		case <-ctx.Done():
@@ -43,6 +44,12 @@ func (c *PacketEventConsumer) Start(ctx context.Context, reader *perf.Reader) {
 			log.Printf("[PacketEventConsumer] lost samples: %d", record.LostSamples)
 		}
 		c.parsePacketEvent(record.RawSample)
+
+		n++
+		if maxPacketCount > 0 && n == maxPacketCount {
+			log.Printf("%d packets captured", n)
+			break
+		}
 	}
 }
 

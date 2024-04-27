@@ -53,6 +53,7 @@ func init() {
 		"Print the ptcpdump and libpcap version strings and exit")
 	rootCmd.Flags().BoolVar(&opts.print, "print", false,
 		"Print parsed packet output, even if the raw packets are being saved to a file with the -w flag")
+	rootCmd.Flags().UintVarP(&opts.maxPacketCount, "receive-count", "c", 0, "Exit after receiving count packets")
 }
 
 func Execute() error {
@@ -104,7 +105,10 @@ func run(cmd *cobra.Command, args []string) error {
 	execConsumer := consumer.NewExecEventConsumer(pcache)
 	go execConsumer.Start(ctx, execEventReader)
 	packetConsumer := consumer.NewPacketEventConsumer(writers, devices)
-	go packetConsumer.Start(ctx, packetEventReader)
+	go func() {
+		packetConsumer.Start(ctx, packetEventReader, opts.maxPacketCount)
+		stop()
+	}()
 
 	runtime.Gosched()
 

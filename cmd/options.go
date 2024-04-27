@@ -10,6 +10,7 @@ type Options struct {
 	listInterfaces bool
 	version        bool
 	print          bool
+	maxPacketCount uint
 }
 
 func (o Options) WritePath() string {
