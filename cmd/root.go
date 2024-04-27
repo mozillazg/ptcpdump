@@ -15,9 +15,20 @@ import (
 var opts = Options{}
 
 var rootCmd = &cobra.Command{
-	Use:   "ptcpdump",
-	Short: "XXX",
-	Long:  `XXX.`,
+	Use: `ptcpdump [flags] [expression]
+
+Examples:
+  ptcpdump -i any
+
+  ptcpdump -i eth0 --pid 1234 port 80 and host 10.10.1.1
+
+  ptcpdump -i any --pname curl
+
+  ptcpdump -i any -w ptcpdump.pcapng
+
+Expression: see "man 7 pcap-filter"`,
+	DisableFlagsInUseLine: true,
+	Short:                 "ptcpdump is the tcpdump(8) implementation using eBPF, with an extra feature: it adds process info as packet comments for each Ethernet frame.",
 	Run: func(cmd *cobra.Command, args []string) {
 		opts.pcapFilter = strings.Join(args, " ")
 		err := run(cmd, args)
@@ -30,14 +41,16 @@ var rootCmd = &cobra.Command{
 func init() {
 	rootCmd.Flags().StringVarP(&opts.writeFilePath, "write-file", "w", "",
 		"Write the raw packets to file rather than parsing and printing them out. e.g. ptcpdump.pcapng")
-	rootCmd.Flags().StringSliceVarP(&opts.ifaces, "interface", "i", []string{"lo"}, "")
-	rootCmd.Flags().UintVar(&opts.pid, "pid", 0, "")
-	rootCmd.Flags().StringVar(&opts.comm, "pname", "", "")
+	rootCmd.Flags().StringSliceVarP(&opts.ifaces, "interface", "i", []string{"lo"},
+		"Interfaces to capture")
+	rootCmd.Flags().UintVar(&opts.pid, "pid", 0, "Filter by process ID")
+	rootCmd.Flags().StringVar(&opts.comm, "pname", "", "Filter by process name")
 	rootCmd.Flags().BoolVarP(&opts.followForks, "follow-forks", "f", false,
 		"Include child processes when filter by process")
 	rootCmd.Flags().BoolVar(&opts.listInterfaces, "list-interfaces", false,
 		"Print the list of the network interfaces available on the system")
-	rootCmd.Flags().BoolVar(&opts.version, "version", false, "")
+	rootCmd.Flags().BoolVar(&opts.version, "version", false,
+		"Print the ptcpdump and libpcap version strings and exit")
 }
 
 func Execute() error {
