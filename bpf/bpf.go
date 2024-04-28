@@ -162,7 +162,7 @@ func (b *BPF) AttachTracepoints() error {
 	return nil
 }
 
-func (b *BPF) AttachTcHooks(ifindex int) error {
+func (b *BPF) AttachTcHooks(ifindex int, egress, ingress bool) error {
 	closeFunc, err := ensureTcQdisc(ifindex)
 	if err != nil {
 		if closeFunc != nil {
@@ -171,20 +171,30 @@ func (b *BPF) AttachTcHooks(ifindex int) error {
 		return xerrors.Errorf("attach tc hooks: %w", err)
 	}
 
-	c1, err := attachTcHook(ifindex, b.objs.TcEgress, false)
-	if err != nil {
-		closeFunc()
-		return xerrors.Errorf("attach tc hooks: %w", err)
+	if egress {
+		c1, err := attachTcHook(ifindex, b.objs.TcEgress, false)
+		if err != nil {
+			if c1 != nil {
+				c1()
+			}
+			closeFunc()
+			return xerrors.Errorf("attach tc hooks: %w", err)
+		}
+		b.closeFuncs = append(b.closeFuncs, c1)
 	}
 
-	c2, err := attachTcHook(ifindex, b.objs.TcIngress, true)
-	if err != nil {
-		c1()
-		closeFunc()
-		return xerrors.Errorf("attach tc hooks: %w", err)
+	if ingress {
+		c2, err := attachTcHook(ifindex, b.objs.TcIngress, true)
+		if err != nil {
+			if c2 != nil {
+				c2()
+			}
+			closeFunc()
+			return xerrors.Errorf("attach tc hooks: %w", err)
+		}
+		b.closeFuncs = append(b.closeFuncs, c2)
 	}
 
-	b.closeFuncs = append(b.closeFuncs, closeFunc, c1, c2)
 	return nil
 }
 

@@ -53,7 +53,10 @@ func init() {
 		"Print the ptcpdump and libpcap version strings and exit")
 	rootCmd.Flags().BoolVar(&opts.print, "print", false,
 		"Print parsed packet output, even if the raw packets are being saved to a file with the -w flag")
-	rootCmd.Flags().UintVarP(&opts.maxPacketCount, "receive-count", "c", 0, "Exit after receiving count packets")
+	rootCmd.Flags().UintVarP(&opts.maxPacketCount, "receive-count", "c", 0,
+		"Exit after receiving count packets")
+	rootCmd.Flags().StringVarP(&opts.direction, "direction", "Q",
+		"inout", "Choose send/receive direction for which packets should be captured. Possible values are 'in', 'out' and 'inout'")
 }
 
 func Execute() error {
@@ -82,6 +85,9 @@ func run(cmd *cobra.Command, args []string) error {
 
 	devices, bf, err := attachHooks(opts)
 	if err != nil {
+		if bf != nil {
+			bf.Close()
+		}
 		return err
 	}
 	defer bf.Close()

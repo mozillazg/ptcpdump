@@ -29,7 +29,7 @@ func attachHooks(opts Options) (map[int]dev.Device, *bpf.BPF, error) {
 		return devices, bf, err
 	}
 	for _, iface := range devices {
-		if err := bf.AttachTcHooks(iface.Ifindex); err != nil {
+		if err := bf.AttachTcHooks(iface.Ifindex, opts.DirectionOut(), opts.DirectionIn()); err != nil {
 			return devices, bf, err
 		}
 	}

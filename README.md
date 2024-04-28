@@ -42,6 +42,7 @@ Examples:
 Expression: see "man 7 pcap-filter"
 
 Flags:
+  -Q, --direction string     Choose send/receive direction for which packets should be captured. Possible values are 'in', 'out' and 'inout' (default "inout")
   -f, --follow-forks         Include child processes when filter by process
   -h, --help                 help for ptcpdump
   -i, --interface strings    Interfaces to capture (default [lo])
