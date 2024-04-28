@@ -1,10 +1,7 @@
 package event
 
 import (
-	"bytes"
-	"encoding/binary"
 	"github.com/mozillazg/ptcpdump/bpf"
-	"golang.org/x/xerrors"
 	"strings"
 )
 
@@ -18,13 +15,8 @@ type ProcessExec struct {
 	ArgsTruncated bool
 }
 
-func ParseProcessExecEvent(rawSample []byte) (*ProcessExec, error) {
+func ParseProcessExecEvent(event bpf.BpfExecEventT) (*ProcessExec, error) {
 	var p ProcessExec
-	event := bpf.BpfExecEventT{}
-	if err := binary.Read(bytes.NewBuffer(rawSample), binary.LittleEndian, &event); err != nil {
-		return nil, xerrors.Errorf("parse event: %w", err)
-	}
-
 	if event.ArgsTruncated == 1 {
 		p.ArgsTruncated = true
 	}

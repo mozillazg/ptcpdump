@@ -92,27 +92,25 @@ func run(cmd *cobra.Command, args []string) error {
 	}
 	defer bf.Close()
 
-	packetEventReader, err := bf.NewPacketEventReader()
-	if err != nil {
-		return err
-	}
-	defer packetEventReader.Close()
-	execEventReader, err := bf.NewExecEventReader()
-	if err != nil {
-		return err
-	}
-	defer execEventReader.Close()
-
 	ctx, stop := signal.NotifyContext(
 		context.Background(), syscall.SIGINT, syscall.SIGTERM,
 	)
 	defer stop()
 
+	packetEvensCh, err := bf.PullPacketEvents(ctx)
+	if err != nil {
+		return err
+	}
+	execEvensCh, err := bf.PullExecEvents(ctx)
+	if err != nil {
+		return err
+	}
+
 	execConsumer := consumer.NewExecEventConsumer(pcache)
-	go execConsumer.Start(ctx, execEventReader)
+	go execConsumer.Start(ctx, execEvensCh)
 	packetConsumer := consumer.NewPacketEventConsumer(writers, devices)
 	go func() {
-		packetConsumer.Start(ctx, packetEventReader, opts.maxPacketCount)
+		packetConsumer.Start(ctx, packetEvensCh, opts.maxPacketCount)
 		stop()
 	}()
 

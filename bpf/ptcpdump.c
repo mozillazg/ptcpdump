@@ -31,6 +31,8 @@
 static volatile const u32 filter_pid = 0;
 static volatile const u8 filter_follow_forks = 0;
 volatile const char filter_comm[TASK_COMM_LEN];
+static const u8 u8_zero = 0;
+static const u32 u32_zero = 0;
 
 char _license[] SEC("license") = "Dual MIT/GPL";
 
@@ -98,8 +100,16 @@ struct exec_event_t {
 };
 
 struct {
-    __uint(type, BPF_MAP_TYPE_RINGBUF);
-    __uint(max_entries, 1024 * 512);
+    __uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
+    __uint(max_entries, 1);
+    __type(key, u32);
+    __type(value, struct exec_event_t);
+} exec_event_stack SEC(".maps");
+
+struct {
+    __uint(type, BPF_MAP_TYPE_PERF_EVENT_ARRAY);
+    __uint(key_size, sizeof(u32));
+    __uint(value_size, sizeof(u32));
 } exec_events SEC(".maps");
 
 struct {
@@ -114,7 +124,7 @@ struct {
     __uint(max_entries, 1);
     __type(key, u32);
     __type(value, struct packet_event_t);
-} bpf_stack SEC(".maps");
+} packet_event_stack SEC(".maps");
 
 struct {
     __uint(type, BPF_MAP_TYPE_PERF_EVENT_ARRAY);
@@ -334,8 +344,7 @@ static __always_inline int process_filter(struct task_struct *task) {
     }
 
     if (should_filter) {
-        u8 zero = 0;
-        bpf_map_update_elem(&filter_pid_map, &pid, &zero, BPF_NOEXIST);
+        bpf_map_update_elem(&filter_pid_map, &pid, &u8_zero, BPF_NOEXIST);
     }
 
     return 0;
@@ -363,8 +372,7 @@ static __always_inline void handle_fork(struct trace_event_raw_sys_exit *ctx) {
         }
     }
     if (should_filter) {
-        u8 zero = 0;
-        bpf_map_update_elem(&filter_pid_map, &child_pid, &zero, BPF_NOEXIST);
+        bpf_map_update_elem(&filter_pid_map, &child_pid, &u8_zero, BPF_NOEXIST);
 //        bpf_printk("handle fork: %d", child_pid);
     }
     return;
@@ -469,9 +477,9 @@ static __always_inline void handle_tc(struct __sk_buff *skb, bool egress) {
     }
 
     struct packet_event_t *event;
-    u32 zero = 0;
-    event = bpf_map_lookup_elem(&bpf_stack, &zero);
+    event = bpf_map_lookup_elem(&packet_event_stack, &u32_zero);
     if (!event) {
+        bpf_printk("[ptcpdump] packet_event_stack failed");
         return;
     }
 //    __builtin_memset(event, 0, sizeof(*event));
@@ -504,9 +512,9 @@ static __always_inline void handle_exec(struct trace_event_raw_sched_process_exe
     }
 
     struct exec_event_t *event;
-    event = bpf_ringbuf_reserve(&exec_events, sizeof(*event), 0);
+    event = bpf_map_lookup_elem(&exec_event_stack, &u32_zero);
     if (!event) {
-        bpf_printk("[ptcpdump] bpf_ringbuf_reserve failed");
+        bpf_printk("[ptcpdump] exec_event_stack failed");
         return;
     }
 
@@ -539,7 +547,10 @@ static __always_inline void handle_exec(struct trace_event_raw_sched_process_exe
         event->args_size = arg_length;
     }
 
-    bpf_ringbuf_submit(event, 0);
+    int event_ret = bpf_perf_event_output(ctx, &exec_events, BPF_F_CURRENT_CPU, event, sizeof(*event));
+    if (event_ret != 0) {
+        bpf_printk("[ptcpdump] bpf_perf_event_output exec_events failed: %d", event_ret);
+    }
     return;
 }
 

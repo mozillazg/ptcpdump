@@ -21,7 +21,7 @@ Please download the latest binary in the [releases](https://github.com/mozillazg
 
 ### Requirements
 
-Linux kernel version must be larger than 5.7.
+Linux kernel version must be larger than 4.18.
 
 
 ## Usage

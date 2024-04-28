@@ -8,8 +8,6 @@ import (
 
 	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/link"
-	"github.com/cilium/ebpf/perf"
-	"github.com/cilium/ebpf/ringbuf"
 	"github.com/florianl/go-tc"
 	"github.com/florianl/go-tc/core"
 	"github.com/jschwinger233/elibpcap"
@@ -196,22 +194,6 @@ func (b *BPF) AttachTcHooks(ifindex int, egress, ingress bool) error {
 	}
 
 	return nil
-}
-
-func (b *BPF) NewPacketEventReader() (*perf.Reader, error) {
-	reader, err := perf.NewReader(b.objs.PacketEvents, 1500*1000)
-	if err != nil {
-		return nil, xerrors.Errorf(": %w", err)
-	}
-	return reader, nil
-}
-
-func (b *BPF) NewExecEventReader() (*ringbuf.Reader, error) {
-	reader, err := ringbuf.NewReader(b.objs.ExecEvents)
-	if err != nil {
-		return nil, xerrors.Errorf(": %w", err)
-	}
-	return reader, nil
 }
 
 func (o Options) attachForks() bool {

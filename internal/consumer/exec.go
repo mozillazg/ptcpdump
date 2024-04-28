@@ -2,9 +2,7 @@ package consumer
 
 import (
 	"context"
-	"errors"
-	"github.com/cilium/ebpf/perf"
-	"github.com/cilium/ebpf/ringbuf"
+	"github.com/mozillazg/ptcpdump/bpf"
 	"github.com/mozillazg/ptcpdump/internal/event"
 	"github.com/mozillazg/ptcpdump/internal/metadata"
 	"log"
@@ -20,29 +18,19 @@ func NewExecEventConsumer(pcache *metadata.ProcessCache) *ExecEventConsumer {
 	}
 }
 
-func (c *ExecEventConsumer) Start(ctx context.Context, reader *ringbuf.Reader) {
+func (c *ExecEventConsumer) Start(ctx context.Context, ch <-chan bpf.BpfExecEventT) {
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		default:
+		case et := <-ch:
+			c.parseExecEvent(et)
 		}
-
-		record, err := reader.Read()
-		if err != nil {
-			if errors.Is(err, perf.ErrClosed) {
-				log.Println("[ExecEventConsumer] Received signal, exiting...")
-				return
-			}
-			log.Printf("[ExecEventConsumer] read event failed: %s", err)
-			continue
-		}
-		c.parseExecEvent(record.RawSample)
 	}
 }
 
-func (c *ExecEventConsumer) parseExecEvent(rawSample []byte) {
-	e, err := event.ParseProcessExecEvent(rawSample)
+func (c *ExecEventConsumer) parseExecEvent(et bpf.BpfExecEventT) {
+	e, err := event.ParseProcessExecEvent(et)
 	if err != nil {
 		log.Printf("[ExecEventConsumer] parse event failed: %s", err)
 		return

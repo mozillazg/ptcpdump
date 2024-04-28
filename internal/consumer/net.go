@@ -2,8 +2,7 @@ package consumer
 
 import (
 	"context"
-	"errors"
-	"github.com/cilium/ebpf/perf"
+	"github.com/mozillazg/ptcpdump/bpf"
 	"github.com/mozillazg/ptcpdump/internal/dev"
 	"github.com/mozillazg/ptcpdump/internal/event"
 	"github.com/mozillazg/ptcpdump/internal/writer"
@@ -22,39 +21,25 @@ func NewPacketEventConsumer(writers []writer.PacketWriter, devices map[int]dev.D
 	}
 }
 
-func (c *PacketEventConsumer) Start(ctx context.Context, reader *perf.Reader, maxPacketCount uint) {
+func (c *PacketEventConsumer) Start(ctx context.Context, ch <-chan bpf.BpfPacketEventT, maxPacketCount uint) {
 	var n uint
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		default:
-		}
-
-		record, err := reader.Read()
-		if err != nil {
-			if errors.Is(err, perf.ErrClosed) {
-				log.Println("[PacketEventConsumer] Received signal, exiting...")
+		case pt := <-ch:
+			c.parsePacketEvent(pt)
+			n++
+			if maxPacketCount > 0 && n == maxPacketCount {
+				log.Printf("%d packets captured", n)
 				return
 			}
-			log.Printf("[PacketEventConsumer] read event failed: %s", err)
-			continue
-		}
-		if record.LostSamples > 0 {
-			log.Printf("[PacketEventConsumer] lost samples: %d", record.LostSamples)
-		}
-		c.parsePacketEvent(record.RawSample)
-
-		n++
-		if maxPacketCount > 0 && n == maxPacketCount {
-			log.Printf("%d packets captured", n)
-			break
 		}
 	}
 }
 
-func (c *PacketEventConsumer) parsePacketEvent(rawSample []byte) {
-	pevent, err := event.ParsePacketEvent(c.devices, rawSample)
+func (c *PacketEventConsumer) parsePacketEvent(pt bpf.BpfPacketEventT) {
+	pevent, err := event.ParsePacketEvent(c.devices, pt)
 	if err != nil {
 		log.Printf("[PacketEventConsumer] parse event failed: %s", err)
 		return

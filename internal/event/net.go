@@ -1,16 +1,12 @@
 package event
 
 import (
-	"bytes"
-	"encoding/binary"
 	"fmt"
 	"github.com/mozillazg/ptcpdump/bpf"
 	"github.com/mozillazg/ptcpdump/internal/dev"
 	"golang.org/x/sys/unix"
-	"golang.org/x/xerrors"
 	"log"
 	"time"
-	"unsafe"
 )
 
 type packetType int
@@ -32,14 +28,8 @@ type Packet struct {
 	Data []byte
 }
 
-func ParsePacketEvent(devices map[int]dev.Device, rawSample []byte) (*Packet, error) {
+func ParsePacketEvent(devices map[int]dev.Device, event bpf.BpfPacketEventT) (*Packet, error) {
 	var p Packet
-	event := bpf.BpfPacketEventT{}
-	if err := binary.Read(bytes.NewBuffer(rawSample), binary.LittleEndian, &event.Meta); err != nil {
-		return nil, xerrors.Errorf("parse meta: %w", err)
-	}
-	copy(event.Payload[:], rawSample[unsafe.Offsetof(event.Payload):])
-
 	if t, err := convertBpfKTimeNs(event.Meta.Timestamp); err != nil {
 		log.Printf("convert bpf time failed: %+v", err)
 		p.Time = time.Now().UTC()

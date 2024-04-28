@@ -105,11 +105,12 @@ type BpfProgramSpecs struct {
 //
 // It can be passed ebpf.CollectionSpec.Assign.
 type BpfMapSpecs struct {
-	BpfStack     *ebpf.MapSpec `ebpf:"bpf_stack"`
-	ExecEvents   *ebpf.MapSpec `ebpf:"exec_events"`
-	FilterPidMap *ebpf.MapSpec `ebpf:"filter_pid_map"`
-	FlowPidMap   *ebpf.MapSpec `ebpf:"flow_pid_map"`
-	PacketEvents *ebpf.MapSpec `ebpf:"packet_events"`
+	ExecEventStack   *ebpf.MapSpec `ebpf:"exec_event_stack"`
+	ExecEvents       *ebpf.MapSpec `ebpf:"exec_events"`
+	FilterPidMap     *ebpf.MapSpec `ebpf:"filter_pid_map"`
+	FlowPidMap       *ebpf.MapSpec `ebpf:"flow_pid_map"`
+	PacketEventStack *ebpf.MapSpec `ebpf:"packet_event_stack"`
+	PacketEvents     *ebpf.MapSpec `ebpf:"packet_events"`
 }
 
 // BpfObjects contains all objects after they have been loaded into the kernel.
@@ -131,19 +132,21 @@ func (o *BpfObjects) Close() error {
 //
 // It can be passed to LoadBpfObjects or ebpf.CollectionSpec.LoadAndAssign.
 type BpfMaps struct {
-	BpfStack     *ebpf.Map `ebpf:"bpf_stack"`
-	ExecEvents   *ebpf.Map `ebpf:"exec_events"`
-	FilterPidMap *ebpf.Map `ebpf:"filter_pid_map"`
-	FlowPidMap   *ebpf.Map `ebpf:"flow_pid_map"`
-	PacketEvents *ebpf.Map `ebpf:"packet_events"`
+	ExecEventStack   *ebpf.Map `ebpf:"exec_event_stack"`
+	ExecEvents       *ebpf.Map `ebpf:"exec_events"`
+	FilterPidMap     *ebpf.Map `ebpf:"filter_pid_map"`
+	FlowPidMap       *ebpf.Map `ebpf:"flow_pid_map"`
+	PacketEventStack *ebpf.Map `ebpf:"packet_event_stack"`
+	PacketEvents     *ebpf.Map `ebpf:"packet_events"`
 }
 
 func (m *BpfMaps) Close() error {
 	return _BpfClose(
-		m.BpfStack,
+		m.ExecEventStack,
 		m.ExecEvents,
 		m.FilterPidMap,
 		m.FlowPidMap,
+		m.PacketEventStack,
 		m.PacketEvents,
 	)
 }
