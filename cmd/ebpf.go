@@ -6,33 +6,33 @@ import (
 	"github.com/mozillazg/ptcpdump/internal/dev"
 )
 
-func attachHooks(opts Options) (map[int]dev.Device, *bpf.BPF, error) {
+func attachHooks(opts Options) (*bpf.BPF, error) {
 	devices, err := dev.GetDevices(opts.ifaces)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	if err := rlimit.RemoveMemlock(); err != nil {
-		return devices, nil, err
+		return nil, err
 	}
 	bf, err := bpf.NewBPF()
 	if err != nil {
-		return devices, nil, err
+		return nil, err
 	}
 	if err := bf.Load(bpf.NewOptions(opts.pid, opts.comm, opts.followForks, opts.pcapFilter)); err != nil {
-		return devices, nil, err
+		return nil, err
 	}
 
 	if err := bf.AttachKprobes(); err != nil {
-		return devices, bf, err
+		return bf, err
 	}
 	if err := bf.AttachTracepoints(); err != nil {
-		return devices, bf, err
+		return bf, err
 	}
 	for _, iface := range devices {
 		if err := bf.AttachTcHooks(iface.Ifindex, opts.DirectionOut(), opts.DirectionIn()); err != nil {
-			return devices, bf, err
+			return bf, err
 		}
 	}
 
-	return devices, bf, nil
+	return bf, nil
 }

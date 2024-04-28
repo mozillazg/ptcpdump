@@ -83,7 +83,7 @@ func run(cmd *cobra.Command, args []string) error {
 	}()
 	go pcache.Start()
 
-	devices, bf, err := attachHooks(opts)
+	bf, err := attachHooks(opts)
 	if err != nil {
 		if bf != nil {
 			bf.Close()
@@ -108,7 +108,7 @@ func run(cmd *cobra.Command, args []string) error {
 
 	execConsumer := consumer.NewExecEventConsumer(pcache)
 	go execConsumer.Start(ctx, execEvensCh)
-	packetConsumer := consumer.NewPacketEventConsumer(writers, devices)
+	packetConsumer := consumer.NewPacketEventConsumer(writers)
 	go func() {
 		packetConsumer.Start(ctx, packetEvensCh, opts.maxPacketCount)
 		stop()

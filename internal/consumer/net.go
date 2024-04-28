@@ -14,7 +14,8 @@ type PacketEventConsumer struct {
 	devices map[int]dev.Device
 }
 
-func NewPacketEventConsumer(writers []writer.PacketWriter, devices map[int]dev.Device) *PacketEventConsumer {
+func NewPacketEventConsumer(writers []writer.PacketWriter) *PacketEventConsumer {
+	devices, _ := dev.GetDevices([]string{})
 	return &PacketEventConsumer{
 		writers: writers,
 		devices: devices,
@@ -47,7 +48,7 @@ func (c *PacketEventConsumer) parsePacketEvent(pt bpf.BpfPacketEventT) {
 
 	for _, w := range c.writers {
 		if err := w.Write(pevent); err != nil {
-			log.Printf("[PacketEventConsumer] write packet failed: %s", err)
+			log.Printf("[PacketEventConsumer] write packet failed: %s, device: %#v", err, pevent.Device)
 		}
 		w.Flush()
 	}

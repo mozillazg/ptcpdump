@@ -3,11 +3,23 @@ package dev
 import (
 	"github.com/vishvananda/netlink"
 	"golang.org/x/xerrors"
+	"sync"
 )
+
+var allLinks []netlink.Link
+var once sync.Once
 
 type Device struct {
 	Name    string
 	Ifindex int
+}
+
+func getAllLinks() ([]netlink.Link, error) {
+	var err error
+	once.Do(func() {
+		allLinks, err = netlink.LinkList()
+	})
+	return allLinks, err
 }
 
 func GetDevices(names []string) (map[int]Device, error) {
@@ -15,7 +27,7 @@ func GetDevices(names []string) (map[int]Device, error) {
 	var err error
 	ifindexMap := make(map[int]Device)
 
-	allLinks, err := netlink.LinkList()
+	allLinks, err := getAllLinks()
 	if err != nil {
 		return nil, xerrors.Errorf(": %w", err)
 	}
