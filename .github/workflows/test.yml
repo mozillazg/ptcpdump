@@ -15,10 +15,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
 
     - name: Set up Go
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5
       with:
         go-version: '1.21'
 
@@ -33,7 +33,7 @@ jobs:
       run: make test
 
     - name: Store executable
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4
       with:
         name: ptcpdump
         path: ptcpdump
@@ -49,16 +49,16 @@ jobs:
         kernel: [ '5.4-v0.3', '5.10-v0.3', '5.15-v0.3', '6.3-main', 'bpf-next-20231030.012704' ]
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
 
       - name: Retrieve stored ptcpdump executable
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4
         with:
           name: ptcpdump
           path: ptcpdump
 
       - name: Provision LVH VMs
-        uses: cilium/little-vm-helper@v0.0.12
+        uses: cilium/little-vm-helper@908ab1ff8a596a03cd5221a1f8602dc44c3f906d # v0.0.12
         with:
           test-name: ptcpdump-test
           image-version: ${{ matrix.kernel }}
@@ -69,7 +69,7 @@ jobs:
             chmod +x /host/ptcpdump/ptcpdump
 
       - name: Test base
-        uses: cilium/little-vm-helper@v0.0.12
+        uses: cilium/little-vm-helper@908ab1ff8a596a03cd5221a1f8602dc44c3f906d # v0.0.12
         with:
           provision: 'false'
           dns-resolver: '1.1.1.1'
@@ -90,7 +90,7 @@ jobs:
             tcpdump -nr ./ptcpdump.pcapng | grep -F ' > 1.1.1.1.80: Flags [S],'
 
       - name: Test filter by process
-        uses: cilium/little-vm-helper@v0.0.12
+        uses: cilium/little-vm-helper@908ab1ff8a596a03cd5221a1f8602dc44c3f906d # v0.0.12
         with:
           provision: 'false'
           dns-resolver: '1.1.1.1'
@@ -116,15 +116,15 @@ jobs:
   releaser-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5
         with:
           go-version: 1.21
 
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v5
+        uses: goreleaser/goreleaser-action@7ec5c2b0c6cdda6e8bbb49444bc797dd33d74dd8 # v5
         with:
           distribution: goreleaser
           version: latest
