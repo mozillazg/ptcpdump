@@ -23,7 +23,7 @@
   "separateMinorPatch": true,
   "pruneStaleBranches": true,
   "baseBranches": [
-    "main"
+    "master"
   ],
   "vulnerabilityAlerts": {
     "enabled": true
@@ -50,8 +50,8 @@
       ]
     },
     {
-      "groupName": "all go dependencies main",
-      "groupSlug": "all-go-deps-main",
+      "groupName": "all go dependencies master",
+      "groupSlug": "all-go-deps-master",
       "matchFiles": [
         "go.mod",
         "go.sum"
@@ -69,7 +69,7 @@
         "pinDigest"
       ],
       matchBaseBranches: [
-        "main"
+        "master"
       ],
     },
     {
@@ -95,7 +95,7 @@
         "patch"
       ],
       matchBaseBranches: [
-        "main"
+        "master"
       ]
     },
   ],
