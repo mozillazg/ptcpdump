@@ -1,6 +1,6 @@
 module github.com/mozillazg/ptcpdump
 
-go 1.21.7
+go 1.21.0
 
 require (
 	github.com/cilium/ebpf v0.14.0
