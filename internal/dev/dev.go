@@ -38,6 +38,7 @@ func GetDevices(names []string) (map[int]Device, error) {
 			for _, lk := range allLinks {
 				if lk.Attrs().Name == name {
 					links = append(links, lk)
+					continue
 				}
 			}
 		}

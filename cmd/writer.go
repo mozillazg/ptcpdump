@@ -13,6 +13,7 @@ import (
 	"math"
 	"os"
 	"runtime"
+	"sort"
 )
 
 func getWriters(opts Options, pcache *metadata.ProcessCache) ([]writer.PacketWriter, error) {
@@ -46,19 +47,25 @@ func newPcapWriter(w io.Writer, pcache *metadata.ProcessCache) (*writer.PcapNGWr
 	var interfaces []pcapgo.NgInterface
 	for _, dev := range devices {
 		interfaces = append(interfaces, pcapgo.NgInterface{
+			Index:      dev.Ifindex,
 			Name:       dev.Name,
 			Filter:     opts.pcapFilter,
 			OS:         runtime.GOOS,
 			LinkType:   layers.LinkTypeEthernet,
 			SnapLength: uint32(math.MaxUint16),
+			//TimestampResolution: 9,
 		})
 	}
+	sort.Slice(interfaces, func(i, j int) bool {
+		return interfaces[i].Index < interfaces[j].Index
+	})
 
 	pcapWriter, err := pcapgo.NewNgWriterInterface(w, interfaces[0], pcapgo.NgWriterOptions{
 		SectionInfo: pcapgo.NgSectionInfo{
 			Hardware:    runtime.GOARCH,
 			OS:          runtime.GOOS,
 			Application: fmt.Sprintf("ptcpdump %s", internal.Version),
+			Comment:     "ptcpdump: https://github.com/mozillazg/ptcpdump",
 		},
 	})
 	if err != nil {
