@@ -58,7 +58,7 @@ jobs:
           path: ptcpdump
 
       - name: Provision LVH VMs
-        uses: cilium/little-vm-helper@908ab1ff8a596a03cd5221a1f8602dc44c3f906d # v0.0.12
+        uses: cilium/little-vm-helper@a4311c6d054de3008bdf9195b0fabf6ee60d8bdd # v0.0.17
         with:
           test-name: ptcpdump-test
           image-version: ${{ matrix.kernel }}
@@ -69,7 +69,7 @@ jobs:
             chmod +x /host/ptcpdump/ptcpdump
 
       - name: Test base
-        uses: cilium/little-vm-helper@908ab1ff8a596a03cd5221a1f8602dc44c3f906d # v0.0.12
+        uses: cilium/little-vm-helper@a4311c6d054de3008bdf9195b0fabf6ee60d8bdd # v0.0.17
         with:
           provision: 'false'
           dns-resolver: '1.1.1.1'
@@ -90,7 +90,7 @@ jobs:
             tcpdump -nr ./ptcpdump.pcapng | grep -F ' > 1.1.1.1.80: Flags [S],'
 
       - name: Test filter by process
-        uses: cilium/little-vm-helper@908ab1ff8a596a03cd5221a1f8602dc44c3f906d # v0.0.12
+        uses: cilium/little-vm-helper@a4311c6d054de3008bdf9195b0fabf6ee60d8bdd # v0.0.17
         with:
           provision: 'false'
           dns-resolver: '1.1.1.1'
