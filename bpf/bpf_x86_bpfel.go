@@ -91,11 +91,11 @@ type BpfSpecs struct {
 //
 // It can be passed ebpf.CollectionSpec.Assign.
 type BpfProgramSpecs struct {
-	KprobeSecuritySkClassifyFlow    *ebpf.ProgramSpec `ebpf:"kprobe__security_sk_classify_flow"`
-	RawTracepointSchedProcessFork   *ebpf.ProgramSpec `ebpf:"raw_tracepoint__sched_process_fork"`
-	TcEgress                        *ebpf.ProgramSpec `ebpf:"tc_egress"`
-	TcIngress                       *ebpf.ProgramSpec `ebpf:"tc_ingress"`
-	TracepointSchedSchedProcessExec *ebpf.ProgramSpec `ebpf:"tracepoint__sched__sched_process_exec"`
+	KprobeSecuritySkClassifyFlow  *ebpf.ProgramSpec `ebpf:"kprobe__security_sk_classify_flow"`
+	RawTracepointSchedProcessExec *ebpf.ProgramSpec `ebpf:"raw_tracepoint__sched_process_exec"`
+	RawTracepointSchedProcessFork *ebpf.ProgramSpec `ebpf:"raw_tracepoint__sched_process_fork"`
+	TcEgress                      *ebpf.ProgramSpec `ebpf:"tc_egress"`
+	TcIngress                     *ebpf.ProgramSpec `ebpf:"tc_ingress"`
 }
 
 // BpfMapSpecs contains maps before they are loaded into the kernel.
@@ -152,20 +152,20 @@ func (m *BpfMaps) Close() error {
 //
 // It can be passed to LoadBpfObjects or ebpf.CollectionSpec.LoadAndAssign.
 type BpfPrograms struct {
-	KprobeSecuritySkClassifyFlow    *ebpf.Program `ebpf:"kprobe__security_sk_classify_flow"`
-	RawTracepointSchedProcessFork   *ebpf.Program `ebpf:"raw_tracepoint__sched_process_fork"`
-	TcEgress                        *ebpf.Program `ebpf:"tc_egress"`
-	TcIngress                       *ebpf.Program `ebpf:"tc_ingress"`
-	TracepointSchedSchedProcessExec *ebpf.Program `ebpf:"tracepoint__sched__sched_process_exec"`
+	KprobeSecuritySkClassifyFlow  *ebpf.Program `ebpf:"kprobe__security_sk_classify_flow"`
+	RawTracepointSchedProcessExec *ebpf.Program `ebpf:"raw_tracepoint__sched_process_exec"`
+	RawTracepointSchedProcessFork *ebpf.Program `ebpf:"raw_tracepoint__sched_process_fork"`
+	TcEgress                      *ebpf.Program `ebpf:"tc_egress"`
+	TcIngress                     *ebpf.Program `ebpf:"tc_ingress"`
 }
 
 func (p *BpfPrograms) Close() error {
 	return _BpfClose(
 		p.KprobeSecuritySkClassifyFlow,
+		p.RawTracepointSchedProcessExec,
 		p.RawTracepointSchedProcessFork,
 		p.TcEgress,
 		p.TcIngress,
-		p.TracepointSchedSchedProcessExec,
 	)
 }
 
