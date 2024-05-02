@@ -115,8 +115,7 @@ func run(cmd *cobra.Command, args []string) error {
 	}()
 
 	runtime.Gosched()
-
-	log.Println("tracing...")
+	log.Println("capturing...")
 	<-ctx.Done()
 	log.Println("bye bye")
 

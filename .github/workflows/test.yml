@@ -78,18 +78,9 @@ jobs:
             uname -a
             cat /etc/issue
 
-            timeout 20s /host/ptcpdump/ptcpdump -c 1 -i any --print -w ptcpdump.pcapng 'dst host 1.1.1.1 and tcp[tcpflags] = tcp-syn' 2>&1 1>/tmp/log | (read _; curl -m 10 1.1.1.1 &>/dev/null || true)
+            bash /host/ptcpdump/testdata/test_base.sh /host/ptcpdump/ptcpdump
 
-            cat /tmp/log
-            cat /tmp/log | grep '/usr/bin/curl'
-            cat /tmp/log | grep -F ' > 1.1.1.1.80: Flags [S],'
-
-            apt update || true
-            apt install -y tcpdump
-            tcpdump -nr ./ptcpdump.pcapng
-            tcpdump -nr ./ptcpdump.pcapng | grep -F ' > 1.1.1.1.80: Flags [S],'
-
-      - name: Test filter by process
+      - name: Test filter by process name
         uses: cilium/little-vm-helper@v0.0.12
         with:
           provision: 'false'
@@ -99,19 +90,19 @@ jobs:
             uname -a
             cat /etc/issue
 
-            timeout 20s /host/ptcpdump/ptcpdump -c 3 --pname curl -i any --print -w ptcpdump.pcapng 2>&1 1>/tmp/log | (read _; curl -m 10 1.1.1.1 &>/dev/null || true)
+            bash /host/ptcpdump/testdata/test_pname_filter.sh /host/ptcpdump/ptcpdump
 
-            cat /tmp/log
-            cat /tmp/log | grep '/usr/bin/curl'
-            cat /tmp/log | grep -F ' > 1.1.1.1.80: Flags [S],'
-            cat /tmp/log | grep -P '1.1.1.1.80 > .*: Flags \[S.\],'
+      - name: Test filter by process id
+        uses: cilium/little-vm-helper@v0.0.12
+        with:
+          provision: 'false'
+          dns-resolver: '1.1.1.1'
+          cmd: |
+            set -ex
+            uname -a
+            cat /etc/issue
 
-            apt update || true
-            apt install -y tcpdump
-            tcpdump -nr ./ptcpdump.pcapng
-            tcpdump -nr ./ptcpdump.pcapng | grep -F ' > 1.1.1.1.80: Flags [S],'
-            tcpdump -nr ./ptcpdump.pcapng | grep -P '1.1.1.1.80 > .*: Flags \[S.\],'
-      
+            bash /host/ptcpdump/testdata/test_pid_filter.sh /host/ptcpdump/ptcpdump
 
   releaser-test:
     runs-on: ubuntu-latest
