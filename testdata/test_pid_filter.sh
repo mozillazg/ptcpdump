@@ -11,7 +11,6 @@ function test_ptcpdump() {
   timeout 30s ${CMD} -c 3 --pid $$ -f -i any --print -w "${FNAME}" 2>&1 | tee "${LNAME}" &
   sleep 10
   curl -m 10 1.1.1.1 &>/dev/null || true
-  echo $$
   wait
 
   cat "${LNAME}"

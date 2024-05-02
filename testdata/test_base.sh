@@ -8,8 +8,11 @@ LNAME="/tmp/base.log"
 
 
 function test_ptcpdump() {
-  timeout 20s ${CMD} -c 1 -i any --print -w "${FNAME}" \
-    'dst host 1.1.1.1 and tcp[tcpflags] = tcp-syn' 2>&1 | tee "${LNAME}" | (read _; curl -m 10 1.1.1.1 &>/dev/null || true)
+  timeout 30s ${CMD} -c 1 -i any --print -w "${FNAME}" \
+    'dst host 1.1.1.1 and tcp[tcpflags] = tcp-syn' 2>&1 | tee "${LNAME}" &
+  sleep 10
+  curl -m 10 1.1.1.1 &>/dev/null || true
+  wait
 
   cat "${LNAME}"
   cat "${LNAME}" | grep '/usr/bin/curl'
