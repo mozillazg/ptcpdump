@@ -28,9 +28,6 @@
 #define EXEC_FILENAME_LEN 512
 #define EXEC_ARGS_LEN 4096
 
-static const u8 u8_zero = 0;
-static const u32 u32_zero = 0;
-
 char _license[] SEC("license") = "Dual MIT/GPL";
 
 struct ptcpdump_config_t {
@@ -319,6 +316,7 @@ static __always_inline bool str_cmp(const char *a, const volatile char *b, int l
 
 static __always_inline void get_ptcpdump_config(struct ptcpdump_config_t *config) {
     struct ptcpdump_config_t *value;
+    u32 u32_zero = 0;
     value = bpf_map_lookup_elem(&ptcpdump_config, &u32_zero);
     if (!value) {
         bpf_printk("not init ptcpdump_config");
@@ -360,6 +358,7 @@ static __always_inline int process_filter(struct task_struct *task) {
     }
 
     if (should_filter) {
+        u8 u8_zero = 0;
         bpf_map_update_elem(&filter_pid_map, &pid, &u8_zero, BPF_NOEXIST);
         return 0;
     }
@@ -381,6 +380,7 @@ static __always_inline void handle_fork(struct bpf_raw_tracepoint_args *ctx) {
     u32 child_pid = BPF_CORE_READ(child, tgid);
 
     if (process_filter(parent) == 0) {
+        u8 u8_zero = 0;
         bpf_map_update_elem(&filter_pid_map, &child_pid, &u8_zero, BPF_NOEXIST);
         return;
     }
@@ -471,6 +471,7 @@ static __always_inline void handle_tc(struct __sk_buff *skb, bool egress) {
     }
 
     struct packet_event_t *event;
+    u32 u32_zero = 0;
     event = bpf_map_lookup_elem(&packet_event_stack, &u32_zero);
     if (!event) {
         bpf_printk("[ptcpdump] packet_event_stack failed");
@@ -507,6 +508,7 @@ static __always_inline void handle_exec(struct bpf_raw_tracepoint_args *ctx) {
     }
 
     struct exec_event_t *event;
+    u32 u32_zero = 0;
     event = bpf_map_lookup_elem(&exec_event_stack, &u32_zero);
     if (!event) {
         bpf_printk("[ptcpdump] exec_event_stack failed");
