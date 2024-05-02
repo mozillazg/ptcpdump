@@ -50,6 +50,14 @@ type BpfPacketEventT struct {
 	_       [4]byte
 }
 
+type BpfPtcpdumpConfigT struct {
+	FilterPid         uint32
+	FilterFollowForks uint8
+	FilterCommEnable  uint8
+	FilterComm        [16]int8
+	_                 [2]byte
+}
+
 // LoadBpf returns the embedded CollectionSpec for Bpf.
 func LoadBpf() (*ebpf.CollectionSpec, error) {
 	reader := bytes.NewReader(_BpfBytes)
@@ -108,6 +116,7 @@ type BpfMapSpecs struct {
 	FlowPidMap       *ebpf.MapSpec `ebpf:"flow_pid_map"`
 	PacketEventStack *ebpf.MapSpec `ebpf:"packet_event_stack"`
 	PacketEvents     *ebpf.MapSpec `ebpf:"packet_events"`
+	PtcpdumpConfig   *ebpf.MapSpec `ebpf:"ptcpdump_config"`
 }
 
 // BpfObjects contains all objects after they have been loaded into the kernel.
@@ -135,6 +144,7 @@ type BpfMaps struct {
 	FlowPidMap       *ebpf.Map `ebpf:"flow_pid_map"`
 	PacketEventStack *ebpf.Map `ebpf:"packet_event_stack"`
 	PacketEvents     *ebpf.Map `ebpf:"packet_events"`
+	PtcpdumpConfig   *ebpf.Map `ebpf:"ptcpdump_config"`
 }
 
 func (m *BpfMaps) Close() error {
@@ -145,6 +155,7 @@ func (m *BpfMaps) Close() error {
 		m.FlowPidMap,
 		m.PacketEventStack,
 		m.PacketEvents,
+		m.PtcpdumpConfig,
 	)
 }
 

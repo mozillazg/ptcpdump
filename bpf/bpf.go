@@ -15,7 +15,7 @@ import (
 	"golang.org/x/xerrors"
 )
 
-//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc clang -no-strip -target native -type packet_event_t -type exec_event_t Bpf ./ptcpdump.c -- -I./headers -I. -Wall
+//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc clang -no-strip -target native -type ptcpdump_config_t -type packet_event_t -type exec_event_t Bpf ./ptcpdump.c -- -I./headers -I. -Wall
 
 const tcFilterName = "ptcpdump"
 
@@ -71,16 +71,7 @@ func NewOptions(pid uint, comm string, followForks bool, pcapFilter string) Opti
 }
 
 func (b *BPF) Load(opts Options) error {
-	err := b.spec.RewriteConstants(map[string]interface{}{
-		"filter_pid":          opts.Pid,
-		"filter_comm":         opts.Comm,
-		"filter_comm_enable":  opts.filterComm,
-		"filter_follow_forks": opts.FollowForks,
-	})
-	if err != nil {
-		return xerrors.Errorf("rewrite constants: %w", err)
-	}
-
+	var err error
 	if opts.PcapFilter != "" {
 		for _, progName := range []string{"tc_ingress", "tc_egress"} {
 			prog, ok := b.spec.Programs[progName]
@@ -112,6 +103,16 @@ func (b *BPF) Load(opts Options) error {
 		return err
 	}
 	b.opts = opts
+
+	err = b.objs.PtcpdumpConfig.Update(uint32(0), BpfPtcpdumpConfigT{
+		FilterPid:         opts.Pid,
+		FilterFollowForks: opts.FollowForks,
+		FilterCommEnable:  opts.filterComm,
+		FilterComm:        opts.Comm,
+	}, ebpf.UpdateAny)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

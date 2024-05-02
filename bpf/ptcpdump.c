@@ -28,14 +28,24 @@
 #define EXEC_FILENAME_LEN 512
 #define EXEC_ARGS_LEN 4096
 
-static volatile const u32 filter_pid = 0;
-static volatile const u8 filter_follow_forks = 0;
-volatile const char filter_comm[TASK_COMM_LEN];
-static volatile const u8 filter_comm_enable = 0;
 static const u8 u8_zero = 0;
 static const u32 u32_zero = 0;
 
 char _license[] SEC("license") = "Dual MIT/GPL";
+
+struct ptcpdump_config_t {
+    u32 filter_pid;
+    u8 filter_follow_forks;
+    u8 filter_comm_enable;
+    char filter_comm[TASK_COMM_LEN];
+};
+
+struct {
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, 1);
+    __type(key, u32);
+    __type(value, struct ptcpdump_config_t);
+} ptcpdump_config SEC(".maps");
 
 struct l2_t {
     u16 h_protocol;
@@ -307,9 +317,26 @@ static __always_inline bool str_cmp(const char *a, const volatile char *b, int l
     return 0;
 }
 
+static __always_inline void get_ptcpdump_config(struct ptcpdump_config_t *config) {
+    struct ptcpdump_config_t *value;
+    value = bpf_map_lookup_elem(&ptcpdump_config, &u32_zero);
+    if (!value) {
+        bpf_printk("not init ptcpdump_config");
+        return;
+    }
+    config->filter_pid = value->filter_pid;
+    config->filter_follow_forks = value->filter_follow_forks;
+    config->filter_comm_enable = value->filter_comm_enable;
+    __builtin_memcpy(&config->filter_comm, &value->filter_comm, sizeof(value->filter_comm));
+    return;
+}
+
 static __always_inline int process_filter(struct task_struct *task) {
+    struct ptcpdump_config_t config = {0};
+    get_ptcpdump_config(&config);
+
     // no filter rules
-    if (filter_pid < 1 && filter_comm_enable != 1) {
+    if (config.filter_pid < 1 && config.filter_comm_enable != 1) {
         return 0;
     }
 
@@ -319,14 +346,14 @@ static __always_inline int process_filter(struct task_struct *task) {
     }
 
     bool should_filter = false;
-    if (filter_pid > 0 && pid == filter_pid) {
+    if (config.filter_pid > 0 && pid == config.filter_pid) {
         should_filter = true;
     }
     if (!should_filter) {
-        if (filter_comm_enable == 1) {
+        if (config.filter_comm_enable == 1) {
             char comm[TASK_COMM_LEN];
             BPF_CORE_READ_STR_INTO(&comm, task, comm);
-            if (str_cmp(comm, filter_comm, TASK_COMM_LEN) == 0) {
+            if (str_cmp(comm, config.filter_comm, TASK_COMM_LEN) == 0) {
                 should_filter = true;
             }
         }
@@ -341,7 +368,10 @@ static __always_inline int process_filter(struct task_struct *task) {
 }
 
 static __always_inline void handle_fork(struct bpf_raw_tracepoint_args *ctx) {
-    if (filter_follow_forks != 1) {
+    struct ptcpdump_config_t config = {0};
+    get_ptcpdump_config(&config);
+
+    if (config.filter_follow_forks != 1) {
        return;
     }
 
