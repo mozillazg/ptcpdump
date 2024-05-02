@@ -46,7 +46,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        kernel: [ '5.4-v0.3', '5.10-v0.3', '5.15-v0.3', '6.3-main', 'bpf-next-20231030.012704' ]
+        kernel: [ '4.19-v0.3', '5.4-v0.3', '5.10-v0.3', '5.15-v0.3', '6.3-main', 'bpf-next-20231030.012704' ]
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -78,7 +78,7 @@ jobs:
             uname -a
             cat /etc/issue
 
-            bash /host/ptcpdump/testdata/test_base.sh /host/ptcpdump/ptcpdump
+            bash /host/testdata/test_base.sh /host/ptcpdump/ptcpdump
 
       - name: Test filter by process name
         uses: cilium/little-vm-helper@v0.0.12
@@ -90,7 +90,7 @@ jobs:
             uname -a
             cat /etc/issue
 
-            bash /host/ptcpdump/testdata/test_pname_filter.sh /host/ptcpdump/ptcpdump
+            bash /host/testdata/test_pname_filter.sh /host/ptcpdump/ptcpdump
 
       - name: Test filter by process id
         uses: cilium/little-vm-helper@v0.0.12
@@ -102,7 +102,7 @@ jobs:
             uname -a
             cat /etc/issue
 
-            bash /host/ptcpdump/testdata/test_pid_filter.sh /host/ptcpdump/ptcpdump
+            bash /host/testdata/test_pid_filter.sh /host/ptcpdump/ptcpdump
 
   releaser-test:
     runs-on: ubuntu-latest
