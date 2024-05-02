@@ -18,6 +18,7 @@
   ],
   "pinDigests": true,
   "ignorePresets": [":prHourlyLimit2"],
+  "ignoreDeps": ["github.com/mozillazg/gopacket", "github.com/mozillazg/pktdump"],
   "separateMajorMinor": true,
   "separateMultipleMajor": true,
   "separateMinorPatch": true,
