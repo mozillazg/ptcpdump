@@ -1,8 +1,8 @@
 github.com/cilium/ebpf v0.5.0/go.mod h1:4tRaxcgiL706VnOzHOdBlY8IEAIdxINsQBcU4xJJXRs=
 github.com/cilium/ebpf v0.7.0/go.mod h1:/oI2+1shJiTGAMgl6/RgJr36Eo1jzrRcAWbcXO2usCA=
 github.com/cilium/ebpf v0.8.1/go.mod h1:f5zLIM0FSNuAkSyLAN7X+Hy6yznlF1mNiWUMfxMtrgk=
-github.com/cilium/ebpf v0.14.0 h1:0PsxAjO6EjI1rcT+rkp6WcCnE0ZvfkXBYiMedJtrSUs=
-github.com/cilium/ebpf v0.14.0/go.mod h1:DHp1WyrLeiBh19Cf/tfiSMhqheEiK8fXFZ4No0P1Hso=
+github.com/cilium/ebpf v0.15.0 h1:7NxJhNiBT3NG8pZJ3c+yfrVdHY8ScgKD27sScgjLMMk=
+github.com/cilium/ebpf v0.15.0/go.mod h1:DHp1WyrLeiBh19Cf/tfiSMhqheEiK8fXFZ4No0P1Hso=
 github.com/cloudflare/cbpfc v0.0.0-20230809125630-31aa294050ff h1:SLLG1soGN/PYTXkYWiR1PAxWlP1URBvgZPYymC5+0WI=
 github.com/cloudflare/cbpfc v0.0.0-20230809125630-31aa294050ff/go.mod h1:1xLQNNpgw8yNlVjGrtUHBx0KL52fif71sKa1PleulAQ=
 github.com/cpuguy83/go-md2man/v2 v2.0.3/go.mod h1:tgQtvFlXSQOSOSIRvRPT7W67SCa46tRHOmNcaadrF8o=
