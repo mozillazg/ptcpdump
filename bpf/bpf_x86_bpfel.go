@@ -92,13 +92,10 @@ type BpfSpecs struct {
 // It can be passed ebpf.CollectionSpec.Assign.
 type BpfProgramSpecs struct {
 	KprobeSecuritySkClassifyFlow    *ebpf.ProgramSpec `ebpf:"kprobe__security_sk_classify_flow"`
+	RawTracepointSchedProcessFork   *ebpf.ProgramSpec `ebpf:"raw_tracepoint__sched_process_fork"`
 	TcEgress                        *ebpf.ProgramSpec `ebpf:"tc_egress"`
 	TcIngress                       *ebpf.ProgramSpec `ebpf:"tc_ingress"`
 	TracepointSchedSchedProcessExec *ebpf.ProgramSpec `ebpf:"tracepoint__sched__sched_process_exec"`
-	TracepointSyscallsSysExitClone  *ebpf.ProgramSpec `ebpf:"tracepoint__syscalls__sys_exit_clone"`
-	TracepointSyscallsSysExitClone3 *ebpf.ProgramSpec `ebpf:"tracepoint__syscalls__sys_exit_clone3"`
-	TracepointSyscallsSysExitFork   *ebpf.ProgramSpec `ebpf:"tracepoint__syscalls__sys_exit_fork"`
-	TracepointSyscallsSysExitVfork  *ebpf.ProgramSpec `ebpf:"tracepoint__syscalls__sys_exit_vfork"`
 }
 
 // BpfMapSpecs contains maps before they are loaded into the kernel.
@@ -156,25 +153,19 @@ func (m *BpfMaps) Close() error {
 // It can be passed to LoadBpfObjects or ebpf.CollectionSpec.LoadAndAssign.
 type BpfPrograms struct {
 	KprobeSecuritySkClassifyFlow    *ebpf.Program `ebpf:"kprobe__security_sk_classify_flow"`
+	RawTracepointSchedProcessFork   *ebpf.Program `ebpf:"raw_tracepoint__sched_process_fork"`
 	TcEgress                        *ebpf.Program `ebpf:"tc_egress"`
 	TcIngress                       *ebpf.Program `ebpf:"tc_ingress"`
 	TracepointSchedSchedProcessExec *ebpf.Program `ebpf:"tracepoint__sched__sched_process_exec"`
-	TracepointSyscallsSysExitClone  *ebpf.Program `ebpf:"tracepoint__syscalls__sys_exit_clone"`
-	TracepointSyscallsSysExitClone3 *ebpf.Program `ebpf:"tracepoint__syscalls__sys_exit_clone3"`
-	TracepointSyscallsSysExitFork   *ebpf.Program `ebpf:"tracepoint__syscalls__sys_exit_fork"`
-	TracepointSyscallsSysExitVfork  *ebpf.Program `ebpf:"tracepoint__syscalls__sys_exit_vfork"`
 }
 
 func (p *BpfPrograms) Close() error {
 	return _BpfClose(
 		p.KprobeSecuritySkClassifyFlow,
+		p.RawTracepointSchedProcessFork,
 		p.TcEgress,
 		p.TcIngress,
 		p.TracepointSchedSchedProcessExec,
-		p.TracepointSyscallsSysExitClone,
-		p.TracepointSyscallsSysExitClone3,
-		p.TracepointSyscallsSysExitFork,
-		p.TracepointSyscallsSysExitVfork,
 	)
 }
 

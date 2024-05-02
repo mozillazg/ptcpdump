@@ -30,6 +30,7 @@ type BPF struct {
 type Options struct {
 	Pid         uint32
 	Comm        [16]int8
+	filterComm  uint8
 	FollowForks uint8
 	PcapFilter  string
 }
@@ -58,6 +59,7 @@ func NewOptions(pid uint, comm string, followForks bool, pcapFilter string) Opti
 			opts.Comm[i] = int8(s)
 		}
 		opts.Comm[15] = '\x00'
+		opts.filterComm = 1
 	}
 	opts.FollowForks = 0
 	if followForks {
@@ -72,6 +74,7 @@ func (b *BPF) Load(opts Options) error {
 	err := b.spec.RewriteConstants(map[string]interface{}{
 		"filter_pid":          opts.Pid,
 		"filter_comm":         opts.Comm,
+		"filter_comm_enable":  opts.filterComm,
 		"filter_follow_forks": opts.FollowForks,
 	})
 	if err != nil {
@@ -147,14 +150,14 @@ func (b *BPF) AttachTracepoints() error {
 	b.links = append(b.links, lk)
 
 	if b.opts.attachForks() {
-		for _, name := range []string{"sys_exit_fork", "sys_exit_vfork", "sys_exit_clone", "sys_exit_clone3"} {
-			lk, err := link.Tracepoint("syscalls", name,
-				b.objs.TracepointSyscallsSysExitFork, nil)
-			if err != nil {
-				return xerrors.Errorf("attach tracepoint/syscalls/%s: %w", name, err)
-			}
-			b.links = append(b.links, lk)
+		lk, err := link.AttachRawTracepoint(link.RawTracepointOptions{
+			"sched_process_fork",
+			b.objs.RawTracepointSchedProcessFork,
+		})
+		if err != nil {
+			return xerrors.Errorf("attach raw_tracepoint/sched_process_fork: %w", err)
 		}
+		b.links = append(b.links, lk)
 	}
 
 	return nil

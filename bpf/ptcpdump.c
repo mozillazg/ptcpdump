@@ -31,6 +31,7 @@
 static volatile const u32 filter_pid = 0;
 static volatile const u8 filter_follow_forks = 0;
 volatile const char filter_comm[TASK_COMM_LEN];
+static volatile const u8 filter_comm_enable = 0;
 static const u8 u8_zero = 0;
 static const u32 u32_zero = 0;
 
@@ -306,99 +307,59 @@ static __always_inline bool str_cmp(const char *a, const volatile char *b, int l
     return 0;
 }
 
-static __always_inline int str_len(const volatile char *s, int max_len)
-{
-#pragma unroll
-    for (int i = 0; i < max_len; i++) {
-        if (s[i] == '\0')
-            return i;
-    }
-    if (s[max_len - 1] != '\0')
-        return max_len;
-    return 0;
-}
-
 static __always_inline int process_filter(struct task_struct *task) {
+    // no filter rules
+    if (filter_pid < 1 && filter_comm_enable != 1) {
+        return 0;
+    }
+
     u32 pid = BPF_CORE_READ(task, tgid);
     if (bpf_map_lookup_elem(&filter_pid_map, &pid)) {
         return 0;
     }
 
     bool should_filter = false;
-    if (filter_pid != 0) {
-        if (pid != filter_pid) {
-            return -1;
-        }
+    if (filter_pid > 0 && pid == filter_pid) {
         should_filter = true;
     }
-
     if (!should_filter) {
-        if (str_len(filter_comm, TASK_COMM_LEN) > 1) {
+        if (filter_comm_enable == 1) {
             char comm[TASK_COMM_LEN];
             BPF_CORE_READ_STR_INTO(&comm, task, comm);
-            if (str_cmp(comm, filter_comm, TASK_COMM_LEN) != 0) {
-                return -1;
+            if (str_cmp(comm, filter_comm, TASK_COMM_LEN) == 0) {
+                should_filter = true;
             }
-            should_filter = true;
         }
     }
 
     if (should_filter) {
         bpf_map_update_elem(&filter_pid_map, &pid, &u8_zero, BPF_NOEXIST);
+        return 0;
     }
 
-    return 0;
+    return -1;
 }
 
-static __always_inline void handle_fork(struct trace_event_raw_sys_exit *ctx) {
+static __always_inline void handle_fork(struct task_struct *parent, struct task_struct *child) {
     if (filter_follow_forks != 1) {
-        return;
-    }
-    u32 child_pid = BPF_CORE_READ(ctx, ret);
-    if (child_pid <= 0) {
-        return;
+       return;
     }
 
-    bool should_filter = false;
-    struct task_struct *task =  (struct task_struct*)bpf_get_current_task();
-    if (process_filter(task) == 0) {
-        should_filter = true;
-//        bpf_printk("handle fork: parent");
-    }
-
-    if (!should_filter) {
-        if (filter_pid > 0 && child_pid == filter_pid) {
-            should_filter = true;
-        }
-    }
-    if (should_filter) {
+    if (process_filter(parent) == 0) {
         bpf_map_update_elem(&filter_pid_map, &child_pid, &u8_zero, BPF_NOEXIST);
-//        bpf_printk("handle fork: %d", child_pid);
+        return;
+    }
+    if (process_filter(child) == 0) {
+        return;
     }
     return;
 }
 
-SEC("tracepoint/syscalls/sys_exit_fork")
-int tracepoint__syscalls__sys_exit_fork(struct trace_event_raw_sys_exit *ctx) {
-    handle_fork(ctx);
-    return 0;
-}
-
-SEC("tracepoint/syscalls/sys_exit_vfork")
-int tracepoint__syscalls__sys_exit_vfork(struct trace_event_raw_sys_exit *ctx) {
-    handle_fork(ctx);
-    return 0;
-}
-
-SEC("tracepoint/syscalls/sys_exit_clone")
-int tracepoint__syscalls__sys_exit_clone(struct trace_event_raw_sys_exit *ctx) {
-    handle_fork(ctx);
-    return 0;
-}
-
-SEC("tracepoint/syscalls/sys_exit_clone3")
-int tracepoint__syscalls__sys_exit_clone3(struct trace_event_raw_sys_exit *ctx) {
-    handle_fork(ctx);
+SEC("raw_tracepoint/sched_process_fork")
+int raw_tracepoint__sched_process_fork(struct bpf_raw_tracepoint_args *ctx) {
+    struct task_struct *parent = (struct task_struct *)BPF_CORE_READ(ctx, args[0]);
+    struct task_struct *child = (struct task_struct *)BPF_CORE_READ(ctx, args[1]);
+    handle_fork(parent, child);
     return 0;
 }
 
@@ -554,6 +515,7 @@ static __always_inline void handle_exec(struct trace_event_raw_sched_process_exe
     return;
 }
 
+// TODO: change to use raw tracepoint
 SEC("tracepoint/sched/sched_process_exec")
 int tracepoint__sched__sched_process_exec(struct trace_event_raw_sched_process_exec *ctx) {
     handle_exec(ctx);
