@@ -319,7 +319,7 @@ static __always_inline void get_ptcpdump_config(struct ptcpdump_config_t *config
     u32 u32_zero = 0;
     value = bpf_map_lookup_elem(&ptcpdump_config, &u32_zero);
     if (!value) {
-        bpf_printk("not init ptcpdump_config");
+        /* bpf_printk("not init ptcpdump_config"); */
         return;
     }
     config->filter_pid = value->filter_pid;
@@ -417,7 +417,7 @@ int BPF_KPROBE(kprobe__security_sk_classify_flow, struct sock *sk) {
 
     int ret = bpf_map_update_elem(&flow_pid_map, &key, &value, BPF_ANY);
     if (ret != 0) {
-        bpf_printk("bpf_map_update_elem flow_pid_map failed: %d", ret);
+        /* bpf_printk("bpf_map_update_elem flow_pid_map failed: %d", ret); */
     }
     return 0;
 };
@@ -474,7 +474,7 @@ static __always_inline void handle_tc(struct __sk_buff *skb, bool egress) {
     u32 u32_zero = 0;
     event = bpf_map_lookup_elem(&packet_event_stack, &u32_zero);
     if (!event) {
-        bpf_printk("[ptcpdump] packet_event_stack failed");
+        /* bpf_printk("[ptcpdump] packet_event_stack failed"); */
         return;
     }
 //    __builtin_memset(event, 0, sizeof(*event));
@@ -511,7 +511,7 @@ static __always_inline void handle_exec(struct bpf_raw_tracepoint_args *ctx) {
     u32 u32_zero = 0;
     event = bpf_map_lookup_elem(&exec_event_stack, &u32_zero);
     if (!event) {
-        bpf_printk("[ptcpdump] exec_event_stack failed");
+        /* bpf_printk("[ptcpdump] exec_event_stack failed"); */
         return;
     }
 
@@ -521,7 +521,7 @@ static __always_inline void handle_exec(struct bpf_raw_tracepoint_args *ctx) {
     const char *filename_p = BPF_CORE_READ(bprm, filename);
     int f_ret = bpf_probe_read_str(&event->filename, sizeof(event->filename), filename_p);
     if (f_ret < 0 ) {
-        bpf_printk("[ptcpdump] read exec filename failed: %d", f_ret);
+        /* bpf_printk("[ptcpdump] read exec filename failed: %d", f_ret); */
     }
     if (f_ret == EXEC_FILENAME_LEN) {
         event->filename_truncated = 1;
@@ -536,14 +536,14 @@ static __always_inline void handle_exec(struct bpf_raw_tracepoint_args *ctx) {
     }
     int arg_ret = bpf_probe_read(&event->args, arg_length, arg_start);
     if (arg_ret < 0) {
-        bpf_printk("[ptcpdump] read exec args failed: %d", arg_ret);
+        /* bpf_printk("[ptcpdump] read exec args failed: %d", arg_ret); */
     } else {
         event->args_size = arg_length;
     }
 
     int event_ret = bpf_perf_event_output(ctx, &exec_events, BPF_F_CURRENT_CPU, event, sizeof(*event));
     if (event_ret != 0) {
-        bpf_printk("[ptcpdump] bpf_perf_event_output exec_events failed: %d", event_ret);
+        /* bpf_printk("[ptcpdump] bpf_perf_event_output exec_events failed: %d", event_ret); */
     }
     return;
 }
