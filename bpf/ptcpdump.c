@@ -516,9 +516,27 @@ static __always_inline void handle_exec(struct bpf_raw_tracepoint_args *ctx) {
     return;
 }
 
+static __always_inline void handle_exit(struct bpf_raw_tracepoint_args *ctx) {
+    // args: struct task_struct *p
+    struct task_struct *task = (struct task_struct *)BPF_CORE_READ(ctx, args[0]);
+
+    u32 pid = BPF_CORE_READ(task, tgid);
+    if (bpf_map_lookup_elem(&filter_pid_map, &pid)) {
+        bpf_map_delete_elem(&filter_pid_map, &pid);
+    }
+
+    return;
+}
+
 SEC("raw_tracepoint/sched_process_exec")
 int raw_tracepoint__sched_process_exec(struct bpf_raw_tracepoint_args *ctx) {
     handle_exec(ctx);
+    return 0;
+}
+
+SEC("raw_tracepoint/sched_process_exit")
+int raw_tracepoint__sched_process_exit(struct bpf_raw_tracepoint_args *ctx) {
+    handle_exit(ctx);
     return 0;
 }
 

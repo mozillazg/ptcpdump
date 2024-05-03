@@ -93,6 +93,7 @@ type BpfSpecs struct {
 type BpfProgramSpecs struct {
 	KprobeSecuritySkClassifyFlow  *ebpf.ProgramSpec `ebpf:"kprobe__security_sk_classify_flow"`
 	RawTracepointSchedProcessExec *ebpf.ProgramSpec `ebpf:"raw_tracepoint__sched_process_exec"`
+	RawTracepointSchedProcessExit *ebpf.ProgramSpec `ebpf:"raw_tracepoint__sched_process_exit"`
 	RawTracepointSchedProcessFork *ebpf.ProgramSpec `ebpf:"raw_tracepoint__sched_process_fork"`
 	TcEgress                      *ebpf.ProgramSpec `ebpf:"tc_egress"`
 	TcIngress                     *ebpf.ProgramSpec `ebpf:"tc_ingress"`
@@ -154,6 +155,7 @@ func (m *BpfMaps) Close() error {
 type BpfPrograms struct {
 	KprobeSecuritySkClassifyFlow  *ebpf.Program `ebpf:"kprobe__security_sk_classify_flow"`
 	RawTracepointSchedProcessExec *ebpf.Program `ebpf:"raw_tracepoint__sched_process_exec"`
+	RawTracepointSchedProcessExit *ebpf.Program `ebpf:"raw_tracepoint__sched_process_exit"`
 	RawTracepointSchedProcessFork *ebpf.Program `ebpf:"raw_tracepoint__sched_process_fork"`
 	TcEgress                      *ebpf.Program `ebpf:"tc_egress"`
 	TcIngress                     *ebpf.Program `ebpf:"tc_ingress"`
@@ -163,6 +165,7 @@ func (p *BpfPrograms) Close() error {
 	return _BpfClose(
 		p.KprobeSecuritySkClassifyFlow,
 		p.RawTracepointSchedProcessExec,
+		p.RawTracepointSchedProcessExit,
 		p.RawTracepointSchedProcessFork,
 		p.TcEgress,
 		p.TcIngress,
