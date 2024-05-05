@@ -88,23 +88,20 @@ Flags:
 | Options| tcpdump | ptcpdump|
 |--------|--------|--------|
 | *expression* | ✅  | ✅  |
-| -i *interface* | ✅ | ✅ |
+| -i *interface*, --interface=*interface* | ✅ | ✅ |
 | -w *x.pcapng* |  ✅ | ✅ |
 | -w *x.pcap* |  ✅ | |
 | -r *x.pcapng* |  ✅ | ✅ |
 | -r *x.pcap* |  ✅ | |
 | --pid *process_id* | | ✅ |
 | --pname *process_name* | | ✅ |
-| -f | | ✅ |
-| --follow-forks | | ✅ |
+| -f, --follow-forks | | ✅ |
 | --print | ✅ | ✅ |
 | -c *count* | ✅ | ✅ |
-| -Q *direction* | ✅ | ✅ |
-| --direction=*direction* | ✅ | ✅ |
+| -Q *direction*, --direction=*direction* | ✅ | ✅ |
 |--list-interfaces | ✅ | ✅ |
 |-A | ✅ | |
-| -B *bufer_size* | ✅ | |
-| --buffer-size=*buffer_size* | ✅ | |
+| -B *bufer_size*, --buffer-size=*buffer_size* | ✅ | |
 |--count | ✅ | |
 | -C *file_size | ✅ | |
 | -d | ✅ | |
@@ -119,44 +116,33 @@ Flags:
 | --help | ✅ | ✅ |
 | --version | ✅ | ✅ |
 | -H | ✅ | |
-| --interface=*interface* | ✅ | ✅ |
-| -l | ✅ | |
-| --monitor-mode | ✅ | |
+| -l, --monitor-mode | ✅ | |
 | --immediate-mode | ✅ | |
-| -j *tstamp_type* | ✅ | |
-| --time-stamp-type=*tstamp_type* | ✅ | |
-| -J | ✅ | |
-| --list-time-stamp-types | ✅ | |
+| -j *tstamp_type*, --time-stamp-type=*tstamp_type* | ✅ | |
+| -J, --list-time-stamp-types | ✅ | |
 | --time-stamp-precision=*tstamp_precision* | ✅ | |
 | --micro | ✅ | |
 | --nano | ✅ | |
-| -K | ✅ | |
-| --dont-verify-checksums | ✅ | |
+| -K, --dont-verify-checksums | ✅ | |
 | -l | ✅ | |
-| -L | ✅ | |
-| --list-data-link-types | ✅ | |
+| -L, --list-data-link-types | ✅ | |
 | -m *module* | ✅ | |
 | -M *secret* | ✅ | |
 | -n | ✅ | |
 | -N | ✅ | |
 | -# | ✅ | |
 | --number | ✅ | |
-| -O | ✅ | |
-| --no-optimize | ✅ | |
-| -p | ✅ | |
-| --no-promiscuous-mode | ✅ | |
-| -S | ✅ | |
-| --absolute-tcp-sequence-numbers | ✅ | |
-| -s *snaplen* | ✅ | |
-| --snapshot-length=*snaplen*  | ✅ | |
+| -O, --no-optimize | ✅ | |
+| -p, --no-promiscuous-mode | ✅ | |
+| -S, --absolute-tcp-sequence-numbers | ✅ | |
+| -s *snaplen*, --snapshot-length=*snaplen*  | ✅ | |
 | -T *type* | ✅ | |
 | -t | ✅ | |
 | -tt | ✅ | |
 | -ttt | ✅ | |
 | -tttt | ✅ | |
 | -u | ✅ | |
-| -U | ✅ | |
-| --packet-buffered | ✅ | |
+| -U, --packet-buffered | ✅ | |
 | -v | ✅ | |
 | -vv | ✅ | |
 | -vvv | ✅ | |
@@ -166,8 +152,6 @@ Flags:
 | -xx | ✅ | |
 | -X | ✅ | |
 | -XX | ✅ | |
-| -y *datalinktype* | ✅ | |
-| --linktype=*datalinktype* | ✅ | |
+| -y *datalinktype*, --linktype=*datalinktype* | ✅ | |
 | -z *postrotate-command* | ✅ | |
-| -Z *user* | ✅ | |
-| --relinquish-privileges=*user* | ✅ | |
+| -Z *user*, --relinquish-privileges=*user* | ✅ | |
