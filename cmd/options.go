@@ -1,5 +1,7 @@
 package cmd
 
+import "time"
+
 type Options struct {
 	ifaces         []string
 	pid            uint
@@ -13,6 +15,9 @@ type Options struct {
 	print          bool
 	maxPacketCount uint
 	direction      string
+
+	eventChanSize                 uint
+	delayBeforeHandlePacketEvents time.Duration
 }
 
 func (o Options) WritePath() string {

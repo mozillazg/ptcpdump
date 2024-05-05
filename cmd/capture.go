@@ -2,9 +2,11 @@ package cmd
 
 import (
 	"context"
+	"log"
+	"time"
+
 	"github.com/mozillazg/ptcpdump/internal/consumer"
 	"github.com/mozillazg/ptcpdump/internal/metadata"
-	"log"
 )
 
 func capture(ctx context.Context, opts Options) error {
@@ -29,11 +31,11 @@ func capture(ctx context.Context, opts Options) error {
 	}
 	defer bf.Close()
 
-	packetEvensCh, err := bf.PullPacketEvents(ctx)
+	packetEvensCh, err := bf.PullPacketEvents(ctx, int(opts.eventChanSize))
 	if err != nil {
 		return err
 	}
-	execEvensCh, err := bf.PullExecEvents(ctx)
+	execEvensCh, err := bf.PullExecEvents(ctx, int(opts.eventChanSize))
 	if err != nil {
 		return err
 	}
@@ -44,6 +46,9 @@ func capture(ctx context.Context, opts Options) error {
 	log.Println("capturing...")
 
 	packetConsumer := consumer.NewPacketEventConsumer(writers)
+	if opts.delayBeforeHandlePacketEvents > 0 {
+		time.Sleep(opts.delayBeforeHandlePacketEvents)
+	}
 	packetConsumer.Start(ctx, packetEvensCh, opts.maxPacketCount)
 
 	return nil

@@ -11,12 +11,12 @@ import (
 	"unsafe"
 )
 
-func (b *BPF) PullPacketEvents(ctx context.Context) (<-chan BpfPacketEventT, error) {
+func (b *BPF) PullPacketEvents(ctx context.Context, chanSize int) (<-chan BpfPacketEventT, error) {
 	reader, err := perf.NewReader(b.objs.PacketEvents, 1500*1000)
 	if err != nil {
 		return nil, xerrors.Errorf(": %w", err)
 	}
-	ch := make(chan BpfPacketEventT, 10)
+	ch := make(chan BpfPacketEventT, chanSize)
 	go func() {
 		defer close(ch)
 		defer reader.Close()
@@ -63,12 +63,12 @@ func parsePacketEvent(rawSample []byte) (*BpfPacketEventT, error) {
 	return &event, nil
 }
 
-func (b *BPF) PullExecEvents(ctx context.Context) (<-chan BpfExecEventT, error) {
+func (b *BPF) PullExecEvents(ctx context.Context, chanSize int) (<-chan BpfExecEventT, error) {
 	reader, err := perf.NewReader(b.objs.ExecEvents, 1024*256)
 	if err != nil {
 		return nil, xerrors.Errorf(": %w", err)
 	}
-	ch := make(chan BpfExecEventT, 10)
+	ch := make(chan BpfExecEventT, chanSize)
 	go func() {
 		defer close(ch)
 		defer reader.Close()
