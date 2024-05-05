@@ -75,6 +75,12 @@ vet:
 deps:
 	go mod tidy
 
+.PHONY: e2e
+e2e: generate build
+	sudo bash testdata/test_base.sh ./ptcpdump
+	sudo bash testdata/test_pname_filter.sh ./ptcpdump
+	sudo bash testdata/test_pid_filter.sh ./ptcpdump
+
 .PHONY: clean
 clean:
 	$(MAKE) -C $(LIBPCAP_SRC) clean
