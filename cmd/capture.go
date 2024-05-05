@@ -40,7 +40,7 @@ func capture(ctx context.Context, opts Options) error {
 		return err
 	}
 
-	execConsumer := consumer.NewExecEventConsumer(pcache)
+	execConsumer := consumer.NewExecEventConsumer(pcache, int(opts.execEventsWorkerNumber))
 	go execConsumer.Start(ctx, execEvensCh)
 
 	log.Println("capturing...")

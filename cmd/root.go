@@ -60,6 +60,8 @@ func init() {
 	rootCmd.Flags().UintVar(&opts.eventChanSize, "event-chan-size", 10, "Size of event chan")
 	rootCmd.Flags().DurationVar(&opts.delayBeforeHandlePacketEvents, "delay-before-handle-packet-events", 0,
 		"Delay some durations before handle packet events")
+	rootCmd.Flags().UintVar(&opts.execEventsWorkerNumber, "exec-events-worker-number", 10,
+		"Number of worker to handle exec events")
 }
 
 func Execute() error {

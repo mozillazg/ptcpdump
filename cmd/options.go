@@ -18,6 +18,7 @@ type Options struct {
 
 	eventChanSize                 uint
 	delayBeforeHandlePacketEvents time.Duration
+	execEventsWorkerNumber        uint
 }
 
 func (o Options) WritePath() string {
