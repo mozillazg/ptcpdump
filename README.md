@@ -1,5 +1,7 @@
 # ptcpdump
 
+[![Test](https://github.com/mozillazg/ptcpdump/actions/workflows/test.yml/badge.svg)](https://github.com/mozillazg/ptcpdump/actions/workflows/test.yml)
+
 ptcpdump is the tcpdump(8) implementation using eBPF, with an extra feature:
 it adds process info as packet comments for each Packet.
 
@@ -87,7 +89,6 @@ Flags:
 |--------|--------|--------|
 | *expression* | ✅  | ✅  |
 | -i *interface* | ✅ | ✅ |
-| --interface=*interface* | ✅ | ✅ |
 | -w *x.pcapng* |  ✅ | ✅ |
 | -w *x.pcap* |  ✅ | |
 | -r *x.pcapng* |  ✅ | ✅ |
@@ -103,7 +104,7 @@ Flags:
 |--list-interfaces | ✅ | ✅ |
 |-A | ✅ | |
 | -B *bufer_size* | ✅ | |
-| --buffer-size=*buffer_size** | ✅ | |
+| --buffer-size=*buffer_size* | ✅ | |
 |--count | ✅ | |
 | -C *file_size | ✅ | |
 | -d | ✅ | |
@@ -118,6 +119,7 @@ Flags:
 | --help | ✅ | ✅ |
 | --version | ✅ | ✅ |
 | -H | ✅ | |
+| --interface=*interface* | ✅ | ✅ |
 | -l | ✅ | |
 | --monitor-mode | ✅ | |
 | --immediate-mode | ✅ | |
