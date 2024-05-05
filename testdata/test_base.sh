@@ -10,7 +10,8 @@ RNAME="${FILE_PREFIX}_base.read.txt"
 
 
 function test_ptcpdump() {
-  timeout 30s ${CMD} -c 1 -i any --print -w "${FNAME}" --delay-before-handle-packet-events=1s --event-chan-size=1024 \
+  timeout 30s ${CMD} -c 1 -i any --print -w "${FNAME}" \
+      --delay-before-handle-packet-events=1s --exec-events-worker-number=50 \
     'dst host 1.1.1.1 and tcp[tcpflags] = tcp-syn' | tee "${LNAME}" &
   sleep 10
   curl -m 10 1.1.1.1 &>/dev/null || true
