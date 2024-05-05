@@ -72,8 +72,8 @@ struct flow_pid_key_t {
 struct flow_pid_value_t {
     u32 pid;
 
-    char comm[TASK_COMM_LEN];
-    char tty_name[TTY_NAME_LEN];
+    /* char comm[TASK_COMM_LEN]; */
+    /* char tty_name[TTY_NAME_LEN]; */
 };
 
 struct packet_event_meta_t {
@@ -83,7 +83,6 @@ struct packet_event_meta_t {
     u32 pid;
     u64 payload_len;
     u64 packet_size;
-    char comm[TASK_COMM_LEN];
 };
 
 struct packet_event_t {
@@ -271,9 +270,9 @@ static __always_inline int parse_skb_meta(struct __sk_buff *skb, struct packet_m
 };
 
 static __always_inline void fill_process_meta(struct task_struct *task, struct flow_pid_value_t *meta) {
-    struct tty_struct *tty = (struct tty_struct *)BPF_CORE_READ(task, signal, tty);
-    BPF_CORE_READ_STR_INTO(&meta->tty_name, tty, name);
-    BPF_CORE_READ_STR_INTO(&meta->comm, task, comm);
+    /* struct tty_struct *tty = (struct tty_struct *)BPF_CORE_READ(task, signal, tty); */
+    /* BPF_CORE_READ_STR_INTO(&meta->tty_name, tty, name); */
+    /* BPF_CORE_READ_STR_INTO(&meta->comm, task, comm); */
     BPF_CORE_READ_INTO(&meta->pid, task, tgid);
 };
 
@@ -456,7 +455,7 @@ static __always_inline void handle_tc(struct __sk_buff *skb, bool egress) {
     event->meta.timestamp = bpf_ktime_get_ns();
     event->meta.ifindex = packet_meta.ifindex;
     event->meta.pid = value->pid;
-    __builtin_memcpy(&event->meta.comm, &value->comm, sizeof(value->comm));
+    /* __builtin_memcpy(&event->meta.comm, &value->comm, sizeof(value->comm)); */
 
     u64 payload_len = (u64)skb->len;
     event->meta.packet_size = payload_len;

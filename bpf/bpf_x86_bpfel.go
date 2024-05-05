@@ -28,11 +28,7 @@ type BpfFlowPidKeyT struct {
 	_     [2]byte
 }
 
-type BpfFlowPidValueT struct {
-	Pid     uint32
-	Comm    [16]int8
-	TtyName [64]int8
-}
+type BpfFlowPidValueT struct{ Pid uint32 }
 
 type BpfPacketEventT struct {
 	Meta struct {
@@ -44,7 +40,6 @@ type BpfPacketEventT struct {
 		_          [4]byte
 		PayloadLen uint64
 		PacketSize uint64
-		Comm       [16]int8
 	}
 	Payload [1500]uint8
 	_       [4]byte

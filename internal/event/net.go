@@ -22,7 +22,6 @@ type Packet struct {
 	Type      packetType
 	Device    dev.Device
 	Pid       int
-	Comm      string
 	Truncated bool
 	Len       int
 
@@ -38,7 +37,6 @@ func ParsePacketEvent(devices map[int]dev.Device, event bpf.BpfPacketEventT) (*P
 		p.Time = t.UTC()
 	}
 	p.Pid = int(event.Meta.Pid)
-	p.Comm = strComm(event.Meta.Comm)
 	p.Device = devices[int(event.Meta.Ifindex)]
 
 	if event.Meta.PacketType == 1 {
