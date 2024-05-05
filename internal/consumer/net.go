@@ -29,7 +29,7 @@ func (c *PacketEventConsumer) Start(ctx context.Context, ch <-chan bpf.BpfPacket
 		case <-ctx.Done():
 			return
 		case pt := <-ch:
-			c.parsePacketEvent(pt)
+			c.handlePacketEvent(pt)
 			n++
 			if maxPacketCount > 0 && n == maxPacketCount {
 				log.Printf("%d packets captured", n)
@@ -39,7 +39,7 @@ func (c *PacketEventConsumer) Start(ctx context.Context, ch <-chan bpf.BpfPacket
 	}
 }
 
-func (c *PacketEventConsumer) parsePacketEvent(pt bpf.BpfPacketEventT) {
+func (c *PacketEventConsumer) handlePacketEvent(pt bpf.BpfPacketEventT) {
 	pevent, err := event.ParsePacketEvent(c.devices, pt)
 	if err != nil {
 		log.Printf("[PacketEventConsumer] parse event failed: %s", err)

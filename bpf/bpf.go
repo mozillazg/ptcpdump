@@ -143,18 +143,18 @@ func (b *BPF) AttachKprobes() error {
 
 func (b *BPF) AttachTracepoints() error {
 	lk, err := link.AttachRawTracepoint(link.RawTracepointOptions{
-			"sched_process_exec",
-			b.objs.RawTracepointSchedProcessExec,
-		})
+		"sched_process_exec",
+		b.objs.RawTracepointSchedProcessExec,
+	})
 	if err != nil {
 		return xerrors.Errorf("attach raw_tracepoint/sched_process_exec: %w", err)
 	}
 	b.links = append(b.links, lk)
 
 	lk, err = link.AttachRawTracepoint(link.RawTracepointOptions{
-			"sched_process_exit",
-			b.objs.RawTracepointSchedProcessExit,
-		})
+		"sched_process_exit",
+		b.objs.RawTracepointSchedProcessExit,
+	})
 	if err != nil {
 		return xerrors.Errorf("attach raw_tracepoint/sched_process_exit: %w", err)
 	}

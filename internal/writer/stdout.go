@@ -9,6 +9,7 @@ import (
 	"github.com/x-way/pktdump"
 	"io"
 	"log"
+	"strings"
 )
 
 type StdoutWriter struct {
@@ -25,9 +26,11 @@ func NewStdoutWriter(writer io.Writer, pcache *metadata.ProcessCache) *StdoutWri
 
 func (w *StdoutWriter) Write(e *event.Packet) error {
 	ifName := e.Device.Name
-	packetType := "In"
+	packetType := ""
 	if e.Egress() {
 		packetType = "Out"
+	} else if e.Ingress() {
+		packetType = "In"
 	}
 	p := w.pcache.Get(e.Pid)
 	pidInfo := fmt.Sprintf("Process (pid %d, cmd %s, args %s)",
@@ -37,9 +40,19 @@ func (w *StdoutWriter) Write(e *event.Packet) error {
 	packet := gopacket.NewPacket(e.Data, layers.LayerTypeEthernet, gopacket.NoCopy)
 	formated := pktdump.Format(packet)
 
-	msg := fmt.Sprintf("%s %s %s %s\n    %s\n",
-		e.Time.Local().Format("15:04:05.000000"), ifName,
-		packetType, formated, pidInfo)
+	builder := strings.Builder{}
+	builder.WriteString(fmt.Sprintf("%s", e.Time.Local().Format("15:04:05.000000")))
+	if ifName != "" {
+		builder.WriteString(fmt.Sprintf(" %s", ifName))
+	}
+	if packetType != "" {
+		builder.WriteString(fmt.Sprintf(" %s", packetType))
+	}
+	builder.WriteString(fmt.Sprintf(" %s\n", formated))
+	if p.Pid > 0 {
+		builder.WriteString(fmt.Sprintf("    %s\n", pidInfo))
+	}
+	msg := builder.String()
 
 	if _, err := w.w.Write([]byte(msg)); err != nil {
 		log.Printf("write packet failed: %+v", err)

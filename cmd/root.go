@@ -2,12 +2,8 @@ package cmd
 
 import (
 	"context"
-	"github.com/mozillazg/ptcpdump/internal/consumer"
-	"github.com/mozillazg/ptcpdump/internal/metadata"
 	"github.com/spf13/cobra"
-	"log"
 	"os/signal"
-	"runtime"
 	"strings"
 	"syscall"
 )
@@ -26,6 +22,8 @@ Examples:
 
   ptcpdump -i any -w ptcpdump.pcapng
 
+  ptcpdump -r ptcpdump.pcapng
+
 Expression: see "man 7 pcap-filter"`,
 	DisableFlagsInUseLine: true,
 	Short:                 "ptcpdump is the tcpdump(8) implementation using eBPF, with an extra feature: it adds process info as packet comments for each Ethernet frame.",
@@ -40,7 +38,9 @@ Expression: see "man 7 pcap-filter"`,
 
 func init() {
 	rootCmd.Flags().StringVarP(&opts.writeFilePath, "write-file", "w", "",
-		"Write the raw packets to file rather than parsing and printing them out. e.g. ptcpdump.pcapng")
+		"Write the raw packets to file rather than parsing and printing them out. They can later be printed with the -r option. e.g. ptcpdump.pcapng")
+	rootCmd.Flags().StringVarP(&opts.readFilePath, "read-file", "r", "",
+		"Read packets from file (which was created with the -w option). e.g. ptcpdump.pcapng")
 	rootCmd.Flags().StringSliceVarP(&opts.ifaces, "interface", "i", []string{"lo"},
 		"Interfaces to capture")
 	rootCmd.Flags().UintVar(&opts.pid, "pid", 0, "Filter by process ID")
@@ -64,60 +64,21 @@ func Execute() error {
 }
 
 func run(cmd *cobra.Command, args []string) error {
-	switch {
-	case opts.listInterfaces:
-		return listInterfaces()
-	case opts.version:
-		return printVersion()
-	}
-
-	pcache := metadata.NewProcessCache()
-	writers, err := getWriters(opts, pcache)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		for _, w := range writers {
-			w.Flush()
-		}
-	}()
-	go pcache.Start()
-
-	bf, err := attachHooks(opts)
-	if err != nil {
-		if bf != nil {
-			bf.Close()
-		}
-		return err
-	}
-	defer bf.Close()
-
 	ctx, stop := signal.NotifyContext(
 		context.Background(), syscall.SIGINT, syscall.SIGTERM,
 	)
 	defer stop()
 
-	packetEvensCh, err := bf.PullPacketEvents(ctx)
-	if err != nil {
-		return err
+	switch {
+	case opts.listInterfaces:
+		return listInterfaces()
+	case opts.version:
+		return printVersion()
+	case opts.ReadPath() != "":
+		return read(ctx, opts)
+	default:
+		return capture(ctx, opts)
 	}
-	execEvensCh, err := bf.PullExecEvents(ctx)
-	if err != nil {
-		return err
-	}
-
-	execConsumer := consumer.NewExecEventConsumer(pcache)
-	go execConsumer.Start(ctx, execEvensCh)
-	packetConsumer := consumer.NewPacketEventConsumer(writers)
-	go func() {
-		packetConsumer.Start(ctx, packetEvensCh, opts.maxPacketCount)
-		stop()
-	}()
-
-	runtime.Gosched()
-	log.Println("capturing...")
-	<-ctx.Done()
-	log.Println("bye bye")
 
 	return nil
 }

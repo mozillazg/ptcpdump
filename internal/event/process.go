@@ -1,8 +1,11 @@
 package event
 
 import (
-	"github.com/mozillazg/ptcpdump/bpf"
+	"strconv"
 	"strings"
+
+	"github.com/gopacket/gopacket/pcapgo"
+	"github.com/mozillazg/ptcpdump/bpf"
 )
 
 type ProcessExec struct {
@@ -46,6 +49,37 @@ func ParseProcessExecEvent(event bpf.BpfExecEventT) (*ProcessExec, error) {
 	p.Filename = bs.String()
 
 	return &p, nil
+}
+
+func FromPacketOptions(opts pcapgo.NgPacketOptions) ProcessExec {
+	p := ProcessExec{}
+	comment := strings.TrimSpace(opts.Comment)
+	for _, line := range strings.Split(comment, "\n") {
+		line = strings.TrimSpace(line)
+		parts := strings.Split(line, ":")
+		if len(parts) < 2 {
+			continue
+		}
+		key, value := strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1])
+		switch key {
+		case "PID":
+			p.Pid, _ = strconv.Atoi(value)
+		case "Command":
+			if strings.HasSuffix(value, "...") {
+				p.FilenameTruncated = true
+				value = strings.TrimRight(value, "...")
+			}
+			p.Filename = value
+		case "Args":
+			if strings.HasSuffix(value, "...") {
+				p.ArgsTruncated = true
+				value = strings.TrimRight(value, "...")
+			}
+			p.Args = strings.Split(value, " ")
+		default:
+		}
+	}
+	return p
 }
 
 func (p ProcessExec) FilenameStr() string {

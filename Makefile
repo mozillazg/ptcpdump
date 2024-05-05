@@ -45,7 +45,7 @@ $(OUTPUT):
 
 
 .PHONY: build
-build: generate libpcap
+build: libpcap
 	CGO_CFLAGS=$(CGO_CFLAGS_STATIC) \
 	CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) \
 	CGO_ENABLED=1 go build -tags static -ldflags "$(LDFLAGS)"
@@ -59,6 +59,21 @@ test:
 .PHONY: generate
 generate:
 	go generate ./...
+
+.PHONY: lint
+lint: deps fmt
+
+.PHONY: fmt
+fmt:
+	go fmt ./...
+
+.PHONY: vet
+vet:
+	go vet ./...
+
+.PHONY: deps
+deps:
+	go mod tidy
 
 .PHONY: clean
 clean:

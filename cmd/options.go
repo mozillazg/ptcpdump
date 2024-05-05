@@ -6,6 +6,7 @@ type Options struct {
 	comm           string
 	followForks    bool
 	writeFilePath  string
+	readFilePath   string
 	pcapFilter     string
 	listInterfaces bool
 	version        bool
@@ -16,6 +17,10 @@ type Options struct {
 
 func (o Options) WritePath() string {
 	return o.writeFilePath
+}
+
+func (o Options) ReadPath() string {
+	return o.readFilePath
 }
 
 func (o Options) DirectionIn() bool {

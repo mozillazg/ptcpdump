@@ -2,6 +2,7 @@ package event
 
 import (
 	"fmt"
+	"github.com/gopacket/gopacket"
 	"github.com/mozillazg/ptcpdump/bpf"
 	"github.com/mozillazg/ptcpdump/internal/dev"
 	"golang.org/x/sys/unix"
@@ -50,6 +51,19 @@ func ParsePacketEvent(devices map[int]dev.Device, event bpf.BpfPacketEventT) (*P
 	p.Data = make([]byte, event.Meta.PayloadLen)
 	copy(p.Data[:], event.Payload[:event.Meta.PayloadLen])
 
+	return &p, nil
+}
+
+func FromPacket(ci gopacket.CaptureInfo, data []byte) (*Packet, error) {
+	p := Packet{
+		Time:      ci.Timestamp,
+		Type:      -1,
+		Device:    dev.Device{},
+		Pid:       0,
+		Truncated: false,
+		Len:       ci.Length,
+		Data:      data,
+	}
 	return &p, nil
 }
 

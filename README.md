@@ -1,7 +1,7 @@
 # ptcpdump
 
 ptcpdump is the tcpdump(8) implementation using eBPF, with an extra feature:
-it adds process info as packet comments for each Ethernet frame.
+it adds process info as packet comments for each Packet.
 
 ![](./docs/wireshark.png)
 
@@ -12,7 +12,8 @@ it adds process info as packet comments for each Ethernet frame.
 * Supports using pcap-filter(7) syntax for filtering packets.
 * Supports filtering packets by process ID and process name.
 * Directly applies filters in the kernel space.
-* Supports saving captured packets in the PCAP-NG format for offline analysis with third-party tools such as Wireshark.
+* Supports saving captured packets in the PcapNG format for offline analysis with third-party tools such as Wireshark.
+* Supports reading packets from pcapng file.
 
 
 ## Installation
@@ -39,6 +40,8 @@ Examples:
 
   ptcpdump -i any -w ptcpdump.pcapng
 
+  ptcpdump -r ptcpdump.pcapng
+
 Expression: see "man 7 pcap-filter"
 
 Flags:
@@ -50,9 +53,10 @@ Flags:
       --pid uint             Filter by process ID
       --pname string         Filter by process name
       --print                Print parsed packet output, even if the raw packets are being saved to a file with the -w flag
+  -r, --read-file string     Read packets from file (which was created with the -w option). e.g. ptcpdump.pcapng
   -c, --receive-count uint   Exit after receiving count packets
       --version              Print the ptcpdump and libpcap version strings and exit
-  -w, --write-file string    Write the raw packets to file rather than parsing and printing them out. e.g. ptcpdump.pcapng
+  -w, --write-file string    Write the raw packets to file rather than parsing and printing them out. They can later be printed with the -r option. e.g. ptcpdump.pcapng
 ```
 
 
