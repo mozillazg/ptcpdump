@@ -5,6 +5,16 @@ it adds process info as packet comments for each Packet.
 
 ![](./docs/wireshark.png)
 
+Table of Contents
+=================
+
+* [Features](#features)
+* [Installation](#installation)
+  * [Requirements](#requirements)
+* [Usage](#usage)
+  * [Example output](#example-output)
+* [Compare with tcpdump](#compare-with-tcpdump)
+
 
 ## Features
 
@@ -71,3 +81,91 @@ Flags:
     Process (pid 892817, cmd /usr/bin/curl, args curl ubuntu.com)
 ```
 
+## Compare with tcpdump
+
+| Options| tcpdump | ptcpdump|
+|--------|--------|--------|
+| *expression* | ✅  | ✅  |
+| -i *interface* | ✅ | ✅ |
+| --interface=*interface* | ✅ | ✅ |
+| -w *x.pcapng* |  ✅ | ✅ |
+| -w *x.pcap* |  ✅ | |
+| -r *x.pcapng* |  ✅ | ✅ |
+| -r *x.pcap* |  ✅ | |
+| --pid *process_id* | | ✅ |
+| --pname *process_name* | | ✅ |
+| -f | | ✅ |
+| --follow-forks | | ✅ |
+| --print | ✅ | ✅ |
+| -c *count* | ✅ | ✅ |
+| -Q *direction* | ✅ | ✅ |
+| --direction=*direction* | ✅ | ✅ |
+|--list-interfaces | ✅ | ✅ |
+|-A | ✅ | |
+| -B *bufer_size* | ✅ | |
+| --buffer-size=*buffer_size** | ✅ | |
+|--count | ✅ | |
+| -C *file_size | ✅ | |
+| -d | ✅ | |
+| -dd | ✅ | |
+| -ddd | ✅ | |
+| -D | ✅ | |
+| -e | ✅ | |
+| -f | ✅ | |
+| -F *file* | ✅ | |
+| -G *rotate_seconds* | ✅ | |
+| -h | ✅ | ✅ |
+| --help | ✅ | ✅ |
+| --version | ✅ | ✅ |
+| -H | ✅ | |
+| -l | ✅ | |
+| --monitor-mode | ✅ | |
+| --immediate-mode | ✅ | |
+| -j *tstamp_type* | ✅ | |
+| --time-stamp-type=*tstamp_type* | ✅ | |
+| -J | ✅ | |
+| --list-time-stamp-types | ✅ | |
+| --time-stamp-precision=*tstamp_precision* | ✅ | |
+| --micro | ✅ | |
+| --nano | ✅ | |
+| -K | ✅ | |
+| --dont-verify-checksums | ✅ | |
+| -l | ✅ | |
+| -L | ✅ | |
+| --list-data-link-types | ✅ | |
+| -m *module* | ✅ | |
+| -M *secret* | ✅ | |
+| -n | ✅ | |
+| -N | ✅ | |
+| -# | ✅ | |
+| --number | ✅ | |
+| -O | ✅ | |
+| --no-optimize | ✅ | |
+| -p | ✅ | |
+| --no-promiscuous-mode | ✅ | |
+| -S | ✅ | |
+| --absolute-tcp-sequence-numbers | ✅ | |
+| -s *snaplen* | ✅ | |
+| --snapshot-length=*snaplen*  | ✅ | |
+| -T *type* | ✅ | |
+| -t | ✅ | |
+| -tt | ✅ | |
+| -ttt | ✅ | |
+| -tttt | ✅ | |
+| -u | ✅ | |
+| -U | ✅ | |
+| --packet-buffered | ✅ | |
+| -v | ✅ | |
+| -vv | ✅ | |
+| -vvv | ✅ | |
+| -V *file* | ✅ | |
+| -W *filecont* | ✅ | |
+| -x | ✅ | |
+| -xx | ✅ | |
+| -X | ✅ | |
+| -XX | ✅ | |
+| -y *datalinktype* | ✅ | |
+| --linktype=*datalinktype* | ✅ | |
+| -z *postrotate-command* | ✅ | |
+| -Z *user* | ✅ | |
+| --relinquish-privileges=*user* | ✅ | |
