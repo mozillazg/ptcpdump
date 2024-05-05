@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/mozillazg/ptcpdump/internal/metadata"
 	"github.com/mozillazg/ptcpdump/internal/parser"
@@ -17,12 +18,26 @@ func read(ctx context.Context, opts Options) error {
 	}
 	defer f.Close()
 
+	var p parser.Parser
 	pcache := metadata.NewProcessCache()
-	p, err := parser.NewPcapNGParser(f, pcache)
-	if err != nil {
-		return err
-	}
 	stdoutWriter := writer.NewStdoutWriter(os.Stdout, pcache)
+	ext := filepath.Ext(opts.ReadPath())
+
+	switch ext {
+	case extPcap:
+		pr, err := parser.NewPcapParser(f)
+		if err != nil {
+			return err
+		}
+		stdoutWriter.Decoder = pr.Decoder()
+		p = pr
+		break
+	default:
+		p, err = parser.NewPcapNGParser(f, pcache)
+		if err != nil {
+			return err
+		}
+	}
 
 	for {
 		e, err := p.Parse()

@@ -2,25 +2,28 @@ package writer
 
 import (
 	"fmt"
+	"io"
+	"log"
+	"strings"
+
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
 	"github.com/mozillazg/ptcpdump/internal/event"
 	"github.com/mozillazg/ptcpdump/internal/metadata"
 	"github.com/x-way/pktdump"
-	"io"
-	"log"
-	"strings"
 )
 
 type StdoutWriter struct {
-	pcache *metadata.ProcessCache
-	w      io.Writer
+	pcache  *metadata.ProcessCache
+	w       io.Writer
+	Decoder gopacket.Decoder
 }
 
 func NewStdoutWriter(writer io.Writer, pcache *metadata.ProcessCache) *StdoutWriter {
 	return &StdoutWriter{
-		w:      writer,
-		pcache: pcache,
+		w:       writer,
+		pcache:  pcache,
+		Decoder: layers.LayerTypeEthernet,
 	}
 }
 
@@ -37,7 +40,7 @@ func (w *StdoutWriter) Write(e *event.Packet) error {
 		e.Pid, p.FilenameStr(), p.ArgsStr())
 
 	// Decode a packet
-	packet := gopacket.NewPacket(e.Data, layers.LayerTypeEthernet, gopacket.NoCopy)
+	packet := gopacket.NewPacket(e.Data, w.Decoder, gopacket.NoCopy)
 	formated := pktdump.Format(packet)
 
 	builder := strings.Builder{}
