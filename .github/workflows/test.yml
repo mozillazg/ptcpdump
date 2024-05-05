@@ -93,7 +93,7 @@ jobs:
             bash /host/testdata/test_pname_filter.sh /host/ptcpdump/ptcpdump
 
       - name: Test filter by process id
-        uses: cilium/little-vm-helper@v0.0.12
+        uses: cilium/little-vm-helper@908ab1ff8a596a03cd5221a1f8602dc44c3f906d # v0.0.12
         with:
           provision: 'false'
           dns-resolver: '1.1.1.1'
