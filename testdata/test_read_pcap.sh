@@ -11,9 +11,9 @@ RNAME="${FILE_PREFIX}_pcap.read.txt"
 
 function tcpdump_write() {
   which tcpdump || (apt update || true && apt install -y tcpdump)
-  timeout 30s tcpdump -c 1 -i any -s 0 -n --print -w "${FNAME}" -Z root \
-    'dst host 1.1.1.1 and tcp[tcpflags] = tcp-syn' | tee "${LNAME}" &
-  sleep 10
+  tcpdump -c 1 -i any -s 0 -n --print -w "${FNAME}" \
+    'dst host 1.1.1.1 and tcp[tcpflags] = tcp-syn'
+  sleep 30
   curl -m 10 1.1.1.1 &>/dev/null || true
   wait
 
