@@ -26,7 +26,7 @@ Examples:
 
 Expression: see "man 7 pcap-filter"`,
 	DisableFlagsInUseLine: true,
-	Short:                 "ptcpdump is the tcpdump(8) implementation using eBPF, with an extra feature: it adds process info as packet comments for each Ethernet frame.",
+	Short:                 "ptcpdump is the tcpdump(8) implementation using eBPF, with an extra feature: it adds process info as packet comments for each Packet.",
 	Run: func(cmd *cobra.Command, args []string) {
 		opts.pcapFilter = strings.Join(args, " ")
 		err := run(cmd, args)
@@ -46,7 +46,7 @@ func init() {
 	rootCmd.Flags().UintVar(&opts.pid, "pid", 0, "Filter by process ID")
 	rootCmd.Flags().StringVar(&opts.comm, "pname", "", "Filter by process name")
 	rootCmd.Flags().BoolVarP(&opts.followForks, "follow-forks", "f", false,
-		"Include child processes when filter by process")
+		"Trace child processes as they are created by currently traced processes when filter by process")
 	rootCmd.Flags().BoolVar(&opts.listInterfaces, "list-interfaces", false,
 		"Print the list of the network interfaces available on the system")
 	rootCmd.Flags().BoolVar(&opts.version, "version", false,

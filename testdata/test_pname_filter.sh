@@ -10,8 +10,7 @@ RNAME="${FILE_PREFIX}_filter_by_pname.read.txt"
 
 
 function test_ptcpdump() {
-  timeout 30s ${CMD} -c 6 --pname curl -f -i any --print -w "${FNAME}" \
-      --delay-before-handle-packet-events=1s --exec-events-worker-number=50 | tee "${LNAME}" &
+  timeout 30s ${CMD} -c 6 --pname curl -f -i any --print -w "${FNAME}" --exec-events-worker-number=50 | tee "${LNAME}" &
   sleep 10
   curl -m 10 1.1.1.1 &>/dev/null || true
   wait
