@@ -2,6 +2,11 @@ package cmd
 
 import "time"
 
+const (
+	extPcap   = ".pcap"
+	extPcapNG = ".pcapng"
+)
+
 type Options struct {
 	ifaces         []string
 	pid            uint

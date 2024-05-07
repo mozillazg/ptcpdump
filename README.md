@@ -58,7 +58,7 @@ Expression: see "man 7 pcap-filter"
 
 Flags:
   -Q, --direction string     Choose send/receive direction for which packets should be captured. Possible values are 'in', 'out' and 'inout' (default "inout")
-  -f, --follow-forks         Include child processes when filter by process
+  -f, --follow-forks         Trace child processes as they are created by currently traced processes when filter by process
   -h, --help                 help for ptcpdump
   -i, --interface strings    Interfaces to capture (default [lo])
       --list-interfaces      Print the list of the network interfaces available on the system
@@ -91,8 +91,9 @@ Flags:
 | -i *interface*, --interface=*interface* | ✅ | ✅ |
 | -w *x.pcapng* |  ✅ | ✅ |
 | -w *x.pcap* |  ✅ | |
-| -r *x.pcapng* |  ✅ | ✅ |
-| -r *x.pcap* |  ✅ | |
+| -w *-* |  ✅ | |
+| -r *x.pcapng*, -r *x.pcap* |  ✅ | ✅ |
+| -r *-* |  ✅ | |
 | --pid *process_id* | | ✅ |
 | --pname *process_name* | | ✅ |
 | -f, --follow-forks | | ✅ |
@@ -109,7 +110,7 @@ Flags:
 | -ddd | ✅ | |
 | -D | ✅ | |
 | -e | ✅ | |
-| -f | ✅ | |
+| -f | ✅ | ⛔ |
 | -F *file* | ✅ | |
 | -G *rotate_seconds* | ✅ | |
 | -h | ✅ | ✅ |
@@ -130,10 +131,10 @@ Flags:
 | -M *secret* | ✅ | |
 | -n | ✅ | |
 | -N | ✅ | |
-| -# | ✅ | |
+| -# | ✅ | ⛔ |
 | --number | ✅ | |
 | -O, --no-optimize | ✅ | |
-| -p, --no-promiscuous-mode | ✅ | |
+| -p, --no-promiscuous-mode | ✅ | ⛔ |
 | -S, --absolute-tcp-sequence-numbers | ✅ | |
 | -s *snaplen*, --snapshot-length=*snaplen*  | ✅ | |
 | -T *type* | ✅ | |
