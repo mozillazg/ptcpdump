@@ -2,6 +2,13 @@ package cmd
 
 import (
 	"fmt"
+	"io"
+	"math"
+	"os"
+	"path/filepath"
+	"runtime"
+	"sort"
+
 	"github.com/gopacket/gopacket/layers"
 	"github.com/gopacket/gopacket/pcapgo"
 	"github.com/mozillazg/ptcpdump/internal"
@@ -9,26 +16,32 @@ import (
 	"github.com/mozillazg/ptcpdump/internal/metadata"
 	"github.com/mozillazg/ptcpdump/internal/writer"
 	"golang.org/x/xerrors"
-	"io"
-	"math"
-	"os"
-	"runtime"
-	"sort"
 )
 
 func getWriters(opts Options, pcache *metadata.ProcessCache) ([]writer.PacketWriter, error) {
 	var writers []writer.PacketWriter
 
 	if opts.WritePath() != "" {
+		ext := filepath.Ext(opts.ReadPath())
 		pcapFile, err := os.Create(opts.WritePath())
 		if err != nil {
-			return nil, err
+			return nil, xerrors.Errorf(": %w", err)
 		}
-		pcapWriter, err := newPcapWriter(pcapFile, pcache)
-		if err != nil {
-			return nil, err
+		switch ext {
+		case extPcap:
+			w, err := newPcapWriter(pcapFile)
+			if err != nil {
+				return nil, xerrors.Errorf(": %w", err)
+			}
+			writers = append(writers, w)
+			break
+		default:
+			w, err := newPcapNgWriter(pcapFile, pcache)
+			if err != nil {
+				return nil, xerrors.Errorf(": %w", err)
+			}
+			writers = append(writers, w)
 		}
-		writers = append(writers, pcapWriter)
 	}
 	if opts.writeFilePath == "" || opts.print {
 		stdoutWriter := writer.NewStdoutWriter(os.Stdout, pcache)
@@ -38,10 +51,10 @@ func getWriters(opts Options, pcache *metadata.ProcessCache) ([]writer.PacketWri
 	return writers, nil
 }
 
-func newPcapWriter(w io.Writer, pcache *metadata.ProcessCache) (*writer.PcapNGWriter, error) {
+func newPcapNgWriter(w io.Writer, pcache *metadata.ProcessCache) (*writer.PcapNGWriter, error) {
 	devices, err := dev.GetDevices(nil)
 	if err != nil {
-		return nil, err
+		return nil, xerrors.Errorf(": %w", err)
 	}
 
 	var interfaces []pcapgo.NgInterface
@@ -60,7 +73,7 @@ func newPcapWriter(w io.Writer, pcache *metadata.ProcessCache) (*writer.PcapNGWr
 		return interfaces[i].Index < interfaces[j].Index
 	})
 
-	pcapWriter, err := pcapgo.NewNgWriterInterface(w, interfaces[0], pcapgo.NgWriterOptions{
+	pcapNgWriter, err := pcapgo.NewNgWriterInterface(w, interfaces[0], pcapgo.NgWriterOptions{
 		SectionInfo: pcapgo.NgSectionInfo{
 			Hardware:    runtime.GOARCH,
 			OS:          runtime.GOOS,
@@ -72,15 +85,25 @@ func newPcapWriter(w io.Writer, pcache *metadata.ProcessCache) (*writer.PcapNGWr
 		return nil, xerrors.Errorf(": %w", err)
 	}
 	for _, ifc := range interfaces[1:] {
-		_, err := pcapWriter.AddInterface(ifc)
+		_, err := pcapNgWriter.AddInterface(ifc)
 		if err != nil {
 			return nil, xerrors.Errorf(": %w", err)
 		}
 	}
 
-	if err := pcapWriter.Flush(); err != nil {
+	if err := pcapNgWriter.Flush(); err != nil {
+		return nil, xerrors.Errorf("writing pcapNg header: %w", err)
+	}
+
+	return writer.NewPcapNGWriter(pcapNgWriter, pcache), nil
+}
+
+func newPcapWriter(w io.Writer) (*writer.PcapWriter, error) {
+	pcapWriter := pcapgo.NewWriterNanos(w)
+
+	if err := pcapWriter.WriteFileHeader(65536, layers.LinkTypeEthernet); err != nil {
 		return nil, xerrors.Errorf("writing pcap header: %w", err)
 	}
 
-	return writer.NewPcapNGWriter(pcapWriter, pcache), nil
+	return writer.NewPcapWriter(pcapWriter), nil
 }

@@ -3,7 +3,7 @@
 [![Test](https://github.com/mozillazg/ptcpdump/actions/workflows/test.yml/badge.svg)](https://github.com/mozillazg/ptcpdump/actions/workflows/test.yml)
 
 ptcpdump is the tcpdump(8) implementation using eBPF, with an extra feature:
-it adds process info as packet comments for each Packet.
+it adds process info as packet comments for each Packet when possible.
 
 ![](./docs/wireshark.png)
 
@@ -34,7 +34,7 @@ Please download the latest binary in the [releases](https://github.com/mozillazg
 
 ### Requirements
 
-Linux kernel version must be larger than 5.1.
+Linux kernel version >= 5.2.
 
 
 ## Usage
@@ -89,8 +89,8 @@ Flags:
 |--------|--------|--------|
 | *expression* | ✅  | ✅  |
 | -i *interface*, --interface=*interface* | ✅ | ✅ |
-| -w *x.pcapng* |  ✅ | ✅ |
-| -w *x.pcap* |  ✅ | |
+| -w *x.pcapng* |  ✅ | ✅ (with process info) |
+| -w *x.pcap* |  ✅ | ✅ (without process info) |
 | -w *-* |  ✅ | |
 | -r *x.pcapng*, -r *x.pcap* |  ✅ | ✅ |
 | -r *-* |  ✅ | |

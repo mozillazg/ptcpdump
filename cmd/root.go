@@ -26,7 +26,7 @@ Examples:
 
 Expression: see "man 7 pcap-filter"`,
 	DisableFlagsInUseLine: true,
-	Short:                 "ptcpdump is the tcpdump(8) implementation using eBPF, with an extra feature: it adds process info as packet comments for each Packet.",
+	Short:                 "ptcpdump is the tcpdump(8) implementation using eBPF, with an extra feature: it adds process info as packet comments for each Packet when possible.",
 	Run: func(cmd *cobra.Command, args []string) {
 		opts.pcapFilter = strings.Join(args, " ")
 		err := run(cmd, args)
