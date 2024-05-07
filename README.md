@@ -44,7 +44,7 @@ Usage:
   ptcpdump [flags] [expression]
 
 Examples:
-  ptcpdump -i any
+  ptcpdump -i any tcp
 
   ptcpdump -i eth0 --pid 1234 port 80 and host 10.10.1.1
 
@@ -62,8 +62,8 @@ Flags:
   -h, --help                 help for ptcpdump
   -i, --interface strings    Interfaces to capture (default [lo])
       --list-interfaces      Print the list of the network interfaces available on the system
-      --pid uint             Filter by process ID
-      --pname string         Filter by process name
+      --pid uint             Filter by process ID (only TCP and UDP packets are supported)
+      --pname string         Filter by process name (only TCP and UDP packets are supported)
       --print                Print parsed packet output, even if the raw packets are being saved to a file with the -w flag
   -r, --read-file string     Read packets from file (which was created with the -w option). e.g. ptcpdump.pcapng
   -c, --receive-count uint   Exit after receiving count packets

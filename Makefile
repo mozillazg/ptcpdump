@@ -77,6 +77,8 @@ deps:
 
 .PHONY: e2e
 e2e: generate build
+	sudo rm -rf /tmp/ptcpdump_*
+	sudo bash testdata/test_default.sh ./ptcpdump
 	sudo bash testdata/test_base.sh ./ptcpdump
 	sudo bash testdata/test_pname_filter.sh ./ptcpdump
 	sudo bash testdata/test_pid_filter.sh ./ptcpdump
