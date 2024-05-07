@@ -452,7 +452,8 @@ static __always_inline void handle_tc(struct __sk_buff *skb, bool egress) {
         bpf_printk("[ptcpdump] packet_event_stack failed");
         return;
     }
-   /* __builtin_memset(event->payload, 0, sizeof(event->payload)); */
+   /* __builtin_memset(&event->payload, 0, sizeof(event->payload)); */
+   __builtin_memset(&event->meta, 0, sizeof(event->meta));
 
     if (egress) {
         event->meta.packet_type = EGRESS_PACKET;
