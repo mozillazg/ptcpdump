@@ -73,3 +73,16 @@ func (c *ProcessCache) Get(pid int) event.ProcessExec {
 	}
 	return *p
 }
+
+func (c *ProcessCache) GetPidsByComm(name string) []int {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+
+	var pids []int
+	for pid, info := range c.m {
+		if info.MatchComm(name) {
+			pids = append(pids, pid)
+		}
+	}
+	return pids
+}

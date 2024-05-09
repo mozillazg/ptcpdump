@@ -140,6 +140,18 @@ jobs:
 
             bash /host/testdata/test_write_pcap.sh /host/ptcpdump/ptcpdump
 
+      - name: Test exist connections
+        uses: cilium/little-vm-helper@908ab1ff8a596a03cd5221a1f8602dc44c3f906d # v0.0.12
+        with:
+          provision: 'false'
+          dns-resolver: '1.1.1.1'
+          cmd: |
+            set -ex
+            uname -a
+            cat /etc/issue
+
+            bash /host/testdata/test_exist_connection.sh /host/ptcpdump/ptcpdump
+
   releaser-test:
     runs-on: ubuntu-latest
     steps:
