@@ -144,6 +144,8 @@ struct {
 // avoid "Error: collect C types: type name XXX: not found"
 const struct packet_event_t *unused1 __attribute__((unused));
 const struct exec_event_t *unused2 __attribute__((unused));
+const struct flow_pid_key_t *unused3 __attribute__((unused));
+const struct flow_pid_value_t *unused4 __attribute__((unused));
 
 
 static __always_inline int parse_skb_l2(struct __sk_buff *skb, struct l2_t *l2, u32 *offset) {

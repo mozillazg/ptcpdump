@@ -1,6 +1,7 @@
 package event
 
 import (
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -96,4 +97,12 @@ func (p ProcessExec) ArgsStr() string {
 		s += "..."
 	}
 	return s
+}
+
+func (p ProcessExec) MatchComm(name string) bool {
+	filename := filepath.Base(p.Filename)
+	if len(filename) > 15 {
+		filename = filename[:15]
+	}
+	return name == filename
 }

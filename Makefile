@@ -84,6 +84,7 @@ e2e: generate build
 	sudo bash testdata/test_pid_filter.sh ./ptcpdump
 	sudo bash testdata/test_read_pcap.sh ./ptcpdump
 	sudo bash testdata/test_write_pcap.sh ./ptcpdump
+	sudo bash testdata/test_exist_connection.sh ./ptcpdump
 
 .PHONY: clean
 clean:

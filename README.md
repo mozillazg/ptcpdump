@@ -4,6 +4,7 @@
 
 ptcpdump is the tcpdump(8) implementation using eBPF, with an extra feature:
 it adds process info as packet comments for each Packet when possible.
+Inspired by [@jschwinger233/skbdump](https://github.com/jschwinger233/skbdump).
 
 ![](./docs/wireshark.png)
 

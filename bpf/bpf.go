@@ -15,7 +15,7 @@ import (
 	"golang.org/x/xerrors"
 )
 
-//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc clang -no-strip -target native -type packet_event_t -type exec_event_t Bpf ./ptcpdump.c -- -I./headers -I. -Wall
+//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc clang -no-strip -target native -type packet_event_t -type exec_event_t -type flow_pid_key_t -type flow_pid_value_t Bpf ./ptcpdump.c -- -I./headers -I. -Wall
 
 const tcFilterName = "ptcpdump"
 
@@ -129,6 +129,19 @@ func (b *BPF) Close() {
 	if err := b.objs.Close(); err != nil {
 		log.Printf("[bpf] close objects failed: %+v", err)
 	}
+}
+
+func (b *BPF) UpdateFlowPidMapValues(data map[*BpfFlowPidKeyT]BpfFlowPidValueT) error {
+	for k, v := range data {
+		err := b.objs.FlowPidMap.Update(*k, v, ebpf.UpdateNoExist)
+		if err != nil {
+			if err == ebpf.ErrKeyExist || strings.Contains(err.Error(), "key already exists") {
+				continue
+			}
+			return xerrors.Errorf(": %w", err)
+		}
+	}
+	return nil
 }
 
 func (b *BPF) AttachKprobes() error {
