@@ -36,11 +36,9 @@
   "stopUpdatingLabel": "renovate/stop-updating",
   "packageRules": [
     {
-      "extends": ["schedule:monthly"]
-    },
-    {
       "groupName": "all github action dependencies",
       "groupSlug": "all-github-action",
+      "extends": ["schedule:monthly"],
       "matchPaths": [
         ".github/workflows/**"
       ],
@@ -56,6 +54,7 @@
     {
       "groupName": "all go dependencies master",
       "groupSlug": "all-go-deps-master",
+      "extends": ["schedule:monthly"],
       "matchFiles": [
         "go.mod",
         "go.sum"
@@ -78,6 +77,7 @@
     },
     {
       "groupName": "Go",
+      "extends": ["schedule:monthly"],
       "matchDepNames": [
         "go",
         "docker.io/library/golang"
