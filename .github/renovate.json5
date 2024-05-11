@@ -36,6 +36,9 @@
   "stopUpdatingLabel": "renovate/stop-updating",
   "packageRules": [
     {
+      "extends": ["schedule:monthly"]
+    },
+    {
       "groupName": "all github action dependencies",
       "groupSlug": "all-github-action",
       "matchPaths": [
