@@ -4,7 +4,7 @@
 
 ptcpdump is the tcpdump(8) implementation using eBPF, with an extra feature:
 it adds process info as packet comments for each Packet when possible.
-Inspired by [@jschwinger233/skbdump](https://github.com/jschwinger233/skbdump).
+Inspired by [jschwinger233/skbdump](https://github.com/jschwinger233/skbdump).
 
 ![](./docs/wireshark.png)
 
@@ -17,6 +17,7 @@ Table of Contents
 * [Usage](#usage)
   * [Example output](#example-output)
 * [Compare with tcpdump](#compare-with-tcpdump)
+* [Build](#build)
 
 
 ## Features
@@ -157,3 +158,18 @@ Flags:
 | -y *datalinktype*, --linktype=*datalinktype* | ✅ | |
 | -z *postrotate-command* | ✅ | |
 | -Z *user*, --relinquish-privileges=*user* | ✅ | |
+
+
+## Build
+
+1. Build eBPF programs:
+
+    ```
+    make build-bpf
+    ```
+
+2. Build ptcpdump:
+
+    ```
+    make build
+    ```
