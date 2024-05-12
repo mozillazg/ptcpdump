@@ -114,10 +114,17 @@ struct {
 
 struct {
     __uint(type, BPF_MAP_TYPE_LRU_HASH);
-    __uint(max_entries, 10240);
+    __uint(max_entries, 65536);
     __type(key, struct flow_pid_key_t);
     __type(value, struct flow_pid_value_t);
 } flow_pid_map SEC(".maps");
+
+struct {
+    __uint(type, BPF_MAP_TYPE_LRU_HASH);
+    __uint(max_entries, 65536);
+    __type(key, u64);
+    __type(value, struct flow_pid_value_t);
+} sock_cookie_pid_map SEC(".maps");
 
 struct {
     __uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
@@ -197,24 +204,24 @@ static __always_inline int parse_skb_l3(struct __sk_buff *skb, u16 protocol, str
 
 static __always_inline int parse_skb_l4(struct __sk_buff *skb, u8 protocol, struct l4_t *l4, u32 *offset) {
     switch (protocol) {
-    case IPPROTO_ICMP: {
-        l4->sport = 0;
-        l4->dport = 0;
-        if (bpf_skb_load_bytes(skb, *offset + offsetof(struct icmphdr, type), &l4->flags, sizeof(u8)) < 0) {
-            return -1;
-        }
-        *offset += sizeof(struct icmphdr);
-        return 0;
-     }
-    case IPPROTO_ICMPV6: {
-        l4->sport = 0;
-        l4->dport = 0;
-        if (bpf_skb_load_bytes(skb, *offset + offsetof(struct icmp6hdr, icmp6_type), &l4->flags, sizeof(u8)) < 0) {
-            return -1;
-        }
-        *offset += sizeof(struct icmp6hdr);
-        return 0;
-     }
+//    case IPPROTO_ICMP: {
+//        l4->sport = 0;
+//        l4->dport = 0;
+//        if (bpf_skb_load_bytes(skb, *offset + offsetof(struct icmphdr, type), &l4->flags, sizeof(u8)) < 0) {
+//            return -1;
+//        }
+//        *offset += sizeof(struct icmphdr);
+//        return 0;
+//     }
+//    case IPPROTO_ICMPV6: {
+//        l4->sport = 0;
+//        l4->dport = 0;
+//        if (bpf_skb_load_bytes(skb, *offset + offsetof(struct icmp6hdr, icmp6_type), &l4->flags, sizeof(u8)) < 0) {
+//            return -1;
+//        }
+//        *offset += sizeof(struct icmp6hdr);
+//        return 0;
+//     }
     case IPPROTO_TCP: {
         struct tcphdr tcp_hdr;
         if (bpf_skb_load_bytes(skb, *offset, &tcp_hdr, sizeof(struct tcphdr)) < 0) {
@@ -371,6 +378,42 @@ int raw_tracepoint__sched_process_fork(struct bpf_raw_tracepoint_args *ctx) {
     return 0;
 }
 
+SEC("cgroup/sock_create")
+int cgroup__sock_create(void *ctx) {
+    u64 cookie = bpf_get_socket_cookie(ctx);
+    if (cookie <= 0) {
+        bpf_printk("[ptcpdump] sock_create: bpf_get_socket_cookie failed");
+        return 1;
+    }
+
+    struct task_struct *task =  (struct task_struct*)bpf_get_current_task();
+    if (process_filter(task) < 0) {
+        return 1;
+    }
+
+    u32 pid = bpf_get_current_pid_tgid() >> 32;
+    struct flow_pid_value_t value = {
+        .pid = pid,
+    };
+    int ret = bpf_map_update_elem(&sock_cookie_pid_map, &cookie, &value, BPF_ANY);
+    if (ret != 0) {
+        bpf_printk("[ptcpdump] bpf_map_update_elem sock_cookie_pid_map failed: %d", ret);
+    }
+
+    return 1;
+}
+
+SEC("cgroup/sock_release")
+int cgroup__sock_release(void *ctx) {
+    u64 cookie = bpf_get_socket_cookie(ctx);
+    if (cookie <= 0) {
+        return 1;
+    }
+
+    bpf_map_delete_elem(&sock_cookie_pid_map, &cookie);
+    return 1;
+}
+
 SEC("kprobe/security_sk_classify_flow")
 int BPF_KPROBE(kprobe__security_sk_classify_flow, struct sock *sk) {
     struct flow_pid_key_t key = {0};
@@ -401,21 +444,29 @@ static __noinline bool pcap_filter(void *_skb, void *__skb, void *___skb, void *
 	return data != data_end && _skb == __skb && __skb == ___skb;
 };
 
-static __always_inline void handle_tc(struct __sk_buff *skb, bool egress) {
-    bpf_skb_pull_data(skb, 0);
-
-    if (!pcap_filter((void *)skb, (void *)skb, (void *)skb, (void *)(long)skb->data, (void *)(long)skb->data_end)) {
-        return;
+static __always_inline int get_pid_meta(struct __sk_buff *skb, struct flow_pid_value_t *pid_meta, bool egress) {
+    u64 cookie = bpf_get_socket_cookie(skb);
+    if (cookie > 0) {
+        struct flow_pid_value_t *value = bpf_map_lookup_elem(&sock_cookie_pid_map, &cookie);
+        if (value) {
+            pid_meta->pid = value->pid;
+            return 0;
+        }
+    } else {
+        if (egress) {
+//            bpf_printk("[ptcpdump] tc egress: bpf_get_socket_cookie failed");
+        } else {
+//            bpf_printk("[ptcpdump] tc ingress: bpf_get_socket_cookie failed");
+        }
     }
 
     struct packet_meta_t packet_meta = {0};
     int ret = parse_skb_meta(skb, &packet_meta);
     if (ret < 0) {
-        return;
+        return -1;
     }
 
     bool have_pid_filter = have_pid_filter_rules();
-    struct flow_pid_value_t *pid_meta;
     struct flow_pid_key_t key = {0};
     if (egress) {
         key.saddr[0] = packet_meta.l3.saddr[0];
@@ -432,21 +483,37 @@ static __always_inline void handle_tc(struct __sk_buff *skb, bool egress) {
     }
 
     if (have_pid_filter && key.sport == 0) {
-        return;
+        return -1;
     }
 
 
     if (key.sport > 0) {
         /* bpf_printk("[tc] %pI4 %d", &key.saddr[0], key.sport); */
 
-        pid_meta = bpf_map_lookup_elem(&flow_pid_map, &key);
-        if (pid_meta) {
+        struct flow_pid_value_t *value = bpf_map_lookup_elem(&flow_pid_map, &key);
+        if (value) {
     //        bpf_printk("[tc] (%s) %pI4 %d", pid_meta->comm, &key.saddr[0], key.sport);
+            pid_meta->pid = value->pid;
         } else if (have_pid_filter) {
             /* bpf_printk("[tc] %pI4 %d bpf_map_lookup_elem is empty", &key.saddr[0], key.sport); */
-            return;
+            return -1;
         }
     }
+
+    return 0;
+};
+
+static __always_inline void handle_tc(struct __sk_buff *skb, bool egress) {
+    bpf_skb_pull_data(skb, 0);
+
+    if (!pcap_filter((void *)skb, (void *)skb, (void *)skb, (void *)(long)skb->data, (void *)(long)skb->data_end)) {
+        return;
+    }
+
+    struct flow_pid_value_t pid_meta = {0};
+    if (get_pid_meta(skb, &pid_meta, egress) < 0) {
+        return;
+    };
 
     struct packet_event_t *event;
     event = bpf_map_lookup_elem(&packet_event_stack, &u32_zero);
@@ -463,9 +530,9 @@ static __always_inline void handle_tc(struct __sk_buff *skb, bool egress) {
         event->meta.packet_type = INGRESS_PACKET;
     }
     event->meta.timestamp = bpf_ktime_get_ns();
-    event->meta.ifindex = packet_meta.ifindex;
-    if (pid_meta) {
-        event->meta.pid = pid_meta->pid;
+    event->meta.ifindex = skb->ifindex;
+    if (pid_meta.pid > 0) {
+        event->meta.pid = pid_meta.pid;
         /* __builtin_memcpy(&event->meta.comm, &pid_meta->comm, sizeof(pid_meta->comm)); */
     }
 

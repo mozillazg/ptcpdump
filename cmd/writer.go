@@ -2,13 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"io"
-	"math"
-	"os"
-	"path/filepath"
-	"runtime"
-	"sort"
-
 	"github.com/gopacket/gopacket/layers"
 	"github.com/gopacket/gopacket/pcapgo"
 	"github.com/mozillazg/ptcpdump/internal"
@@ -16,6 +9,11 @@ import (
 	"github.com/mozillazg/ptcpdump/internal/metadata"
 	"github.com/mozillazg/ptcpdump/internal/writer"
 	"golang.org/x/xerrors"
+	"io"
+	"math"
+	"os"
+	"path/filepath"
+	"runtime"
 )
 
 func getWriters(opts Options, pcache *metadata.ProcessCache) ([]writer.PacketWriter, error) {
@@ -56,10 +54,16 @@ func newPcapNgWriter(w io.Writer, pcache *metadata.ProcessCache) (*writer.PcapNG
 	if err != nil {
 		return nil, xerrors.Errorf(": %w", err)
 	}
-
-	var interfaces []pcapgo.NgInterface
+	// to avoid "Interface id 9 not present in section (have only 7 interfaces)"
+	var maxIndex int
 	for _, dev := range devices {
-		interfaces = append(interfaces, pcapgo.NgInterface{
+		if dev.Ifindex > maxIndex {
+			maxIndex = dev.Ifindex
+		}
+	}
+	interfaces := make([]pcapgo.NgInterface, maxIndex+1)
+	for _, dev := range devices {
+		interfaces[dev.Ifindex] = pcapgo.NgInterface{
 			Index:      dev.Ifindex,
 			Name:       dev.Name,
 			Filter:     opts.pcapFilter,
@@ -67,11 +71,21 @@ func newPcapNgWriter(w io.Writer, pcache *metadata.ProcessCache) (*writer.PcapNG
 			LinkType:   layers.LinkTypeEthernet,
 			SnapLength: uint32(math.MaxUint16),
 			//TimestampResolution: 9,
-		})
+		}
 	}
-	sort.Slice(interfaces, func(i, j int) bool {
-		return interfaces[i].Index < interfaces[j].Index
-	})
+	for i, iface := range interfaces {
+		if iface.Index == 0 {
+			interfaces[i] = pcapgo.NgInterface{
+				Index:      i,
+				Name:       fmt.Sprintf("dummy-%d", iface.Index),
+				Filter:     opts.pcapFilter,
+				OS:         runtime.GOOS,
+				LinkType:   layers.LinkTypeEthernet,
+				SnapLength: uint32(math.MaxUint16),
+				//TimestampResolution: 9,
+			}
+		}
+	}
 
 	pcapNgWriter, err := pcapgo.NewNgWriterInterface(w, interfaces[0], pcapgo.NgWriterOptions{
 		SectionInfo: pcapgo.NgSectionInfo{

@@ -86,6 +86,8 @@ type BpfSpecs struct {
 //
 // It can be passed ebpf.CollectionSpec.Assign.
 type BpfProgramSpecs struct {
+	CgroupSockCreate              *ebpf.ProgramSpec `ebpf:"cgroup__sock_create"`
+	CgroupSockRelease             *ebpf.ProgramSpec `ebpf:"cgroup__sock_release"`
 	KprobeSecuritySkClassifyFlow  *ebpf.ProgramSpec `ebpf:"kprobe__security_sk_classify_flow"`
 	RawTracepointSchedProcessExec *ebpf.ProgramSpec `ebpf:"raw_tracepoint__sched_process_exec"`
 	RawTracepointSchedProcessExit *ebpf.ProgramSpec `ebpf:"raw_tracepoint__sched_process_exit"`
@@ -104,6 +106,7 @@ type BpfMapSpecs struct {
 	FlowPidMap       *ebpf.MapSpec `ebpf:"flow_pid_map"`
 	PacketEventStack *ebpf.MapSpec `ebpf:"packet_event_stack"`
 	PacketEvents     *ebpf.MapSpec `ebpf:"packet_events"`
+	SockCookiePidMap *ebpf.MapSpec `ebpf:"sock_cookie_pid_map"`
 }
 
 // BpfObjects contains all objects after they have been loaded into the kernel.
@@ -131,6 +134,7 @@ type BpfMaps struct {
 	FlowPidMap       *ebpf.Map `ebpf:"flow_pid_map"`
 	PacketEventStack *ebpf.Map `ebpf:"packet_event_stack"`
 	PacketEvents     *ebpf.Map `ebpf:"packet_events"`
+	SockCookiePidMap *ebpf.Map `ebpf:"sock_cookie_pid_map"`
 }
 
 func (m *BpfMaps) Close() error {
@@ -141,6 +145,7 @@ func (m *BpfMaps) Close() error {
 		m.FlowPidMap,
 		m.PacketEventStack,
 		m.PacketEvents,
+		m.SockCookiePidMap,
 	)
 }
 
@@ -148,6 +153,8 @@ func (m *BpfMaps) Close() error {
 //
 // It can be passed to LoadBpfObjects or ebpf.CollectionSpec.LoadAndAssign.
 type BpfPrograms struct {
+	CgroupSockCreate              *ebpf.Program `ebpf:"cgroup__sock_create"`
+	CgroupSockRelease             *ebpf.Program `ebpf:"cgroup__sock_release"`
 	KprobeSecuritySkClassifyFlow  *ebpf.Program `ebpf:"kprobe__security_sk_classify_flow"`
 	RawTracepointSchedProcessExec *ebpf.Program `ebpf:"raw_tracepoint__sched_process_exec"`
 	RawTracepointSchedProcessExit *ebpf.Program `ebpf:"raw_tracepoint__sched_process_exit"`
@@ -158,6 +165,8 @@ type BpfPrograms struct {
 
 func (p *BpfPrograms) Close() error {
 	return _BpfClose(
+		p.CgroupSockCreate,
+		p.CgroupSockRelease,
 		p.KprobeSecuritySkClassifyFlow,
 		p.RawTracepointSchedProcessExec,
 		p.RawTracepointSchedProcessExit,

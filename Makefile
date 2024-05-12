@@ -85,6 +85,8 @@ e2e: build-bpf build
 	sudo bash testdata/test_read_pcap.sh ./ptcpdump
 	sudo bash testdata/test_write_pcap.sh ./ptcpdump
 	sudo bash testdata/test_exist_connection.sh ./ptcpdump
+	sudo bash testdata/test_arp.sh ./ptcpdump
+	sudo bash testdata/test_icmp.sh ./ptcpdump
 
 .PHONY: clean
 clean:
