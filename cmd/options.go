@@ -1,6 +1,9 @@
 package cmd
 
-import "time"
+import (
+	"strings"
+	"time"
+)
 
 const (
 	extPcap   = ".pcap"
@@ -24,6 +27,8 @@ type Options struct {
 	eventChanSize                 uint
 	delayBeforeHandlePacketEvents time.Duration
 	execEventsWorkerNumber        uint
+
+	subProgArgs []string
 }
 
 func (o Options) WritePath() string {
@@ -43,4 +48,14 @@ func (o Options) DirectionOut() bool {
 
 func (o Options) DirectionInOut() bool {
 	return o.direction == "inout"
+}
+
+func prepareOptions(opts *Options, rawArgs []string, args []string) {
+	subProgArgs := getSubProgArgs(rawArgs)
+	opts.pcapFilter = strings.Join(args, " ")
+	if len(subProgArgs) > 0 {
+		opts.subProgArgs = subProgArgs
+		opts.pcapFilter = strings.TrimSuffix(opts.pcapFilter, strings.Join(subProgArgs, " "))
+	}
+	opts.pcapFilter = strings.TrimSpace(opts.pcapFilter)
 }

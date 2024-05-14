@@ -352,6 +352,26 @@ static __always_inline int process_filter(struct task_struct *task) {
     return -1;
 }
 
+static __always_inline int parent_process_filter(struct task_struct *current) {
+    // no filter rules
+    if (!have_pid_filter_rules()) {
+        return 0;
+    }
+    if (filter_follow_forks != 1) {
+        return -1;
+    }
+    struct task_struct *parent = BPF_CORE_READ(current, real_parent);
+    if (!parent) {
+        return -1;
+    }
+    if (process_filter(parent) == 0) {
+        u32 child_pid = BPF_CORE_READ(current, tgid);
+        bpf_map_update_elem(&filter_pid_map, &child_pid, &u8_zero, BPF_NOEXIST);
+        return 0;
+    }
+    return -1;
+}
+
 static __always_inline void handle_fork(struct bpf_raw_tracepoint_args *ctx) {
     if (filter_follow_forks != 1) {
        return;
@@ -387,8 +407,10 @@ int cgroup__sock_create(void *ctx) {
     }
 
     struct task_struct *task =  (struct task_struct*)bpf_get_current_task();
-    if (process_filter(task) < 0) {
-        return 1;
+    if (parent_process_filter(task) < 0) {
+        if (process_filter(task) < 0) {
+            return 1;
+        }
     }
 
     u32 pid = bpf_get_current_pid_tgid() >> 32;
@@ -420,8 +442,10 @@ int BPF_KPROBE(kprobe__security_sk_classify_flow, struct sock *sk) {
     struct flow_pid_value_t value = {0};
     struct task_struct *task =  (struct task_struct*)bpf_get_current_task();
 
-    if (process_filter(task) < 0) {
-        return 0;
+    if (parent_process_filter(task) < 0) {
+        if (process_filter(task) < 0) {
+            return 0;
+        }
     }
 
     fill_sk_meta(sk, &key);
