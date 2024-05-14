@@ -25,6 +25,8 @@ type BPF struct {
 	links      []link.Link
 	opts       Options
 	closeFuncs []func()
+
+	skipAttachCgroup bool
 }
 
 type Options struct {
@@ -109,7 +111,22 @@ func (b *BPF) Load(opts Options) error {
 		},
 	})
 	if err != nil {
-		return err
+		if strings.Contains(err.Error(), "unknown func bpf_get_socket_cookie") {
+			log.Printf("will skip attach cgroup due to %s", err)
+			b.spec.Programs["cgroup__sock_create"].Instructions = nil
+			b.spec.Programs["cgroup__sock_release"].Instructions = nil
+			b.skipAttachCgroup = true
+			if err = b.spec.LoadAndAssign(b.objs, &ebpf.CollectionOptions{
+				Programs: ebpf.ProgramOptions{
+					LogLevel: ebpf.LogLevelInstruction,
+					LogSize:  ebpf.DefaultVerifierLogSize * 8,
+				},
+			}); err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
 	}
 	b.opts = opts
 
@@ -145,6 +162,10 @@ func (b *BPF) UpdateFlowPidMapValues(data map[*BpfFlowPidKeyT]BpfFlowPidValueT) 
 }
 
 func (b *BPF) AttachCgroups(cgroupPath string) error {
+	if b.skipAttachCgroup {
+		return nil
+	}
+
 	lk, err := link.AttachCgroup(link.CgroupOptions{
 		Path:    cgroupPath,
 		Attach:  ebpf.AttachCGroupInetSockCreate,
