@@ -162,8 +162,8 @@ jobs:
             uname -a
             cat /etc/issue
 
-            bash /host/testdata/testdata/test_sub_program.sh /host/ptcpdump/ptcpdump
-            bash /host/testdata/testdata/test_sub_curl_domain_program.sh /host/ptcpdump/ptcpdump
+            bash /host/testdata/test_sub_program.sh /host/ptcpdump/ptcpdump
+            bash /host/testdata/test_sub_curl_domain_program.sh /host/ptcpdump/ptcpdump
 
   releaser-test:
     runs-on: ubuntu-latest
