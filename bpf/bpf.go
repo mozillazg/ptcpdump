@@ -19,6 +19,17 @@ import (
 
 const tcFilterName = "ptcpdump"
 
+type BpfObjectsWithoutCgroup struct {
+	KprobeSecuritySkClassifyFlow  *ebpf.Program `ebpf:"kprobe__security_sk_classify_flow"`
+	RawTracepointSchedProcessExec *ebpf.Program `ebpf:"raw_tracepoint__sched_process_exec"`
+	RawTracepointSchedProcessExit *ebpf.Program `ebpf:"raw_tracepoint__sched_process_exit"`
+	RawTracepointSchedProcessFork *ebpf.Program `ebpf:"raw_tracepoint__sched_process_fork"`
+	TcEgress                      *ebpf.Program `ebpf:"tc_egress"`
+	TcIngress                     *ebpf.Program `ebpf:"tc_ingress"`
+
+	BpfMaps
+}
+
 type BPF struct {
 	spec       *ebpf.CollectionSpec
 	objs       *BpfObjects
@@ -113,10 +124,10 @@ func (b *BPF) Load(opts Options) error {
 	if err != nil {
 		if strings.Contains(err.Error(), "unknown func bpf_get_socket_cookie") {
 			log.Printf("will skip attach cgroup due to %s", err)
-			b.spec.Programs["cgroup__sock_create"].Instructions = nil
-			b.spec.Programs["cgroup__sock_release"].Instructions = nil
+
 			b.skipAttachCgroup = true
-			if err = b.spec.LoadAndAssign(b.objs, &ebpf.CollectionOptions{
+			objs := BpfObjectsWithoutCgroup{}
+			if err = b.spec.LoadAndAssign(&objs, &ebpf.CollectionOptions{
 				Programs: ebpf.ProgramOptions{
 					LogLevel: ebpf.LogLevelInstruction,
 					LogSize:  ebpf.DefaultVerifierLogSize * 8,
@@ -124,6 +135,13 @@ func (b *BPF) Load(opts Options) error {
 			}); err != nil {
 				return err
 			}
+			b.objs.KprobeSecuritySkClassifyFlow = objs.KprobeSecuritySkClassifyFlow
+			b.objs.RawTracepointSchedProcessExec = objs.RawTracepointSchedProcessExec
+			b.objs.RawTracepointSchedProcessExit = objs.RawTracepointSchedProcessExit
+			b.objs.RawTracepointSchedProcessFork = objs.RawTracepointSchedProcessFork
+			b.objs.TcEgress = objs.TcEgress
+			b.objs.TcIngress = objs.TcIngress
+			b.objs.BpfMaps = objs.BpfMaps
 		} else {
 			return err
 		}
