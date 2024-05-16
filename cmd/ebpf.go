@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"encoding/binary"
+	"github.com/mozillazg/ptcpdump/internal/utils"
+	"log"
 	"net/netip"
 
 	"github.com/cilium/ebpf/rlimit"
@@ -30,6 +32,16 @@ func attachHooks(currentConns []metadata.Connection, opts Options) (*bpf.BPF, er
 	if len(currentConns) > 0 {
 		if err := updateFlowPidMapValues(bf, currentConns); err != nil {
 			return nil, err
+		}
+	}
+
+	cgroupPath, err := utils.GetCgroupV2RootDir()
+	if err != nil {
+		log.Print(err)
+	}
+	if cgroupPath != "" {
+		if err := bf.AttachCgroups(cgroupPath); err != nil {
+			return bf, err
 		}
 	}
 
