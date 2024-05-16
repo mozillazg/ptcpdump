@@ -19,12 +19,25 @@ import (
 
 const tcFilterName = "ptcpdump"
 
+type BpfObjectsWithoutCgroup struct {
+	KprobeSecuritySkClassifyFlow  *ebpf.Program `ebpf:"kprobe__security_sk_classify_flow"`
+	RawTracepointSchedProcessExec *ebpf.Program `ebpf:"raw_tracepoint__sched_process_exec"`
+	RawTracepointSchedProcessExit *ebpf.Program `ebpf:"raw_tracepoint__sched_process_exit"`
+	RawTracepointSchedProcessFork *ebpf.Program `ebpf:"raw_tracepoint__sched_process_fork"`
+	TcEgress                      *ebpf.Program `ebpf:"tc_egress"`
+	TcIngress                     *ebpf.Program `ebpf:"tc_ingress"`
+
+	BpfMaps
+}
+
 type BPF struct {
 	spec       *ebpf.CollectionSpec
 	objs       *BpfObjects
 	links      []link.Link
 	opts       Options
 	closeFuncs []func()
+
+	skipAttachCgroup bool
 }
 
 type Options struct {
@@ -109,7 +122,29 @@ func (b *BPF) Load(opts Options) error {
 		},
 	})
 	if err != nil {
-		return err
+		if strings.Contains(err.Error(), "unknown func bpf_get_socket_cookie") {
+			log.Printf("will skip attach cgroup due to %s", err)
+
+			b.skipAttachCgroup = true
+			objs := BpfObjectsWithoutCgroup{}
+			if err = b.spec.LoadAndAssign(&objs, &ebpf.CollectionOptions{
+				Programs: ebpf.ProgramOptions{
+					LogLevel: ebpf.LogLevelInstruction,
+					LogSize:  ebpf.DefaultVerifierLogSize * 8,
+				},
+			}); err != nil {
+				return err
+			}
+			b.objs.KprobeSecuritySkClassifyFlow = objs.KprobeSecuritySkClassifyFlow
+			b.objs.RawTracepointSchedProcessExec = objs.RawTracepointSchedProcessExec
+			b.objs.RawTracepointSchedProcessExit = objs.RawTracepointSchedProcessExit
+			b.objs.RawTracepointSchedProcessFork = objs.RawTracepointSchedProcessFork
+			b.objs.TcEgress = objs.TcEgress
+			b.objs.TcIngress = objs.TcIngress
+			b.objs.BpfMaps = objs.BpfMaps
+		} else {
+			return err
+		}
 	}
 	b.opts = opts
 
@@ -145,6 +180,10 @@ func (b *BPF) UpdateFlowPidMapValues(data map[*BpfFlowPidKeyT]BpfFlowPidValueT) 
 }
 
 func (b *BPF) AttachCgroups(cgroupPath string) error {
+	if b.skipAttachCgroup {
+		return nil
+	}
+
 	lk, err := link.AttachCgroup(link.CgroupOptions{
 		Path:    cgroupPath,
 		Attach:  ebpf.AttachCGroupInetSockCreate,

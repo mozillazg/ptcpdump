@@ -152,6 +152,20 @@ jobs:
 
             bash /host/testdata/test_exist_connection.sh /host/ptcpdump/ptcpdump
 
+      - name: Test arp and icmp
+        if: ${{ !startsWith(matrix.kernel, '5.4') }}
+        uses: cilium/little-vm-helper@908ab1ff8a596a03cd5221a1f8602dc44c3f906d # v0.0.12
+        with:
+          provision: 'false'
+          dns-resolver: '1.1.1.1'
+          cmd: |
+            set -ex
+            uname -a
+            cat /etc/issue
+
+            bash /host/testdata/test_arp.sh /host/ptcpdump/ptcpdump
+            bash /host/testdata/test_icmp.sh /host/ptcpdump/ptcpdump
+
       - name: Test run sub program
         uses: cilium/little-vm-helper@908ab1ff8a596a03cd5221a1f8602dc44c3f906d # v0.0.12
         with:
