@@ -2,34 +2,33 @@ package cmd
 
 import (
 	"context"
+	"github.com/mozillazg/ptcpdump/internal/utils"
 	"github.com/spf13/cobra"
+	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 )
 
 var opts = Options{}
 
 var rootCmd = &cobra.Command{
-	Use: `ptcpdump [flags] [expression]
+	Use: `ptcpdump [flags] [expression] [-- command [args]]
 
 Examples:
   ptcpdump -i any tcp
-
   ptcpdump -i eth0 --pid 1234 port 80 and host 10.10.1.1
-
   ptcpdump -i any --pname curl
-
   ptcpdump -i any -w ptcpdump.pcapng
-
   ptcpdump -r ptcpdump.pcapng
+  ptcpdump -i any -- curl ubuntu.com
 
 Expression: see "man 7 pcap-filter"`,
 	DisableFlagsInUseLine: true,
 	Short:                 "ptcpdump is the tcpdump(8) implementation using eBPF, with an extra feature: it adds process info as packet comments for each Packet when possible.",
 	Run: func(cmd *cobra.Command, args []string) {
-		opts.pcapFilter = strings.Join(args, " ")
-		err := run(cmd, args)
+		prepareOptions(&opts, os.Args, args)
+
+		err := run(opts)
 		if err != nil {
 			logErr(err)
 		}
@@ -68,13 +67,15 @@ func Execute() error {
 	return rootCmd.Execute()
 }
 
-func run(cmd *cobra.Command, args []string) error {
+func run(opts Options) error {
 	ctx, stop := signal.NotifyContext(
 		context.Background(), syscall.SIGINT, syscall.SIGTERM,
 	)
 	defer stop()
 
 	switch {
+	case os.Getenv(utils.EnvIsSubProgramLoader) == "true" && len(opts.subProgArgs) > 0:
+		return utils.StartSubProcess(ctx, opts.subProgArgs)
 	case opts.listInterfaces:
 		return listInterfaces()
 	case opts.version:
@@ -82,7 +83,7 @@ func run(cmd *cobra.Command, args []string) error {
 	case opts.ReadPath() != "":
 		return read(ctx, opts)
 	default:
-		return capture(ctx, opts)
+		return capture(ctx, stop, opts)
 	}
 
 	return nil

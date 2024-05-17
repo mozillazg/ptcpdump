@@ -3,14 +3,29 @@ package cmd
 import (
 	"context"
 	"log"
+	"os"
+	"syscall"
 	"time"
 
 	"github.com/mozillazg/ptcpdump/internal/consumer"
 	"github.com/mozillazg/ptcpdump/internal/metadata"
+	"github.com/mozillazg/ptcpdump/internal/utils"
 )
 
-func capture(ctx context.Context, opts Options) error {
+func capture(ctx context.Context, stop context.CancelFunc, opts Options) error {
 	pcache := metadata.NewProcessCache()
+
+	var subProcessFinished <-chan struct{}
+	var err error
+	var subProcessLoaderPid int
+	if len(opts.subProgArgs) > 0 {
+		subProcessLoaderPid, subProcessFinished, err = utils.StartSubProcessLoader(ctx, os.Args[0], opts.subProgArgs)
+		if err != nil {
+			return err
+		}
+		opts.pid = uint(subProcessLoaderPid)
+		opts.followForks = true
+	}
 
 	writers, err := getWriters(opts, pcache)
 	if err != nil {
@@ -51,6 +66,15 @@ func capture(ctx context.Context, opts Options) error {
 	if opts.delayBeforeHandlePacketEvents > 0 {
 		time.Sleep(opts.delayBeforeHandlePacketEvents)
 	}
+	if subProcessLoaderPid > 0 {
+		go func() {
+			syscall.Kill(subProcessLoaderPid, syscall.SIGHUP)
+			<-subProcessFinished
+			time.Sleep(time.Second * 5)
+			stop()
+		}()
+	}
+
 	packetConsumer.Start(ctx, packetEvensCh, opts.maxPacketCount)
 
 	return nil

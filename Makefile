@@ -56,6 +56,9 @@ test:
 	CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) \
 	CGO_ENABLED=1 go test -v ./...
 
+.PHONY: generate
+generate: build-bpf
+
 .PHONY: build-bpf
 build-bpf:
 	go generate ./...
@@ -76,7 +79,7 @@ deps:
 	go mod tidy
 
 .PHONY: e2e
-e2e: build-bpf build
+e2e: lint build-bpf build
 	sudo rm -rf /tmp/ptcpdump_*
 	sudo bash testdata/test_default.sh ./ptcpdump
 	sudo bash testdata/test_base.sh ./ptcpdump
@@ -87,6 +90,8 @@ e2e: build-bpf build
 	sudo bash testdata/test_exist_connection.sh ./ptcpdump
 	sudo bash testdata/test_arp.sh ./ptcpdump
 	sudo bash testdata/test_icmp.sh ./ptcpdump
+	sudo bash testdata/test_sub_program.sh ./ptcpdump
+	sudo bash testdata/test_sub_curl_domain_program.sh ./ptcpdump
 
 .PHONY: clean
 clean:
