@@ -100,13 +100,14 @@ type BpfProgramSpecs struct {
 //
 // It can be passed ebpf.CollectionSpec.Assign.
 type BpfMapSpecs struct {
-	ExecEventStack   *ebpf.MapSpec `ebpf:"exec_event_stack"`
-	ExecEvents       *ebpf.MapSpec `ebpf:"exec_events"`
-	FilterPidMap     *ebpf.MapSpec `ebpf:"filter_pid_map"`
-	FlowPidMap       *ebpf.MapSpec `ebpf:"flow_pid_map"`
-	PacketEventStack *ebpf.MapSpec `ebpf:"packet_event_stack"`
-	PacketEvents     *ebpf.MapSpec `ebpf:"packet_events"`
-	SockCookiePidMap *ebpf.MapSpec `ebpf:"sock_cookie_pid_map"`
+	ExecEventStack      *ebpf.MapSpec `ebpf:"exec_event_stack"`
+	ExecEvents          *ebpf.MapSpec `ebpf:"exec_events"`
+	FilterByKernelCount *ebpf.MapSpec `ebpf:"filter_by_kernel_count"`
+	FilterPidMap        *ebpf.MapSpec `ebpf:"filter_pid_map"`
+	FlowPidMap          *ebpf.MapSpec `ebpf:"flow_pid_map"`
+	PacketEventStack    *ebpf.MapSpec `ebpf:"packet_event_stack"`
+	PacketEvents        *ebpf.MapSpec `ebpf:"packet_events"`
+	SockCookiePidMap    *ebpf.MapSpec `ebpf:"sock_cookie_pid_map"`
 }
 
 // BpfObjects contains all objects after they have been loaded into the kernel.
@@ -128,19 +129,21 @@ func (o *BpfObjects) Close() error {
 //
 // It can be passed to LoadBpfObjects or ebpf.CollectionSpec.LoadAndAssign.
 type BpfMaps struct {
-	ExecEventStack   *ebpf.Map `ebpf:"exec_event_stack"`
-	ExecEvents       *ebpf.Map `ebpf:"exec_events"`
-	FilterPidMap     *ebpf.Map `ebpf:"filter_pid_map"`
-	FlowPidMap       *ebpf.Map `ebpf:"flow_pid_map"`
-	PacketEventStack *ebpf.Map `ebpf:"packet_event_stack"`
-	PacketEvents     *ebpf.Map `ebpf:"packet_events"`
-	SockCookiePidMap *ebpf.Map `ebpf:"sock_cookie_pid_map"`
+	ExecEventStack      *ebpf.Map `ebpf:"exec_event_stack"`
+	ExecEvents          *ebpf.Map `ebpf:"exec_events"`
+	FilterByKernelCount *ebpf.Map `ebpf:"filter_by_kernel_count"`
+	FilterPidMap        *ebpf.Map `ebpf:"filter_pid_map"`
+	FlowPidMap          *ebpf.Map `ebpf:"flow_pid_map"`
+	PacketEventStack    *ebpf.Map `ebpf:"packet_event_stack"`
+	PacketEvents        *ebpf.Map `ebpf:"packet_events"`
+	SockCookiePidMap    *ebpf.Map `ebpf:"sock_cookie_pid_map"`
 }
 
 func (m *BpfMaps) Close() error {
 	return _BpfClose(
 		m.ExecEventStack,
 		m.ExecEvents,
+		m.FilterByKernelCount,
 		m.FilterPidMap,
 		m.FlowPidMap,
 		m.PacketEventStack,
