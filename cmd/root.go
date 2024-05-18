@@ -15,12 +15,14 @@ var rootCmd = &cobra.Command{
 	Use: `ptcpdump [flags] [expression] [-- command [args]]
 
 Examples:
-  ptcpdump -i any tcp
-  ptcpdump -i eth0 --pid 1234 port 80 and host 10.10.1.1
-  ptcpdump -i any --pname curl
-  ptcpdump -i any -w ptcpdump.pcapng
+  sudo ptcpdump -i any tcp
+  sudo ptcpdump -i eth0 --pid 1234 port 80 and host 10.10.1.1
+  sudo ptcpdump -i any --pname curl
+  sudo ptcpdump -i any -w ptcpdump.pcapng
   ptcpdump -r ptcpdump.pcapng
-  ptcpdump -i any -- curl ubuntu.com
+  sudo ptcpdump -i any -- curl ubuntu.com
+  sudo ptcpdump -i any -w - port 80 | tcpdump -n -r -
+  sudo ptcpdump -i any -w - port 80 | tshark -r -
 
 Expression: see "man 7 pcap-filter"`,
 	DisableFlagsInUseLine: true,
@@ -37,7 +39,7 @@ Expression: see "man 7 pcap-filter"`,
 
 func init() {
 	rootCmd.Flags().StringVarP(&opts.writeFilePath, "write-file", "w", "",
-		"Write the raw packets to file rather than parsing and printing them out. They can later be printed with the -r option. e.g. ptcpdump.pcapng")
+		"Write the raw packets to file rather than parsing and printing them out. They can later be printed with the -r option. Standard output is used if file is '-'. e.g. ptcpdump.pcapng")
 	rootCmd.Flags().StringVarP(&opts.readFilePath, "read-file", "r", "",
 		"Read packets from file (which was created with the -w option). e.g. ptcpdump.pcapng")
 	rootCmd.Flags().StringSliceVarP(&opts.ifaces, "interface", "i", []string{"lo"},

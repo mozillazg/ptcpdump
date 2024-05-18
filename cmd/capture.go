@@ -31,13 +31,16 @@ func capture(ctx context.Context, stop context.CancelFunc, opts Options) error {
 		opts.followForks = true
 	}
 
-	writers, err := getWriters(opts, pcache)
+	writers, fcloser, err := getWriters(opts, pcache)
 	if err != nil {
 		return err
 	}
 	defer func() {
 		for _, w := range writers {
 			w.Flush()
+		}
+		if fcloser != nil {
+			fcloser()
 		}
 	}()
 	pcache.Start()
