@@ -13,6 +13,8 @@ import (
 type PcapNGWriter struct {
 	pw     *pcapgo.NgWriter
 	pcache *metadata.ProcessCache
+
+	noBuffer bool
 }
 
 func NewPcapNGWriter(pw *pcapgo.NgWriter, pcache *metadata.ProcessCache) *PcapNGWriter {
@@ -39,6 +41,9 @@ func (w *PcapNGWriter) Write(e *event.Packet) error {
 	if err := w.pw.WritePacketWithOptions(info, e.Data, opts); err != nil {
 		return xerrors.Errorf("writing packet: %w", err)
 	}
+	if w.noBuffer {
+		w.pw.Flush()
+	}
 
 	return nil
 }
@@ -49,4 +54,9 @@ func (w *PcapNGWriter) Flush() error {
 
 func (w *PcapNGWriter) Close() error {
 	return nil
+}
+
+func (w *PcapNGWriter) WithNoBuffer() *PcapNGWriter {
+	w.noBuffer = true
+	return w
 }

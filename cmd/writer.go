@@ -16,37 +16,59 @@ import (
 	"runtime"
 )
 
-func getWriters(opts Options, pcache *metadata.ProcessCache) ([]writer.PacketWriter, error) {
+func getWriters(opts Options, pcache *metadata.ProcessCache) ([]writer.PacketWriter, func() error, error) {
 	var writers []writer.PacketWriter
+	var pcapFile *os.File
+	var err error
 
 	if opts.WritePath() != "" {
-		ext := filepath.Ext(opts.ReadPath())
-		pcapFile, err := os.Create(opts.WritePath())
-		if err != nil {
-			return nil, xerrors.Errorf(": %w", err)
-		}
-		switch ext {
-		case extPcap:
+		ext := filepath.Ext(opts.WritePath())
+		switch {
+		case opts.WritePath() == "-":
+			w, err := newPcapNgWriter(os.Stdout, pcache)
+			if err != nil {
+				return nil, nil, xerrors.Errorf(": %w", err)
+			}
+			w.WithNoBuffer()
+			writers = append(writers, w)
+			break
+		case ext == extPcap:
+			pcapFile, err = os.Create(opts.WritePath())
+			if err != nil {
+				return nil, nil, xerrors.Errorf(": %w", err)
+			}
 			w, err := newPcapWriter(pcapFile)
 			if err != nil {
-				return nil, xerrors.Errorf(": %w", err)
+				return nil, pcapFile.Close, xerrors.Errorf(": %w", err)
 			}
 			writers = append(writers, w)
 			break
 		default:
+			pcapFile, err = os.Create(opts.WritePath())
+			if err != nil {
+				return nil, nil, xerrors.Errorf(": %w", err)
+			}
 			w, err := newPcapNgWriter(pcapFile, pcache)
 			if err != nil {
-				return nil, xerrors.Errorf(": %w", err)
+				return nil, pcapFile.Close, xerrors.Errorf(": %w", err)
 			}
 			writers = append(writers, w)
 		}
 	}
-	if opts.writeFilePath == "" || opts.print {
+	if opts.WritePath() == "" || opts.print {
 		stdoutWriter := writer.NewStdoutWriter(os.Stdout, pcache)
 		writers = append(writers, stdoutWriter)
 	}
 
-	return writers, nil
+	closer := func() error {
+		if pcapFile != nil {
+			pcapFile.Sync()
+			return pcapFile.Close()
+		}
+		return nil
+	}
+
+	return writers, closer, nil
 }
 
 func newPcapNgWriter(w io.Writer, pcache *metadata.ProcessCache) (*writer.PcapNGWriter, error) {
