@@ -10,8 +10,9 @@ import (
 )
 
 type PacketEventConsumer struct {
-	writers []writer.PacketWriter
-	devices map[int]dev.Device
+	writers        []writer.PacketWriter
+	devices        map[int]dev.Device
+	processedCount int
 }
 
 func NewPacketEventConsumer(writers []writer.PacketWriter) *PacketEventConsumer {
@@ -23,16 +24,14 @@ func NewPacketEventConsumer(writers []writer.PacketWriter) *PacketEventConsumer 
 }
 
 func (c *PacketEventConsumer) Start(ctx context.Context, ch <-chan bpf.BpfPacketEventT, maxPacketCount uint) {
-	var n uint
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case pt := <-ch:
 			c.handlePacketEvent(pt)
-			n++
-			if maxPacketCount > 0 && n == maxPacketCount {
-				log.Printf("%d packets captured", n)
+			c.processedCount++
+			if maxPacketCount > 0 && c.processedCount == int(maxPacketCount) {
 				return
 			}
 		}
@@ -56,4 +55,8 @@ func (c *PacketEventConsumer) handlePacketEvent(pt bpf.BpfPacketEventT) {
 
 func (c *PacketEventConsumer) Stop() {
 
+}
+
+func (c *PacketEventConsumer) ProcessedCount() int {
+	return c.processedCount
 }

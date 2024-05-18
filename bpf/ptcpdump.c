@@ -6,6 +6,7 @@
 #include <bpf/bpf_endian.h>
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
+#include <asm-generic/errno.h>
 
 #define TASK_COMM_LEN 16
 #define TTY_NAME_LEN 64
@@ -145,6 +146,13 @@ struct {
     __type(key, u32);
     __type(value, u8);
 } filter_pid_map SEC(".maps");
+
+struct {
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, 1);
+    __type(key, u32);
+    __type(value, u32);
+} filter_by_kernel_count SEC(".maps");
 
 // force emitting struct into the ELF.
 // the `-type` flag of bpf2go need this
@@ -302,6 +310,20 @@ static __always_inline void fill_sk_meta(struct sock *sk, struct flow_pid_key_t 
       }
     }
 };
+
+static __always_inline void *bpf_map_lookup_or_try_init(void *map, const void *key, const void *init) {
+    void *value;
+    value = bpf_map_lookup_elem(map, key);
+    if (value) {
+        return value;
+    }
+
+    int err = bpf_map_update_elem(map, key, init, BPF_NOEXIST);
+    if (err && err != -EEXIST)
+        return 0;
+
+    return bpf_map_lookup_elem(map, key);
+}
 
 static __always_inline bool str_cmp(const char *a, const volatile char *b, int len)
 {
@@ -538,6 +560,12 @@ static __always_inline void handle_tc(struct __sk_buff *skb, bool egress) {
     if (get_pid_meta(skb, &pid_meta, egress) < 0) {
         return;
     };
+
+    u32 *count;
+    count = bpf_map_lookup_or_try_init(&filter_by_kernel_count, &u32_zero, &u32_zero);
+    if (count) {
+        __sync_fetch_and_add(count, 1);
+    }
 
     struct packet_event_t *event;
     event = bpf_map_lookup_elem(&packet_event_stack, &u32_zero);

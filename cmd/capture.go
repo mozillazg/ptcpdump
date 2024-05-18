@@ -2,11 +2,15 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
+	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
+	"github.com/mozillazg/ptcpdump/bpf"
 	"github.com/mozillazg/ptcpdump/internal/consumer"
 	"github.com/mozillazg/ptcpdump/internal/metadata"
 	"github.com/mozillazg/ptcpdump/internal/utils"
@@ -62,6 +66,7 @@ func capture(ctx context.Context, stop context.CancelFunc, opts Options) error {
 
 	log.Println("capturing...")
 
+	var stopByInternal bool
 	packetConsumer := consumer.NewPacketEventConsumer(writers)
 	if opts.delayBeforeHandlePacketEvents > 0 {
 		time.Sleep(opts.delayBeforeHandlePacketEvents)
@@ -70,14 +75,48 @@ func capture(ctx context.Context, stop context.CancelFunc, opts Options) error {
 		go func() {
 			syscall.Kill(subProcessLoaderPid, syscall.SIGHUP)
 			<-subProcessFinished
-			time.Sleep(time.Second * 5)
+			time.Sleep(time.Second * 3)
+			stopByInternal = true
 			stop()
 		}()
 	}
 
+	go printCaptureCountBySignal(ctx, bf, packetConsumer)
 	packetConsumer.Start(ctx, packetEvensCh, opts.maxPacketCount)
 
+	if !stopByInternal && ctx.Err() != nil {
+		fmt.Fprint(os.Stderr, "\n")
+	}
+	counts := getCaptureCounts(bf, packetConsumer)
+	fmt.Fprintf(os.Stderr, "%s\n", strings.Join(counts, "\n"))
+
 	return nil
+}
+
+func printCaptureCountBySignal(ctx context.Context, bf *bpf.BPF, c *consumer.PacketEventConsumer) {
+	ch := make(chan os.Signal, 1)
+	signal.Notify(ch, syscall.SIGUSR1)
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ch:
+			counts := getCaptureCounts(bf, c)
+			fmt.Fprintf(os.Stderr, fmt.Sprintf("ptcpdump: %s\n", strings.Join(counts, ", ")))
+		}
+	}
+}
+
+func getCaptureCounts(bf *bpf.BPF, c *consumer.PacketEventConsumer) []string {
+	var ret []string
+	report := bf.CountReport()
+	report.Captured = c.ProcessedCount()
+
+	ret = append(ret, fmt.Sprintf("%d packets captured", report.Captured))
+	ret = append(ret, fmt.Sprintf("%d packets received by filter", report.Received))
+	ret = append(ret, fmt.Sprintf("%d packets dropped by kernel", report.Dropped))
+
+	return ret
 }
 
 func getCurrentConnects(ctx context.Context, pcache *metadata.ProcessCache, opts Options) []metadata.Connection {

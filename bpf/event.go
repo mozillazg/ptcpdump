@@ -49,7 +49,7 @@ func (b *BPF) handlePacketEvents(ctx context.Context, reader *perf.Reader, ch ch
 			ch <- *event
 		}
 		if record.LostSamples > 0 {
-			// TODO: XXX
+			b.report.Dropped += int(record.LostSamples)
 		}
 	}
 }

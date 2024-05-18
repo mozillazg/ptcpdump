@@ -11,6 +11,7 @@ import (
 	"github.com/florianl/go-tc"
 	"github.com/florianl/go-tc/core"
 	"github.com/jschwinger233/elibpcap"
+	"github.com/mozillazg/ptcpdump/internal/types"
 	"golang.org/x/sys/unix"
 	"golang.org/x/xerrors"
 )
@@ -38,6 +39,7 @@ type BPF struct {
 	closeFuncs []func()
 
 	skipAttachCgroup bool
+	report           *types.CountReport
 }
 
 type Options struct {
@@ -54,8 +56,9 @@ func NewBPF() (*BPF, error) {
 		return nil, err
 	}
 	return &BPF{
-		spec: spec,
-		objs: &BpfObjects{},
+		spec:   spec,
+		objs:   &BpfObjects{},
+		report: &types.CountReport{},
 	}, nil
 }
 
