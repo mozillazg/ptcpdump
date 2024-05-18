@@ -47,13 +47,14 @@ Usage:
 
 Examples:
   sudo ptcpdump -i any tcp
+  sudo ptcpdump -i eth0 -i lo
   sudo ptcpdump -i eth0 --pid 1234 port 80 and host 10.10.1.1
   sudo ptcpdump -i any --pname curl
-  sudo ptcpdump -i any -w ptcpdump.pcapng
-  ptcpdump -r ptcpdump.pcapng
   sudo ptcpdump -i any -- curl ubuntu.com
+  sudo ptcpdump -i any -w ptcpdump.pcapng
   sudo ptcpdump -i any -w - port 80 | tcpdump -n -r -
   sudo ptcpdump -i any -w - port 80 | tshark -r -
+  ptcpdump -r ptcpdump.pcapng
 
 Expression: see "man 7 pcap-filter"
 
