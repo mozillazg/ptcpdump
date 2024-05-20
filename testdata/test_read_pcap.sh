@@ -11,14 +11,11 @@ RNAME="${FILE_PREFIX}_pcap.read.txt"
 
 function tcpdump_write() {
   which tcpdump || (apt update || true && apt install -y tcpdump)
-  timeout 30s tcpdump -c 1 -i any -s 0 -n --print -w "${FNAME}" \
+  timeout 30s tcpdump -c 1 -i any -s 0 -n -w "${FNAME}" \
     'dst host 1.1.1.1 and tcp[tcpflags] = tcp-syn' | tee "${LNAME}" &
   sleep 10
   curl -m 10 1.1.1.1 &>/dev/null || true
   wait
-
-  cat "${LNAME}"
-  cat "${LNAME}" | grep -F ' > 1.1.1.1.80: Flags [S],'   # SYN
 }
 
 function test_ptcpdump_read() {

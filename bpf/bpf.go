@@ -16,7 +16,8 @@ import (
 	"golang.org/x/xerrors"
 )
 
-//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc clang -no-strip -target native -type packet_event_t -type exec_event_t -type flow_pid_key_t -type flow_pid_value_t Bpf ./ptcpdump.c -- -I./headers -I. -Wall
+// $TARGET is set by the Makefile
+//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc clang -no-strip -target $TARGET -type packet_event_t -type exec_event_t -type flow_pid_key_t -type flow_pid_value_t Bpf ./ptcpdump.c -- -I./headers -I./headers/$TARGET -I. -Wall
 
 const tcFilterName = "ptcpdump"
 

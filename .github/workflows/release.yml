@@ -1,6 +1,7 @@
-name: goreleaser
+name: release
 
 on:
+  workflow_dispatch:
   push:
     tags:
       - v*
@@ -27,7 +28,7 @@ jobs:
         uses: goreleaser/goreleaser-action@7ec5c2b0c6cdda6e8bbb49444bc797dd33d74dd8 # v5
         with:
           version: latest
-          args: release --clean
+          args: release --clean -p 1
         env:
           GOPATH: ${{ env.HOME }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
