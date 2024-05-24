@@ -23,12 +23,17 @@ LDFLAGS := -linkmode "external" -extldflags "-static"
 LDFLAGS += -X github.com/mozillazg/ptcpdump/internal.Version=$(VERSION)
 LDFLAGS += -X github.com/mozillazg/ptcpdump/internal.GitCommit=$(GIT_COMMIT)
 
+CARCH ?= $(shell uname -m)
+LIBPCAP_ARCH = $(CARCH)-unknown-linux-gnu
+LIBPCAP_CC ?= gcc
+
 .PHONY: libpcap
 libpcap: $(LIBPCAP_OBJ)
 
 $(LIBPCAP_OBJ): $(LIBPCAP_SRC)/configure $(wildcard $(LIBPCAP_SRC)/*.[ch]) | $(LIBPCAP_DIST_DIR)
 	cd $(LIBPCAP_SRC) && \
-	  ./configure --enable-dbus=no && \
+	  CC=$(LIBPCAP_CC) ./configure --disable-shared --disable-usb --disable-netmap --disable-bluetooth --disable-dbus --without-libnl \
+	  	--host=$(LIBPCAP_ARCH) && \
 	  $(MAKE) && \
 	  $(MAKE) install prefix=$(LIBPCAP_DIST_DIR)
 
@@ -61,7 +66,8 @@ generate: build-bpf
 
 .PHONY: build-bpf
 build-bpf:
-	go generate ./...
+	TARGET=amd64 go generate ./...
+	TARGET=arm64 go generate ./...
 
 .PHONY: lint
 lint: deps fmt

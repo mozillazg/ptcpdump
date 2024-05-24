@@ -1,6 +1,8 @@
 # ptcpdump
 
-[![Test](https://github.com/mozillazg/ptcpdump/actions/workflows/test.yml/badge.svg)](https://github.com/mozillazg/ptcpdump/actions/workflows/test.yml)
+![amd64-e2e](https://img.shields.io/github/actions/workflow/status/mozillazg/ptcpdump/test.yml?label=x86_64%20(amd64)%20e2e)
+![arm64-e2e](https://img.shields.io/circleci/build/gh/mozillazg/ptcpdump/master?label=aarch64%20(arm64)%20e2e)
+
 
 ptcpdump is the tcpdump(8) implementation using eBPF, with an extra feature:
 it adds process info as packet comments for each Packet when possible.

@@ -1,0 +1,100 @@
+version: 2.1
+
+executors:
+  ubuntu-20-04:
+    machine:
+      image: ubuntu-2004:2024.04.4
+  ubuntu-22-04:
+    machine:
+      image: ubuntu-2204:2024.04.4
+
+jobs:
+  arm64-e2e:
+    parameters:
+      os:
+        type: executor
+    resource_class: arm.medium
+    executor: << parameters.os >>
+
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - go-mod-v4-{{ checksum "go.sum" }}
+      - run:
+          name: Install Dependencies
+          command: go mod download
+      - save_cache:
+          key: go-mod-v4-{{ checksum "go.sum" }}
+          paths:
+            - "/go/pkg/mod"
+
+      - run:
+          name: install deps
+          command: |
+            sudo apt-get update && sudo apt-get install -y gcc flex bison make libelf-dev
+            make libpcap
+
+      - run:
+          name: build
+          command: |
+            make build
+
+            echo '========== info =========='
+            uname -a
+            cat /etc/issue
+            file ./ptcpdump
+
+      - run:
+          name: e2e (test base)
+          command: |
+            sudo bash testdata/test_default.sh ./ptcpdump
+            sudo bash testdata/test_base.sh ./ptcpdump
+
+      - run:
+          name: e2e (test pname filter)
+          command: |
+            sudo bash testdata/test_pname_filter.sh ./ptcpdump
+
+      - run:
+          name: e2e (test pid filter)
+          command: |
+            sudo bash testdata/test_pid_filter.sh ./ptcpdump
+
+      - run:
+          name: e2e (test read pcap)
+          command: |
+            sudo bash testdata/test_read_pcap.sh ./ptcpdump
+
+      - run:
+          name: e2e (test write pcap)
+          command: |
+            sudo bash testdata/test_write_pcap.sh ./ptcpdump
+
+      - run:
+          name: e2e (test_arp.sh)
+          command: |
+            sudo bash testdata/test_arp.sh ./ptcpdump
+            sudo bash testdata/test_icmp.sh ./ptcpdump
+
+      - run:
+          name: e2e (test sub-program)
+          command: |
+            sudo bash testdata/test_sub_program.sh ./ptcpdump
+            sudo bash testdata/test_sub_curl_domain_program.sh ./ptcpdump
+
+      - run:
+          name: e2e (test write stdout)
+          command: |
+            sudo bash testdata/test_write_stdout.sh ./ptcpdump
+
+
+workflows:
+  e2e:
+    jobs:
+      - arm64-e2e:
+          matrix:
+            parameters:
+              os:
+                - ubuntu-20-04
+                - ubuntu-22-04
