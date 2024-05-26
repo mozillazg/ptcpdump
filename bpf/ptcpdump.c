@@ -1,28 +1,28 @@
-//go:build ignore
-// +build ignore
+// go:build ignore
+//  +build ignore
 
 #include "vmlinux.h"
+#include <asm-generic/errno.h>
 #include <bpf/bpf_core_read.h>
 #include <bpf/bpf_endian.h>
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
-#include <asm-generic/errno.h>
 
 #define TASK_COMM_LEN 16
 #define TTY_NAME_LEN 64
-#define ETH_HLEN 14 /* Total octets in header.	 */
-#define ETH_P_IP 0x0800 /* Internet Protocol packet	*/
-#define ETH_P_IPV6	0x86DD		/* IPv6 over bluebook		*/
-#define IPPROTO_ICMP  1		/* Internet Control Message Protocol	*/
-#define IPPROTO_ICMPV6		58	/* ICMPv6			*/
-#define IPPROTO_TCP  6		/* Transmission Control Protocol	*/
-#define IPPROTO_UDP  17		/* User Datagram Protocol		*/
-#define IPPROTO_SCTP  132		/* Stream Control Transport Protocol	*/
+#define ETH_HLEN 14       /* Total octets in header.	 */
+#define ETH_P_IP 0x0800   /* Internet Protocol packet	*/
+#define ETH_P_IPV6 0x86DD /* IPv6 over bluebook		*/
+#define IPPROTO_ICMP 1    /* Internet Control Message Protocol	*/
+#define IPPROTO_ICMPV6 58 /* ICMPv6			*/
+#define IPPROTO_TCP 6     /* Transmission Control Protocol	*/
+#define IPPROTO_UDP 17    /* User Datagram Protocol		*/
+#define IPPROTO_SCTP 132  /* Stream Control Transport Protocol	*/
 #define TC_ACT_UNSPEC -1
-#define TC_ACT_OK      0
-#define TC_ACT_SHOT    2
-#define AF_INET    2
-#define AF_INET6   10
+#define TC_ACT_OK 0
+#define TC_ACT_SHOT 2
+#define AF_INET 2
+#define AF_INET6 10
 #define MAX_PAYLOAD_SIZE 1500
 #define INGRESS_PACKET 0
 #define EGRESS_PACKET 1
@@ -43,14 +43,19 @@ struct l2_t {
 };
 
 struct l3_t {
-    u8 ip_version;
     u8 protocol;
-    u32 saddr[4];
-    u32 daddr[4];
+    u64 saddr[2];
+    u64 daddr[2];
 };
 
 struct l4_t {
-    u64 flags;
+    u16 sport;
+    u16 dport;
+};
+
+struct nat_flow_t {
+    u64 saddr[2];
+    u64 daddr[2];
     u16 sport;
     u16 dport;
 };
@@ -66,15 +71,12 @@ struct packet_meta_t {
 };
 
 struct flow_pid_key_t {
-    u32 saddr[4];
+    u64 saddr[2];
     u16 sport;
 };
 
 struct flow_pid_value_t {
     u32 pid;
-
-    /* char comm[TASK_COMM_LEN]; */
-    /* char tty_name[TTY_NAME_LEN]; */
 };
 
 struct packet_event_meta_t {
@@ -112,6 +114,13 @@ struct {
     __uint(key_size, sizeof(u32));
     __uint(value_size, sizeof(u32));
 } exec_events SEC(".maps");
+
+struct {
+    __uint(type, BPF_MAP_TYPE_LRU_HASH);
+    __uint(max_entries, 65536);
+    __type(key, struct nat_flow_t);
+    __type(value, struct nat_flow_t);
+} nat_flow_map SEC(".maps");
 
 struct {
     __uint(type, BPF_MAP_TYPE_LRU_HASH);
@@ -162,20 +171,19 @@ const struct exec_event_t *unused2 __attribute__((unused));
 const struct flow_pid_key_t *unused3 __attribute__((unused));
 const struct flow_pid_value_t *unused4 __attribute__((unused));
 
-
 static __always_inline int parse_skb_l2(struct __sk_buff *skb, struct l2_t *l2, u32 *offset) {
-    if (bpf_skb_load_bytes(skb, *offset + offsetof(struct ethhdr, h_proto), &l2->h_protocol, sizeof(l2->h_protocol)) < 0 ) {
+    if (bpf_skb_load_bytes(skb, *offset + offsetof(struct ethhdr, h_proto), &l2->h_protocol, sizeof(l2->h_protocol)) <
+        0) {
         return -1;
     }
     l2->h_protocol = bpf_ntohs(l2->h_protocol);
     *offset += sizeof(struct ethhdr);
     return 0;
-};
+}
 
 static __always_inline int parse_skb_l3(struct __sk_buff *skb, u16 protocol, struct l3_t *l3, u32 *offset) {
     switch (protocol) {
     case ETH_P_IP: {
-        l3->ip_version = 4;
         struct iphdr ip_hdr;
         if (bpf_skb_load_bytes(skb, *offset, &ip_hdr, sizeof(struct iphdr)) < 0) {
             return -1;
@@ -185,9 +193,8 @@ static __always_inline int parse_skb_l3(struct __sk_buff *skb, u16 protocol, str
         l3->daddr[0] = ip_hdr.daddr;
         *offset += sizeof(struct iphdr);
         return 0;
-     }
+    }
     case ETH_P_IPV6: {
-        l3->ip_version = 6;
         struct ipv6hdr ip_hdr;
         if (bpf_skb_load_bytes(skb, *offset, &ip_hdr, sizeof(struct ipv6hdr)) < 0) {
             return -1;
@@ -201,35 +208,29 @@ static __always_inline int parse_skb_l3(struct __sk_buff *skb, u16 protocol, str
         }
         *offset += sizeof(struct ipv6hdr);
         return 0;
-     }
+    }
     default: {
         return 0;
-     }
+    }
     }
 
     return 0;
-};
+}
 
 static __always_inline int parse_skb_l4(struct __sk_buff *skb, u8 protocol, struct l4_t *l4, u32 *offset) {
     switch (protocol) {
-//    case IPPROTO_ICMP: {
-//        l4->sport = 0;
-//        l4->dport = 0;
-//        if (bpf_skb_load_bytes(skb, *offset + offsetof(struct icmphdr, type), &l4->flags, sizeof(u8)) < 0) {
-//            return -1;
-//        }
-//        *offset += sizeof(struct icmphdr);
-//        return 0;
-//     }
-//    case IPPROTO_ICMPV6: {
-//        l4->sport = 0;
-//        l4->dport = 0;
-//        if (bpf_skb_load_bytes(skb, *offset + offsetof(struct icmp6hdr, icmp6_type), &l4->flags, sizeof(u8)) < 0) {
-//            return -1;
-//        }
-//        *offset += sizeof(struct icmp6hdr);
-//        return 0;
-//     }
+        //    case IPPROTO_ICMP: {
+        //        l4->sport = 0;
+        //        l4->dport = 0;
+        //        *offset += sizeof(struct icmphdr);
+        //        return 0;
+        //     }
+        //    case IPPROTO_ICMPV6: {
+        //        l4->sport = 0;
+        //        l4->dport = 0;
+        //        *offset += sizeof(struct icmp6hdr);
+        //        return 0;
+        //     }
     case IPPROTO_TCP: {
         struct tcphdr tcp_hdr;
         if (bpf_skb_load_bytes(skb, *offset, &tcp_hdr, sizeof(struct tcphdr)) < 0) {
@@ -237,9 +238,8 @@ static __always_inline int parse_skb_l4(struct __sk_buff *skb, u8 protocol, stru
         }
         l4->sport = bpf_ntohs(tcp_hdr.source);
         l4->dport = bpf_ntohs(tcp_hdr.dest);
-        l4->flags = tcp_hdr.fin + (tcp_hdr.syn << 1) + (tcp_hdr.rst << 2) + (tcp_hdr.psh << 3) + (tcp_hdr.ack << 4) + (tcp_hdr.urg << 5) + (tcp_hdr.ece << 6) + (tcp_hdr.cwr << 7);
         *offset += sizeof(struct tcphdr);
-      }
+    }
         return 0;
     case IPPROTO_UDP: {
         struct udphdr udp_hdr;
@@ -250,7 +250,7 @@ static __always_inline int parse_skb_l4(struct __sk_buff *skb, u8 protocol, stru
         l4->dport = bpf_ntohs(udp_hdr.dest);
         *offset += sizeof(struct udphdr);
         return 0;
-      }
+    }
     case IPPROTO_SCTP: {
         struct sctphdr sctp_hdr;
         if (bpf_skb_load_bytes(skb, *offset, &sctp_hdr, sizeof(struct sctphdr)) < 0) {
@@ -260,14 +260,14 @@ static __always_inline int parse_skb_l4(struct __sk_buff *skb, u8 protocol, stru
         l4->dport = bpf_ntohs(sctp_hdr.dest);
         *offset += sizeof(struct sctphdr);
         return 0;
-      }
+    }
     default: {
         return 0;
     }
-   }
+    }
 
-   return 0;
-};
+    return 0;
+}
 
 static __always_inline int parse_skb_meta(struct __sk_buff *skb, struct packet_meta_t *meta) {
     meta->ifindex = skb->ifindex;
@@ -284,32 +284,30 @@ static __always_inline int parse_skb_meta(struct __sk_buff *skb, struct packet_m
         return -1;
     }
     return 0;
-};
+}
 
 static __always_inline void fill_process_meta(struct task_struct *task, struct flow_pid_value_t *meta) {
-    /* struct tty_struct *tty = (struct tty_struct *)BPF_CORE_READ(task, signal, tty); */
-    /* BPF_CORE_READ_STR_INTO(&meta->tty_name, tty, name); */
-    /* BPF_CORE_READ_STR_INTO(&meta->comm, task, comm); */
     BPF_CORE_READ_INTO(&meta->pid, task, tgid);
-};
+}
 
 static __always_inline void fill_sk_meta(struct sock *sk, struct flow_pid_key_t *meta) {
     BPF_CORE_READ_INTO(&meta->sport, sk, __sk_common.skc_num);
     u32 family = BPF_CORE_READ(sk, __sk_common.skc_family);
     switch (family) {
     case AF_INET: {
-        BPF_CORE_READ_INTO(&meta->saddr[0], sk, __sk_common.skc_rcv_saddr);
+        bpf_probe_read(&meta->saddr, sizeof(sk->__sk_common.skc_rcv_saddr), &sk->__sk_common.skc_rcv_saddr);
         break;
-      }
+    }
     case AF_INET6: {
-        BPF_CORE_READ_INTO(&meta->saddr, sk, __sk_common.skc_v6_rcv_saddr.in6_u.u6_addr32);
+        bpf_probe_read(&meta->saddr, sizeof(sk->__sk_common.skc_v6_rcv_saddr.in6_u.u6_addr32),
+                       &sk->__sk_common.skc_v6_rcv_saddr.in6_u.u6_addr32);
         break;
-      }
+    }
     default: {
         break;
-      }
     }
-};
+    }
+}
 
 static __always_inline void *bpf_map_lookup_or_try_init(void *map, const void *key, const void *init) {
     void *value;
@@ -325,8 +323,7 @@ static __always_inline void *bpf_map_lookup_or_try_init(void *map, const void *k
     return bpf_map_lookup_elem(map, key);
 }
 
-static __always_inline bool str_cmp(const char *a, const volatile char *b, int len)
-{
+static __always_inline bool str_cmp(const char *a, const volatile char *b, int len) {
 #pragma unroll
     for (int i = 0; i < len; i++) {
         if (a[i] != b[i])
@@ -337,9 +334,7 @@ static __always_inline bool str_cmp(const char *a, const volatile char *b, int l
     return 0;
 }
 
-static __always_inline bool have_pid_filter_rules() {
-    return filter_pid > 0 || filter_comm_enable == 1;
-}
+static __always_inline bool have_pid_filter_rules() { return filter_pid > 0 || filter_comm_enable == 1; }
 
 static __always_inline int process_filter(struct task_struct *task) {
     // no filter rules
@@ -396,7 +391,7 @@ static __always_inline int parent_process_filter(struct task_struct *current) {
 
 static __always_inline void handle_fork(struct bpf_raw_tracepoint_args *ctx) {
     if (filter_follow_forks != 1) {
-       return;
+        return;
     }
 
     // args: struct task_struct *parent, struct task_struct *child
@@ -428,7 +423,7 @@ int cgroup__sock_create(void *ctx) {
         return 1;
     }
 
-    struct task_struct *task =  (struct task_struct*)bpf_get_current_task();
+    struct task_struct *task = (struct task_struct *)bpf_get_current_task();
     if (parent_process_filter(task) < 0) {
         if (process_filter(task) < 0) {
             return 1;
@@ -462,7 +457,7 @@ SEC("kprobe/security_sk_classify_flow")
 int BPF_KPROBE(kprobe__security_sk_classify_flow, struct sock *sk) {
     struct flow_pid_key_t key = {0};
     struct flow_pid_value_t value = {0};
-    struct task_struct *task =  (struct task_struct*)bpf_get_current_task();
+    struct task_struct *task = (struct task_struct *)bpf_get_current_task();
 
     if (parent_process_filter(task) < 0) {
         if (process_filter(task) < 0) {
@@ -477,18 +472,110 @@ int BPF_KPROBE(kprobe__security_sk_classify_flow, struct sock *sk) {
         return 0;
     }
 
-    /* bpf_printk("(%s) %pI4 %d", value.comm, &key.saddr[0], key.sport); */
+    // bpf_printk("[ptcpdump] flow key: %pI4 %d", &key.saddr[0], key.sport);
 
     int ret = bpf_map_update_elem(&flow_pid_map, &key, &value, BPF_ANY);
     if (ret != 0) {
         bpf_printk("bpf_map_update_elem flow_pid_map failed: %d", ret);
     }
     return 0;
-};
+}
 
-static __noinline bool pcap_filter(void *_skb, void *__skb, void *___skb, void *data, void* data_end) {
-	return data != data_end && _skb == __skb && __skb == ___skb;
-};
+static __always_inline void parse_conntrack_tuple(struct nf_conntrack_tuple *tuple, struct nat_flow_t *flow) {
+    BPF_CORE_READ_INTO(&flow->saddr, tuple, src.u3.all);
+    BPF_CORE_READ_INTO(&flow->daddr, tuple, dst.u3.all);
+
+    flow->sport = bpf_ntohs(tuple->src.u.all);
+    flow->dport = bpf_ntohs(tuple->dst.u.all);
+}
+
+static __always_inline void reverse_flow(struct nat_flow_t *orig_flow, struct nat_flow_t *new_flow) {
+    new_flow->saddr[0] = orig_flow->daddr[0];
+    new_flow->daddr[0] = orig_flow->saddr[0];
+
+    new_flow->sport = orig_flow->dport;
+    new_flow->dport = orig_flow->sport;
+}
+
+static __always_inline void handle_nat(struct nf_conn *ct) {
+    struct nf_conntrack_tuple_hash tuplehash[IP_CT_DIR_MAX];
+    BPF_CORE_READ_INTO(&tuplehash, ct, tuplehash);
+
+    struct nf_conntrack_tuple *orig_tuple = &tuplehash[IP_CT_DIR_ORIGINAL].tuple;
+    struct nf_conntrack_tuple *reply_tuple = &tuplehash[IP_CT_DIR_REPLY].tuple;
+
+    struct nat_flow_t orig = {0};
+    struct nat_flow_t reply = {0};
+    parse_conntrack_tuple(orig_tuple, &orig);
+    parse_conntrack_tuple(reply_tuple, &reply);
+
+    struct nat_flow_t reversed_orig = {0};
+    reverse_flow(&orig, &reversed_orig);
+    // bpf_printk("[ptcpdump] nat flow %pI4:%d %pI4:%d ->",
+    // 		&reply.saddr[0], reply.sport,
+    // 	       	&reply.daddr[0], reply.dport);
+    // bpf_printk("[ptcpdump]                               -> %pI4:%d %pI4:%d",
+    // 		&reversed_orig.saddr[0], reversed_orig.sport,
+    // 		&reversed_orig.saddr[0], reversed_orig.dport);
+    bpf_map_update_elem(&nat_flow_map, &reply, &reversed_orig, BPF_ANY);
+
+    struct nat_flow_t reversed_reply = {0};
+    reverse_flow(&reply, &reversed_reply);
+    // bpf_printk("[ptcpdump] nat flow %pI4:%d %pI4:%d ->",
+    // 		&reversed_reply.saddr[0], reversed_reply.sport,
+    // 	       	&reversed_reply.daddr[0], reversed_reply.dport);
+    // bpf_printk("[ptcpdump]                               -> %pI4:%d %pI4:%d",
+    // 		&orig.saddr[0], orig.sport,
+    // 		&orig.saddr[0], orig.dport);
+    bpf_map_update_elem(&nat_flow_map, &reversed_reply, &orig, BPF_ANY);
+}
+
+SEC("kprobe/nf_nat_packet")
+int BPF_KPROBE(kprobe__nf_nat_packet, struct nf_conn *ct) {
+    handle_nat(ct);
+    return 0;
+}
+
+SEC("kprobe/nf_nat_manip_pkt")
+int BPF_KPROBE(kprobe__nf_nat_manip_pkt, void *_, struct nf_conn *ct) {
+    handle_nat(ct);
+    return 0;
+}
+
+static __noinline bool pcap_filter(void *_skb, void *__skb, void *___skb, void *data, void *data_end) {
+    return data != data_end && _skb == __skb && __skb == ___skb;
+}
+
+static __always_inline void route_packet(struct packet_meta_t *packet_meta, struct nat_flow_t *flow) {
+    flow->saddr[0] = packet_meta->l3.saddr[0];
+    flow->saddr[1] = packet_meta->l3.saddr[1];
+
+    flow->daddr[0] = packet_meta->l3.daddr[0];
+    flow->daddr[1] = packet_meta->l3.daddr[1];
+
+    flow->sport = packet_meta->l4.sport;
+    flow->dport = packet_meta->l4.dport;
+
+    struct nat_flow_t tmp_flow = *flow;
+#pragma unroll
+    for (int i = 0; i < 10; i++) {
+        struct nat_flow_t *translated_flow = bpf_map_lookup_elem(&nat_flow_map, &tmp_flow);
+        if (translated_flow == NULL) {
+            // bpf_printk("[ptcpdump]: no router %pI4:%d %pI4:%d",
+            // 		&tmp_flow.saddr[0], tmp_flow.sport, &tmp_flow.daddr[0],
+            // tmp_flow.dport);
+            break;
+        }
+
+        // bpf_printk("[ptcpdump] route: %pI4 %pI4 => %pI4 %pI4",
+        // 		&tmp_flow.saddr[0], &tmp_flow.daddr[0],
+        // 		&translated_flow->saddr[0], &translated_flow->daddr[0]);
+        *flow = *translated_flow;
+        tmp_flow = *translated_flow;
+    }
+
+    return;
+}
 
 static __always_inline int get_pid_meta(struct __sk_buff *skb, struct flow_pid_value_t *pid_meta, bool egress) {
     u64 cookie = bpf_get_socket_cookie(skb);
@@ -500,9 +587,9 @@ static __always_inline int get_pid_meta(struct __sk_buff *skb, struct flow_pid_v
         }
     } else {
         if (egress) {
-//            bpf_printk("[ptcpdump] tc egress: bpf_get_socket_cookie failed");
+            // bpf_printk("[ptcpdump] tc egress: bpf_get_socket_cookie failed");
         } else {
-//            bpf_printk("[ptcpdump] tc ingress: bpf_get_socket_cookie failed");
+            //            bpf_printk("[ptcpdump] tc ingress: bpf_get_socket_cookie failed");
         }
     }
 
@@ -511,43 +598,47 @@ static __always_inline int get_pid_meta(struct __sk_buff *skb, struct flow_pid_v
     if (ret < 0) {
         return -1;
     }
+    struct nat_flow_t flow = {0};
+    route_packet(&packet_meta, &flow);
 
     bool have_pid_filter = have_pid_filter_rules();
     struct flow_pid_key_t key = {0};
-    if (egress) {
-        key.saddr[0] = packet_meta.l3.saddr[0];
-        key.saddr[1] = packet_meta.l3.saddr[1];
-        key.saddr[2] = packet_meta.l3.saddr[2];
-        key.saddr[3] = packet_meta.l3.saddr[3];
-        key.sport = packet_meta.l4.sport;
-    } else {
-        key.saddr[0] = packet_meta.l3.daddr[0];
-        key.saddr[1] = packet_meta.l3.daddr[1];
-        key.saddr[2] = packet_meta.l3.daddr[2];
-        key.saddr[3] = packet_meta.l3.daddr[3];
-        key.sport = packet_meta.l4.dport;
-    }
 
-    if (have_pid_filter && key.sport == 0) {
-        return -1;
-    }
+#pragma unroll
+    for (int i = 0; i < 2; i++) {
+        if (egress) {
+            key.saddr[0] = flow.saddr[0];
+            key.saddr[1] = flow.saddr[1];
+            key.sport = flow.sport;
+        } else {
+            key.saddr[0] = flow.daddr[0];
+            key.saddr[1] = flow.daddr[1];
+            key.sport = flow.dport;
+        }
 
-
-    if (key.sport > 0) {
-        /* bpf_printk("[tc] %pI4 %d", &key.saddr[0], key.sport); */
-
-        struct flow_pid_value_t *value = bpf_map_lookup_elem(&flow_pid_map, &key);
-        if (value) {
-    //        bpf_printk("[tc] (%s) %pI4 %d", pid_meta->comm, &key.saddr[0], key.sport);
-            pid_meta->pid = value->pid;
-        } else if (have_pid_filter) {
-            /* bpf_printk("[tc] %pI4 %d bpf_map_lookup_elem is empty", &key.saddr[0], key.sport); */
+        if (have_pid_filter && key.sport == 0) {
             return -1;
         }
+
+        if (key.sport > 0) {
+            // bpf_printk("[tc] check %pI4 %d", &key.saddr[0], key.sport);
+            struct flow_pid_value_t *value = bpf_map_lookup_elem(&flow_pid_map, &key);
+            if (value) {
+                // bpf_printk("[tc] got %pI4 %d -> %pI4", &flow.saddr[0],
+                // flow.sport, &flow.daddr[0]);
+                pid_meta->pid = value->pid;
+                break;
+            } else if (have_pid_filter) {
+                /* bpf_printk("[tc] %pI4 %d bpf_map_lookup_elem is empty",
+                 * &key.saddr[0], key.sport); */
+                return -1;
+            }
+        }
+        egress = !egress;
     }
 
     return 0;
-};
+}
 
 static __always_inline void handle_tc(struct __sk_buff *skb, bool egress) {
     bpf_skb_pull_data(skb, 0);
@@ -573,8 +664,8 @@ static __always_inline void handle_tc(struct __sk_buff *skb, bool egress) {
         bpf_printk("[ptcpdump] packet_event_stack failed");
         return;
     }
-   /* __builtin_memset(&event->payload, 0, sizeof(event->payload)); */
-   __builtin_memset(&event->meta, 0, sizeof(event->meta));
+    /* __builtin_memset(&event->payload, 0, sizeof(event->payload)); */
+    __builtin_memset(&event->meta, 0, sizeof(event->meta));
 
     if (egress) {
         event->meta.packet_type = EGRESS_PACKET;
@@ -593,8 +684,8 @@ static __always_inline void handle_tc(struct __sk_buff *skb, bool egress) {
     payload_len = payload_len < MAX_PAYLOAD_SIZE ? payload_len : MAX_PAYLOAD_SIZE;
     event->meta.payload_len = payload_len;
 
-    bpf_perf_event_output(skb, &packet_events, BPF_F_CURRENT_CPU | (payload_len <<32),
-                          event, offsetof(struct packet_event_t, payload));
+    bpf_perf_event_output(skb, &packet_events, BPF_F_CURRENT_CPU | (payload_len << 32), event,
+                          offsetof(struct packet_event_t, payload));
 
     return;
 }
@@ -618,7 +709,7 @@ static __always_inline void handle_exec(struct bpf_raw_tracepoint_args *ctx) {
     struct linux_binprm *bprm = (struct linux_binprm *)BPF_CORE_READ(ctx, args[2]);
     const char *filename_p = BPF_CORE_READ(bprm, filename);
     int f_ret = bpf_probe_read_str(&event->filename, sizeof(event->filename), filename_p);
-    if (f_ret < 0 ) {
+    if (f_ret < 0) {
         bpf_printk("[ptcpdump] read exec filename failed: %d", f_ret);
     }
     if (f_ret == EXEC_FILENAME_LEN) {
@@ -674,10 +765,10 @@ SEC("tc")
 int tc_ingress(struct __sk_buff *skb) {
     handle_tc(skb, false);
     return TC_ACT_OK;
-};
+}
 
 SEC("tc")
 int tc_egress(struct __sk_buff *skb) {
     handle_tc(skb, true);
     return TC_ACT_OK;
-};
+}

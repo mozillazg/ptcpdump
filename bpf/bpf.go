@@ -22,6 +22,8 @@ import (
 const tcFilterName = "ptcpdump"
 
 type BpfObjectsWithoutCgroup struct {
+	KprobeNfNatManipPkt           *ebpf.Program `ebpf:"kprobe__nf_nat_manip_pkt"`
+	KprobeNfNatPacket             *ebpf.Program `ebpf:"kprobe__nf_nat_packet"`
 	KprobeSecuritySkClassifyFlow  *ebpf.Program `ebpf:"kprobe__security_sk_classify_flow"`
 	RawTracepointSchedProcessExec *ebpf.Program `ebpf:"raw_tracepoint__sched_process_exec"`
 	RawTracepointSchedProcessExit *ebpf.Program `ebpf:"raw_tracepoint__sched_process_exit"`
@@ -139,6 +141,8 @@ func (b *BPF) Load(opts Options) error {
 			}); err != nil {
 				return err
 			}
+			b.objs.KprobeNfNatManipPkt = objs.KprobeNfNatManipPkt
+			b.objs.KprobeNfNatPacket = objs.KprobeNfNatPacket
 			b.objs.KprobeSecuritySkClassifyFlow = objs.KprobeSecuritySkClassifyFlow
 			b.objs.RawTracepointSchedProcessExec = objs.RawTracepointSchedProcessExec
 			b.objs.RawTracepointSchedProcessExit = objs.RawTracepointSchedProcessExit
@@ -218,6 +222,21 @@ func (b *BPF) AttachKprobes() error {
 		return xerrors.Errorf("attach kprobe/security_sk_classify_flow: %w", err)
 	}
 	b.links = append(b.links, lk)
+
+	lk, err = link.Kprobe("nf_nat_packet",
+		b.objs.KprobeNfNatPacket, &link.KprobeOptions{})
+	if err != nil {
+		return xerrors.Errorf("attach kprobe/nf_nat_packet: %w", err)
+	}
+	b.links = append(b.links, lk)
+
+	lk, err = link.Kprobe("nf_nat_manip_pkt",
+		b.objs.KprobeNfNatManipPkt, &link.KprobeOptions{})
+	if err != nil {
+		return xerrors.Errorf("attach kprobe/nf_nat_manip_pkt: %w", err)
+	}
+	b.links = append(b.links, lk)
+
 	return nil
 }
 
