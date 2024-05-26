@@ -495,7 +495,10 @@ static __always_inline void parse_conntrack_tuple(struct nf_conntrack_tuple *tup
 
 static __always_inline void reverse_flow(struct nat_flow_t *orig_flow, struct nat_flow_t *new_flow) {
     new_flow->saddr[0] = orig_flow->daddr[0];
+    new_flow->saddr[1] = orig_flow->daddr[1];
+
     new_flow->daddr[0] = orig_flow->saddr[0];
+    new_flow->daddr[1] = orig_flow->saddr[1];
 
     new_flow->sport = orig_flow->dport;
     new_flow->dport = orig_flow->sport;
@@ -548,7 +551,10 @@ int BPF_KPROBE(kprobe__nf_nat_manip_pkt, void *_, struct nf_conn *ct) {
 
 static __always_inline void clone_flow(struct nat_flow_t *orig, struct nat_flow_t *new_flow) {
     new_flow->saddr[0] = orig->saddr[0];
+    new_flow->saddr[1] = orig->saddr[1];
+
     new_flow->daddr[0] = orig->daddr[0];
+    new_flow->daddr[1] = orig->daddr[1];
 
     new_flow->sport = orig->sport;
     new_flow->dport = orig->dport;
