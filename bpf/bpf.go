@@ -136,7 +136,7 @@ func (b *BPF) Load(opts Options) error {
 			if err = b.spec.LoadAndAssign(&objs, &ebpf.CollectionOptions{
 				Programs: ebpf.ProgramOptions{
 					LogLevel: ebpf.LogLevelInstruction,
-					LogSize:  ebpf.DefaultVerifierLogSize * 8,
+					LogSize:  ebpf.DefaultVerifierLogSize * 16,
 				},
 			}); err != nil {
 				return err

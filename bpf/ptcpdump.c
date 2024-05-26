@@ -481,6 +481,10 @@ int BPF_KPROBE(kprobe__security_sk_classify_flow, struct sock *sk) {
     return 0;
 }
 
+static __noinline bool pcap_filter(void *_skb, void *__skb, void *___skb, void *data, void *data_end) {
+    return data != data_end && _skb == __skb && __skb == ___skb;
+}
+
 static __always_inline void parse_conntrack_tuple(struct nf_conntrack_tuple *tuple, struct nat_flow_t *flow) {
     BPF_CORE_READ_INTO(&flow->saddr, tuple, src.u3.all);
     BPF_CORE_READ_INTO(&flow->daddr, tuple, dst.u3.all);
@@ -542,8 +546,12 @@ int BPF_KPROBE(kprobe__nf_nat_manip_pkt, void *_, struct nf_conn *ct) {
     return 0;
 }
 
-static __noinline bool pcap_filter(void *_skb, void *__skb, void *___skb, void *data, void *data_end) {
-    return data != data_end && _skb == __skb && __skb == ___skb;
+static __always_inline void clone_flow(struct nat_flow_t *orig, struct nat_flow_t *new_flow) {
+    new_flow->saddr[0] = orig->saddr[0];
+    new_flow->daddr[0] = orig->daddr[0];
+
+    new_flow->sport = orig->sport;
+    new_flow->dport = orig->dport;
 }
 
 static __always_inline void route_packet(struct packet_meta_t *packet_meta, struct nat_flow_t *flow) {
@@ -570,8 +578,8 @@ static __always_inline void route_packet(struct packet_meta_t *packet_meta, stru
         // bpf_printk("[ptcpdump] route: %pI4 %pI4 => %pI4 %pI4",
         // 		&tmp_flow.saddr[0], &tmp_flow.daddr[0],
         // 		&translated_flow->saddr[0], &translated_flow->daddr[0]);
-        *flow = *translated_flow;
-        tmp_flow = *translated_flow;
+        clone_flow(translated_flow, flow);
+        clone_flow(translated_flow, &tmp_flow);
     }
 
     return;
