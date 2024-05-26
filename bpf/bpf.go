@@ -226,14 +226,22 @@ func (b *BPF) AttachKprobes() error {
 	lk, err = link.Kprobe("nf_nat_packet",
 		b.objs.KprobeNfNatPacket, &link.KprobeOptions{})
 	if err != nil {
-		return xerrors.Errorf("attach kprobe/nf_nat_packet: %w", err)
+		if strings.Contains(err.Error(), "nf_nat_packet: not found: no such file or directory") {
+			log.Println("this system not enable netfilter based NAT feature, skip attach kprobe/nf_nat_packet")
+		} else {
+			return xerrors.Errorf("attach kprobe/nf_nat_packet: %w", err)
+		}
 	}
 	b.links = append(b.links, lk)
 
 	lk, err = link.Kprobe("nf_nat_manip_pkt",
 		b.objs.KprobeNfNatManipPkt, &link.KprobeOptions{})
 	if err != nil {
-		return xerrors.Errorf("attach kprobe/nf_nat_manip_pkt: %w", err)
+		if strings.Contains(err.Error(), "nf_nat_manip_pkt: not found: no such file or directory") {
+			log.Println("this system not enable netfilter based NAT feature, skip attach kprobe/nf_nat_manip_pkt")
+		} else {
+			return xerrors.Errorf("attach kprobe/nf_nat_manip_pkt: %w", err)
+		}
 	}
 	b.links = append(b.links, lk)
 
