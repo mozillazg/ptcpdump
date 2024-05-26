@@ -3,28 +3,29 @@
 set -ex
 
 CMD="$1"
-
-sysctl -w net.ipv4.ip_forward=1
-
-ip netns add internal
-
-
-ip link add veth0 type veth peer name veth1
-ip link set veth0 netns internal
-ip netns exec internal ip addr add 192.168.2.1/24 dev veth0
-ip netns exec internal ip link set veth0 up
-ip netns exec internal ip route add default via 192.168.2.1
+FILE_PREFIX="/tmp/ptcpdump"
+FNAME="${FILE_PREFIX}_nat.pcapng"
+LNAME="${FILE_PREFIX}_nat.log"
+RNAME="${FILE_PREFIX}_nat.read.txt"
 
 
-ip netns exec internal sysctl -w net.ipv4.ip_forward=1
+function test_ptcpdump() {
+  timeout 30s ${CMD} -c 20 -i any --print -w "${FNAME}" --exec-events-worker-number=50 \
+    'host 1.1.1.1' | tee "${LNAME}" &
+  sleep 10
+  docker run --rm -it alpine:3.18 sh -c 'wget --timeout=10 1.1.1.1 &>/dev/null || true'
+  wait
 
+  cat "${LNAME}"
+  cat "${LNAME}" | grep 'wget'
+  cat "${LNAME}" | grep 'docker0'
+  cat "${LNAME}" | grep -F ' > 1.1.1.1.80: Flags [S],'   # SYN
+}
 
-iptables -t nat -A POSTROUTING -s 192.168.2.0/24 -o lo -j MASQUERADE
+function main() {
+    sysctl -w net.ipv4.ip_forward=1
 
-timeout 30s ${CMD} -c 1 -i any --exec-events-worker-number=50 \
-    'dst host 1.1.1.1 and tcp[tcpflags] = tcp-syn' &
+    test_ptcpdump
+}
 
-sleep 10
-ip netns exec internal curl -m 10 1.1.1.1
-
-wait
+main
