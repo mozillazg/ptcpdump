@@ -124,7 +124,7 @@ func (b *BPF) Load(opts Options) error {
 	err = b.spec.LoadAndAssign(b.objs, &ebpf.CollectionOptions{
 		Programs: ebpf.ProgramOptions{
 			LogLevel: ebpf.LogLevelInstruction,
-			LogSize:  ebpf.DefaultVerifierLogSize * 8,
+			LogSize:  ebpf.DefaultVerifierLogSize * 24,
 		},
 	})
 	if err != nil {
@@ -136,7 +136,7 @@ func (b *BPF) Load(opts Options) error {
 			if err = b.spec.LoadAndAssign(&objs, &ebpf.CollectionOptions{
 				Programs: ebpf.ProgramOptions{
 					LogLevel: ebpf.LogLevelInstruction,
-					LogSize:  ebpf.DefaultVerifierLogSize * 16,
+					LogSize:  ebpf.DefaultVerifierLogSize * 24,
 				},
 			}); err != nil {
 				return err
