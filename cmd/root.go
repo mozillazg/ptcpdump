@@ -64,6 +64,8 @@ func init() {
 		"Delay some durations before handle packet events")
 	rootCmd.Flags().UintVar(&opts.execEventsWorkerNumber, "exec-events-worker-number", 10,
 		"Number of worker to handle exec events")
+	rootCmd.Flags().BoolVar(&opts.oneLine, "oneline", false,
+		"Print parsed packet output in a single line")
 }
 
 func Execute() error {

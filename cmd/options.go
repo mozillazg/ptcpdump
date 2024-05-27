@@ -23,6 +23,7 @@ type Options struct {
 	print          bool
 	maxPacketCount uint
 	direction      string
+	oneLine        bool
 
 	eventChanSize                 uint
 	delayBeforeHandlePacketEvents time.Duration

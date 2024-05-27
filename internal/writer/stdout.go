@@ -17,6 +17,7 @@ type StdoutWriter struct {
 	pcache  *metadata.ProcessCache
 	w       io.Writer
 	Decoder gopacket.Decoder
+	OneLine bool
 }
 
 func NewStdoutWriter(writer io.Writer, pcache *metadata.ProcessCache) *StdoutWriter {
@@ -56,6 +57,19 @@ func (w *StdoutWriter) Write(e *event.Packet) error {
 		builder.WriteString(fmt.Sprintf("    %s\n", pidInfo))
 	}
 	msg := builder.String()
+
+	if w.OneLine {
+		var newLines []string
+		lines := strings.Split(msg, "\n")
+		for _, s := range lines {
+			s = strings.TrimSpace(s)
+			if s == "" {
+				continue
+			}
+			newLines = append(newLines, s)
+		}
+		msg = strings.Join(newLines, ": ") + "\n"
+	}
 
 	if _, err := w.w.Write([]byte(msg)); err != nil {
 		log.Printf("write packet failed: %+v", err)
