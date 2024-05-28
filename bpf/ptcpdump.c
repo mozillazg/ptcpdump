@@ -2,12 +2,12 @@
 //  +build ignore
 
 #include "vmlinux.h"
-#include <asm-generic/errno.h>
 #include <bpf/bpf_core_read.h>
 #include <bpf/bpf_endian.h>
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
 
+#define EEXIST 17 /* File exists */
 #define TASK_COMM_LEN 16
 #define TTY_NAME_LEN 64
 #define ETH_HLEN 14       /* Total octets in header.	 */
@@ -601,7 +601,7 @@ static __always_inline int get_pid_meta(struct __sk_buff *skb, struct flow_pid_v
         }
     } else {
         if (egress) {
-            // bpf_printk("[ptcpdump] tc egress: bpf_get_socket_cookie failed");
+            //            bpf_printk("[ptcpdump] tc egress: bpf_get_socket_cookie failed");
         } else {
             //            bpf_printk("[ptcpdump] tc ingress: bpf_get_socket_cookie failed");
         }

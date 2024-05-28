@@ -66,6 +66,7 @@ Flags:
   -h, --help                 help for ptcpdump
   -i, --interface strings    Interfaces to capture (default [lo])
       --list-interfaces      Print the list of the network interfaces available on the system
+      --oneline              Print parsed packet output in a single line
       --pid uint             Filter by process ID (only TCP and UDP packets are supported)
       --pname string         Filter by process name (only TCP and UDP packets are supported)
       --print                Print parsed packet output, even if the raw packets are being saved to a file with the -w flag
@@ -161,6 +162,7 @@ Flags:
 | -y *datalinktype*, --linktype=*datalinktype*      | ✅       |                          |
 | -z *postrotate-command*                           | ✅       |                          |
 | -Z *user*, --relinquish-privileges=*user*         | ✅       |                          |
+| --oneline                                       |         | ✅                        |
 
 
 ## Build
