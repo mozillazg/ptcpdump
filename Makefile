@@ -75,6 +75,7 @@ lint: deps fmt
 .PHONY: fmt
 fmt:
 	go fmt ./...
+	clang-format -i bpf/ptcpdump.c
 
 .PHONY: vet
 vet:
