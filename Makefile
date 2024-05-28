@@ -1,5 +1,5 @@
 .ONESHELL:
-.SHELLFLAGS = -e
+# .SHELLFLAGS = -e
 SHELL = /bin/sh
 
 GIT = $(shell which git || /bin/false)
