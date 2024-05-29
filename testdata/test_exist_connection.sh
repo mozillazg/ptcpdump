@@ -10,11 +10,14 @@ RNAME="${FILE_PREFIX}_exist_connection.read.txt"
 
 
 function test_ptcpdump() {
-  timeout 30s ${CMD} -c 4 -i any --print -w "${FNAME}" \
+  timeout 30s ${CMD} -c 10 -i any --print -w "${FNAME}" \
       'port 22' | tee "${LNAME}" &
   sleep 10
   echo foo
   echo bar
+  echo foobar
+  echo 233
+  echo 666
   wait
 
   cat "${LNAME}"

@@ -78,20 +78,21 @@ func updateFlowPidMapValues(bf *bpf.BPF, conns []metadata.Connection) error {
 	return nil
 }
 
-func addrTo128(addr netip.Addr) [4]uint32 {
-	ret := [4]uint32{}
+func addrTo128(addr netip.Addr) [2]uint64 {
+	ret := [2]uint64{}
 	addr = addr.Unmap()
 	switch {
 	case addr.Is4():
-		ip := addr.As4()
-		ret[0] = binary.LittleEndian.Uint32(ip[:])
+		a4 := addr.As4()
+		tmp := [4]byte{}
+		ip := append([]byte{}, a4[:]...)
+		ip = append(ip, tmp[:]...)
+		ret[0] = binary.LittleEndian.Uint64(ip[:])
 		break
 	default:
 		ip := addr.As16()
-		ret[0] = binary.LittleEndian.Uint32(ip[:4])
-		ret[1] = binary.LittleEndian.Uint32(ip[4:8])
-		ret[2] = binary.LittleEndian.Uint32(ip[8:12])
-		ret[3] = binary.LittleEndian.Uint32(ip[12:16])
+		ret[0] = binary.LittleEndian.Uint64(ip[:8])
+		ret[1] = binary.LittleEndian.Uint64(ip[8:16])
 	}
 	return ret
 }

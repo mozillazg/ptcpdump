@@ -23,12 +23,20 @@ type BpfExecEventT struct {
 }
 
 type BpfFlowPidKeyT struct {
-	Saddr [4]uint32
+	Saddr [2]uint64
 	Sport uint16
-	_     [2]byte
+	_     [6]byte
 }
 
 type BpfFlowPidValueT struct{ Pid uint32 }
+
+type BpfNatFlowT struct {
+	Saddr [2]uint64
+	Daddr [2]uint64
+	Sport uint16
+	Dport uint16
+	_     [4]byte
+}
 
 type BpfPacketEventT struct {
 	Meta struct {
@@ -88,6 +96,8 @@ type BpfSpecs struct {
 type BpfProgramSpecs struct {
 	CgroupSockCreate              *ebpf.ProgramSpec `ebpf:"cgroup__sock_create"`
 	CgroupSockRelease             *ebpf.ProgramSpec `ebpf:"cgroup__sock_release"`
+	KprobeNfNatManipPkt           *ebpf.ProgramSpec `ebpf:"kprobe__nf_nat_manip_pkt"`
+	KprobeNfNatPacket             *ebpf.ProgramSpec `ebpf:"kprobe__nf_nat_packet"`
 	KprobeSecuritySkClassifyFlow  *ebpf.ProgramSpec `ebpf:"kprobe__security_sk_classify_flow"`
 	RawTracepointSchedProcessExec *ebpf.ProgramSpec `ebpf:"raw_tracepoint__sched_process_exec"`
 	RawTracepointSchedProcessExit *ebpf.ProgramSpec `ebpf:"raw_tracepoint__sched_process_exit"`
@@ -105,6 +115,7 @@ type BpfMapSpecs struct {
 	FilterByKernelCount *ebpf.MapSpec `ebpf:"filter_by_kernel_count"`
 	FilterPidMap        *ebpf.MapSpec `ebpf:"filter_pid_map"`
 	FlowPidMap          *ebpf.MapSpec `ebpf:"flow_pid_map"`
+	NatFlowMap          *ebpf.MapSpec `ebpf:"nat_flow_map"`
 	PacketEventStack    *ebpf.MapSpec `ebpf:"packet_event_stack"`
 	PacketEvents        *ebpf.MapSpec `ebpf:"packet_events"`
 	SockCookiePidMap    *ebpf.MapSpec `ebpf:"sock_cookie_pid_map"`
@@ -134,6 +145,7 @@ type BpfMaps struct {
 	FilterByKernelCount *ebpf.Map `ebpf:"filter_by_kernel_count"`
 	FilterPidMap        *ebpf.Map `ebpf:"filter_pid_map"`
 	FlowPidMap          *ebpf.Map `ebpf:"flow_pid_map"`
+	NatFlowMap          *ebpf.Map `ebpf:"nat_flow_map"`
 	PacketEventStack    *ebpf.Map `ebpf:"packet_event_stack"`
 	PacketEvents        *ebpf.Map `ebpf:"packet_events"`
 	SockCookiePidMap    *ebpf.Map `ebpf:"sock_cookie_pid_map"`
@@ -146,6 +158,7 @@ func (m *BpfMaps) Close() error {
 		m.FilterByKernelCount,
 		m.FilterPidMap,
 		m.FlowPidMap,
+		m.NatFlowMap,
 		m.PacketEventStack,
 		m.PacketEvents,
 		m.SockCookiePidMap,
@@ -158,6 +171,8 @@ func (m *BpfMaps) Close() error {
 type BpfPrograms struct {
 	CgroupSockCreate              *ebpf.Program `ebpf:"cgroup__sock_create"`
 	CgroupSockRelease             *ebpf.Program `ebpf:"cgroup__sock_release"`
+	KprobeNfNatManipPkt           *ebpf.Program `ebpf:"kprobe__nf_nat_manip_pkt"`
+	KprobeNfNatPacket             *ebpf.Program `ebpf:"kprobe__nf_nat_packet"`
 	KprobeSecuritySkClassifyFlow  *ebpf.Program `ebpf:"kprobe__security_sk_classify_flow"`
 	RawTracepointSchedProcessExec *ebpf.Program `ebpf:"raw_tracepoint__sched_process_exec"`
 	RawTracepointSchedProcessExit *ebpf.Program `ebpf:"raw_tracepoint__sched_process_exit"`
@@ -170,6 +185,8 @@ func (p *BpfPrograms) Close() error {
 	return _BpfClose(
 		p.CgroupSockCreate,
 		p.CgroupSockRelease,
+		p.KprobeNfNatManipPkt,
+		p.KprobeNfNatPacket,
 		p.KprobeSecuritySkClassifyFlow,
 		p.RawTracepointSchedProcessExec,
 		p.RawTracepointSchedProcessExit,

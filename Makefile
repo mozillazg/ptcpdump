@@ -1,4 +1,5 @@
 .ONESHELL:
+# .SHELLFLAGS = -e
 SHELL = /bin/sh
 
 GIT = $(shell which git || /bin/false)
@@ -100,6 +101,7 @@ e2e: lint build-bpf build
 	sudo bash testdata/test_sub_program.sh ./ptcpdump
 	sudo bash testdata/test_sub_curl_domain_program.sh ./ptcpdump
 	sudo bash testdata/test_write_stdout.sh ./ptcpdump
+	sudo bash testdata/test_nat.sh ./ptcpdump
 
 .PHONY: clean
 clean:

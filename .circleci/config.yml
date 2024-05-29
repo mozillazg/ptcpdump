@@ -88,6 +88,11 @@ jobs:
           command: |
             sudo bash testdata/test_write_stdout.sh ./ptcpdump
 
+      - run:
+          name: e2e (test nat)
+          command: |
+            sudo bash testdata/test_nat.sh ./ptcpdump
+
 
 workflows:
   e2e:

@@ -22,6 +22,8 @@ import (
 const tcFilterName = "ptcpdump"
 
 type BpfObjectsWithoutCgroup struct {
+	KprobeNfNatManipPkt           *ebpf.Program `ebpf:"kprobe__nf_nat_manip_pkt"`
+	KprobeNfNatPacket             *ebpf.Program `ebpf:"kprobe__nf_nat_packet"`
 	KprobeSecuritySkClassifyFlow  *ebpf.Program `ebpf:"kprobe__security_sk_classify_flow"`
 	RawTracepointSchedProcessExec *ebpf.Program `ebpf:"raw_tracepoint__sched_process_exec"`
 	RawTracepointSchedProcessExit *ebpf.Program `ebpf:"raw_tracepoint__sched_process_exit"`
@@ -122,7 +124,7 @@ func (b *BPF) Load(opts Options) error {
 	err = b.spec.LoadAndAssign(b.objs, &ebpf.CollectionOptions{
 		Programs: ebpf.ProgramOptions{
 			LogLevel: ebpf.LogLevelInstruction,
-			LogSize:  ebpf.DefaultVerifierLogSize * 8,
+			LogSize:  ebpf.DefaultVerifierLogSize * 24,
 		},
 	})
 	if err != nil {
@@ -134,11 +136,13 @@ func (b *BPF) Load(opts Options) error {
 			if err = b.spec.LoadAndAssign(&objs, &ebpf.CollectionOptions{
 				Programs: ebpf.ProgramOptions{
 					LogLevel: ebpf.LogLevelInstruction,
-					LogSize:  ebpf.DefaultVerifierLogSize * 8,
+					LogSize:  ebpf.DefaultVerifierLogSize * 24,
 				},
 			}); err != nil {
 				return err
 			}
+			b.objs.KprobeNfNatManipPkt = objs.KprobeNfNatManipPkt
+			b.objs.KprobeNfNatPacket = objs.KprobeNfNatPacket
 			b.objs.KprobeSecuritySkClassifyFlow = objs.KprobeSecuritySkClassifyFlow
 			b.objs.RawTracepointSchedProcessExec = objs.RawTracepointSchedProcessExec
 			b.objs.RawTracepointSchedProcessExit = objs.RawTracepointSchedProcessExit
@@ -218,6 +222,33 @@ func (b *BPF) AttachKprobes() error {
 		return xerrors.Errorf("attach kprobe/security_sk_classify_flow: %w", err)
 	}
 	b.links = append(b.links, lk)
+
+	lk, err = link.Kprobe("nf_nat_packet",
+		b.objs.KprobeNfNatPacket, &link.KprobeOptions{})
+	if err != nil {
+		if strings.Contains(err.Error(), "nf_nat_packet: not found: no such file or directory") {
+			log.Println("current system doest not enable netfilter based NAT feature, skip attach kprobe/nf_nat_packet")
+		} else {
+			return xerrors.Errorf("attach kprobe/nf_nat_packet: %w", err)
+		}
+	}
+	if lk != nil {
+		b.links = append(b.links, lk)
+	}
+
+	lk, err = link.Kprobe("nf_nat_manip_pkt",
+		b.objs.KprobeNfNatManipPkt, &link.KprobeOptions{})
+	if err != nil {
+		if strings.Contains(err.Error(), "nf_nat_manip_pkt: not found: no such file or directory") {
+			log.Println("current system doest not enable netfilter based NAT feature, skip attach kprobe/nf_nat_manip_pkt")
+		} else {
+			return xerrors.Errorf("attach kprobe/nf_nat_manip_pkt: %w", err)
+		}
+	}
+	if lk != nil {
+		b.links = append(b.links, lk)
+	}
+
 	return nil
 }
 
