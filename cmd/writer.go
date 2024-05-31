@@ -59,6 +59,7 @@ func getWriters(opts Options, pcache *metadata.ProcessCache) ([]writer.PacketWri
 		stdoutWriter := writer.NewStdoutWriter(os.Stdout, pcache)
 		stdoutWriter.OneLine = opts.oneLine
 		stdoutWriter.PrintNumber = opts.printPacketNumber
+		stdoutWriter.NoTimestamp = opts.dontPrintTimestamp
 		writers = append(writers, stdoutWriter)
 	}
 

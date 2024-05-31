@@ -68,6 +68,8 @@ func init() {
 		"Print parsed packet output in a single line")
 	rootCmd.Flags().BoolVarP(&opts.printPacketNumber, "number", "#", false,
 		"Print an optional packet number at the beginning of the line")
+	rootCmd.Flags().BoolVarP(&opts.dontPrintTimestamp, "no-timestamp", "t", false,
+		"Don't print a timestamp on each dump line")
 }
 
 func Execute() error {

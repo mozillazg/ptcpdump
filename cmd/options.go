@@ -25,7 +25,8 @@ type Options struct {
 	direction      string
 	oneLine        bool
 
-	printPacketNumber bool
+	printPacketNumber  bool
+	dontPrintTimestamp bool
 
 	eventChanSize                 uint
 	delayBeforeHandlePacketEvents time.Duration

@@ -103,6 +103,7 @@ Flags:
 | --pname *process_name*                            |         | ✅                        |
 | -f, --follow-forks                                |         | ✅                        |
 | -- *command [args]*                               |         | ✅                        |
+| --oneline                                       |         | ✅                        |
 | --print                                           | ✅       | ✅                        |
 | -c *count*                                        | ✅       | ✅                        |
 | -Q *direction*, --direction=*direction*           | ✅       | ✅                        |
@@ -143,7 +144,7 @@ Flags:
 | -S, --absolute-tcp-sequence-numbers               | ✅       |                          |
 | -s *snaplen*, --snapshot-length=*snaplen*         | ✅       |                          |
 | -T *type*                                         | ✅       |                          |
-| -t                                                | ✅       |                          |
+| -t                                                | ✅       | ✅                       |
 | -tt                                               | ✅       |                          |
 | -ttt                                              | ✅       |                          |
 | -tttt                                             | ✅       |                          |
@@ -161,7 +162,6 @@ Flags:
 | -y *datalinktype*, --linktype=*datalinktype*      | ✅       |                          |
 | -z *postrotate-command*                           | ✅       |                          |
 | -Z *user*, --relinquish-privileges=*user*         | ✅       |                          |
-| --oneline                                       |         | ✅                        |
 
 
 ## Build
