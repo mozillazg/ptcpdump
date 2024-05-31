@@ -66,6 +66,8 @@ func init() {
 		"Number of worker to handle exec events")
 	rootCmd.Flags().BoolVar(&opts.oneLine, "oneline", false,
 		"Print parsed packet output in a single line")
+	rootCmd.Flags().BoolVarP(&opts.printPacketNumber, "number", "#", false,
+		"Print an optional packet number at the beginning of the line")
 }
 
 func Execute() error {

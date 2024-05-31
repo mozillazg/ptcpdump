@@ -137,8 +137,7 @@ Flags:
 | -M *secret*                                       | ✅       |                          |
 | -n                                                | ✅       |                          |
 | -N                                                | ✅       |                          |
-| -#                                                | ✅       | ⛔                        |
-| --number                                          | ✅       |                          |
+| -#, --number                                      | ✅       | ✅                       |
 | -O, --no-optimize                                 | ✅       |                          |
 | -p, --no-promiscuous-mode                         | ✅       | ⛔                        |
 | -S, --absolute-tcp-sequence-numbers               | ✅       |                          |

@@ -14,10 +14,12 @@ import (
 )
 
 type StdoutWriter struct {
-	pcache  *metadata.ProcessCache
-	w       io.Writer
-	Decoder gopacket.Decoder
-	OneLine bool
+	pcache      *metadata.ProcessCache
+	w           io.Writer
+	Decoder     gopacket.Decoder
+	OneLine     bool
+	PrintNumber bool
+	n           int64
 }
 
 func NewStdoutWriter(writer io.Writer, pcache *metadata.ProcessCache) *StdoutWriter {
@@ -25,6 +27,7 @@ func NewStdoutWriter(writer io.Writer, pcache *metadata.ProcessCache) *StdoutWri
 		w:       writer,
 		pcache:  pcache,
 		Decoder: layers.LayerTypeEthernet,
+		n:       1,
 	}
 }
 
@@ -45,6 +48,11 @@ func (w *StdoutWriter) Write(e *event.Packet) error {
 	formated := pktdump.Format(packet)
 
 	builder := strings.Builder{}
+
+	if w.PrintNumber {
+		builder.WriteString(fmt.Sprintf("%5d  ", w.n))
+	}
+
 	builder.WriteString(fmt.Sprintf("%s", e.Time.Local().Format("15:04:05.000000")))
 	if ifName != "" {
 		builder.WriteString(fmt.Sprintf(" %s", ifName))
@@ -73,6 +81,8 @@ func (w *StdoutWriter) Write(e *event.Packet) error {
 
 	if _, err := w.w.Write([]byte(msg)); err != nil {
 		log.Printf("write packet failed: %+v", err)
+	} else {
+		w.n++
 	}
 
 	return nil
