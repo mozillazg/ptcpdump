@@ -18,6 +18,8 @@ type StdoutWriter struct {
 	w       io.Writer
 	Decoder gopacket.Decoder
 	OneLine bool
+
+	NoTimestamp bool
 }
 
 func NewStdoutWriter(writer io.Writer, pcache *metadata.ProcessCache) *StdoutWriter {
@@ -45,14 +47,18 @@ func (w *StdoutWriter) Write(e *event.Packet) error {
 	formated := pktdump.Format(packet)
 
 	builder := strings.Builder{}
-	builder.WriteString(fmt.Sprintf("%s", e.Time.Local().Format("15:04:05.000000")))
+
+	if !w.NoTimestamp {
+		builder.WriteString(fmt.Sprintf("%s ", e.Time.Local().Format("15:04:05.000000")))
+	}
+
 	if ifName != "" {
-		builder.WriteString(fmt.Sprintf(" %s", ifName))
+		builder.WriteString(fmt.Sprintf("%s ", ifName))
 	}
 	if packetType != "" {
-		builder.WriteString(fmt.Sprintf(" %s", packetType))
+		builder.WriteString(fmt.Sprintf("%s ", packetType))
 	}
-	builder.WriteString(fmt.Sprintf(" %s\n", formated))
+	builder.WriteString(fmt.Sprintf("%s\n", formated))
 	if p.Pid > 0 {
 		builder.WriteString(fmt.Sprintf("    %s\n", pidInfo))
 	}

@@ -66,6 +66,8 @@ func init() {
 		"Number of worker to handle exec events")
 	rootCmd.Flags().BoolVar(&opts.oneLine, "oneline", false,
 		"Print parsed packet output in a single line")
+	rootCmd.Flags().BoolVarP(&opts.dontPrintTimestamp, "no-timestamp", "t", false,
+		"Don't print a timestamp on each dump line")
 }
 
 func Execute() error {
