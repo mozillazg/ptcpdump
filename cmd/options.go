@@ -25,6 +25,7 @@ type Options struct {
 	direction      string
 	oneLine        bool
 
+	printPacketNumber  bool
 	dontPrintTimestamp bool
 
 	eventChanSize                 uint

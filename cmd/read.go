@@ -22,6 +22,7 @@ func read(ctx context.Context, opts Options) error {
 	pcache := metadata.NewProcessCache()
 	stdoutWriter := writer.NewStdoutWriter(os.Stdout, pcache)
 	stdoutWriter.OneLine = opts.oneLine
+	stdoutWriter.PrintNumber = opts.printPacketNumber
 	stdoutWriter.NoTimestamp = opts.dontPrintTimestamp
 	ext := filepath.Ext(opts.ReadPath())
 
