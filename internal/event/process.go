@@ -7,6 +7,7 @@ import (
 
 	"github.com/gopacket/gopacket/pcapgo"
 	"github.com/mozillazg/ptcpdump/bpf"
+	"github.com/mozillazg/ptcpdump/internal/utils"
 )
 
 type ProcessExec struct {
@@ -17,6 +18,10 @@ type ProcessExec struct {
 
 	Args          []string
 	ArgsTruncated bool
+
+	MntNs      int64
+	Netns      int64
+	CgroupName string
 }
 
 func ParseProcessExecEvent(event bpf.BpfExecEventT) (*ProcessExec, error) {
@@ -27,7 +32,11 @@ func ParseProcessExecEvent(event bpf.BpfExecEventT) (*ProcessExec, error) {
 	if event.FilenameTruncated == 1 {
 		p.FilenameTruncated = true
 	}
-	p.Pid = int(event.Pid)
+
+	p.Pid = int(event.Meta.Pid)
+	p.MntNs = int64(event.Meta.MntnsId)
+	p.Netns = int64(event.Meta.NetnsId)
+
 	bs := strings.Builder{}
 	for i := 0; i < int(event.ArgsSize); i++ {
 		b := byte(event.Args[i])
@@ -39,15 +48,8 @@ func ParseProcessExecEvent(event bpf.BpfExecEventT) (*ProcessExec, error) {
 		}
 	}
 
-	bs.Reset()
-	for _, i := range event.Filename {
-		b := byte(i)
-		if b == '\x00' {
-			break
-		}
-		bs.WriteByte(b)
-	}
-	p.Filename = bs.String()
+	p.Filename = utils.GoString(event.Filename[:])
+	p.CgroupName = utils.GoString(event.Meta.CgroupName[:])
 
 	return &p, nil
 }

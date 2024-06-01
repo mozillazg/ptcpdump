@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"context"
+	"github.com/mozillazg/ptcpdump/internal/utils"
 	"net/netip"
 
 	"github.com/shirou/gopsutil/v3/net"
@@ -12,6 +13,8 @@ type Connection struct {
 	LocalIP   netip.Addr
 	LocalPort int
 	Pid       int
+	MntNs     int64
+	NetNs     int64
 }
 
 func GetCurrentConnects(ctx context.Context, pids []int, all bool) ([]Connection, error) {
@@ -54,5 +57,7 @@ func convertConnectionStat(stat net.ConnectionStat) (Connection, error) {
 	conn.LocalIP = addr
 	conn.LocalPort = port
 	conn.Pid = int(stat.Pid)
+	conn.MntNs = utils.GetMountNamespaceFromPid(conn.Pid)
+	conn.NetNs = utils.GetNetworkNamespaceFromPid(conn.Pid)
 	return conn, nil
 }

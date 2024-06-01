@@ -13,7 +13,12 @@ import (
 )
 
 type BpfExecEventT struct {
-	Pid               uint32
+	Meta struct {
+		Pid        uint32
+		MntnsId    uint32
+		NetnsId    uint32
+		CgroupName [128]int8
+	}
 	FilenameTruncated uint8
 	ArgsTruncated     uint8
 	_                 [2]byte
@@ -28,7 +33,12 @@ type BpfFlowPidKeyT struct {
 	_     [6]byte
 }
 
-type BpfFlowPidValueT struct{ Pid uint32 }
+type BpfFlowPidValueT struct {
+	Pid        uint32
+	MntnsId    uint32
+	NetnsId    uint32
+	CgroupName [128]int8
+}
 
 type BpfNatFlowT struct {
 	Saddr [2]uint64
@@ -45,9 +55,12 @@ type BpfPacketEventT struct {
 		_          [3]byte
 		Ifindex    uint32
 		Pid        uint32
+		MntnsId    uint32
+		NetnsId    uint32
 		_          [4]byte
 		PayloadLen uint64
 		PacketSize uint64
+		CgroupName [128]int8
 	}
 	Payload [1500]uint8
 	_       [4]byte

@@ -29,13 +29,13 @@ func (w *PcapNGWriter) Write(e *event.Packet) error {
 		Length:         e.Len,
 		InterfaceIndex: e.Device.Ifindex,
 	}
-	p := w.pcache.Get(e.Pid)
+	p := w.pcache.Get(e.Pid, e.MntNs)
 
 	opts := pcapgo.NgPacketOptions{}
 	if p.Pid != 0 {
 		// log.Printf("not found pid from cache: %d", e.Pid)
 		opts.Comment = fmt.Sprintf("PID: %d\nCommand: %s\nArgs: %s",
-			e.Pid, p.FilenameStr(), p.ArgsStr())
+			e.Pid, p.Cmd, p.FormatArgs())
 	}
 
 	if err := w.pw.WritePacketWithOptions(info, e.Data, opts); err != nil {

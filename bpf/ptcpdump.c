@@ -75,8 +75,19 @@ struct flow_pid_key_t {
     u16 sport;
 };
 
+struct process_meta_t {
+    u32 pid;
+    u32 mntns_id;
+    u32 netns_id;
+    char cgroup_name[128];
+};
+
 struct flow_pid_value_t {
     u32 pid;
+
+    u32 mntns_id;
+    u32 netns_id;
+    char cgroup_name[128];
 };
 
 struct packet_event_meta_t {
@@ -84,8 +95,11 @@ struct packet_event_meta_t {
     u8 packet_type;
     u32 ifindex;
     u32 pid;
+    u32 mntns_id;
+    u32 netns_id;
     u64 payload_len;
     u64 packet_size;
+    char cgroup_name[128];
 };
 
 struct packet_event_t {
@@ -94,7 +108,8 @@ struct packet_event_t {
 };
 
 struct exec_event_t {
-    u32 pid;
+    struct process_meta_t meta;
+
     u8 filename_truncated;
     u8 args_truncated;
     unsigned int args_size;
@@ -287,7 +302,11 @@ static __always_inline int parse_skb_meta(struct __sk_buff *skb, struct packet_m
 }
 
 static __always_inline void fill_process_meta(struct task_struct *task, struct flow_pid_value_t *meta) {
+    BPF_CORE_READ_INTO(&meta->mntns_id, task, nsproxy, mnt_ns, ns.inum);
+    BPF_CORE_READ_INTO(&meta->netns_id, task, nsproxy, net_ns, ns.inum);
     BPF_CORE_READ_INTO(&meta->pid, task, tgid);
+
+    BPF_CORE_READ_STR_INTO(&meta->cgroup_name, task, cgroups, subsys[0], cgroup, kn, name);
 }
 
 static __always_inline void fill_sk_meta(struct sock *sk, struct flow_pid_key_t *meta) {
@@ -431,9 +450,16 @@ int cgroup__sock_create(void *ctx) {
     }
 
     u32 pid = bpf_get_current_pid_tgid() >> 32;
+    u32 mntns_id = BPF_CORE_READ(task, nsproxy, mnt_ns, ns.inum);
+    u32 netns_id = BPF_CORE_READ(task, nsproxy, net_ns, ns.inum);
+
     struct flow_pid_value_t value = {
         .pid = pid,
+        .mntns_id = mntns_id,
+        .netns_id = netns_id,
     };
+    BPF_CORE_READ_STR_INTO(&value.cgroup_name, task, cgroups, subsys[0], cgroup, kn, name);
+
     int ret = bpf_map_update_elem(&sock_cookie_pid_map, &cookie, &value, BPF_ANY);
     if (ret != 0) {
         bpf_printk("[ptcpdump] bpf_map_update_elem sock_cookie_pid_map failed: %d", ret);
@@ -597,6 +623,9 @@ static __always_inline int get_pid_meta(struct __sk_buff *skb, struct flow_pid_v
         struct flow_pid_value_t *value = bpf_map_lookup_elem(&sock_cookie_pid_map, &cookie);
         if (value) {
             pid_meta->pid = value->pid;
+            pid_meta->mntns_id = value->mntns_id;
+            pid_meta->netns_id = value->netns_id;
+            __builtin_memcpy(&pid_meta->cgroup_name, &value->cgroup_name, sizeof(value->cgroup_name));
             return 0;
         }
     } else {
@@ -641,6 +670,10 @@ static __always_inline int get_pid_meta(struct __sk_buff *skb, struct flow_pid_v
                 // bpf_printk("[tc] got %pI4 %d -> %pI4", &flow.saddr[0],
                 // flow.sport, &flow.daddr[0]);
                 pid_meta->pid = value->pid;
+                pid_meta->mntns_id = value->mntns_id;
+                pid_meta->netns_id = value->netns_id;
+                __builtin_memcpy(&pid_meta->cgroup_name, &value->cgroup_name, sizeof(value->cgroup_name));
+
                 break;
             } else if (have_pid_filter) {
                 /* bpf_printk("[tc] %pI4 %d bpf_map_lookup_elem is empty",
@@ -690,6 +723,9 @@ static __always_inline void handle_tc(struct __sk_buff *skb, bool egress) {
     event->meta.ifindex = skb->ifindex;
     if (pid_meta.pid > 0) {
         event->meta.pid = pid_meta.pid;
+        event->meta.mntns_id = pid_meta.mntns_id;
+        event->meta.netns_id = pid_meta.netns_id;
+        __builtin_memcpy(&event->meta.cgroup_name, &pid_meta.cgroup_name, sizeof(pid_meta.cgroup_name));
         /* __builtin_memcpy(&event->meta.comm, &pid_meta->comm, sizeof(pid_meta->comm)); */
     }
 
@@ -717,8 +753,17 @@ static __always_inline void handle_exec(struct bpf_raw_tracepoint_args *ctx) {
         bpf_printk("[ptcpdump] exec_event_stack failed");
         return;
     }
+    __builtin_memset(&event->meta, 0, sizeof(event->meta));
 
-    event->pid = bpf_get_current_pid_tgid() >> 32;
+    event->meta.pid = bpf_get_current_pid_tgid() >> 32;
+    BPF_CORE_READ_INTO(&event->meta.mntns_id, task, nsproxy, mnt_ns, ns.inum);
+    BPF_CORE_READ_INTO(&event->meta.netns_id, task, nsproxy, net_ns, ns.inum);
+    // BPF_CORE_READ_STR_INTO(&event->meta.cgroup_name, task, cgroups, subsys[0], cgroup, kn, name);
+    char cgroup_name[128];
+    const char *cname = BPF_CORE_READ(task, cgroups, subsys[0], cgroup, kn, name);
+    bpf_core_read_str(&cgroup_name, sizeof(cgroup_name), cname);
+
+    __builtin_memcpy(&event->meta.cgroup_name, &cgroup_name, sizeof(cgroup_name));
 
     struct linux_binprm *bprm = (struct linux_binprm *)BPF_CORE_READ(ctx, args[2]);
     const char *filename_p = BPF_CORE_READ(bprm, filename);

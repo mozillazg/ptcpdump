@@ -2,12 +2,13 @@ package event
 
 import (
 	"fmt"
+	"log"
+	"time"
+
 	"github.com/gopacket/gopacket"
 	"github.com/mozillazg/ptcpdump/bpf"
 	"github.com/mozillazg/ptcpdump/internal/dev"
 	"golang.org/x/sys/unix"
-	"log"
-	"time"
 )
 
 type packetType int
@@ -22,6 +23,8 @@ type Packet struct {
 	Type      packetType
 	Device    dev.Device
 	Pid       int
+	MntNs     int
+	NetNs     int
 	Truncated bool
 	Len       int
 
@@ -37,6 +40,9 @@ func ParsePacketEvent(devices map[int]dev.Device, event bpf.BpfPacketEventT) (*P
 		p.Time = t.UTC()
 	}
 	p.Pid = int(event.Meta.Pid)
+	p.MntNs = int(event.Meta.MntnsId)
+	p.NetNs = int(event.Meta.NetnsId)
+	log.Printf("mntns: %d, netns: %d", p.MntNs, p.NetNs)
 	p.Device = devices[int(event.Meta.Ifindex)]
 
 	if event.Meta.PacketType == 1 {

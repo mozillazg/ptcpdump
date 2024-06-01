@@ -41,9 +41,11 @@ func (w *StdoutWriter) Write(e *event.Packet) error {
 	} else if e.Ingress() {
 		packetType = "In"
 	}
-	p := w.pcache.Get(e.Pid)
+	p := w.pcache.Get(e.Pid, e.MntNs)
 	pidInfo := fmt.Sprintf("Process (pid %d, cmd %s, args %s)",
-		e.Pid, p.FilenameStr(), p.ArgsStr())
+		e.Pid, p.Cmd, p.FormatArgs())
+	containerInfo := fmt.Sprintf("Container (name %s, id %s, image %s, labels %s)",
+		p.Container.Name, p.Container.Id, p.Container.Image, p.Container.FormatLabels())
 
 	// Decode a packet
 	packet := gopacket.NewPacket(e.Data, w.Decoder, gopacket.NoCopy)
@@ -68,6 +70,9 @@ func (w *StdoutWriter) Write(e *event.Packet) error {
 	builder.WriteString(fmt.Sprintf("%s\n", formated))
 	if p.Pid > 0 {
 		builder.WriteString(fmt.Sprintf("    %s\n", pidInfo))
+	}
+	if p.Container.Id != "" {
+		builder.WriteString(fmt.Sprintf("    %s\n", containerInfo))
 	}
 	msg := builder.String()
 

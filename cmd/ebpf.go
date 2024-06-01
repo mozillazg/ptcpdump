@@ -2,9 +2,10 @@ package cmd
 
 import (
 	"encoding/binary"
-	"github.com/mozillazg/ptcpdump/internal/utils"
 	"log"
 	"net/netip"
+
+	"github.com/mozillazg/ptcpdump/internal/utils"
 
 	"github.com/cilium/ebpf/rlimit"
 	"github.com/mozillazg/ptcpdump/bpf"
@@ -68,7 +69,9 @@ func updateFlowPidMapValues(bf *bpf.BPF, conns []metadata.Connection) error {
 			Sport: uint16(conn.LocalPort),
 		}
 		v := bpf.BpfFlowPidValueT{
-			Pid: uint32(conn.Pid),
+			Pid:     uint32(conn.Pid),
+			MntnsId: uint32(conn.MntNs),
+			NetnsId: uint32(conn.NetNs),
 		}
 		data[&k] = v
 	}

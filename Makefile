@@ -102,6 +102,7 @@ e2e: lint build-bpf build
 	sudo bash testdata/test_sub_curl_domain_program.sh ./ptcpdump
 	sudo bash testdata/test_write_stdout.sh ./ptcpdump
 	sudo bash testdata/test_nat.sh ./ptcpdump
+	sudo bash testdata/test_docker.sh ./ptcpdump
 
 .PHONY: clean
 clean:
