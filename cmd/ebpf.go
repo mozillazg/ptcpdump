@@ -62,13 +62,13 @@ func attachHooks(currentConns []metadata.Connection, opts Options) (*bpf.BPF, er
 }
 
 func updateFlowPidMapValues(bf *bpf.BPF, conns []metadata.Connection) error {
-	data := map[*bpf.BpfFlowPidKeyT]bpf.BpfFlowPidValueT{}
+	data := map[*bpf.BpfFlowPidKeyT]bpf.BpfProcessMetaT{}
 	for _, conn := range conns {
 		k := bpf.BpfFlowPidKeyT{
 			Saddr: addrTo128(conn.LocalIP),
 			Sport: uint16(conn.LocalPort),
 		}
-		v := bpf.BpfFlowPidValueT{
+		v := bpf.BpfProcessMetaT{
 			Pid:     uint32(conn.Pid),
 			MntnsId: uint32(conn.MntNs),
 			NetnsId: uint32(conn.NetNs),

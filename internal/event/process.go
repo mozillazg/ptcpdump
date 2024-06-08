@@ -7,6 +7,7 @@ import (
 
 	"github.com/gopacket/gopacket/pcapgo"
 	"github.com/mozillazg/ptcpdump/bpf"
+	"github.com/mozillazg/ptcpdump/internal/types"
 	"github.com/mozillazg/ptcpdump/internal/utils"
 )
 
@@ -54,35 +55,50 @@ func ParseProcessExecEvent(event bpf.BpfExecEventT) (*ProcessExec, error) {
 	return &p, nil
 }
 
-func FromPacketOptions(opts pcapgo.NgPacketOptions) ProcessExec {
+func FromPacketOptions(opts pcapgo.NgPacketOptions) (ProcessExec, types.PacketContext) {
 	p := ProcessExec{}
-	comment := strings.TrimSpace(opts.Comment)
-	for _, line := range strings.Split(comment, "\n") {
-		line = strings.TrimSpace(line)
-		parts := strings.Split(line, ":")
-		if len(parts) < 2 {
-			continue
-		}
-		key, value := strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1])
-		switch key {
-		case "PID":
-			p.Pid, _ = strconv.Atoi(value)
-		case "Command":
-			if strings.HasSuffix(value, "...") {
-				p.FilenameTruncated = true
-				value = strings.TrimRight(value, "...")
+	ctx := types.PacketContext{}
+
+	for _, comment := range opts.Comments {
+		comment = strings.TrimSpace(comment)
+		for _, line := range strings.Split(comment, "\n") {
+			line = strings.TrimSpace(line)
+			parts := strings.Split(line, ":")
+			if len(parts) < 2 {
+				continue
 			}
-			p.Filename = value
-		case "Args":
-			if strings.HasSuffix(value, "...") {
-				p.ArgsTruncated = true
-				value = strings.TrimRight(value, "...")
+			key, value := strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1])
+			switch key {
+			case "PID":
+				p.Pid, _ = strconv.Atoi(value)
+				ctx.Pid = p.Pid
+			case "Command":
+				if strings.HasSuffix(value, "...") {
+					p.FilenameTruncated = true
+					value = strings.TrimRight(value, "...")
+				}
+				p.Filename = value
+				ctx.Cmd = value
+			case "Args":
+				if strings.HasSuffix(value, "...") {
+					p.ArgsTruncated = true
+					value = strings.TrimRight(value, "...")
+				}
+				p.Args = strings.Split(value, " ")
+				ctx.Args = p.Args
+			case "ContainerName":
+				ctx.Container.Name = value
+			case "ContainerId":
+				ctx.Container.Id = value
+			case "ContainerImage":
+				ctx.Container.Image = value
+			case "ContainerLabels":
+				ctx.Container.Labels = types.ParseContainerLabels(value)
+			default:
 			}
-			p.Args = strings.Split(value, " ")
-		default:
 		}
 	}
-	return p
+	return p, ctx
 }
 
 func (p ProcessExec) FilenameStr() string {

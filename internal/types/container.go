@@ -25,3 +25,18 @@ func (c Container) FormatLabels() string {
 	}
 	return strings.Join(lines, " ")
 }
+
+func ParseContainerLabels(s string) map[string]string {
+	labels := make(map[string]string)
+	for _, part := range strings.Split(s, " ") {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		kv := strings.Split(part, "=")
+		if len(kv) == 2 {
+			labels[kv[0]] = labels[kv[1]]
+		}
+	}
+	return labels
+}

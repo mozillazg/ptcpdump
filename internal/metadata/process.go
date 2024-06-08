@@ -66,6 +66,10 @@ func (c *ProcessCache) fillRunningProcesses() error {
 }
 
 func (c *ProcessCache) AddItem(exec event.ProcessExec) {
+	c.AddItemWithContext(exec, types.PacketContext{})
+}
+
+func (c *ProcessCache) AddItemWithContext(exec event.ProcessExec, rawCtx types.PacketContext) {
 	pid := exec.Pid
 
 	ctx := &types.PacketContext{
@@ -77,7 +81,7 @@ func (c *ProcessCache) AddItem(exec event.ProcessExec) {
 			Args:             exec.Args,
 			ArgsTruncated:    exec.ArgsTruncated,
 		},
-		Container: types.Container{},
+		Container: rawCtx.Container,
 	}
 	if c.cc != nil && ctx.Container.Id == "" {
 		if ctx.Container.Id == "" && exec.CgroupName != "" {

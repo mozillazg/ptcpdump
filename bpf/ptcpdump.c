@@ -82,14 +82,6 @@ struct process_meta_t {
     char cgroup_name[128];
 };
 
-struct flow_pid_value_t {
-    u32 pid;
-
-    u32 mntns_id;
-    u32 netns_id;
-    char cgroup_name[128];
-};
-
 struct packet_event_meta_t {
     u64 timestamp;
     u8 packet_type;
@@ -141,14 +133,14 @@ struct {
     __uint(type, BPF_MAP_TYPE_LRU_HASH);
     __uint(max_entries, 65536);
     __type(key, struct flow_pid_key_t);
-    __type(value, struct flow_pid_value_t);
+    __type(value, struct process_meta_t);
 } flow_pid_map SEC(".maps");
 
 struct {
     __uint(type, BPF_MAP_TYPE_LRU_HASH);
     __uint(max_entries, 65536);
     __type(key, u64);
-    __type(value, struct flow_pid_value_t);
+    __type(value, struct process_meta_t);
 } sock_cookie_pid_map SEC(".maps");
 
 struct {
@@ -184,7 +176,7 @@ struct {
 const struct packet_event_t *unused1 __attribute__((unused));
 const struct exec_event_t *unused2 __attribute__((unused));
 const struct flow_pid_key_t *unused3 __attribute__((unused));
-const struct flow_pid_value_t *unused4 __attribute__((unused));
+const struct process_meta_t *unused4 __attribute__((unused));
 
 static __always_inline int parse_skb_l2(struct __sk_buff *skb, struct l2_t *l2, u32 *offset) {
     if (bpf_skb_load_bytes(skb, *offset + offsetof(struct ethhdr, h_proto), &l2->h_protocol, sizeof(l2->h_protocol)) <
@@ -301,12 +293,13 @@ static __always_inline int parse_skb_meta(struct __sk_buff *skb, struct packet_m
     return 0;
 }
 
-static __always_inline void fill_process_meta(struct task_struct *task, struct flow_pid_value_t *meta) {
+static __always_inline void fill_process_meta(struct task_struct *task, struct process_meta_t *meta) {
     BPF_CORE_READ_INTO(&meta->mntns_id, task, nsproxy, mnt_ns, ns.inum);
     BPF_CORE_READ_INTO(&meta->netns_id, task, nsproxy, net_ns, ns.inum);
     BPF_CORE_READ_INTO(&meta->pid, task, tgid);
 
-    BPF_CORE_READ_STR_INTO(&meta->cgroup_name, task, cgroups, subsys[0], cgroup, kn, name);
+    const char *cname = BPF_CORE_READ(task, cgroups, subsys[0], cgroup, kn, name);
+    bpf_core_read_str(&meta->cgroup_name, sizeof(meta->cgroup_name), cname);
 }
 
 static __always_inline void fill_sk_meta(struct sock *sk, struct flow_pid_key_t *meta) {
@@ -449,18 +442,10 @@ int cgroup__sock_create(void *ctx) {
         }
     }
 
-    u32 pid = bpf_get_current_pid_tgid() >> 32;
-    u32 mntns_id = BPF_CORE_READ(task, nsproxy, mnt_ns, ns.inum);
-    u32 netns_id = BPF_CORE_READ(task, nsproxy, net_ns, ns.inum);
+    struct process_meta_t meta = {0};
+    fill_process_meta(task, &meta);
 
-    struct flow_pid_value_t value = {
-        .pid = pid,
-        .mntns_id = mntns_id,
-        .netns_id = netns_id,
-    };
-    BPF_CORE_READ_STR_INTO(&value.cgroup_name, task, cgroups, subsys[0], cgroup, kn, name);
-
-    int ret = bpf_map_update_elem(&sock_cookie_pid_map, &cookie, &value, BPF_ANY);
+    int ret = bpf_map_update_elem(&sock_cookie_pid_map, &cookie, &meta, BPF_ANY);
     if (ret != 0) {
         bpf_printk("[ptcpdump] bpf_map_update_elem sock_cookie_pid_map failed: %d", ret);
     }
@@ -482,7 +467,7 @@ int cgroup__sock_release(void *ctx) {
 SEC("kprobe/security_sk_classify_flow")
 int BPF_KPROBE(kprobe__security_sk_classify_flow, struct sock *sk) {
     struct flow_pid_key_t key = {0};
-    struct flow_pid_value_t value = {0};
+    struct process_meta_t value = {0};
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
 
     if (parent_process_filter(task) < 0) {
@@ -617,10 +602,10 @@ static __always_inline void route_packet(struct packet_meta_t *packet_meta, stru
     return;
 }
 
-static __always_inline int get_pid_meta(struct __sk_buff *skb, struct flow_pid_value_t *pid_meta, bool egress) {
+static __always_inline int get_pid_meta(struct __sk_buff *skb, struct process_meta_t *pid_meta, bool egress) {
     u64 cookie = bpf_get_socket_cookie(skb);
     if (cookie > 0) {
-        struct flow_pid_value_t *value = bpf_map_lookup_elem(&sock_cookie_pid_map, &cookie);
+        struct process_meta_t *value = bpf_map_lookup_elem(&sock_cookie_pid_map, &cookie);
         if (value) {
             pid_meta->pid = value->pid;
             pid_meta->mntns_id = value->mntns_id;
@@ -665,7 +650,7 @@ static __always_inline int get_pid_meta(struct __sk_buff *skb, struct flow_pid_v
 
         if (key.sport > 0) {
             // bpf_printk("[tc] check %pI4 %d", &key.saddr[0], key.sport);
-            struct flow_pid_value_t *value = bpf_map_lookup_elem(&flow_pid_map, &key);
+            struct process_meta_t *value = bpf_map_lookup_elem(&flow_pid_map, &key);
             if (value) {
                 // bpf_printk("[tc] got %pI4 %d -> %pI4", &flow.saddr[0],
                 // flow.sport, &flow.daddr[0]);
@@ -694,7 +679,7 @@ static __always_inline void handle_tc(struct __sk_buff *skb, bool egress) {
         return;
     }
 
-    struct flow_pid_value_t pid_meta = {0};
+    struct process_meta_t pid_meta = {0};
     if (get_pid_meta(skb, &pid_meta, egress) < 0) {
         return;
     };
@@ -755,15 +740,7 @@ static __always_inline void handle_exec(struct bpf_raw_tracepoint_args *ctx) {
     }
     __builtin_memset(&event->meta, 0, sizeof(event->meta));
 
-    event->meta.pid = bpf_get_current_pid_tgid() >> 32;
-    BPF_CORE_READ_INTO(&event->meta.mntns_id, task, nsproxy, mnt_ns, ns.inum);
-    BPF_CORE_READ_INTO(&event->meta.netns_id, task, nsproxy, net_ns, ns.inum);
-    // BPF_CORE_READ_STR_INTO(&event->meta.cgroup_name, task, cgroups, subsys[0], cgroup, kn, name);
-    char cgroup_name[128];
-    const char *cname = BPF_CORE_READ(task, cgroups, subsys[0], cgroup, kn, name);
-    bpf_core_read_str(&cgroup_name, sizeof(cgroup_name), cname);
-
-    __builtin_memcpy(&event->meta.cgroup_name, &cgroup_name, sizeof(cgroup_name));
+    fill_process_meta(task, &event->meta);
 
     struct linux_binprm *bprm = (struct linux_binprm *)BPF_CORE_READ(ctx, args[2]);
     const char *filename_p = BPF_CORE_READ(bprm, filename);

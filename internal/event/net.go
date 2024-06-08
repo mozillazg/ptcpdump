@@ -8,6 +8,7 @@ import (
 	"github.com/gopacket/gopacket"
 	"github.com/mozillazg/ptcpdump/bpf"
 	"github.com/mozillazg/ptcpdump/internal/dev"
+	"github.com/mozillazg/ptcpdump/internal/utils"
 	"golang.org/x/sys/unix"
 )
 
@@ -42,7 +43,7 @@ func ParsePacketEvent(devices map[int]dev.Device, event bpf.BpfPacketEventT) (*P
 	p.Pid = int(event.Meta.Pid)
 	p.MntNs = int(event.Meta.MntnsId)
 	p.NetNs = int(event.Meta.NetnsId)
-	log.Printf("mntns: %d, netns: %d", p.MntNs, p.NetNs)
+	log.Printf("mntns: %d, netns: %d, cgroupName: %s", p.MntNs, p.NetNs, utils.GoString(event.Meta.CgroupName[:]))
 	p.Device = devices[int(event.Meta.Ifindex)]
 
 	if event.Meta.PacketType == 1 {

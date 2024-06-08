@@ -1,9 +1,10 @@
-package container
+package docker
 
 import (
 	"context"
 	"errors"
 	"log"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -18,17 +19,17 @@ import (
 	"golang.org/x/xerrors"
 )
 
-type DockerMetaData struct {
+type MetaData struct {
 	client *client.Client
 
 	containerById map[string]types.Container
 	mux           sync.RWMutex
 
-	rootMntNs int64
-	rootNetNs int64
+	hostMntNs int64
+	hostNetNs int64
 }
 
-func NewDockerMetaData(host string) (*DockerMetaData, error) {
+func NewMetaData(host string) (*MetaData, error) {
 	opts := []client.Opt{
 		client.FromEnv,
 		client.WithAPIVersionNegotiation(),
@@ -47,7 +48,7 @@ func NewDockerMetaData(host string) (*DockerMetaData, error) {
 		return nil, err
 	}
 
-	m := DockerMetaData{
+	m := MetaData{
 		client:        c,
 		containerById: make(map[string]types.Container),
 		mux:           sync.RWMutex{},
@@ -55,7 +56,7 @@ func NewDockerMetaData(host string) (*DockerMetaData, error) {
 	return &m, nil
 }
 
-func (d *DockerMetaData) Start(ctx context.Context) error {
+func (d *MetaData) Start(ctx context.Context) error {
 	if err := d.init(ctx); err != nil {
 		return err
 	}
@@ -66,15 +67,17 @@ func (d *DockerMetaData) Start(ctx context.Context) error {
 	return nil
 }
 
-func (d *DockerMetaData) GetById(containerId string) types.Container {
+func (d *MetaData) GetById(containerId string) types.Container {
 	d.mux.RLock()
 	defer d.mux.RUnlock()
 
-	return d.containerById[containerId]
+	id := getDockerContainerId(containerId)
+
+	return d.containerById[id]
 }
 
-func (d *DockerMetaData) GetByNetNs(netNs int64) types.Container {
-	if netNs == 0 || netNs == d.rootNetNs {
+func (d *MetaData) GetByNetNs(netNs int64) types.Container {
+	if netNs == 0 || netNs == d.hostNetNs {
 		return types.Container{}
 	}
 
@@ -82,7 +85,7 @@ func (d *DockerMetaData) GetByNetNs(netNs int64) types.Container {
 	defer d.mux.RUnlock()
 
 	for _, c := range d.containerById {
-		if c.NetworkNamespace > 0 && c.NetworkNamespace == d.rootNetNs {
+		if c.NetworkNamespace > 0 && c.NetworkNamespace == d.hostNetNs {
 			continue
 		}
 		if c.NetworkNamespace > 0 && c.NetworkNamespace == netNs {
@@ -93,8 +96,8 @@ func (d *DockerMetaData) GetByNetNs(netNs int64) types.Container {
 	return types.Container{}
 }
 
-func (d *DockerMetaData) GetByMntNs(mntNs int64) types.Container {
-	if mntNs == 0 || mntNs == d.rootMntNs {
+func (d *MetaData) GetByMntNs(mntNs int64) types.Container {
+	if mntNs == 0 || mntNs == d.hostMntNs {
 		return types.Container{}
 	}
 
@@ -102,7 +105,7 @@ func (d *DockerMetaData) GetByMntNs(mntNs int64) types.Container {
 	defer d.mux.RUnlock()
 
 	for _, c := range d.containerById {
-		if c.MountNamespace > 0 && c.MountNamespace == d.rootMntNs {
+		if c.MountNamespace > 0 && c.MountNamespace == d.hostMntNs {
 			continue
 		}
 		if c.MountNamespace > 0 && c.MountNamespace == mntNs {
@@ -113,7 +116,7 @@ func (d *DockerMetaData) GetByMntNs(mntNs int64) types.Container {
 	return types.Container{}
 }
 
-func (d *DockerMetaData) GetByPid(pid int) types.Container {
+func (d *MetaData) GetByPid(pid int) types.Container {
 	if pid == 0 {
 		return types.Container{}
 	}
@@ -130,9 +133,9 @@ func (d *DockerMetaData) GetByPid(pid int) types.Container {
 	return types.Container{}
 }
 
-func (d *DockerMetaData) init(ctx context.Context) error {
-	d.rootMntNs = utils.GetMountNamespaceFromPid(1)
-	d.rootNetNs = utils.GetNetworkNamespaceFromPid(1)
+func (d *MetaData) init(ctx context.Context) error {
+	d.hostMntNs = utils.GetMountNamespaceFromPid(1)
+	d.hostNetNs = utils.GetNetworkNamespaceFromPid(1)
 
 	c := d.client
 	containers, err := c.ContainerList(ctx, container.ListOptions{
@@ -147,7 +150,7 @@ func (d *DockerMetaData) init(ctx context.Context) error {
 	return nil
 }
 
-func (d *DockerMetaData) watchContainerEventsWithRetry(ctx context.Context) {
+func (d *MetaData) watchContainerEventsWithRetry(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -161,7 +164,7 @@ func (d *DockerMetaData) watchContainerEventsWithRetry(ctx context.Context) {
 	}
 }
 
-func (d *DockerMetaData) watchContainerEvents(ctx context.Context) {
+func (d *MetaData) watchContainerEvents(ctx context.Context) {
 	c := d.client
 
 	var chMsg <-chan events.Message
@@ -187,7 +190,6 @@ func (d *DockerMetaData) watchContainerEvents(ctx context.Context) {
 			log.Printf("docker events failed: %s", err)
 			return
 		case msg = <-chMsg:
-			break
 		}
 
 		if msg.Type != events.ContainerEventType {
@@ -201,7 +203,7 @@ func (d *DockerMetaData) watchContainerEvents(ctx context.Context) {
 	}
 }
 
-func (d *DockerMetaData) handleContainerEvent(ctx context.Context, containerId string) {
+func (d *MetaData) handleContainerEvent(ctx context.Context, containerId string) {
 	cr, err := d.inspectContainer(ctx, containerId)
 	if err != nil {
 		log.Print(err)
@@ -211,16 +213,16 @@ func (d *DockerMetaData) handleContainerEvent(ctx context.Context, containerId s
 	d.setContainer(*cr)
 }
 
-func (d *DockerMetaData) setContainer(c types.Container) {
+func (d *MetaData) setContainer(c types.Container) {
 	d.mux.Lock()
 	defer d.mux.Unlock()
 
-	log.Printf("new container: %#v", c)
+	// log.Printf("new container: %#v", c)
 
 	d.containerById[c.Id] = c
 }
 
-func (d *DockerMetaData) inspectContainer(ctx context.Context, containerId string) (*types.Container, error) {
+func (d *MetaData) inspectContainer(ctx context.Context, containerId string) (*types.Container, error) {
 	c := d.client
 
 	data, err := c.ContainerInspect(ctx, containerId)
@@ -246,6 +248,21 @@ func (d *DockerMetaData) inspectContainer(ctx context.Context, containerId strin
 	return cr, nil
 }
 
-func (d *DockerMetaData) Close() error {
+func (d *MetaData) Close() error {
 	return d.client.Close()
+}
+
+// cgroupName: docker-40fad6778feaab1bd6ed7bfa0d43a2d5338267204f30cd8203e4d06de871c577.scope
+var regexDockerCgroupV2Name = regexp.MustCompilePOSIX(`docker-([a-z0-9]{64}).scope`)
+
+func getDockerContainerId(id string) string {
+	parts := regexDockerCgroupV2Name.FindAllStringSubmatch(id, -1)
+	if len(parts) < 1 {
+		return id
+	}
+	part := parts[0]
+	if len(part) < 2 {
+		return id
+	}
+	return part[1]
 }
