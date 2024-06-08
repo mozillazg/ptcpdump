@@ -33,8 +33,8 @@ func (p *PcapNGParser) Parse() (*event.Packet, error) {
 	if err != nil {
 		return nil, err
 	}
-	exec := event.FromPacketOptions(opts)
+	exec, ctx := event.FromPacketOptions(opts)
 	e.Pid = exec.Pid
-	p.pcache.AddItem(exec)
+	p.pcache.AddItemWithContext(exec, ctx)
 	return e, nil
 }

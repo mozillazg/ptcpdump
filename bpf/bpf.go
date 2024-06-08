@@ -17,7 +17,7 @@ import (
 )
 
 // $TARGET is set by the Makefile
-//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc clang -no-strip -target $TARGET -type packet_event_t -type exec_event_t -type flow_pid_key_t -type flow_pid_value_t Bpf ./ptcpdump.c -- -I./headers -I./headers/$TARGET -I. -Wall
+//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc clang -no-strip -target $TARGET -type packet_event_t -type exec_event_t -type flow_pid_key_t -type process_meta_t -type packet_event_meta_t Bpf ./ptcpdump.c -- -I./headers -I./headers/$TARGET -I. -Wall
 
 const tcFilterName = "ptcpdump"
 
@@ -174,7 +174,7 @@ func (b *BPF) Close() {
 	}
 }
 
-func (b *BPF) UpdateFlowPidMapValues(data map[*BpfFlowPidKeyT]BpfFlowPidValueT) error {
+func (b *BPF) UpdateFlowPidMapValues(data map[*BpfFlowPidKeyT]BpfProcessMetaT) error {
 	for k, v := range data {
 		err := b.objs.FlowPidMap.Update(*k, v, ebpf.UpdateNoExist)
 		if err != nil {

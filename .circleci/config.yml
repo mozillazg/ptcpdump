@@ -93,6 +93,11 @@ jobs:
           command: |
             sudo bash testdata/test_nat.sh ./ptcpdump
 
+      - run:
+          name: e2e (test docker)
+          command: |
+            sudo bash testdata/test_docker.sh ./ptcpdump
+
 
 workflows:
   e2e:

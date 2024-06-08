@@ -18,6 +18,11 @@ import (
 
 func capture(ctx context.Context, stop context.CancelFunc, opts Options) error {
 	pcache := metadata.NewProcessCache()
+	if cc, err := metadata.NewContainerCache(ctx); err != nil {
+		log.Printf("start container cache failed: %s, will no container context", err)
+	} else {
+		pcache.WithContainerCache(cc)
+	}
 
 	var subProcessFinished <-chan struct{}
 	var err error

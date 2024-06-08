@@ -13,7 +13,7 @@ import (
 )
 
 type BpfExecEventT struct {
-	Pid               uint32
+	Meta              BpfProcessMetaT
 	FilenameTruncated uint8
 	ArgsTruncated     uint8
 	_                 [2]byte
@@ -28,8 +28,6 @@ type BpfFlowPidKeyT struct {
 	_     [6]byte
 }
 
-type BpfFlowPidValueT struct{ Pid uint32 }
-
 type BpfNatFlowT struct {
 	Saddr [2]uint64
 	Daddr [2]uint64
@@ -38,19 +36,28 @@ type BpfNatFlowT struct {
 	_     [4]byte
 }
 
+type BpfPacketEventMetaT struct {
+	Timestamp  uint64
+	PacketType uint8
+	_          [3]byte
+	Ifindex    uint32
+	PayloadLen uint64
+	PacketSize uint64
+	Process    BpfProcessMetaT
+	_          [4]byte
+}
+
 type BpfPacketEventT struct {
-	Meta struct {
-		Timestamp  uint64
-		PacketType uint8
-		_          [3]byte
-		Ifindex    uint32
-		Pid        uint32
-		_          [4]byte
-		PayloadLen uint64
-		PacketSize uint64
-	}
+	Meta    BpfPacketEventMetaT
 	Payload [1500]uint8
 	_       [4]byte
+}
+
+type BpfProcessMetaT struct {
+	Pid        uint32
+	MntnsId    uint32
+	NetnsId    uint32
+	CgroupName [128]int8
 }
 
 // LoadBpf returns the embedded CollectionSpec for Bpf.
