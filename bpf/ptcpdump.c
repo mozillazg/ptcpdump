@@ -86,12 +86,10 @@ struct packet_event_meta_t {
     u64 timestamp;
     u8 packet_type;
     u32 ifindex;
-    u32 pid;
-    u32 mntns_id;
-    u32 netns_id;
     u64 payload_len;
     u64 packet_size;
-    char cgroup_name[128];
+
+    struct process_meta_t process;
 };
 
 struct packet_event_t {
@@ -707,10 +705,10 @@ static __always_inline void handle_tc(struct __sk_buff *skb, bool egress) {
     event->meta.timestamp = bpf_ktime_get_ns();
     event->meta.ifindex = skb->ifindex;
     if (pid_meta.pid > 0) {
-        event->meta.pid = pid_meta.pid;
-        event->meta.mntns_id = pid_meta.mntns_id;
-        event->meta.netns_id = pid_meta.netns_id;
-        __builtin_memcpy(&event->meta.cgroup_name, &pid_meta.cgroup_name, sizeof(pid_meta.cgroup_name));
+        event->meta.process.pid = pid_meta.pid;
+        event->meta.process.mntns_id = pid_meta.mntns_id;
+        event->meta.process.netns_id = pid_meta.netns_id;
+        __builtin_memcpy(&event->meta.process.cgroup_name, &pid_meta.cgroup_name, sizeof(pid_meta.cgroup_name));
         /* __builtin_memcpy(&event->meta.comm, &pid_meta->comm, sizeof(pid_meta->comm)); */
     }
 

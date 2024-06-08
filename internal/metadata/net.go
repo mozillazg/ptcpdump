@@ -2,8 +2,9 @@ package metadata
 
 import (
 	"context"
-	"github.com/mozillazg/ptcpdump/internal/utils"
 	"net/netip"
+
+	"github.com/mozillazg/ptcpdump/internal/utils"
 
 	"github.com/shirou/gopsutil/v3/net"
 	"golang.org/x/xerrors"

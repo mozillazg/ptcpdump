@@ -40,10 +40,10 @@ func ParsePacketEvent(devices map[int]dev.Device, event bpf.BpfPacketEventT) (*P
 	} else {
 		p.Time = t.UTC()
 	}
-	p.Pid = int(event.Meta.Pid)
-	p.MntNs = int(event.Meta.MntnsId)
-	p.NetNs = int(event.Meta.NetnsId)
-	log.Printf("mntns: %d, netns: %d, cgroupName: %s", p.MntNs, p.NetNs, utils.GoString(event.Meta.CgroupName[:]))
+	p.Pid = int(event.Meta.Process.Pid)
+	p.MntNs = int(event.Meta.Process.MntnsId)
+	p.NetNs = int(event.Meta.Process.NetnsId)
+	log.Printf("mntns: %d, netns: %d, cgroupName: %s", p.MntNs, p.NetNs, utils.GoString(event.Meta.Process.CgroupName[:]))
 	p.Device = devices[int(event.Meta.Ifindex)]
 
 	if event.Meta.PacketType == 1 {

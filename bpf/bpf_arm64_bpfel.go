@@ -36,20 +36,19 @@ type BpfNatFlowT struct {
 	_     [4]byte
 }
 
+type BpfPacketEventMetaT struct {
+	Timestamp  uint64
+	PacketType uint8
+	_          [3]byte
+	Ifindex    uint32
+	PayloadLen uint64
+	PacketSize uint64
+	Process    BpfProcessMetaT
+	_          [4]byte
+}
+
 type BpfPacketEventT struct {
-	Meta struct {
-		Timestamp  uint64
-		PacketType uint8
-		_          [3]byte
-		Ifindex    uint32
-		Pid        uint32
-		MntnsId    uint32
-		NetnsId    uint32
-		_          [4]byte
-		PayloadLen uint64
-		PacketSize uint64
-		CgroupName [128]int8
-	}
+	Meta    BpfPacketEventMetaT
 	Payload [1500]uint8
 	_       [4]byte
 }
