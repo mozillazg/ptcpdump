@@ -30,8 +30,8 @@ Table of Contents
 
 * Process-aware
   * Aware of the process information associated with the packets.
-  * Supports using pcap-filter(7) syntax for filtering packets.
   * Supports filtering packets by process ID and process name.
+* Supports using pcap-filter(7) syntax for filtering packets.
 * Directly applies filters in the kernel space.
 * Supports saving captured packets in the PcapNG format for offline analysis with third-party tools such as Wireshark.
 * Supports reading packets from pcapng file.
@@ -48,7 +48,7 @@ Please download the latest binary in the [releases](https://github.com/mozillazg
 
 Linux kernel version >= 5.2.
 
-<p align="right">(<a href="#top">🔝</a>)</p>
+<p align="right"><a href="#top">🔝</a></p>
 
 
 ## Usage
@@ -67,7 +67,7 @@ sudo ptcpdump -i any -w - port 80 | tshark -r -
 ptcpdump -r demo.pcapng
 ```
 
-<p align="right">(<a href="#top">🔝</a>)</p>
+<p align="right"><a href="#top">🔝</a></p>
 
 
 ### Example output
@@ -83,7 +83,7 @@ ptcpdump -r demo.pcapng
     Container (name demo, id 087cb587a02f039609061e0e78bf74f8d146fbcb42d1d5647a6776f315d121eb, image docker.io/alpine:3.18, labels {})
 ```
 
-<p align="right">(<a href="#top">🔝</a>)</p>
+<p align="right"><a href="#top">🔝</a></p>
 
 
 ### Flags
@@ -122,7 +122,7 @@ Flags:
   -w, --write-file string    Write the raw packets to file rather than parsing and printing them out. They can later be printed with the -r option. Standard output is used if file is '-'. e.g. ptcpdump.pcapng
 ```
 
-<p align="right">(<a href="#top">🔝</a>)</p>
+<p align="right"><a href="#top">🔝</a></p>
 
 
 ## Compare with tcpdump
@@ -200,7 +200,7 @@ Flags:
 | -z *postrotate-command*                           | ✅       |                          |
 | -Z *user*, --relinquish-privileges=*user*         | ✅       |                          |
 
-<p align="right">(<a href="#top">🔝</a>)</p>
+<p align="right"><a href="#top">🔝</a></p>
 
 
 ## Build
@@ -217,4 +217,4 @@ Flags:
     make build
     ```
 
-<p align="right">(<a href="#top">🔝</a>)</p>
+<p align="right"><a href="#top">🔝</a></p>
