@@ -18,6 +18,17 @@ jobs:
 
     steps:
       - checkout
+
+      - run:
+          name: setup containerd
+          command: |
+            wget https://github.com/containerd/nerdctl/releases/download/v1.7.6/nerdctl-1.7.6-linux-arm64.tar.gz
+            sudo tar Cxzvvf /usr/local/bin nerdctl-1.7.6-linux-arm64.tar.gz
+
+            wget https://github.com/containernetworking/plugins/releases/download/v1.5.0/cni-plugins-linux-arm64-v1.5.0.tgz
+            sudo mkdir -p /opt/cni/bin
+            sudo tar Cxzvvf /opt/cni/bin cni-plugins-linux-arm64-v1.5.0.tgz
+
       - restore_cache:
           keys:
             - go-mod-v4-{{ checksum "go.sum" }}
@@ -97,6 +108,11 @@ jobs:
           name: e2e (test docker)
           command: |
             sudo bash testdata/test_docker.sh ./ptcpdump
+
+      - run:
+          name: e2e (test containerd)
+          command: |
+            sudo bash testdata/test_containerd.sh ./ptcpdump
 
 
 workflows:

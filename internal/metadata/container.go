@@ -3,26 +3,16 @@ package metadata
 import (
 	"context"
 
-	"github.com/mozillazg/ptcpdump/internal/metadata/container/docker"
+	"github.com/mozillazg/ptcpdump/internal/metadata/container"
 	"github.com/mozillazg/ptcpdump/internal/types"
 )
 
-type ContainerMetaData interface {
-	GetById(containerId string) types.Container
-	GetByMntNs(mntNs int64) types.Container
-	GetByNetNs(netNs int64) types.Container
-	GetByPid(pid int) types.Container
-}
-
 type ContainerCache struct {
-	d ContainerMetaData
+	d container.MetaData
 }
 
 func NewContainerCache(ctx context.Context) (*ContainerCache, error) {
-	d, err := docker.NewMetaData("")
-	if err != nil {
-		return nil, err
-	}
+	d := container.NewMultipleEngineMetaData()
 
 	if err := d.Start(ctx); err != nil {
 		return nil, err

@@ -1,28 +1,30 @@
-package docker
+package containerd
 
 import (
 	"context"
 	"errors"
 	"log"
 	"regexp"
-	"strings"
 	"sync"
 	"time"
 
-	dockertypes "github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/events"
-	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/client"
+	"github.com/containerd/containerd"
+	apievents "github.com/containerd/containerd/api/events"
+	"github.com/containerd/containerd/events"
+	"github.com/containerd/typeurl/v2"
 	"github.com/mozillazg/ptcpdump/internal/types"
 	"github.com/mozillazg/ptcpdump/internal/utils"
 	"golang.org/x/xerrors"
 )
 
-const DefaultSocket = "/var/run/docker.sock"
+const (
+	DefaultSocket    = "/run/containerd/containerd.sock"
+	defaultNamespace = "default"
+	defaultNameLabel = "nerdctl/name"
+)
 
 type MetaData struct {
-	client *client.Client
+	client *containerd.Client
 
 	containerById map[string]types.Container
 	mux           sync.RWMutex
@@ -31,22 +33,24 @@ type MetaData struct {
 	hostNetNs int64
 }
 
-func NewMetaData(host string) (*MetaData, error) {
-	opts := []client.Opt{
-		client.FromEnv,
-		client.WithAPIVersionNegotiation(),
+func NewMetaData(host string, namespace string) (*MetaData, error) {
+	if namespace == "" {
+		namespace = defaultNamespace
 	}
-	if host != "" {
-		opts = append(opts, client.WithHost(host))
+	if host == "" {
+		host = DefaultSocket
 	}
-	c, err := client.NewClientWithOpts(opts...)
+	opts := []containerd.ClientOpt{
+		containerd.WithDefaultNamespace(namespace),
+	}
+	c, err := containerd.New(host, opts...)
 	if err != nil {
 		return nil, err
 	}
 
 	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*5)
 	defer cancel()
-	if _, err := c.Info(ctx); err != nil {
+	if _, err := c.Server(ctx); err != nil {
 		return nil, err
 	}
 
@@ -56,6 +60,41 @@ func NewMetaData(host string) (*MetaData, error) {
 		mux:           sync.RWMutex{},
 	}
 	return &m, nil
+}
+
+func NewMultipleNamespacesMetaData(host, namespace string) ([]*MetaData, error) {
+	var instances []*MetaData
+
+	cd, err := NewMetaData(host, namespace)
+	if err != nil {
+		return nil, err
+	}
+	instances = append(instances, cd)
+	if namespace != "" {
+		return instances, nil
+	}
+
+	nsList, err := cd.ListNamespace(context.TODO())
+	if err != nil {
+		return instances, err
+	}
+
+	for _, ns := range nsList {
+		if ns == defaultNamespace {
+			continue
+		}
+		cd, err := NewMetaData(host, ns)
+		if err != nil {
+			return instances, err
+		}
+		instances = append(instances, cd)
+	}
+
+	return instances, nil
+}
+
+func (d *MetaData) ListNamespace(ctx context.Context) ([]string, error) {
+	return d.client.NamespaceService().List(ctx)
 }
 
 func (d *MetaData) Start(ctx context.Context) error {
@@ -73,7 +112,7 @@ func (d *MetaData) GetById(containerId string) types.Container {
 	d.mux.RLock()
 	defer d.mux.RUnlock()
 
-	id := getDockerContainerId(containerId)
+	id := getContainerId(containerId)
 
 	return d.containerById[id]
 }
@@ -140,14 +179,12 @@ func (d *MetaData) init(ctx context.Context) error {
 	d.hostNetNs = utils.GetNetworkNamespaceFromPid(1)
 
 	c := d.client
-	containers, err := c.ContainerList(ctx, container.ListOptions{
-		Filters: filters.NewArgs(filters.Arg("status", "running")),
-	})
+	containers, err := c.Containers(ctx)
 	if err != nil {
 		return xerrors.Errorf("list containers: %w", err)
 	}
 	for _, cr := range containers {
-		d.handleContainerEvent(ctx, cr.ID)
+		d.saveContainer(ctx, cr)
 	}
 	return nil
 }
@@ -169,17 +206,11 @@ func (d *MetaData) watchContainerEventsWithRetry(ctx context.Context) {
 func (d *MetaData) watchContainerEvents(ctx context.Context) {
 	c := d.client
 
-	var chMsg <-chan events.Message
+	var chMsg <-chan *events.Envelope
 	var chErr <-chan error
-	var msg events.Message
+	var msg *events.Envelope
 
-	chMsg, chErr = c.Events(ctx, dockertypes.EventsOptions{
-		// Filters: filters.NewArgs(
-		// 	filters.Arg("type", "container"),
-		// 	filters.Arg("event", "exec_create"),
-		// 	filters.Arg("event", "exec_start"),
-		// ),
-	})
+	chMsg, chErr = c.Subscribe(ctx)
 
 	for {
 		select {
@@ -189,24 +220,41 @@ func (d *MetaData) watchContainerEvents(ctx context.Context) {
 			if errors.Is(err, context.Canceled) {
 				return
 			}
-			log.Printf("docker events failed: %s", err)
+			log.Printf("containerd events failed: %s", err)
 			return
 		case msg = <-chMsg:
 		}
 
-		if msg.Type != events.ContainerEventType {
+		event, err := typeurl.UnmarshalAny(msg.Event)
+		if err != nil {
+			log.Printf("parse containerd event failed: %s", err)
 			continue
 		}
-		if msg.Action == events.ActionStart ||
-			strings.HasPrefix(string(msg.Action), string(events.ActionExecCreate)+": ") ||
-			strings.HasPrefix(string(msg.Action), string(events.ActionExecStart)+": ") {
-			d.handleContainerEvent(ctx, msg.Actor.ID)
+
+		// log.Printf("new event: %#v", event)
+		switch ev := event.(type) {
+		case *apievents.TaskStart:
+			d.handleContainerEvent(ctx, ev.ContainerID)
 		}
 	}
 }
 
 func (d *MetaData) handleContainerEvent(ctx context.Context, containerId string) {
-	cr, err := d.inspectContainer(ctx, containerId)
+	c := d.client
+	containers, err := c.Containers(ctx)
+	if err != nil {
+		log.Print(err)
+		return
+	}
+	for _, container := range containers {
+		if container.ID() == containerId {
+			d.saveContainer(ctx, container)
+		}
+	}
+}
+
+func (d *MetaData) saveContainer(ctx context.Context, container containerd.Container) {
+	cr, err := d.inspectContainer(ctx, container)
 	if err != nil {
 		log.Print(err)
 		return
@@ -224,25 +272,30 @@ func (d *MetaData) setContainer(c types.Container) {
 	d.containerById[c.Id] = c
 }
 
-func (d *MetaData) inspectContainer(ctx context.Context, containerId string) (*types.Container, error) {
-	c := d.client
-
-	data, err := c.ContainerInspect(ctx, containerId)
+func (d *MetaData) inspectContainer(ctx context.Context, container containerd.Container) (*types.Container, error) {
+	info, err := container.Info(ctx)
 	if err != nil {
-		return nil, xerrors.Errorf("inspect container %s: %w", containerId, err)
+		return nil, err
+	}
+	task, err := container.Task(ctx, nil)
+	if err != nil {
+		// return nil, err
+	}
+
+	name := ""
+	if len(info.Labels) > 0 {
+		name = info.Labels[defaultNameLabel]
 	}
 
 	cr := &types.Container{
-		Id:          containerId,
-		Name:        data.Name,
-		ImageDigest: data.Image,
+		Id:     container.ID(),
+		Name:   name,
+		Image:  info.Image,
+		Labels: info.Labels,
 	}
-	if conf := data.Config; conf != nil {
-		cr.Image = conf.Image
-		cr.Labels = conf.Labels
-	}
-	if state := data.State; state != nil && state.Pid != 0 {
-		cr.RootPid = state.Pid
+
+	if task != nil {
+		cr.RootPid = int(task.Pid())
 		cr.MountNamespace = utils.GetMountNamespaceFromPid(cr.RootPid)
 		cr.NetworkNamespace = utils.GetNetworkNamespaceFromPid(cr.RootPid)
 	}
@@ -254,11 +307,11 @@ func (d *MetaData) Close() error {
 	return d.client.Close()
 }
 
-// cgroupName: docker-40fad6778feaab1bd6ed7bfa0d43a2d5338267204f30cd8203e4d06de871c577.scope
-var regexDockerCgroupV2Name = regexp.MustCompilePOSIX(`docker-([a-z0-9]{64}).scope`)
+// cgroupName: nerdctl-d3d7bc0de8fc3c1ccffc3b870f57ce5f82982b3b494df21f9722a68cc75cd4cd.scope
+var regexContainerCgroupV2Name = regexp.MustCompilePOSIX(`[^\-]+-([a-z0-9]{64}).scope`)
 
-func getDockerContainerId(id string) string {
-	parts := regexDockerCgroupV2Name.FindAllStringSubmatch(id, -1)
+func getContainerId(id string) string {
+	parts := regexContainerCgroupV2Name.FindAllStringSubmatch(id, -1)
 	if len(parts) < 1 {
 		return id
 	}
