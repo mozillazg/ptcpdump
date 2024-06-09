@@ -1,5 +1,7 @@
 # ptcpdump
 
+<div id="top"></div>
+
 ![amd64-e2e](https://img.shields.io/github/actions/workflow/status/mozillazg/ptcpdump/test.yml?label=x86_64%20(amd64)%20e2e)
 ![arm64-e2e](https://img.shields.io/circleci/build/gh/mozillazg/ptcpdump/master?label=aarch64%20(arm64)%20e2e)
 
@@ -15,21 +17,27 @@ Table of Contents
 
 * [Features](#features)
 * [Installation](#installation)
-  * [Requirements](#requirements)
+   * [Requirements](#requirements)
 * [Usage](#usage)
-  * [Example output](#example-output)
+   * [Example commands](#example-commands)
+   * [Example output](#example-output)
+   * [Flags](#flags)
 * [Compare with tcpdump](#compare-with-tcpdump)
 * [Build](#build)
 
 
 ## Features
 
-* Aware of the process information associated with the packets.
-* Supports using pcap-filter(7) syntax for filtering packets.
-* Supports filtering packets by process ID and process name.
+* Process-aware
+  * Aware of the process information associated with the packets.
+  * Supports using pcap-filter(7) syntax for filtering packets.
+  * Supports filtering packets by process ID and process name.
 * Directly applies filters in the kernel space.
 * Supports saving captured packets in the PcapNG format for offline analysis with third-party tools such as Wireshark.
 * Supports reading packets from pcapng file.
+* Container-aware
+  * Aware of the container information associated with the packets.
+  * Supports multiple container runtimes: Docker Engine and containerd
 
 
 ## Installation
@@ -40,8 +48,46 @@ Please download the latest binary in the [releases](https://github.com/mozillazg
 
 Linux kernel version >= 5.2.
 
+<p align="right">(<a href="#top">🔝</a>)</p>
+
 
 ## Usage
+
+### Example commands
+
+```
+sudo ptcpdump -i any tcp
+sudo ptcpdump -i eth0 -i lo
+sudo ptcpdump -i eth0 --pid 1234 port 80 and host 10.10.1.1
+sudo ptcpdump -i any --pname curl
+sudo ptcpdump -i any -- curl ubuntu.com
+sudo ptcpdump -i any -w demo.pcapng
+sudo ptcpdump -i any -w - port 80 | tcpdump -n -r -
+sudo ptcpdump -i any -w - port 80 | tshark -r -
+ptcpdump -r demo.pcapng
+```
+
+<p align="right">(<a href="#top">🔝</a>)</p>
+
+
+### Example output
+
+```
+12:10:14.384352 wlp4s0 Out IP (tos 0x0, ttl 63, id 14146, offset 0, flags [DF], ip_proto TCP (6), length 52)
+    192.168.1.50.44318 > 139.178.84.217.80: Flags [F.], cksum 0xa28c, seq 945708706, ack 3673127374, win 501, options [nop,nop,TS val 3474241628 ecr 766303359], length 0
+    Process (pid 751465, cmd /usr/bin/wget, args wget kernel.org)
+    Container (name demo, id 087cb587a02f039609061e0e78bf74f8d146fbcb42d1d5647a6776f315d121eb, image docker.io/alpine:3.18, labels {})
+12:10:14.622421 wlp4s0 In IP (tos 0x4, ttl 47, id 43987, offset 0, flags [DF], ip_proto TCP (6), length 52)
+    139.178.84.217.80 > 192.168.1.50.44318: Flags [.], cksum 0xa787, seq 3673127374, ack 945708707, win 114, options [nop,nop,TS val 766303761 ecr 3474241628], length 0
+    Process (pid 751465, cmd /usr/bin/wget, args wget kernel.org)
+    Container (name demo, id 087cb587a02f039609061e0e78bf74f8d146fbcb42d1d5647a6776f315d121eb, image docker.io/alpine:3.18, labels {})
+```
+
+<p align="right">(<a href="#top">🔝</a>)</p>
+
+
+### Flags
+
 
 ```
 Usage:
@@ -76,17 +122,8 @@ Flags:
   -w, --write-file string    Write the raw packets to file rather than parsing and printing them out. They can later be printed with the -r option. Standard output is used if file is '-'. e.g. ptcpdump.pcapng
 ```
 
+<p align="right">(<a href="#top">🔝</a>)</p>
 
-### Example output
-
-```
-18:05:35.441022 wlp4s0 In IP (tos 0x4, ttl 51, id 0, offset 0, flags [DF], ip_proto TCP (6), length 60)
-    185.125.190.29.80 > 192.168.1.50.41966: Flags [S.], cksum 0x68fd, seq 3647722906, ack 1664327469, win 65160, options [mss 1452,sackOK,TS val 1103153989 ecr 3934018003,nop,wscale 7], length 0
-    Process (pid 892817, cmd /usr/bin/curl, args curl ubuntu.com)
-18:05:35.441298 wlp4s0 Out IP (tos 0x0, ttl 64, id 19415, offset 0, flags [DF], ip_proto TCP (6), length 126)
-    192.168.1.50.41966 > 185.125.190.29.80: Flags [P.], cksum 0x39e6, seq 1664327469:1664327543, ack 3647722907, win 502, options [nop,nop,TS val 3934018248 ecr 1103153989], length 74
-    Process (pid 892817, cmd /usr/bin/curl, args curl ubuntu.com)
-```
 
 ## Compare with tcpdump
 
@@ -163,6 +200,8 @@ Flags:
 | -z *postrotate-command*                           | ✅       |                          |
 | -Z *user*, --relinquish-privileges=*user*         | ✅       |                          |
 
+<p align="right">(<a href="#top">🔝</a>)</p>
+
 
 ## Build
 
@@ -177,3 +216,5 @@ Flags:
     ```
     make build
     ```
+
+<p align="right">(<a href="#top">🔝</a>)</p>

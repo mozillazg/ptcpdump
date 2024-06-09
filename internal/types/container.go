@@ -2,6 +2,7 @@ package types
 
 import (
 	"encoding/json"
+	"strings"
 )
 
 type Container struct {
@@ -15,6 +16,10 @@ type Container struct {
 
 	Image       string
 	ImageDigest string
+}
+
+func (c Container) TidyName() string {
+	return strings.TrimLeft(c.Name, "/")
 }
 
 func (c Container) FormatLabels() string {
