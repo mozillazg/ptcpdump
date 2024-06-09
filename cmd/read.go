@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -24,6 +25,10 @@ func read(ctx context.Context, opts Options) error {
 	stdoutWriter.OneLine = opts.oneLine
 	stdoutWriter.PrintNumber = opts.printPacketNumber
 	stdoutWriter.NoTimestamp = opts.dontPrintTimestamp
+	if opts.onlyPrintCount {
+		stdoutWriter.DoNothing = true
+	}
+
 	ext := filepath.Ext(opts.ReadPath())
 
 	switch ext {
@@ -42,6 +47,7 @@ func read(ctx context.Context, opts Options) error {
 		}
 	}
 
+	var n int64
 	for {
 		e, err := p.Parse()
 		if err != nil {
@@ -53,6 +59,10 @@ func read(ctx context.Context, opts Options) error {
 		if err := stdoutWriter.Write(e); err != nil {
 			return err
 		}
+		n++
+	}
+	if opts.onlyPrintCount {
+		fmt.Printf("%d packets\n", n)
 	}
 
 	return nil

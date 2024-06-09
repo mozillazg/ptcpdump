@@ -27,7 +27,9 @@ Examples:
 
 Expression: see "man 7 pcap-filter"`,
 	DisableFlagsInUseLine: true,
-	Short:                 "ptcpdump is the tcpdump(8) implementation using eBPF, with an extra feature: it adds process info as packet comments for each Packet when possible.",
+	Short: "ptcpdump is the tcpdump(8) implementation using eBPF, with an extra feature: \n" +
+		" it adds process info as packet comments for each Packet when possible.\n" +
+		" More info: https://github.com/mozillazg/ptcpdump",
 	Run: func(cmd *cobra.Command, args []string) {
 		prepareOptions(&opts, os.Args, args)
 
@@ -70,6 +72,8 @@ func init() {
 		"Print an optional packet number at the beginning of the line")
 	rootCmd.Flags().BoolVarP(&opts.dontPrintTimestamp, "no-timestamp", "t", false,
 		"Don't print a timestamp on each dump line")
+	rootCmd.Flags().BoolVar(&opts.onlyPrintCount, "count", false,
+		"Print only on stdout the packet count when reading capture file instead of parsing/printing the packets")
 }
 
 func Execute() error {
