@@ -147,7 +147,7 @@ Flags:
 | --list-interfaces                                 | ✅       | ✅                        |
 | -A                                                | ✅       |                          |
 | -B *bufer_size*, --buffer-size=*buffer_size*      | ✅       |                          |
-| --count                                           | ✅       |                          |
+| --count                                           | ✅       | ✅                       |
 | -C *file_size                                     | ✅       |                          |
 | -d                                                | ✅       |                          |
 | -dd                                               | ✅       |                          |
@@ -157,8 +157,7 @@ Flags:
 | -f                                                | ✅       | ⛔                        |
 | -F *file*                                         | ✅       |                          |
 | -G *rotate_seconds*                               | ✅       |                          |
-| -h                                                | ✅       | ✅                        |
-| --help                                            | ✅       | ✅                        |
+| -h, --help                                        | ✅       | ✅                        |
 | --version                                         | ✅       | ✅                        |
 | -H                                                | ✅       |                          |
 | -l, --monitor-mode                                | ✅       |                          |

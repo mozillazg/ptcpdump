@@ -20,6 +20,7 @@ type StdoutWriter struct {
 	OneLine     bool
 	PrintNumber bool
 	NoTimestamp bool
+	DoNothing   bool
 
 	n int64
 }
@@ -34,6 +35,10 @@ func NewStdoutWriter(writer io.Writer, pcache *metadata.ProcessCache) *StdoutWri
 }
 
 func (w *StdoutWriter) Write(e *event.Packet) error {
+	if w.DoNothing {
+		return nil
+	}
+
 	ifName := e.Device.Name
 	packetType := ""
 	if e.Egress() {
