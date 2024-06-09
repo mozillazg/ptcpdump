@@ -63,7 +63,7 @@ func FromPacketOptions(opts pcapgo.NgPacketOptions) (ProcessExec, types.PacketCo
 		comment = strings.TrimSpace(comment)
 		for _, line := range strings.Split(comment, "\n") {
 			line = strings.TrimSpace(line)
-			parts := strings.Split(line, ":")
+			parts := strings.SplitN(line, ":", 2)
 			if len(parts) < 2 {
 				continue
 			}

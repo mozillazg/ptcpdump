@@ -1,7 +1,7 @@
 package types
 
 import (
-	"fmt"
+	"encoding/json"
 	"strings"
 )
 
@@ -18,25 +18,20 @@ type Container struct {
 	ImageDigest string
 }
 
+func (c Container) TidyName() string {
+	return strings.TrimLeft(c.Name, "/")
+}
+
 func (c Container) FormatLabels() string {
-	lines := []string{}
-	for k, v := range c.Labels {
-		lines = append(lines, fmt.Sprintf("%s=%s", k, v))
+	if len(c.Labels) == 0 {
+		return "{}"
 	}
-	return strings.Join(lines, " ")
+	b, _ := json.Marshal(c.Labels)
+	return string(b)
 }
 
 func ParseContainerLabels(s string) map[string]string {
 	labels := make(map[string]string)
-	for _, part := range strings.Split(s, " ") {
-		part = strings.TrimSpace(part)
-		if part == "" {
-			continue
-		}
-		kv := strings.Split(part, "=")
-		if len(kv) == 2 {
-			labels[kv[0]] = labels[kv[1]]
-		}
-	}
+	json.Unmarshal([]byte(s), &labels)
 	return labels
 }

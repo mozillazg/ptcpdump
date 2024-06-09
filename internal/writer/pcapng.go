@@ -42,7 +42,7 @@ func (w *PcapNGWriter) Write(e *event.Packet) error {
 	if p.Container.Id != "" {
 		opts.Comments = append(opts.Comments,
 			fmt.Sprintf("ContainerName: %s\nContainerId: %s\nContainerImage: %s\nContainerLabels: %s",
-				p.Container.Name, p.Container.Id, p.Container.Image, p.Container.FormatLabels()),
+				p.Container.TidyName(), p.Container.Id, p.Container.Image, p.Container.FormatLabels()),
 		)
 	}
 
