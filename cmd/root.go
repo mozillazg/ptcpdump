@@ -51,7 +51,7 @@ func init() {
 	rootCmd.Flags().StringVar(&opts.comm, "pname", "", "Filter by process name (only TCP and UDP packets are supported)")
 	rootCmd.Flags().BoolVarP(&opts.followForks, "follow-forks", "f", false,
 		"Trace child processes as they are created by currently traced processes when filter by process")
-	rootCmd.Flags().BoolVar(&opts.listInterfaces, "list-interfaces", false,
+	rootCmd.Flags().BoolVarP(&opts.listInterfaces, "list-interfaces", "D", false,
 		"Print the list of the network interfaces available on the system")
 	rootCmd.Flags().BoolVar(&opts.version, "version", false,
 		"Print the ptcpdump and libpcap version strings and exit")

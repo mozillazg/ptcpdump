@@ -144,7 +144,7 @@ Flags:
 | --print                                           | ✅       | ✅                        |
 | -c *count*                                        | ✅       | ✅                        |
 | -Q *direction*, --direction=*direction*           | ✅       | ✅                        |
-| --list-interfaces                                 | ✅       | ✅                        |
+| -D, --list-interfaces                             | ✅       | ✅                        |
 | -A                                                | ✅       |                          |
 | -B *bufer_size*, --buffer-size=*buffer_size*      | ✅       |                          |
 | --count                                           | ✅       | ✅                       |
@@ -152,7 +152,6 @@ Flags:
 | -d                                                | ✅       |                          |
 | -dd                                               | ✅       |                          |
 | -ddd                                              | ✅       |                          |
-| -D                                                | ✅       |                          |
 | -e                                                | ✅       |                          |
 | -f                                                | ✅       | ⛔                        |
 | -F *file*                                         | ✅       |                          |

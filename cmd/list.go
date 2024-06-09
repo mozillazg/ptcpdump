@@ -2,9 +2,10 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/mozillazg/ptcpdump/internal/dev"
 	"sort"
 	"strings"
+
+	"github.com/mozillazg/ptcpdump/internal/dev"
 )
 
 func listInterfaces() error {
@@ -12,11 +13,19 @@ func listInterfaces() error {
 	if err != nil {
 		return err
 	}
-	outputs := []string{}
+	var interfaces []dev.Device
 	for _, d := range devices {
+		interfaces = append(interfaces, d)
+	}
+	sort.Slice(interfaces, func(i, j int) bool {
+		return interfaces[i].Ifindex < interfaces[j].Ifindex
+	})
+
+	outputs := []string{}
+	for _, d := range interfaces {
 		outputs = append(outputs, fmt.Sprintf("%d.%s", d.Ifindex, d.Name))
 	}
-	sort.Strings(outputs)
+
 	fmt.Printf("%s\n", strings.Join(outputs, "\n"))
 	return nil
 }
