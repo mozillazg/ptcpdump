@@ -2,11 +2,12 @@ package cmd
 
 import (
 	"context"
-	"github.com/mozillazg/ptcpdump/internal/utils"
-	"github.com/spf13/cobra"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/mozillazg/ptcpdump/internal/utils"
+	"github.com/spf13/cobra"
 )
 
 var opts = Options{}
@@ -74,6 +75,8 @@ func init() {
 		"Don't print a timestamp on each dump line")
 	rootCmd.Flags().BoolVar(&opts.onlyPrintCount, "count", false,
 		"Print only on stdout the packet count when reading capture file instead of parsing/printing the packets")
+	rootCmd.Flags().CountVarP(&opts.dontConvertAddr, "no-convert-addr", "n",
+		"Don't convert addresses (i.e., host addresses, port numbers, etc.) to names")
 }
 
 func Execute() error {

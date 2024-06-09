@@ -171,7 +171,7 @@ Flags:
 | -L, --list-data-link-types                        | ✅       |                          |
 | -m *module*                                       | ✅       |                          |
 | -M *secret*                                       | ✅       |                          |
-| -n                                                | ✅       |                          |
+| -n                                                | ✅       | ✅                       |
 | -N                                                | ✅       |                          |
 | -#, --number                                      | ✅       | ✅                       |
 | -O, --no-optimize                                 | ✅       |                          |
