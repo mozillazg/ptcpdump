@@ -20,8 +20,12 @@ import (
 const (
 	DefaultSocket    = "/run/containerd/containerd.sock"
 	defaultNamespace = "default"
-	defaultNameLabel = "nerdctl/name"
 )
+
+var containerNameLabels = []string{
+	"nerdctl/name",
+	"io.kubernetes.container.name",
+}
 
 type MetaData struct {
 	client *containerd.Client
@@ -113,6 +117,7 @@ func (d *MetaData) GetById(containerId string) types.Container {
 	defer d.mux.RUnlock()
 
 	id := getContainerId(containerId)
+	// log.Printf("get by id, id: %s", id)
 
 	return d.containerById[id]
 }
@@ -125,11 +130,20 @@ func (d *MetaData) GetByNetNs(netNs int64) types.Container {
 	d.mux.RLock()
 	defer d.mux.RUnlock()
 
+	var containers []types.Container
 	for _, c := range d.containerById {
 		if c.NetworkNamespace > 0 && c.NetworkNamespace == d.hostNetNs {
 			continue
 		}
 		if c.NetworkNamespace > 0 && c.NetworkNamespace == netNs {
+			containers = append(containers, c)
+		}
+	}
+	if len(containers) == 1 {
+		return containers[0]
+	}
+	for _, c := range containers {
+		if !c.IsSanbox() {
 			return c
 		}
 	}
@@ -145,11 +159,20 @@ func (d *MetaData) GetByMntNs(mntNs int64) types.Container {
 	d.mux.RLock()
 	defer d.mux.RUnlock()
 
+	var containers []types.Container
 	for _, c := range d.containerById {
 		if c.MountNamespace > 0 && c.MountNamespace == d.hostMntNs {
 			continue
 		}
 		if c.MountNamespace > 0 && c.MountNamespace == mntNs {
+			containers = append(containers, c)
+		}
+	}
+	if len(containers) == 1 {
+		return containers[0]
+	}
+	for _, c := range containers {
+		if !c.IsSanbox() {
 			return c
 		}
 	}
@@ -233,6 +256,10 @@ func (d *MetaData) watchContainerEvents(ctx context.Context) {
 
 		// log.Printf("new event: %#v", event)
 		switch ev := event.(type) {
+		case *apievents.ContainerCreate:
+			d.handleContainerEvent(ctx, ev.ID)
+		case *apievents.TaskCreate:
+			d.handleContainerEvent(ctx, ev.ContainerID)
 		case *apievents.TaskStart:
 			d.handleContainerEvent(ctx, ev.ContainerID)
 		}
@@ -282,11 +309,7 @@ func (d *MetaData) inspectContainer(ctx context.Context, container containerd.Co
 		// return nil, err
 	}
 
-	name := ""
-	if len(info.Labels) > 0 {
-		name = info.Labels[defaultNameLabel]
-	}
-
+	name := getContainerName(info.Labels)
 	cr := &types.Container{
 		Id:     container.ID(),
 		Name:   name,
@@ -320,4 +343,17 @@ func getContainerId(id string) string {
 		return id
 	}
 	return part[1]
+}
+
+func getContainerName(labels map[string]string) string {
+	if len(labels) == 0 {
+		return ""
+	}
+	for _, key := range containerNameLabels {
+		v := labels[key]
+		if v != "" {
+			return v
+		}
+	}
+	return ""
 }

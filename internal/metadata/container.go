@@ -2,13 +2,16 @@ package metadata
 
 import (
 	"context"
+	"log"
 
 	"github.com/mozillazg/ptcpdump/internal/metadata/container"
+	"github.com/mozillazg/ptcpdump/internal/metadata/k8s"
 	"github.com/mozillazg/ptcpdump/internal/types"
 )
 
 type ContainerCache struct {
-	d container.MetaData
+	d   container.MetaData
+	k8s *k8s.MetaData
 }
 
 func NewContainerCache(ctx context.Context) (*ContainerCache, error) {
@@ -17,9 +20,14 @@ func NewContainerCache(ctx context.Context) (*ContainerCache, error) {
 	if err := d.Start(ctx); err != nil {
 		return nil, err
 	}
+	k8sd, err := k8s.NewMetaData()
+	if err != nil {
+		log.Print(err)
+	}
 
 	return &ContainerCache{
-		d: d,
+		d:   d,
+		k8s: k8sd,
 	}, nil
 }
 
@@ -37,4 +45,8 @@ func (c *ContainerCache) GetByNetNs(ns int64) types.Container {
 
 func (c *ContainerCache) GetByPid(pid int) types.Container {
 	return c.d.GetByPid(pid)
+}
+
+func (c *ContainerCache) GetPodByContainer(cr types.Container) types.Pod {
+	return c.k8s.GetPodByContainer(cr)
 }

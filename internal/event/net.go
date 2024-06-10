@@ -8,6 +8,7 @@ import (
 	"github.com/gopacket/gopacket"
 	"github.com/mozillazg/ptcpdump/bpf"
 	"github.com/mozillazg/ptcpdump/internal/dev"
+	"github.com/mozillazg/ptcpdump/internal/utils"
 	"golang.org/x/sys/unix"
 )
 
@@ -29,6 +30,8 @@ type Packet struct {
 	Len       int
 
 	Data []byte
+
+	CgroupName string
 }
 
 func ParsePacketEvent(devices map[int]dev.Device, event bpf.BpfPacketEventT) (*Packet, error) {
@@ -42,8 +45,10 @@ func ParsePacketEvent(devices map[int]dev.Device, event bpf.BpfPacketEventT) (*P
 	p.Pid = int(event.Meta.Process.Pid)
 	p.MntNs = int(event.Meta.Process.MntnsId)
 	p.NetNs = int(event.Meta.Process.NetnsId)
-	// log.Printf("mntns: %d, netns: %d, cgroupName: %s", p.MntNs, p.NetNs, utils.GoString(event.Meta.Process.CgroupName[:]))
+	p.CgroupName = utils.GoString(event.Meta.Process.CgroupName[:])
 	p.Device = devices[int(event.Meta.Ifindex)]
+
+	log.Printf("mntns: %d, netns: %d, cgroupName: %s", p.MntNs, p.NetNs, utils.GoString(event.Meta.Process.CgroupName[:]))
 
 	if event.Meta.PacketType == 1 {
 		p.Type = packetTypeEgress

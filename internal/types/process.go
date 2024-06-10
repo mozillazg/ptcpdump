@@ -10,7 +10,8 @@ type Process struct {
 	MountNamespaceId int64
 	NetNamespaceId   int64
 
-	Cmd string
+	Cmd          string
+	CmdTruncated bool
 
 	Args          []string
 	ArgsTruncated bool

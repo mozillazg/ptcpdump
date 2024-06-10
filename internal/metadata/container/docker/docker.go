@@ -86,11 +86,20 @@ func (d *MetaData) GetByNetNs(netNs int64) types.Container {
 	d.mux.RLock()
 	defer d.mux.RUnlock()
 
+	var containers []types.Container
 	for _, c := range d.containerById {
 		if c.NetworkNamespace > 0 && c.NetworkNamespace == d.hostNetNs {
 			continue
 		}
 		if c.NetworkNamespace > 0 && c.NetworkNamespace == netNs {
+			containers = append(containers, c)
+		}
+	}
+	if len(containers) == 1 {
+		return containers[0]
+	}
+	for _, c := range containers {
+		if !c.IsSanbox() {
 			return c
 		}
 	}
@@ -106,11 +115,20 @@ func (d *MetaData) GetByMntNs(mntNs int64) types.Container {
 	d.mux.RLock()
 	defer d.mux.RUnlock()
 
+	var containers []types.Container
 	for _, c := range d.containerById {
 		if c.MountNamespace > 0 && c.MountNamespace == d.hostMntNs {
 			continue
 		}
 		if c.MountNamespace > 0 && c.MountNamespace == mntNs {
+			containers = append(containers, c)
+		}
+	}
+	if len(containers) == 1 {
+		return containers[0]
+	}
+	for _, c := range containers {
+		if !c.IsSanbox() {
 			return c
 		}
 	}
@@ -255,7 +273,7 @@ func (d *MetaData) Close() error {
 }
 
 // cgroupName: docker-40fad6778feaab1bd6ed7bfa0d43a2d5338267204f30cd8203e4d06de871c577.scope
-var regexDockerCgroupV2Name = regexp.MustCompilePOSIX(`docker-([a-z0-9]{64}).scope`)
+var regexDockerCgroupV2Name = regexp.MustCompilePOSIX(`[^\-]+-([a-z0-9]{64}).scope`)
 
 func getDockerContainerId(id string) string {
 	parts := regexDockerCgroupV2Name.FindAllStringSubmatch(id, -1)

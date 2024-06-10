@@ -30,6 +30,13 @@ func (c Container) FormatLabels() string {
 	return string(b)
 }
 
+func (c Container) IsSanbox() bool {
+	if len(c.Labels) == 0 {
+		return false
+	}
+	return c.Labels["io.cri-containerd.kind"] == "sanbox"
+}
+
 func ParseContainerLabels(s string) map[string]string {
 	labels := make(map[string]string)
 	json.Unmarshal([]byte(s), &labels)

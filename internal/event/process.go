@@ -2,7 +2,6 @@ package event
 
 import (
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"github.com/gopacket/gopacket/pcapgo"
@@ -56,49 +55,19 @@ func ParseProcessExecEvent(event bpf.BpfExecEventT) (*ProcessExec, error) {
 }
 
 func FromPacketOptions(opts pcapgo.NgPacketOptions) (ProcessExec, types.PacketContext) {
-	p := ProcessExec{}
-	ctx := types.PacketContext{}
+	p := &ProcessExec{}
+	pctx := &types.PacketContext{}
 
-	for _, comment := range opts.Comments {
-		comment = strings.TrimSpace(comment)
-		for _, line := range strings.Split(comment, "\n") {
-			line = strings.TrimSpace(line)
-			parts := strings.SplitN(line, ":", 2)
-			if len(parts) < 2 {
-				continue
-			}
-			key, value := strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1])
-			switch key {
-			case "PID":
-				p.Pid, _ = strconv.Atoi(value)
-				ctx.Pid = p.Pid
-			case "Command":
-				if strings.HasSuffix(value, "...") {
-					p.FilenameTruncated = true
-					value = strings.TrimRight(value, "...")
-				}
-				p.Filename = value
-				ctx.Cmd = value
-			case "Args":
-				if strings.HasSuffix(value, "...") {
-					p.ArgsTruncated = true
-					value = strings.TrimRight(value, "...")
-				}
-				p.Args = strings.Split(value, " ")
-				ctx.Args = p.Args
-			case "ContainerName":
-				ctx.Container.Name = value
-			case "ContainerId":
-				ctx.Container.Id = value
-			case "ContainerImage":
-				ctx.Container.Image = value
-			case "ContainerLabels":
-				ctx.Container.Labels = types.ParseContainerLabels(value)
-			default:
-			}
-		}
-	}
-	return p, ctx
+	pctx.FromPacketComments(opts.Comments)
+	p.Pid = pctx.Pid
+	p.Filename = pctx.Cmd
+	p.FilenameTruncated = pctx.CmdTruncated
+	p.Args = pctx.Args
+	p.ArgsTruncated = pctx.ArgsTruncated
+
+	// log.Printf("new packet: %#v, %#v", *p, *pctx)
+
+	return *p, *pctx
 }
 
 func (p ProcessExec) FilenameStr() string {
