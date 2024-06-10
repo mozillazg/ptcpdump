@@ -146,7 +146,7 @@ func (c *ProcessCache) Get(pid int, mntNs, netNs int, cgroupName string) types.P
 	pctx.MountNamespaceId = int64(mntNs)
 	pctx.NetNamespaceId = int64(netNs)
 
-	log.Printf("get %#v", pctx)
+	// log.Printf("get %#v", pctx)
 
 	if pctx.Container.Id == "" && c.cc != nil {
 		pctx.Container = c.getContainer(pctx, cgroupName)

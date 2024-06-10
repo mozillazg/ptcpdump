@@ -18,17 +18,6 @@ jobs:
 
     steps:
       - checkout
-
-      - run:
-          name: setup containerd
-          command: |
-            wget https://github.com/containerd/nerdctl/releases/download/v1.7.6/nerdctl-1.7.6-linux-arm64.tar.gz
-            sudo tar Cxzvvf /usr/local/bin nerdctl-1.7.6-linux-arm64.tar.gz
-
-            wget https://github.com/containernetworking/plugins/releases/download/v1.5.0/cni-plugins-linux-arm64-v1.5.0.tgz
-            sudo mkdir -p /opt/cni/bin
-            sudo tar Cxzvvf /opt/cni/bin cni-plugins-linux-arm64-v1.5.0.tgz
-
       - restore_cache:
           keys:
             - go-mod-v4-{{ checksum "go.sum" }}
@@ -104,16 +93,6 @@ jobs:
           command: |
             sudo bash testdata/test_nat.sh ./ptcpdump
 
-      - run:
-          name: e2e (test docker)
-          command: |
-            sudo bash testdata/test_docker.sh ./ptcpdump
-
-      - run:
-          name: e2e (test containerd)
-          command: |
-            sudo bash testdata/test_containerd.sh ./ptcpdump
-
   docker-e2e:
     machine:
       image: ubuntu-2204:2024.04.4
@@ -156,12 +135,12 @@ jobs:
       - run:
           name: setup containerd
           command: |
-            wget https://github.com/containerd/nerdctl/releases/download/v1.7.6/nerdctl-1.7.6-linux-arm64.tar.gz
-            sudo tar Cxzvvf /usr/local/bin nerdctl-1.7.6-linux-arm64.tar.gz
+            wget https://github.com/containerd/nerdctl/releases/download/v1.7.6/nerdctl-1.7.6-linux-amd64.tar.gz
+            sudo tar Cxzvvf /usr/local/bin nerdctl-1.7.6-linux-amd64.tar.gz
 
-            wget https://github.com/containernetworking/plugins/releases/download/v1.5.0/cni-plugins-linux-arm64-v1.5.0.tgz
+            wget https://github.com/containernetworking/plugins/releases/download/v1.5.0/cni-plugins-linux-amd64-v1.5.0.tgz
             sudo mkdir -p /opt/cni/bin
-            sudo tar Cxzvvf /opt/cni/bin cni-plugins-linux-arm64-v1.5.0.tgz
+            sudo tar Cxzvvf /opt/cni/bin cni-plugins-linux-amd64-v1.5.0.tgz
       - restore_cache:
           keys:
             - go-mod-v4-{{ checksum "go.sum" }}
@@ -200,16 +179,16 @@ jobs:
           name: setup kind
           command: |
             wget https://github.com/kubernetes-sigs/kind/releases/download/v0.23.0/kind-linux-amd64
-            chomd +x kind-linux-amd64
+            chmod +x kind-linux-amd64
             sudo cp ./kind-linux-amd64 /usr/local/bin/kind
 
             IMG=kindest/node:v1.30.0@sha256:047357ac0cfea04663786a612ba1eaba9702bef25227a794b52890dd8bcd692e
             sudo docker pull "${IMG}"
             sudo docker pull alpine:3.18
-            sudo kind load docker-image "${IMG}"
-            sudo kind load docker-image alpine:3.18
 
             sudo kind create cluster
+            sudo kind load docker-image alpine:3.18
+            sudo kind export kubeconfig
 
       - restore_cache:
           keys:
@@ -250,5 +229,5 @@ workflows:
                 - ubuntu-20-04
                 - ubuntu-22-04
       - docker-e2e
-      - container-e2e
+      - containerd-e2e
       - k8s-e2e
