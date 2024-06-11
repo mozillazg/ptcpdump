@@ -72,9 +72,7 @@ func (c *ProcessCache) AddItem(exec event.ProcessExec) {
 func (c *ProcessCache) AddItemWithContext(exec event.ProcessExec, rawCtx types.PacketContext) {
 	pid := exec.Pid
 
-	// if exec.CgroupName == "rustdesk.service" ||
-	// 	exec.CgroupName == "" ||
-	// 	exec.CgroupName == "user.slice" ||
+	// if exec.CgroupName == "" ||
 	// 	strings.HasSuffix(exec.CgroupName, ".slice") ||
 	// 	strings.HasSuffix(exec.CgroupName, ".service") ||
 	// 	strings.HasSuffix(exec.CgroupName, "init.scope") {
