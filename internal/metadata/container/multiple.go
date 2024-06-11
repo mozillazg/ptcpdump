@@ -18,14 +18,14 @@ func NewMultipleEngineMetaData() *MultipleEngineMetaData {
 
 	dr, err := docker.NewMetaData("")
 	if err != nil {
-		log.Printf("Docker Engine integration failed: %s", err)
+		log.Printf("skip Docker Engine integration: %s", err)
 	} else {
 		m.engines = append(m.engines, dr)
 	}
 
 	cd, err := containerd.NewMultipleNamespacesMetaData("", "")
 	if err != nil {
-		log.Printf("containerd integration failed: %s", err)
+		log.Printf("skip containerd integration: %s", err)
 	} else {
 		for _, c := range cd {
 			c := c

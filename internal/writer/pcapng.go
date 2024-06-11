@@ -29,7 +29,7 @@ func (w *PcapNGWriter) Write(e *event.Packet) error {
 		Length:         e.Len,
 		InterfaceIndex: e.Device.Ifindex,
 	}
-	p := w.pcache.Get(e.Pid, e.MntNs)
+	p := w.pcache.Get(e.Pid, e.MntNs, e.NetNs, e.CgroupName)
 
 	opts := pcapgo.NgPacketOptions{}
 	if p.Pid != 0 {
@@ -43,6 +43,12 @@ func (w *PcapNGWriter) Write(e *event.Packet) error {
 		opts.Comments = append(opts.Comments,
 			fmt.Sprintf("ContainerName: %s\nContainerId: %s\nContainerImage: %s\nContainerLabels: %s",
 				p.Container.TidyName(), p.Container.Id, p.Container.Image, p.Container.FormatLabels()),
+		)
+	}
+	if p.Pod.Name != "" {
+		opts.Comments = append(opts.Comments,
+			fmt.Sprintf("PodName: %s\nPodNamespace: %s\nPodUID: %s\nPodLabels: %s\nPodAnnotations: %s",
+				p.Pod.Name, p.Pod.Namespace, p.Pod.Uid, p.Pod.FormatLabels(), p.Pod.FormatAnnotations()),
 		)
 	}
 

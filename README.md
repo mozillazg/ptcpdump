@@ -31,13 +31,13 @@ Table of Contents
 * Process-aware
   * Aware of the process information associated with the packets.
   * Supports filtering packets by process ID and process name.
+* Container-aware and Kubernetes-aware
+  * Aware of the container and pod information associated with the packets.
+  * Supports multiple container runtimes: Docker Engine and containerd
 * Supports using pcap-filter(7) syntax for filtering packets.
 * Directly applies filters in the kernel space.
 * Supports saving captured packets in the PcapNG format for offline analysis with third-party tools such as Wireshark.
 * Supports reading packets from pcapng file.
-* Container-aware
-  * Aware of the container information associated with the packets.
-  * Supports multiple container runtimes: Docker Engine and containerd
 
 
 ## Installation
@@ -73,14 +73,11 @@ ptcpdump -r demo.pcapng
 ### Example output
 
 ```
-12:10:14.384352 wlp4s0 Out IP (tos 0x0, ttl 63, id 14146, offset 0, flags [DF], ip_proto TCP (6), length 52)
-    192.168.1.50.44318 > 139.178.84.217.80: Flags [F.], cksum 0xa28c, seq 945708706, ack 3673127374, win 501, options [nop,nop,TS val 3474241628 ecr 766303359], length 0
-    Process (pid 751465, cmd /usr/bin/wget, args wget kernel.org)
-    Container (name demo, id 087cb587a02f039609061e0e78bf74f8d146fbcb42d1d5647a6776f315d121eb, image docker.io/alpine:3.18, labels {})
-12:10:14.622421 wlp4s0 In IP (tos 0x4, ttl 47, id 43987, offset 0, flags [DF], ip_proto TCP (6), length 52)
-    139.178.84.217.80 > 192.168.1.50.44318: Flags [.], cksum 0xa787, seq 3673127374, ack 945708707, win 114, options [nop,nop,TS val 766303761 ecr 3474241628], length 0
-    Process (pid 751465, cmd /usr/bin/wget, args wget kernel.org)
-    Container (name demo, id 087cb587a02f039609061e0e78bf74f8d146fbcb42d1d5647a6776f315d121eb, image docker.io/alpine:3.18, labels {})
+07:19:55.978310 eth0 Out IP (tos 0x0, ttl 63, id 5180, offset 0, flags [DF], ip_proto TCP (6), length 52)
+    172.19.0.2.40746 > 139.178.84.217.80: Flags [F.], cksum 0x8cc7, seq 2012972889, ack 714167144, win 501, options [nop,nop,TS val 2112687313 ecr 864085110], length 0
+    Process (pid 1571271, cmd /usr/bin/wget, args wget kernel.org)
+    Container (name test, id aa5d0ea5c27f75f5ac7844fea4ca811bbd01fbf64e88e8a4ccab142f632cbaff, image docker.io/library/alpine:3.18, labels {"io.cri-containerd.kind":"container","io.kubernetes.container.name":"test","io.kubernetes.pod.name":"test","io.kubernetes.pod.namespace":"default","io.kubernetes.pod.uid":"9e4bc54b-de48-4b1c-8b9e-54709f67ed0c"})
+    Pod (name test, namespace default, UID 9e4bc54b-de48-4b1c-8b9e-54709f67ed0c, labels {"run":"test"}, annotations {"kubernetes.io/config.seen":"2024-06-10T01:29:58.354119146Z","kubernetes.io/config.source":"api"})
 ```
 
 <p align="right"><a href="#top">🔝</a></p>

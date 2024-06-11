@@ -72,7 +72,17 @@ func (c *ProcessCache) AddItem(exec event.ProcessExec) {
 func (c *ProcessCache) AddItemWithContext(exec event.ProcessExec, rawCtx types.PacketContext) {
 	pid := exec.Pid
 
-	ctx := &types.PacketContext{
+	// if exec.CgroupName == "" ||
+	// 	strings.HasSuffix(exec.CgroupName, ".slice") ||
+	// 	strings.HasSuffix(exec.CgroupName, ".service") ||
+	// 	strings.HasSuffix(exec.CgroupName, "init.scope") {
+	// 	return
+	// }
+	// if !strings.Contains(exec.Filename, "sleep") {
+	// 	return
+	// }
+
+	pctx := &types.PacketContext{
 		Process: types.Process{
 			Pid:              exec.Pid,
 			MountNamespaceId: int64(exec.MntNs),
@@ -82,31 +92,46 @@ func (c *ProcessCache) AddItemWithContext(exec event.ProcessExec, rawCtx types.P
 			ArgsTruncated:    exec.ArgsTruncated,
 		},
 		Container: rawCtx.Container,
+		Pod:       rawCtx.Pod,
 	}
-	if c.cc != nil && ctx.Container.Id == "" {
-		if ctx.Container.Id == "" && exec.CgroupName != "" {
-			// log.Printf("exec name: %#v", exec)
-			ctx.Container = c.cc.GetById(exec.CgroupName)
-		}
-		if ctx.Container.Id == "" {
-			ctx.Container = c.cc.GetByPid(ctx.Process.Pid)
-		}
-		if ctx.Container.Id == "" {
-			ctx.Container = c.cc.GetByMntNs(ctx.Process.MountNamespaceId)
-		}
-		if ctx.Container.Id == "" {
-			ctx.Container = c.cc.GetByNetNs(ctx.Process.NetNamespaceId)
+	// log.Printf("new exec event: %#v, %#v\n\n", exec, *pctx)
+	if c.cc != nil && pctx.Container.Id == "" {
+		pctx.Container = c.getContainer(*pctx, exec.CgroupName)
+		if pctx.Container.Id != "" {
+			pctx.Pod = c.cc.GetPodByContainer(pctx.Container)
 		}
 	}
 
 	c.lock.Lock()
-	c.m[pid] = ctx
+	c.m[pid] = pctx
 	c.lock.Unlock()
 
-	//log.Printf("add new cache: %d", pid)
+	// log.Printf("add new cache: %d, %#v\n\n", pid, *pctx)
 }
 
-func (c *ProcessCache) Get(pid int, mntNs int) types.PacketContext {
+func (c *ProcessCache) getContainer(ctx types.PacketContext, cgroupName string) (cr types.Container) {
+	cr = ctx.Container
+	if cr.Id == "" && cgroupName != "" {
+		// log.Printf("exec name: %#v", exec)
+		cr = c.cc.GetById(cgroupName)
+		// log.Printf("get by cgroup")
+	}
+	if cr.Id == "" {
+		cr = c.cc.GetByPid(ctx.Process.Pid)
+		// log.Printf("get by pid")
+	}
+	if cr.Id == "" {
+		cr = c.cc.GetByMntNs(ctx.Process.MountNamespaceId)
+		// log.Printf("get by mnt")
+	}
+	if cr.Id == "" {
+		cr = c.cc.GetByNetNs(ctx.Process.NetNamespaceId)
+		// log.Printf("get by net")
+	}
+	return cr
+}
+
+func (c *ProcessCache) Get(pid int, mntNs, netNs int, cgroupName string) types.PacketContext {
 	c.lock.RLock()
 	ret := c.m[pid]
 	c.lock.RUnlock()
@@ -115,20 +140,20 @@ func (c *ProcessCache) Get(pid int, mntNs int) types.PacketContext {
 		return types.PacketContext{}
 	}
 
-	ctx := *ret
-	if ctx.Container.Id == "" && c.cc != nil {
-		if ctx.Container.Id == "" {
-			ctx.Container = c.cc.GetByPid(ctx.Process.Pid)
-		}
-		if ctx.Container.Id == "" {
-			ctx.Container = c.cc.GetByMntNs(ctx.Process.MountNamespaceId)
-		}
-		if ctx.Container.Id == "" {
-			ctx.Container = c.cc.GetByNetNs(ctx.Process.NetNamespaceId)
+	pctx := *ret
+	pctx.MountNamespaceId = int64(mntNs)
+	pctx.NetNamespaceId = int64(netNs)
+
+	// log.Printf("get %#v", pctx)
+
+	if pctx.Container.Id == "" && c.cc != nil {
+		pctx.Container = c.getContainer(pctx, cgroupName)
+		if pctx.Container.Id != "" {
+			pctx.Pod = c.cc.GetPodByContainer(pctx.Container)
 		}
 	}
 
-	return ctx
+	return pctx
 }
 
 func (c *ProcessCache) GetPidsByComm(name string) []int {

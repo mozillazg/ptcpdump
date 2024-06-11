@@ -46,11 +46,14 @@ func (w *StdoutWriter) Write(e *event.Packet) error {
 	} else if e.Ingress() {
 		packetType = "In"
 	}
-	p := w.pcache.Get(e.Pid, e.MntNs)
+	p := w.pcache.Get(e.Pid, e.MntNs, e.NetNs, e.CgroupName)
+
 	pidInfo := fmt.Sprintf("Process (pid %d, cmd %s, args %s)",
 		e.Pid, p.Cmd, p.FormatArgs())
 	containerInfo := fmt.Sprintf("Container (name %s, id %s, image %s, labels %s)",
 		p.Container.TidyName(), p.Container.Id, p.Container.Image, p.Container.FormatLabels())
+	PodInfo := fmt.Sprintf("Pod (name %s, namespace %s, UID %s, labels %s, annotations %s)",
+		p.Pod.Name, p.Pod.Namespace, p.Pod.Uid, p.Pod.FormatLabels(), p.Pod.FormatAnnotations())
 
 	// Decode a packet
 	packet := gopacket.NewPacket(e.Data, w.Decoder, gopacket.NoCopy)
@@ -78,6 +81,9 @@ func (w *StdoutWriter) Write(e *event.Packet) error {
 	}
 	if p.Container.Id != "" {
 		builder.WriteString(fmt.Sprintf("    %s\n", containerInfo))
+	}
+	if p.Pod.Name != "" {
+		builder.WriteString(fmt.Sprintf("    %s\n", PodInfo))
 	}
 	msg := builder.String()
 

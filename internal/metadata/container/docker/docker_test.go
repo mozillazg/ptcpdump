@@ -19,6 +19,13 @@ func Test_getDockerContainerId(t *testing.T) {
 			want: "40fad6778feaab1bd6ed7bfa0d43a2d5338267204f30cd8203e4d06de871c577",
 		},
 		{
+			name: "cri",
+			args: args{
+				id: "cri-containerd-f23a57a1e29a23693a0ccb1f77875ae202842958201fa3602b19c1c60100aa39.scope",
+			},
+			want: "f23a57a1e29a23693a0ccb1f77875ae202842958201fa3602b19c1c60100aa39",
+		},
+		{
 			name: "not match",
 			args: args{
 				id: "foobar",
