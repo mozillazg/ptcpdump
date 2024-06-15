@@ -106,7 +106,7 @@
   "regexManagers": [
     {
       "fileMatch": [
-        "^\\.github/workflows/[^/]+\\.yaml$",
+         "^\\.github/workflows/[^/]+\\.ya?ml$",
       ],
       // This regex manages version strings in GitHub actions workflow files,
       // similar to the examples shown here:
