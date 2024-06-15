@@ -106,6 +106,9 @@ type BpfProgramSpecs struct {
 	KprobeNfNatManipPkt           *ebpf.ProgramSpec `ebpf:"kprobe__nf_nat_manip_pkt"`
 	KprobeNfNatPacket             *ebpf.ProgramSpec `ebpf:"kprobe__nf_nat_packet"`
 	KprobeSecuritySkClassifyFlow  *ebpf.ProgramSpec `ebpf:"kprobe__security_sk_classify_flow"`
+	KprobeTcpSendmsg              *ebpf.ProgramSpec `ebpf:"kprobe__tcp_sendmsg"`
+	KprobeUdpSendSkb              *ebpf.ProgramSpec `ebpf:"kprobe__udp_send_skb"`
+	KprobeUdpSendmsg              *ebpf.ProgramSpec `ebpf:"kprobe__udp_sendmsg"`
 	RawTracepointSchedProcessExec *ebpf.ProgramSpec `ebpf:"raw_tracepoint__sched_process_exec"`
 	RawTracepointSchedProcessExit *ebpf.ProgramSpec `ebpf:"raw_tracepoint__sched_process_exit"`
 	RawTracepointSchedProcessFork *ebpf.ProgramSpec `ebpf:"raw_tracepoint__sched_process_fork"`
@@ -181,6 +184,9 @@ type BpfPrograms struct {
 	KprobeNfNatManipPkt           *ebpf.Program `ebpf:"kprobe__nf_nat_manip_pkt"`
 	KprobeNfNatPacket             *ebpf.Program `ebpf:"kprobe__nf_nat_packet"`
 	KprobeSecuritySkClassifyFlow  *ebpf.Program `ebpf:"kprobe__security_sk_classify_flow"`
+	KprobeTcpSendmsg              *ebpf.Program `ebpf:"kprobe__tcp_sendmsg"`
+	KprobeUdpSendSkb              *ebpf.Program `ebpf:"kprobe__udp_send_skb"`
+	KprobeUdpSendmsg              *ebpf.Program `ebpf:"kprobe__udp_sendmsg"`
 	RawTracepointSchedProcessExec *ebpf.Program `ebpf:"raw_tracepoint__sched_process_exec"`
 	RawTracepointSchedProcessExit *ebpf.Program `ebpf:"raw_tracepoint__sched_process_exit"`
 	RawTracepointSchedProcessFork *ebpf.Program `ebpf:"raw_tracepoint__sched_process_fork"`
@@ -195,6 +201,9 @@ func (p *BpfPrograms) Close() error {
 		p.KprobeNfNatManipPkt,
 		p.KprobeNfNatPacket,
 		p.KprobeSecuritySkClassifyFlow,
+		p.KprobeTcpSendmsg,
+		p.KprobeUdpSendSkb,
+		p.KprobeUdpSendmsg,
 		p.RawTracepointSchedProcessExec,
 		p.RawTracepointSchedProcessExit,
 		p.RawTracepointSchedProcessFork,
