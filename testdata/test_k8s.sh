@@ -10,7 +10,7 @@ LNAME="${FILE_PREFIX}_k8s.log"
 RNAME="${FILE_PREFIX}_k8s.read.txt"
 
 function test_ptcpdump() {
-  timeout 120s ${CMD} -i any -c 10 --print -w "${FNAME}" --oneline --exec-events-worker-number=80 \
+  timeout 120s ${CMD} -i any -c 10 --print -w "${FNAME}" --oneline -v --exec-events-worker-number=80 \
     'host 1.1.1.1' -w "${FNAME}" | tee "${LNAME}" &
   sleep 10
 
@@ -27,7 +27,7 @@ function test_ptcpdump() {
 function test_ptcpdump_read() {
     EXPECT_NAME="${LNAME}.read.expect"
     sed 's/ [a-zA-Z0-9_-]\+ \(In\|Out\) / /g' "${LNAME}" > "${EXPECT_NAME}"
-    timeout 30s ${CMD} --oneline -r "${FNAME}" > "${RNAME}"
+    timeout 30s ${CMD} --oneline -v -r "${FNAME}" > "${RNAME}"
     diff "${EXPECT_NAME}" "${RNAME}"
 }
 

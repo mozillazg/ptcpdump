@@ -77,6 +77,8 @@ func init() {
 		"Print only on stdout the packet count when reading capture file instead of parsing/printing the packets")
 	rootCmd.Flags().CountVarP(&opts.dontConvertAddr, "no-convert-addr", "n",
 		"Don't convert addresses (i.e., host addresses, port numbers, etc.) to names")
+	rootCmd.Flags().CountVarP(&opts.verbose, "verbose", "v",
+		"When parsing and printing, produce (slightly more) verbose output")
 }
 
 func Execute() error {
