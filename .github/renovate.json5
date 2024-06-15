@@ -36,6 +36,16 @@
   "stopUpdatingLabel": "renovate/stop-updating",
   "packageRules": [
     {
+      "enabled": false,
+      "matchPackageNames": [
+        "quay.io/lvh-images/kernel-images",
+      ],
+      "matchUpdateTypes": [
+        "major",
+        "minor"
+      ],
+    },
+    {
       "groupName": "all github action dependencies",
       "groupSlug": "all-github-action",
       "extends": ["schedule:monthly"],
