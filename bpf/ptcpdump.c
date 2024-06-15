@@ -490,6 +490,53 @@ int BPF_KPROBE(kprobe__security_sk_classify_flow, struct sock *sk) {
     return 0;
 }
 
+static __always_inline void handle_sendmsg(struct sock *sk) {
+    struct flow_pid_key_t key = {0};
+    struct process_meta_t value = {0};
+    struct task_struct *task = (struct task_struct *)bpf_get_current_task();
+
+    if (parent_process_filter(task) < 0) {
+        if (process_filter(task) < 0) {
+            return;
+        }
+    }
+
+    fill_sk_meta(sk, &key);
+    if (bpf_map_lookup_elem(&flow_pid_map, &key)) {
+        return;
+    }
+
+    fill_process_meta(task, &value);
+    if (key.sport == 0) {
+        return;
+    }
+    // bpf_printk("[ptcpdump] flow key: %pI4 %d", &key.saddr[0], key.sport);
+    int ret = bpf_map_update_elem(&flow_pid_map, &key, &value, BPF_NOEXIST);
+    if (ret != 0) {
+        bpf_printk("[handle_tcp_sendmsg] bpf_map_update_elem flow_pid_map failed: %d", ret);
+    }
+    return;
+}
+
+SEC("kprobe/tcp_sendmsg")
+int BPF_KPROBE(kprobe__tcp_sendmsg, struct sock *sk) {
+    handle_sendmsg(sk);
+    return 0;
+}
+
+SEC("kprobe/udp_sendmsg")
+int BPF_KPROBE(kprobe__udp_sendmsg, struct sock *sk) {
+    handle_sendmsg(sk);
+    return 0;
+}
+
+SEC("kprobe/udp_send_skb")
+int BPF_KPROBE(kprobe__udp_send_skb, struct sk_buff *skb) {
+    struct sock *sk = BPF_CORE_READ(skb, sk);
+    handle_sendmsg(sk);
+    return 0;
+}
+
 static __noinline bool pcap_filter(void *_skb, void *__skb, void *___skb, void *data, void *data_end) {
     return data != data_end && _skb == __skb && __skb == ___skb;
 }

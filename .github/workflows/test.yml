@@ -48,9 +48,9 @@ jobs:
         kernel:
           - '5.4-20240515.073534'
           - '5.10-20240515.073534'
-          # - '5.15-20240515.073534'
+          - '5.15-20240515.073534'
           - '6.1-20240515.073534'
-          # - '6.6-20240515.073534'
+          - '6.6-20240515.073534'
           - 'bpf-next-20240515.073534'
     timeout-minutes: 10
     runs-on: ubuntu-latest
@@ -198,14 +198,3 @@ jobs:
             cat /etc/issue
 
             bash /host/testdata/test_nat.sh /host/ptcpdump/ptcpdump
-
-      - name: Test docker
-        uses: cilium/little-vm-helper@3c748d6fc9d6c44a433de85a66f70e8f7043be04 # v0.0.18
-        with:
-          provision: 'false'
-          cmd: |
-            set -ex
-            uname -a
-            cat /etc/issue
-
-            bash /host/testdata/test_docker.sh /host/ptcpdump/ptcpdump

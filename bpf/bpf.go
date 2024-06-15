@@ -22,6 +22,9 @@ import (
 const tcFilterName = "ptcpdump"
 
 type BpfObjectsWithoutCgroup struct {
+	KprobeTcpSendmsg              *ebpf.Program `ebpf:"kprobe__tcp_sendmsg"`
+	KprobeUdpSendmsg              *ebpf.Program `ebpf:"kprobe__udp_sendmsg"`
+	KprobeUdpSendSkb              *ebpf.Program `ebpf:"kprobe__udp_send_skb"`
 	KprobeNfNatManipPkt           *ebpf.Program `ebpf:"kprobe__nf_nat_manip_pkt"`
 	KprobeNfNatPacket             *ebpf.Program `ebpf:"kprobe__nf_nat_packet"`
 	KprobeSecuritySkClassifyFlow  *ebpf.Program `ebpf:"kprobe__security_sk_classify_flow"`
@@ -141,6 +144,9 @@ func (b *BPF) Load(opts Options) error {
 			}); err != nil {
 				return err
 			}
+			b.objs.KprobeTcpSendmsg = objs.KprobeTcpSendmsg
+			b.objs.KprobeUdpSendmsg = objs.KprobeUdpSendmsg
+			b.objs.KprobeUdpSendSkb = objs.KprobeUdpSendSkb
 			b.objs.KprobeNfNatManipPkt = objs.KprobeNfNatManipPkt
 			b.objs.KprobeNfNatPacket = objs.KprobeNfNatPacket
 			b.objs.KprobeSecuritySkClassifyFlow = objs.KprobeSecuritySkClassifyFlow
@@ -223,6 +229,26 @@ func (b *BPF) AttachKprobes() error {
 	}
 	b.links = append(b.links, lk)
 
+	lk, err = link.Kprobe("tcp_sendmsg",
+		b.objs.KprobeTcpSendmsg, &link.KprobeOptions{})
+	if err != nil {
+		return xerrors.Errorf("attach kprobe/tcp_sendmsg: %w", err)
+	}
+	b.links = append(b.links, lk)
+
+	lk, err = link.Kprobe("udp_send_skb", b.objs.KprobeUdpSendSkb, &link.KprobeOptions{})
+	if err != nil {
+		if strings.Contains(err.Error(), "no such file or directory") {
+			lk, err = link.Kprobe("udp_sendmsg", b.objs.KprobeUdpSendmsg, &link.KprobeOptions{})
+			if err != nil {
+				return xerrors.Errorf("attach kprobe/udp_sendmsg: %w", err)
+			}
+		} else {
+			return xerrors.Errorf("attach kprobe/udp_send_skb: %w", err)
+		}
+	}
+	b.links = append(b.links, lk)
+
 	lk, err = link.Kprobe("nf_nat_packet",
 		b.objs.KprobeNfNatPacket, &link.KprobeOptions{})
 	if err != nil {
@@ -254,8 +280,8 @@ func (b *BPF) AttachKprobes() error {
 
 func (b *BPF) AttachTracepoints() error {
 	lk, err := link.AttachRawTracepoint(link.RawTracepointOptions{
-		"sched_process_exec",
-		b.objs.RawTracepointSchedProcessExec,
+		Name:    "sched_process_exec",
+		Program: b.objs.RawTracepointSchedProcessExec,
 	})
 	if err != nil {
 		return xerrors.Errorf("attach raw_tracepoint/sched_process_exec: %w", err)
@@ -263,8 +289,8 @@ func (b *BPF) AttachTracepoints() error {
 	b.links = append(b.links, lk)
 
 	lk, err = link.AttachRawTracepoint(link.RawTracepointOptions{
-		"sched_process_exit",
-		b.objs.RawTracepointSchedProcessExit,
+		Name:    "sched_process_exit",
+		Program: b.objs.RawTracepointSchedProcessExit,
 	})
 	if err != nil {
 		return xerrors.Errorf("attach raw_tracepoint/sched_process_exit: %w", err)
@@ -273,8 +299,8 @@ func (b *BPF) AttachTracepoints() error {
 
 	if b.opts.attachForks() {
 		lk, err := link.AttachRawTracepoint(link.RawTracepointOptions{
-			"sched_process_fork",
-			b.objs.RawTracepointSchedProcessFork,
+			Name:    "sched_process_fork",
+			Program: b.objs.RawTracepointSchedProcessFork,
 		})
 		if err != nil {
 			return xerrors.Errorf("attach raw_tracepoint/sched_process_fork: %w", err)
@@ -344,14 +370,14 @@ func attachTcHook(ifindex int, prog *ebpf.Program, ingress bool) (func(), error)
 	}
 
 	filter := tc.Object{
-		tc.Msg{
+		Msg: tc.Msg{
 			Family:  unix.AF_UNSPEC,
 			Ifindex: uint32(ifindex),
 			Handle:  0,
 			Parent:  core.BuildHandle(tc.HandleRoot, parent),
 			Info:    1<<16 | uint32(htons(unix.ETH_P_ALL)),
 		},
-		tc.Attribute{
+		Attribute: tc.Attribute{
 			Kind: "bpf",
 			BPF: &tc.Bpf{
 				FD:   &fd,
