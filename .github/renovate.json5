@@ -102,6 +102,25 @@
         "master"
       ]
     },
+    {
+      "matchDepNames": [
+        "quay.io/lvh-images/kernel-images",
+      ],
+      "versioning": "regex:^((?<compatibility>[a-z0-9-]+)|((?<major>\\d+)\\.(?<minor>\\d+)))\\-(?<patch>\\d+)\\.(?<build>\\d+)(@(?<currentDigest>sha256:[a-f0-9]+))?$"
+    },
+    {
+      "groupName": "all lvh-images main",
+      "groupSlug": "all-lvh-images-main",
+      "matchPackageNames": [
+        "quay.io/lvh-images/kernel-images",
+      ],
+      "matchUpdateTypes": [
+        "digest",
+        "patch",
+        "pin",
+        "pinDigest"
+      ],
+    },
   ],
   "regexManagers": [
     {
