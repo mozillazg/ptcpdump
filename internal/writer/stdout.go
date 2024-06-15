@@ -21,16 +21,18 @@ type StdoutWriter struct {
 	PrintNumber bool
 	NoTimestamp bool
 	DoNothing   bool
+	FormatStyle pktdump.FormatStyle
 
 	n int64
 }
 
 func NewStdoutWriter(writer io.Writer, pcache *metadata.ProcessCache) *StdoutWriter {
 	return &StdoutWriter{
-		w:       writer,
-		pcache:  pcache,
-		Decoder: layers.LayerTypeEthernet,
-		n:       1,
+		w:           writer,
+		pcache:      pcache,
+		Decoder:     layers.LayerTypeEthernet,
+		n:           1,
+		FormatStyle: pktdump.FormatStyleNormal,
 	}
 }
 
@@ -48,16 +50,28 @@ func (w *StdoutWriter) Write(e *event.Packet) error {
 	}
 	p := w.pcache.Get(e.Pid, e.MntNs, e.NetNs, e.CgroupName)
 
-	pidInfo := fmt.Sprintf("Process (pid %d, cmd %s, args %s)",
-		e.Pid, p.Cmd, p.FormatArgs())
-	containerInfo := fmt.Sprintf("Container (name %s, id %s, image %s, labels %s)",
-		p.Container.TidyName(), p.Container.Id, p.Container.Image, p.Container.FormatLabels())
-	PodInfo := fmt.Sprintf("Pod (name %s, namespace %s, UID %s, labels %s, annotations %s)",
-		p.Pod.Name, p.Pod.Namespace, p.Pod.Uid, p.Pod.FormatLabels(), p.Pod.FormatAnnotations())
+	pidInfo := ""
+	containerInfo := ""
+	PodInfo := ""
+
+	switch {
+	case w.FormatStyle >= pktdump.FormatStyleVerbose:
+		pidInfo = fmt.Sprintf("Process (pid %d, cmd %s, args %s)",
+			e.Pid, p.Cmd, p.FormatArgs())
+		containerInfo = fmt.Sprintf("Container (name %s, id %s, image %s, labels %s)",
+			p.Container.TidyName(), p.Container.Id, p.Container.Image, p.Container.FormatLabels())
+		PodInfo = fmt.Sprintf("Pod (name %s, namespace %s, UID %s, labels %s, annotations %s)",
+			p.Pod.Name, p.Pod.Namespace, p.Pod.Uid, p.Pod.FormatLabels(), p.Pod.FormatAnnotations())
+		break
+	default:
+		pidInfo = fmt.Sprintf("Process [%s.%d]", p.Cmd, e.Pid)
+		containerInfo = fmt.Sprintf("Container [%s]", p.Container.TidyName())
+		PodInfo = fmt.Sprintf("Pod [%s.%s]", p.Pod.Name, p.Pod.Namespace)
+	}
 
 	// Decode a packet
 	packet := gopacket.NewPacket(e.Data, w.Decoder, gopacket.NoCopy)
-	formated := pktdump.Format(packet)
+	formated := pktdump.FormatWithStyle(packet, w.FormatStyle)
 
 	builder := strings.Builder{}
 
@@ -75,19 +89,36 @@ func (w *StdoutWriter) Write(e *event.Packet) error {
 	if packetType != "" {
 		builder.WriteString(fmt.Sprintf("%s ", packetType))
 	}
-	builder.WriteString(fmt.Sprintf("%s\n", formated))
-	if p.Pid > 0 {
-		builder.WriteString(fmt.Sprintf("    %s\n", pidInfo))
-	}
-	if p.Container.Id != "" {
-		builder.WriteString(fmt.Sprintf("    %s\n", containerInfo))
-	}
-	if p.Pod.Name != "" {
-		builder.WriteString(fmt.Sprintf("    %s\n", PodInfo))
+
+	switch {
+	case w.FormatStyle >= pktdump.FormatStyleVerbose:
+		builder.WriteString(fmt.Sprintf("%s\n", formated))
+		if p.Pid > 0 {
+			builder.WriteString(fmt.Sprintf("    %s\n", pidInfo))
+		}
+		if p.Container.Id != "" {
+			builder.WriteString(fmt.Sprintf("    %s\n", containerInfo))
+		}
+		if p.Pod.Name != "" {
+			builder.WriteString(fmt.Sprintf("    %s\n", PodInfo))
+		}
+		break
+	default:
+		builder.WriteString(formated)
+		if p.Pid > 0 {
+			builder.WriteString(fmt.Sprintf(", %s", pidInfo))
+		}
+		if p.Container.Id != "" {
+			builder.WriteString(fmt.Sprintf(", %s", containerInfo))
+		}
+		if p.Pod.Name != "" {
+			builder.WriteString(fmt.Sprintf(", %s", PodInfo))
+		}
+		builder.WriteString("\n")
 	}
 	msg := builder.String()
 
-	if w.OneLine {
+	if w.OneLine || w.FormatStyle < pktdump.FormatStyleVerbose {
 		var newLines []string
 		lines := strings.Split(msg, "\n")
 		for _, s := range lines {
@@ -97,7 +128,7 @@ func (w *StdoutWriter) Write(e *event.Packet) error {
 			}
 			newLines = append(newLines, s)
 		}
-		msg = strings.Join(newLines, ": ") + "\n"
+		msg = strings.Join(newLines, ", ") + "\n"
 	}
 
 	if _, err := w.w.Write([]byte(msg)); err != nil {

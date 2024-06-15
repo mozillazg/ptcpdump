@@ -115,5 +115,5 @@ require (
 
 replace (
 	github.com/gopacket/gopacket => github.com/mozillazg/gopacket v0.0.0-20240602032747-2b08f0c63614
-	github.com/x-way/pktdump => github.com/mozillazg/pktdump v0.0.0-20240512062358-b06f5829e998
+	github.com/x-way/pktdump => github.com/mozillazg/pktdump v0.0.7
 )

@@ -2,18 +2,20 @@ package cmd
 
 import (
 	"fmt"
+	"io"
+	"math"
+	"os"
+	"path/filepath"
+	"runtime"
+
 	"github.com/gopacket/gopacket/layers"
 	"github.com/gopacket/gopacket/pcapgo"
 	"github.com/mozillazg/ptcpdump/internal"
 	"github.com/mozillazg/ptcpdump/internal/dev"
 	"github.com/mozillazg/ptcpdump/internal/metadata"
 	"github.com/mozillazg/ptcpdump/internal/writer"
+	"github.com/x-way/pktdump"
 	"golang.org/x/xerrors"
-	"io"
-	"math"
-	"os"
-	"path/filepath"
-	"runtime"
 )
 
 func getWriters(opts Options, pcache *metadata.ProcessCache) ([]writer.PacketWriter, func() error, error) {
@@ -60,6 +62,9 @@ func getWriters(opts Options, pcache *metadata.ProcessCache) ([]writer.PacketWri
 		stdoutWriter.OneLine = opts.oneLine
 		stdoutWriter.PrintNumber = opts.printPacketNumber
 		stdoutWriter.NoTimestamp = opts.dontPrintTimestamp
+		if opts.verbose >= 1 {
+			stdoutWriter.FormatStyle = pktdump.FormatStyleVerbose
+		}
 		writers = append(writers, stdoutWriter)
 	}
 

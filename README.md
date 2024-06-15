@@ -72,12 +72,27 @@ ptcpdump -r demo.pcapng
 
 ### Example output
 
+
+Default:
+
 ```
-07:19:55.978310 eth0 Out IP (tos 0x0, ttl 63, id 5180, offset 0, flags [DF], ip_proto TCP (6), length 52)
-    172.19.0.2.40746 > 139.178.84.217.80: Flags [F.], cksum 0x8cc7, seq 2012972889, ack 714167144, win 501, options [nop,nop,TS val 2112687313 ecr 864085110], length 0
-    Process (pid 1571271, cmd /usr/bin/wget, args wget kernel.org)
-    Container (name test, id aa5d0ea5c27f75f5ac7844fea4ca811bbd01fbf64e88e8a4ccab142f632cbaff, image docker.io/library/alpine:3.18, labels {"io.cri-containerd.kind":"container","io.kubernetes.container.name":"test","io.kubernetes.pod.name":"test","io.kubernetes.pod.namespace":"default","io.kubernetes.pod.uid":"9e4bc54b-de48-4b1c-8b9e-54709f67ed0c"})
-    Pod (name test, namespace default, UID 9e4bc54b-de48-4b1c-8b9e-54709f67ed0c, labels {"run":"test"}, annotations {"kubernetes.io/config.seen":"2024-06-10T01:29:58.354119146Z","kubernetes.io/config.source":"api"})
+09:32:09.718892 vethee2a302f In IP 10.244.0.2.33426 > 139.178.84.217.80: Flags [S], seq 4113492822, win 64240, length 0, Process [/usr/bin/wget.3553008], Container [test], Pod [test.default]
+09:32:09.718941 eth0 Out IP 172.19.0.2.33426 > 139.178.84.217.80: Flags [S], seq 4113492822, win 64240, length 0, Process [/usr/bin/wget.3553008], Container [test], Pod [test.default]
+```
+
+With `-v`:
+
+```
+09:32:44.613707 vethee2a302f In IP (tos 0x0, ttl 64, id 45068, offset 0, flags [DF], proto TCP (6), length 60)
+    10.244.0.2.60142 > 139.178.84.217.80: Flags [S], cksum 0xebaf, seq 1553234662, win 64240, options [mss 1460,sackOK,TS val 55511585 ecr 0,nop,wscale 7], length 0
+    Process (pid 3558755, cmd /usr/bin/wget, args wget kernel.org)
+    Container (name test, id 22786d2c79f70dbed0003c80915276943695a5674e589e72f45ea9469427bc70, image docker.io/library/alpine:3.18, labels {"io.cri-containerd.kind":"container","io.kubernetes.container.name":"test","io.kubernetes.pod.name":"test","io.kubernetes.pod.namespace":"default","io.kubernetes.pod.uid":"9e4bc54b-de48-4b1c-8b9e-54709f67ed0c"})
+    Pod (name test, namespace default, UID 9e4bc54b-de48-4b1c-8b9e-54709f67ed0c, labels {"run":"test"}, annotations {"kubernetes.io/config.seen":"2024-06-15T02:43:38.519669660Z","kubernetes.io/config.source":"api"})
+09:32:44.613758 eth0 Out IP (tos 0x0, ttl 63, id 45068, offset 0, flags [DF], proto TCP (6), length 60)
+    172.19.0.2.60142 > 139.178.84.217.80: Flags [S], cksum 0x8ccf, seq 1553234662, win 64240, options [mss 1460,sackOK,TS val 55511585 ecr 0,nop,wscale 7], length 0
+    Process (pid 3558755, cmd /usr/bin/wget, args wget kernel.org)
+    Container (name test, id 22786d2c79f70dbed0003c80915276943695a5674e589e72f45ea9469427bc70, image docker.io/library/alpine:3.18, labels {"io.cri-containerd.kind":"container","io.kubernetes.container.name":"test","io.kubernetes.pod.name":"test","io.kubernetes.pod.namespace":"default","io.kubernetes.pod.uid":"9e4bc54b-de48-4b1c-8b9e-54709f67ed0c"})
+    Pod (name test, namespace default, UID 9e4bc54b-de48-4b1c-8b9e-54709f67ed0c, labels {"run":"test"}, annotations {"kubernetes.io/config.seen":"2024-06-15T02:43:38.519669660Z","kubernetes.io/config.source":"api"})
 ```
 
 <p align="right"><a href="#top">🔝</a></p>
@@ -115,6 +130,7 @@ Flags:
       --print                Print parsed packet output, even if the raw packets are being saved to a file with the -w flag
   -r, --read-file string     Read packets from file (which was created with the -w option). e.g. ptcpdump.pcapng
   -c, --receive-count uint   Exit after receiving count packets
+  -v, --verbose count        When parsing and printing, produce (slightly more) verbose output
       --version              Print the ptcpdump and libpcap version strings and exit
   -w, --write-file string    Write the raw packets to file rather than parsing and printing them out. They can later be printed with the -r option. Standard output is used if file is '-'. e.g. ptcpdump.pcapng
 ```
@@ -182,7 +198,7 @@ Flags:
 | -tttt                                             | ✅       |                          |
 | -u                                                | ✅       |                          |
 | -U, --packet-buffered                             | ✅       |                          |
-| -v                                                | ✅       |                          |
+| -v                                                | ✅       | ✅                       |
 | -vv                                               | ✅       |                          |
 | -vvv                                              | ✅       |                          |
 | -V *file*                                         | ✅       |                          |

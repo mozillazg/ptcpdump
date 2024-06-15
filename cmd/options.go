@@ -29,6 +29,7 @@ type Options struct {
 	dontPrintTimestamp bool
 	onlyPrintCount     bool
 	dontConvertAddr    int
+	verbose            int
 
 	eventChanSize                 uint
 	delayBeforeHandlePacketEvents time.Duration

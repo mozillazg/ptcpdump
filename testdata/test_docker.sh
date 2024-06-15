@@ -13,7 +13,7 @@ function test_ptcpdump() {
   docker pull busybox:1
   docker pull alpine:3.18
 
-  timeout 120s ${CMD} -i any --print -w "${FNAME}" --oneline --exec-events-worker-number=50 \
+  timeout 120s ${CMD} -i any --print -w "${FNAME}" -v --oneline --exec-events-worker-number=50 \
     'host 1.1.1.1' -w "${FNAME}" | tee "${LNAME}" &
   sleep 10
 
@@ -35,7 +35,7 @@ function test_ptcpdump() {
 function test_ptcpdump_read() {
     EXPECT_NAME="${LNAME}.read.expect"
     sed 's/ [a-zA-Z0-9_-]\+ \(In\|Out\) / /g' "${LNAME}" > "${EXPECT_NAME}"
-    timeout 30s ${CMD} --oneline -r "${FNAME}" > "${RNAME}"
+    timeout 30s ${CMD} --oneline -v -r "${FNAME}" > "${RNAME}"
     cat "${RNAME}" | grep "> 1.1.1.1.80: Flags .*, args wget -T 10 1.1.1.1.* $cid1"
     cat "${RNAME}" | grep "> 1.1.1.1.80: Flags .*, args wget -T 5 1.1.1.1.* $cid2"
 }

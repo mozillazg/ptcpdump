@@ -10,6 +10,7 @@ import (
 	"github.com/mozillazg/ptcpdump/internal/metadata"
 	"github.com/mozillazg/ptcpdump/internal/parser"
 	"github.com/mozillazg/ptcpdump/internal/writer"
+	"github.com/x-way/pktdump"
 )
 
 func read(ctx context.Context, opts Options) error {
@@ -27,6 +28,9 @@ func read(ctx context.Context, opts Options) error {
 	stdoutWriter.NoTimestamp = opts.dontPrintTimestamp
 	if opts.onlyPrintCount {
 		stdoutWriter.DoNothing = true
+	}
+	if opts.verbose >= 1 {
+		stdoutWriter.FormatStyle = pktdump.FormatStyleVerbose
 	}
 
 	ext := filepath.Ext(opts.ReadPath())
