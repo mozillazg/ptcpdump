@@ -34,6 +34,7 @@ Table of Contents
 * Container-aware and Kubernetes-aware
   * Aware of the container and pod information associated with the packets.
   * Supports multiple container runtimes: Docker Engine and containerd
+  * Supports filtering packets by container ID and container name.
 * Supports using pcap-filter(7) syntax for filtering packets.
 * Directly applies filters in the kernel space.
 * Supports saving captured packets in the PcapNG format for offline analysis with third-party tools such as Wireshark.
@@ -55,12 +56,42 @@ Linux kernel version >= 5.2.
 
 ### Example commands
 
+Filter like tcpdump:
 ```
-sudo ptcpdump -i any tcp
+sudo ptcpdump -i eth0 tcp
+sudo ptcpdump -i eth0 tcp and port 80 and host 10.10.1.1
+sudo ptcpdump -i eth0 'tcp[tcpflags] & (tcp-syn|tcp-fin) != 0'
+```
+
+Multiple interfaces:
+
+```
 sudo ptcpdump -i eth0 -i lo
-sudo ptcpdump -i eth0 --pid 1234 port 80 and host 10.10.1.1
+```
+
+Filter by process:
+
+```
+sudo ptcpdump -i any --pid 1234
 sudo ptcpdump -i any --pname curl
+```
+
+Capture by process via run target program:
+
+```
 sudo ptcpdump -i any -- curl ubuntu.com
+```
+
+Filter by container:
+
+```
+sudo ptcpdump -i any --container-id 36f0310403b1
+sudo ptcpdump -i any --container-name test
+```
+
+Save/read pcapng file:
+
+```
 sudo ptcpdump -i any -w demo.pcapng
 sudo ptcpdump -i any -w - port 80 | tcpdump -n -r -
 sudo ptcpdump -i any -w - port 80 | tshark -r -
@@ -120,6 +151,7 @@ Expression: see "man 7 pcap-filter"
 
 Flags:
   --container-id string      Filter by container id (only TCP and UDP packets are supported)
+  --container-name string    Filter by container name (only TCP and UDP packets are supported)
   -Q, --direction string     Choose send/receive direction for which packets should be captured. Possible values are 'in', 'out' and 'inout' (default "inout")
   -f, --follow-forks         Trace child processes as they are created by currently traced processes when filter by process
   -h, --help                 help for ptcpdump
@@ -153,6 +185,7 @@ Flags:
 | --pid *process_id*                                |         | ✅                        |
 | --pname *process_name*                            |         | ✅                        |
 | --container-id *container_id*                     |         | ✅                        |
+| --container-name *container_name*                 |         | ✅                        |
 | -f, --follow-forks                                |         | ✅                        |
 | -- *command [args]*                               |         | ✅                        |
 | --oneline                                       |         | ✅                        |

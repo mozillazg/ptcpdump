@@ -12,4 +12,5 @@ type MetaData interface {
 	GetByMntNs(mntNs int64) types.Container
 	GetByNetNs(netNs int64) types.Container
 	GetByPid(pid int) types.Container
+	GetByName(name string) []types.Container
 }

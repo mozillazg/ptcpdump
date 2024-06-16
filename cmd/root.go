@@ -20,10 +20,12 @@ Examples:
   sudo ptcpdump -i eth0 -i lo
   sudo ptcpdump -i eth0 --pid 1234 port 80 and host 10.10.1.1
   sudo ptcpdump -i any --pname curl
+  sudo ptcpdump -i any --container-id 36f0310403b1
+  sudo ptcpdump -i any --container-name test
   sudo ptcpdump -i any -- curl ubuntu.com
   sudo ptcpdump -i any -w ptcpdump.pcapng
-  sudo ptcpdump -i any -w - port 80 | tcpdump -n -r -
-  sudo ptcpdump -i any -w - port 80 | tshark -r -
+  sudo ptcpdump -i any -w - | tcpdump -n -r -
+  sudo ptcpdump -i any -w - | tshark -r -
   ptcpdump -r ptcpdump.pcapng
 
 Expression: see "man 7 pcap-filter"`,
@@ -80,6 +82,8 @@ func init() {
 	rootCmd.Flags().CountVarP(&opts.verbose, "verbose", "v",
 		"When parsing and printing, produce (slightly more) verbose output")
 	rootCmd.Flags().StringVar(&opts.containerId, "container-id", "", "Filter by container id (only TCP and UDP packets are supported)")
+	rootCmd.Flags().StringVar(&opts.containerName, "container-name", "", "Filter by container name (only TCP and UDP packets are supported)")
+
 }
 
 func Execute() error {

@@ -5,26 +5,44 @@ import (
 	"log"
 
 	"github.com/mozillazg/ptcpdump/internal/metadata"
+	"github.com/mozillazg/ptcpdump/internal/types"
 )
 
 func applyContainerFilter(ctx context.Context, opts *Options) (*metadata.ContainerCache, error) {
 	cc, err := metadata.NewContainerCache(ctx)
 	if err != nil {
-		if opts.containerId != "" {
+		if opts.filterByContainer() {
 			log.Fatalf("find container failed: %s", err)
 		} else {
 			log.Printf("start container cache failed: %s, will no container and pod context", err)
 			return nil, nil
 		}
 	}
-	if opts.containerId == "" {
+	if !opts.filterByContainer() {
 		return cc, nil
 	}
 
-	container := cc.GetById(opts.containerId)
-	if container.IsNull() {
-		log.Fatalf("can not find any container by id %s", opts.containerId)
+	var container types.Container
+
+	switch {
+	case opts.containerId != "":
+		container = cc.GetById(opts.containerId)
+		if container.IsNull() {
+			log.Fatalf("can not found any container by id %s", opts.containerId)
+		}
+		break
+	case opts.containerName != "":
+		cs := cc.GetByName(opts.containerName)
+		if len(cs) == 0 {
+			log.Fatalf("can not found any container by name %s", opts.containerName)
+		}
+		if len(cs) > 1 {
+			log.Fatalf("found more than one containers by name %s", opts.containerName)
+		}
+		container = cs[0]
+		break
 	}
+
 	// log.Printf("%#v", container)
 	if container.PidNamespace > 0 && container.PidNamespace != metadata.HostPidNs {
 		opts.pidns_id = uint32(container.PidNamespace)

@@ -47,6 +47,10 @@ func (c *ContainerCache) GetByPid(pid int) types.Container {
 	return c.d.GetByPid(pid)
 }
 
+func (c *ContainerCache) GetByName(containerName string) []types.Container {
+	return c.d.GetByName(containerName)
+}
+
 func (c *ContainerCache) GetPodByContainer(cr types.Container) types.Pod {
 	return c.k8s.GetPodByContainer(cr)
 }

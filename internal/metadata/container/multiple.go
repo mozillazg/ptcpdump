@@ -86,3 +86,15 @@ func (m *MultipleEngineMetaData) GetByPid(pid int) types.Container {
 	}
 	return c
 }
+
+func (m *MultipleEngineMetaData) GetByName(name string) []types.Container {
+	var cs []types.Container
+	for _, e := range m.engines {
+		cs = e.GetByName(name)
+		if len(cs) > 0 {
+			return cs
+		}
+	}
+
+	return cs
+}
