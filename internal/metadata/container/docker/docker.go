@@ -19,7 +19,10 @@ import (
 	"golang.org/x/xerrors"
 )
 
-const DefaultSocket = "/var/run/docker.sock"
+const (
+	DefaultSocket          = "/var/run/docker.sock"
+	shortContainerIdLength = 12
+)
 
 type MetaData struct {
 	client *client.Client
@@ -75,6 +78,10 @@ func (d *MetaData) GetById(containerId string) types.Container {
 	defer d.mux.RUnlock()
 
 	id := getDockerContainerId(containerId)
+
+	if len(id) == shortContainerIdLength {
+		return d.getByShortId(id)
+	}
 
 	return d.containerById[id]
 }
@@ -147,6 +154,16 @@ func (d *MetaData) GetByPid(pid int) types.Container {
 
 	for _, c := range d.containerById {
 		if c.RootPid > 0 && c.RootPid == pid {
+			return c
+		}
+	}
+
+	return types.Container{}
+}
+
+func (d *MetaData) getByShortId(shortId string) types.Container {
+	for _, c := range d.containerById {
+		if strings.HasPrefix(c.Id, shortId) {
 			return c
 		}
 	}

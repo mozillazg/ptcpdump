@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"regexp"
+	"strings"
 	"sync"
 	"time"
 
@@ -18,8 +19,9 @@ import (
 )
 
 const (
-	DefaultSocket    = "/run/containerd/containerd.sock"
-	defaultNamespace = "default"
+	DefaultSocket          = "/run/containerd/containerd.sock"
+	defaultNamespace       = "default"
+	shortContainerIdLength = 12
 )
 
 var containerNameLabels = []string{
@@ -121,6 +123,10 @@ func (d *MetaData) GetById(containerId string) types.Container {
 	id := getContainerId(containerId)
 	// log.Printf("get by id, id: %s", id)
 
+	if len(id) == shortContainerIdLength {
+		return d.getByShortId(id)
+	}
+
 	return d.containerById[id]
 }
 
@@ -192,6 +198,16 @@ func (d *MetaData) GetByPid(pid int) types.Container {
 
 	for _, c := range d.containerById {
 		if c.RootPid > 0 && c.RootPid == pid {
+			return c
+		}
+	}
+
+	return types.Container{}
+}
+
+func (d *MetaData) getByShortId(shortId string) types.Container {
+	for _, c := range d.containerById {
+		if strings.HasPrefix(c.Id, shortId) {
 			return c
 		}
 	}
