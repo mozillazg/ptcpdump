@@ -13,12 +13,24 @@ import (
 
 const defaultProcDir = "/proc"
 
+var (
+	HostMntNs int64
+	HostPidNs int64
+	HostNetNs int64
+)
+
 type ProcessCache struct {
 	m map[int]*types.PacketContext
 
 	cc *ContainerCache
 
 	lock sync.RWMutex
+}
+
+func init() {
+	HostPidNs = utils.GetPidNamespaceFromPid(1)
+	HostMntNs = utils.GetMountNamespaceFromPid(1)
+	HostNetNs = utils.GetNetworkNamespaceFromPid(1)
 }
 
 func NewProcessCache() *ProcessCache {
@@ -85,6 +97,7 @@ func (c *ProcessCache) AddItemWithContext(exec event.ProcessExec, rawCtx types.P
 	pctx := &types.PacketContext{
 		Process: types.Process{
 			Pid:              exec.Pid,
+			PidNamespaceId:   utils.GetPidNamespaceFromPid(exec.Pid),
 			MountNamespaceId: int64(exec.MntNs),
 			NetNamespaceId:   int64(exec.Netns),
 			Cmd:              exec.FilenameStr(),
@@ -163,6 +176,45 @@ func (c *ProcessCache) GetPidsByComm(name string) []int {
 	var pids []int
 	for pid, info := range c.m {
 		if info.MatchComm(name) {
+			pids = append(pids, pid)
+		}
+	}
+	return pids
+}
+
+func (c *ProcessCache) GetPidsByPidNsId(nsid int64) []int {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+
+	var pids []int
+	for pid, info := range c.m {
+		if info.PidNamespaceId == nsid {
+			pids = append(pids, pid)
+		}
+	}
+	return pids
+}
+
+func (c *ProcessCache) GetPidsByMntNsId(nsid int64) []int {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+
+	var pids []int
+	for pid, info := range c.m {
+		if info.MountNamespaceId == nsid {
+			pids = append(pids, pid)
+		}
+	}
+	return pids
+}
+
+func (c *ProcessCache) GetPidsByNetNsId(nsid int64) []int {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+
+	var pids []int
+	for pid, info := range c.m {
+		if info.NetNamespaceId == nsid {
 			pids = append(pids, pid)
 		}
 	}

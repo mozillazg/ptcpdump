@@ -119,6 +119,7 @@ Examples:
 Expression: see "man 7 pcap-filter"
 
 Flags:
+  --container-id string      Filter by container id (only TCP and UDP packets are supported)
   -Q, --direction string     Choose send/receive direction for which packets should be captured. Possible values are 'in', 'out' and 'inout' (default "inout")
   -f, --follow-forks         Trace child processes as they are created by currently traced processes when filter by process
   -h, --help                 help for ptcpdump
@@ -151,6 +152,7 @@ Flags:
 | -r *-*                                            | ✅       |                          |
 | --pid *process_id*                                |         | ✅                        |
 | --pname *process_name*                            |         | ✅                        |
+| --container-id *container_id*                     |         | ✅                        |
 | -f, --follow-forks                                |         | ✅                        |
 | -- *command [args]*                               |         | ✅                        |
 | --oneline                                       |         | ✅                        |

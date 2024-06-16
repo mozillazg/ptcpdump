@@ -33,6 +33,7 @@ type MetaData struct {
 	containerById map[string]types.Container
 	mux           sync.RWMutex
 
+	hostPidNs int64
 	hostMntNs int64
 	hostNetNs int64
 }
@@ -46,6 +47,7 @@ func NewMetaData(host string, namespace string) (*MetaData, error) {
 	}
 	opts := []containerd.ClientOpt{
 		containerd.WithDefaultNamespace(namespace),
+		containerd.WithTimeout(time.Second * 5),
 	}
 	c, err := containerd.New(host, opts...)
 	if err != nil {
@@ -198,6 +200,7 @@ func (d *MetaData) GetByPid(pid int) types.Container {
 }
 
 func (d *MetaData) init(ctx context.Context) error {
+	d.hostPidNs = utils.GetPidNamespaceFromPid(1)
 	d.hostMntNs = utils.GetMountNamespaceFromPid(1)
 	d.hostNetNs = utils.GetNetworkNamespaceFromPid(1)
 
@@ -319,6 +322,7 @@ func (d *MetaData) inspectContainer(ctx context.Context, container containerd.Co
 
 	if task != nil {
 		cr.RootPid = int(task.Pid())
+		cr.PidNamespace = utils.GetPidNamespaceFromPid(cr.RootPid)
 		cr.MountNamespace = utils.GetMountNamespaceFromPid(cr.RootPid)
 		cr.NetworkNamespace = utils.GetNetworkNamespaceFromPid(cr.RootPid)
 	}

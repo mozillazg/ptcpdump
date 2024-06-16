@@ -54,6 +54,9 @@ type Options struct {
 	filterComm  uint8
 	FollowForks uint8
 	PcapFilter  string
+	mntns_id    uint32
+	pidns_id    uint32
+	netns_id    uint32
 }
 
 func NewBPF() (*BPF, error) {
@@ -68,9 +71,13 @@ func NewBPF() (*BPF, error) {
 	}, nil
 }
 
-func NewOptions(pid uint, comm string, followForks bool, pcapFilter string) Options {
+func NewOptions(pid uint, comm string, followForks bool, pcapFilter string,
+	mntns_id uint32, pidns_id uint32, netns_id uint32) Options {
 	opts := Options{
-		Pid: uint32(pid),
+		Pid:      uint32(pid),
+		mntns_id: mntns_id,
+		pidns_id: pidns_id,
+		netns_id: netns_id,
 	}
 	opts.Comm = [16]int8{}
 	if len(comm) > 0 {
@@ -93,11 +100,15 @@ func NewOptions(pid uint, comm string, followForks bool, pcapFilter string) Opti
 }
 
 func (b *BPF) Load(opts Options) error {
+	// log.Printf("%#v", opts)
 	err := b.spec.RewriteConstants(map[string]interface{}{
 		"filter_pid":          opts.Pid,
 		"filter_comm":         opts.Comm,
 		"filter_comm_enable":  opts.filterComm,
 		"filter_follow_forks": opts.FollowForks,
+		"filter_mntns_id":     opts.mntns_id,
+		"filter_netns_id":     opts.netns_id,
+		"filter_pidns_id":     opts.pidns_id,
 	})
 	if err != nil {
 		return xerrors.Errorf("rewrite constants: %w", err)
@@ -127,7 +138,7 @@ func (b *BPF) Load(opts Options) error {
 	err = b.spec.LoadAndAssign(b.objs, &ebpf.CollectionOptions{
 		Programs: ebpf.ProgramOptions{
 			LogLevel: ebpf.LogLevelInstruction,
-			LogSize:  ebpf.DefaultVerifierLogSize * 24,
+			LogSize:  ebpf.DefaultVerifierLogSize * 32,
 		},
 	})
 	if err != nil {
@@ -139,7 +150,7 @@ func (b *BPF) Load(opts Options) error {
 			if err = b.spec.LoadAndAssign(&objs, &ebpf.CollectionOptions{
 				Programs: ebpf.ProgramOptions{
 					LogLevel: ebpf.LogLevelInstruction,
-					LogSize:  ebpf.DefaultVerifierLogSize * 24,
+					LogSize:  ebpf.DefaultVerifierLogSize * 32,
 				},
 			}); err != nil {
 				return err

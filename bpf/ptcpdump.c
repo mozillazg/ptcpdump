@@ -33,6 +33,9 @@ static volatile const u32 filter_pid = 0;
 static volatile const u8 filter_follow_forks = 0;
 volatile const char filter_comm[TASK_COMM_LEN];
 static volatile const u8 filter_comm_enable = 0;
+static volatile const u32 filter_mntns_id = 0;
+static volatile const u32 filter_netns_id = 0;
+static volatile const u32 filter_pidns_id = 0;
 static const u8 u8_zero = 0;
 static const u32 u32_zero = 0;
 
@@ -333,7 +336,7 @@ static __always_inline void *bpf_map_lookup_or_try_init(void *map, const void *k
     return bpf_map_lookup_elem(map, key);
 }
 
-static __always_inline bool str_cmp(const char *a, const volatile char *b, int len) {
+static __always_inline int str_cmp(const char *a, const volatile char *b, int len) {
 #pragma unroll
     for (int i = 0; i < len; i++) {
         if (a[i] != b[i])
@@ -344,23 +347,41 @@ static __always_inline bool str_cmp(const char *a, const volatile char *b, int l
     return 0;
 }
 
-static __always_inline bool have_pid_filter_rules() { return filter_pid > 0 || filter_comm_enable == 1; }
+static __always_inline bool have_pid_filter_rules() {
+    return filter_pid > 0 || filter_comm_enable == 1 || filter_mntns_id > 0 || filter_netns_id > 0 ||
+           filter_pidns_id > 0;
+}
 
 static __always_inline int process_filter(struct task_struct *task) {
     // no filter rules
     if (!have_pid_filter_rules()) {
+        // bpf_printk("no filter");
         return 0;
     }
 
     u32 pid = BPF_CORE_READ(task, tgid);
     if (bpf_map_lookup_elem(&filter_pid_map, &pid)) {
+        // bpf_printk("match filter");
         return 0;
     }
 
     bool should_filter = false;
     if (filter_pid > 0 && pid == filter_pid) {
+        // bpf_printk("filter_id");
         should_filter = true;
     }
+
+    if (!should_filter) {
+        u32 mntns_id = BPF_CORE_READ(task, nsproxy, mnt_ns, ns.inum);
+        u32 netns_id = BPF_CORE_READ(task, nsproxy, net_ns, ns.inum);
+        u32 pidns_id = BPF_CORE_READ(task, nsproxy, pid_ns_for_children, ns.inum);
+        if ((mntns_id > 0 && mntns_id == filter_mntns_id) || (netns_id > 0 && netns_id == filter_netns_id) ||
+            (pidns_id > 0 && pidns_id == filter_pidns_id)) {
+            // bpf_printk("%u %u %u", mntns_id, netns_id, pidns_id);
+            should_filter = true;
+        }
+    }
+
     if (!should_filter) {
         if (filter_comm_enable == 1) {
             char comm[TASK_COMM_LEN];
@@ -382,6 +403,7 @@ static __always_inline int process_filter(struct task_struct *task) {
 static __always_inline int parent_process_filter(struct task_struct *current) {
     // no filter rules
     if (!have_pid_filter_rules()) {
+        // bpf_printk("no filter");
         return 0;
     }
     if (filter_follow_forks != 1) {
@@ -439,6 +461,7 @@ int cgroup__sock_create(void *ctx) {
             return 1;
         }
     }
+    // bpf_printk("sock_create");
 
     struct process_meta_t meta = {0};
     fill_process_meta(task, &meta);
@@ -473,6 +496,7 @@ int BPF_KPROBE(kprobe__security_sk_classify_flow, struct sock *sk) {
             return 0;
         }
     }
+    // bpf_printk("flow match");
 
     fill_sk_meta(sk, &key);
     fill_process_meta(task, &value);
@@ -500,6 +524,7 @@ static __always_inline void handle_sendmsg(struct sock *sk) {
             return;
         }
     }
+    // bpf_printk("sendmsg match");
 
     fill_sk_meta(sk, &key);
     if (bpf_map_lookup_elem(&flow_pid_map, &key)) {
@@ -510,7 +535,7 @@ static __always_inline void handle_sendmsg(struct sock *sk) {
     if (key.sport == 0) {
         return;
     }
-    // bpf_printk("[ptcpdump] flow key: %pI4 %d", &key.saddr[0], key.sport);
+    // bpf_printk("[ptcpdump][sendmsg] flow key: %pI4 %d", &key.saddr[0], key.sport);
     int ret = bpf_map_update_elem(&flow_pid_map, &key, &value, BPF_NOEXIST);
     if (ret != 0) {
         bpf_printk("[handle_tcp_sendmsg] bpf_map_update_elem flow_pid_map failed: %d", ret);

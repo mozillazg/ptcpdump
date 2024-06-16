@@ -18,9 +18,8 @@ import (
 
 func capture(ctx context.Context, stop context.CancelFunc, opts Options) error {
 	pcache := metadata.NewProcessCache()
-	if cc, err := metadata.NewContainerCache(ctx); err != nil {
-		log.Printf("start container cache failed: %s, will no container context", err)
-	} else {
+	cc, _ := applyContainerFilter(ctx, &opts)
+	if cc != nil {
 		pcache.WithContainerCache(cc)
 	}
 
@@ -128,21 +127,45 @@ func getCaptureCounts(bf *bpf.BPF, c *consumer.PacketEventConsumer) []string {
 }
 
 func getCurrentConnects(ctx context.Context, pcache *metadata.ProcessCache, opts Options) []metadata.Connection {
+	var pids []int
+	var filter_pid bool
+
 	if opts.pid != 0 {
-		cs, err := metadata.GetCurrentConnects(ctx, []int{int(opts.pid)}, false)
-		if err != nil {
-			log.Printf("get current connects failed: %s", err)
-		}
-		return cs
+		filter_pid = true
+		pids = append(pids, int(opts.pid))
 	}
 	if opts.comm != "" {
-		pids := pcache.GetPidsByComm(opts.comm)
+		filter_pid = true
+		ps := pcache.GetPidsByComm(opts.comm)
+		pids = append(pids, ps...)
+	}
+	if opts.pidns_id > 0 {
+		filter_pid = true
+		ps := pcache.GetPidsByPidNsId(int64(opts.pidns_id))
+		pids = append(pids, ps...)
+	}
+	if opts.mntns_id > 0 {
+		filter_pid = true
+		ps := pcache.GetPidsByPidNsId(int64(opts.mntns_id))
+		pids = append(pids, ps...)
+	}
+	if opts.netns_id > 0 {
+		filter_pid = true
+		ps := pcache.GetPidsByPidNsId(int64(opts.netns_id))
+		pids = append(pids, ps...)
+	}
+
+	if filter_pid {
+		if len(pids) == 0 {
+			return nil
+		}
 		cs, err := metadata.GetCurrentConnects(ctx, pids, false)
 		if err != nil {
 			log.Printf("get current connects failed: %s", err)
 		}
 		return cs
 	}
+
 	cs, err := metadata.GetCurrentConnects(ctx, nil, true)
 	if err != nil {
 		log.Printf("get current connects failed: %s", err)

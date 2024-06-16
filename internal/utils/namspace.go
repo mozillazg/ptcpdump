@@ -7,6 +7,14 @@ import (
 	"strings"
 )
 
+func GetPidNamespaceFromPid(pid int) int64 {
+	raw, err := os.Readlink(fmt.Sprintf("/proc/%d/ns/pid", pid))
+	if err != nil {
+		return 0
+	}
+	return getNamespaceId(raw)
+}
+
 func GetMountNamespaceFromPid(pid int) int64 {
 	raw, err := os.Readlink(fmt.Sprintf("/proc/%d/ns/mnt", pid))
 	if err != nil {

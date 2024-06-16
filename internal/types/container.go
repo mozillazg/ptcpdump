@@ -11,11 +11,19 @@ type Container struct {
 	Labels map[string]string
 
 	RootPid          int
+	PidNamespace     int64
 	MountNamespace   int64
 	NetworkNamespace int64
 
 	Image       string
 	ImageDigest string
+}
+
+func (c *Container) IsNull() bool {
+	if c == nil {
+		return true
+	}
+	return c.Id == ""
 }
 
 func (c Container) TidyName() string {

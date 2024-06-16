@@ -88,21 +88,7 @@ deps:
 
 .PHONY: e2e
 e2e: lint build-bpf build
-	sudo rm -rf /tmp/ptcpdump_*
-	sudo bash testdata/test_default.sh ./ptcpdump
-	sudo bash testdata/test_base.sh ./ptcpdump
-	sudo bash testdata/test_pname_filter.sh ./ptcpdump
-	sudo bash testdata/test_pid_filter.sh ./ptcpdump
-	sudo bash testdata/test_read_pcap.sh ./ptcpdump
-	sudo bash testdata/test_write_pcap.sh ./ptcpdump
-	sudo bash testdata/test_exist_connection.sh ./ptcpdump
-	sudo bash testdata/test_arp.sh ./ptcpdump
-	sudo bash testdata/test_icmp.sh ./ptcpdump
-	sudo bash testdata/test_sub_program.sh ./ptcpdump
-	sudo bash testdata/test_sub_curl_domain_program.sh ./ptcpdump
-	sudo bash testdata/test_write_stdout.sh ./ptcpdump
-	sudo bash testdata/test_nat.sh ./ptcpdump
-	sudo bash testdata/test_docker.sh ./ptcpdump
+	sudo bash testdata/run_e2e.sh
 
 .PHONY: clean
 clean:
