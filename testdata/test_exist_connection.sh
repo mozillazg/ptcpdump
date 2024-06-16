@@ -22,13 +22,13 @@ function test_ptcpdump() {
 
   cat "${LNAME}"
   cat "${LNAME}" | grep -F 'cmd /usr/sbin/sshd'
-  cat "${LNAME}" | grep -F '.22: Flags [.]'
+  cat "${LNAME}" | grep '.22 .*Flags \[.\+\]'
 }
 
 function test_tcpdump_read() {
   which tcpdump || (apt update || true && apt install -y tcpdump)
   tcpdump -nr "${FNAME}"
-  tcpdump -nr "${FNAME}" | grep -F '.22: Flags [.]'
+  tcpdump -nr "${FNAME}" | grep '.22 .*Flags \[.\+\]'
 
 }
 
