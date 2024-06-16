@@ -2,8 +2,10 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/mozillazg/ptcpdump/internal/utils"
@@ -85,6 +87,14 @@ func init() {
 	rootCmd.Flags().StringVar(&opts.containerId, "container-id", "", "Filter by container id (only TCP and UDP packets are supported)")
 	rootCmd.Flags().StringVar(&opts.containerName, "container-name", "", "Filter by container name (only TCP and UDP packets are supported)")
 	rootCmd.Flags().StringVar(&opts.logLevel, "log-level", "warn", `Set the logging level ("debug", "info", "warn", "error", "fatal")`)
+	rootCmd.Flags().StringVar(&opts.dockerEndpoint, "docker-address", "/var/run/docker.sock",
+		`Address of Docker Engine service`)
+	rootCmd.Flags().StringVar(&opts.containerdEndpoint, "containerd-address", "/run/containerd/containerd.sock",
+		`Address of containerd service`)
+	rootCmd.Flags().StringVar(&opts.criRuntimeEndpoint, "cri-runtime-address", "",
+		"Address of CRI container runtime service "+
+			fmt.Sprintf("(default: uses in order the first successful one of [%s])",
+				strings.Join(getDefaultCriRuntimeEndpoint(), ", ")))
 
 }
 

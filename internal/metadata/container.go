@@ -14,13 +14,14 @@ type ContainerCache struct {
 	k8s *k8s.MetaData
 }
 
-func NewContainerCache(ctx context.Context) (*ContainerCache, error) {
-	d := container.NewMultipleEngineMetaData()
+func NewContainerCache(ctx context.Context,
+	dockerEndpoint, containerdEndpoint, criRuntimeEndpoint string) (*ContainerCache, error) {
+	d := container.NewMultipleEngineMetaData(dockerEndpoint, containerdEndpoint)
 
 	if err := d.Start(ctx); err != nil {
 		return nil, err
 	}
-	k8sd, err := k8s.NewMetaData()
+	k8sd, err := k8s.NewMetaData(criRuntimeEndpoint)
 	if err != nil {
 		log.Warnf("skip k8s integration: %s", err)
 	}

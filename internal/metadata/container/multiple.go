@@ -13,10 +13,10 @@ type MultipleEngineMetaData struct {
 	engines []MetaData
 }
 
-func NewMultipleEngineMetaData() *MultipleEngineMetaData {
+func NewMultipleEngineMetaData(dockerEndpoint, containerdEndpoint string) *MultipleEngineMetaData {
 	var m MultipleEngineMetaData
 
-	dr, err := docker.NewMetaData("")
+	dr, err := docker.NewMetaData(dockerEndpoint)
 	if err != nil {
 		log.Infof(err.Error())
 		log.Warn("skip Docker Engine integration")
@@ -24,7 +24,7 @@ func NewMultipleEngineMetaData() *MultipleEngineMetaData {
 		m.engines = append(m.engines, dr)
 	}
 
-	cd, err := containerd.NewMultipleNamespacesMetaData("", "")
+	cd, err := containerd.NewMultipleNamespacesMetaData(containerdEndpoint, "")
 	if err != nil {
 		log.Infof(err.Error())
 		log.Warn("skip containerd integration")

@@ -13,10 +13,11 @@ import (
 	"k8s.io/klog/v2"
 )
 
-var defaultRuntimeEndpoints = []string{
+var DefaultRuntimeEndpoints = []string{
 	"unix:///run/containerd/containerd.sock",
 	"unix:///run/crio/crio.sock",
 	"unix:///var/run/cri-dockerd.sock",
+	"unix:///var/run/dockershim.sock",
 }
 
 const defaultTimeout = 2 * time.Second
@@ -25,8 +26,8 @@ type MetaData struct {
 	res cri.RuntimeService
 }
 
-func NewMetaData() (*MetaData, error) {
-	res, err := getRuntimeService()
+func NewMetaData(criRuntimeEndpoint string) (*MetaData, error) {
+	res, err := getRuntimeService(criRuntimeEndpoint)
 	if err != nil {
 		log.Warn("skip kubernetes integration")
 	}
@@ -79,12 +80,16 @@ func tidyLabels(raw map[string]string) map[string]string {
 	return newLabels
 }
 
-func getRuntimeService() (res cri.RuntimeService, err error) {
+func getRuntimeService(criRuntimeEndpoint string) (res cri.RuntimeService, err error) {
 	logger := klog.Background()
 	t := defaultTimeout
+	endpoints := DefaultRuntimeEndpoints
 	var tp trace.TracerProvider = noop.NewTracerProvider()
+	if criRuntimeEndpoint != "" {
+		endpoints = []string{criRuntimeEndpoint}
+	}
 
-	for _, endPoint := range defaultRuntimeEndpoints {
+	for _, endPoint := range endpoints {
 		log.Debugf("Connect using endpoint %q with %q timeout", endPoint, t)
 		res, err = remote.NewRemoteRuntimeService(endPoint, t, tp, &logger)
 		if err != nil {

@@ -150,23 +150,27 @@ Examples:
 Expression: see "man 7 pcap-filter"
 
 Flags:
-  --container-id string      Filter by container id (only TCP and UDP packets are supported)
-  --container-name string    Filter by container name (only TCP and UDP packets are supported)
-  -Q, --direction string     Choose send/receive direction for which packets should be captured. Possible values are 'in', 'out' and 'inout' (default "inout")
-  -f, --follow-forks         Trace child processes as they are created by currently traced processes when filter by process
-  -h, --help                 help for ptcpdump
-  -i, --interface strings    Interfaces to capture (default [lo])
-      --list-interfaces      Print the list of the network interfaces available on the system
-      --log-level string     Set the logging level ("debug", "info", "warn", "error", "fatal") (default "warn")
-      --oneline              Print parsed packet output in a single line
-      --pid uint             Filter by process ID (only TCP and UDP packets are supported)
-      --pname string         Filter by process name (only TCP and UDP packets are supported)
-      --print                Print parsed packet output, even if the raw packets are being saved to a file with the -w flag
-  -r, --read-file string     Read packets from file (which was created with the -w option). e.g. ptcpdump.pcapng
-  -c, --receive-count uint   Exit after receiving count packets
-  -v, --verbose count        When parsing and printing, produce (slightly more) verbose output
-      --version              Print the ptcpdump and libpcap version strings and exit
-  -w, --write-file string    Write the raw packets to file rather than parsing and printing them out. They can later be printed with the -r option. Standard output is used if file is '-'. e.g. ptcpdump.pcapng
+  --container-id string        Filter by container id (only TCP and UDP packets are supported)
+  --container-name string      Filter by container name (only TCP and UDP packets are supported)
+  --containerd-address string  Address of containerd service (default "/run/containerd/containerd.sock")
+  --count                      Print only on stdout the packet count when reading capture file instead of parsing/printing the packets
+  --cri-runtime-address string Address of CRI container runtime service (default: uses in order the first successful one of [/run/containerd/containerd.sock, /run/crio/crio.sock, /var/run/cri-dockerd.sock, /var/run/dockershim.sock])
+  -Q, --direction string       Choose send/receive direction for which packets should be captured. Possible values are 'in', 'out' and 'inout' (default "inout")
+  --docker-address string      Address of Docker Engine service (default "/var/run/docker.sock")
+  -f, --follow-forks           Trace child processes as they are created by currently traced processes when filter by process
+  -h, --help                   help for ptcpdump
+  -i, --interface strings      Interfaces to capture (default [lo])
+      --list-interfaces        Print the list of the network interfaces available on the system
+      --log-level string       Set the logging level ("debug", "info", "warn", "error", "fatal") (default "warn")
+      --oneline                Print parsed packet output in a single line
+      --pid uint               Filter by process ID (only TCP and UDP packets are supported)
+      --pname string           Filter by process name (only TCP and UDP packets are supported)
+      --print                  Print parsed packet output, even if the raw packets are being saved to a file with the -w flag
+  -r, --read-file string       Read packets from file (which was created with the -w option). e.g. ptcpdump.pcapng
+  -c, --receive-count uint     Exit after receiving count packets
+  -v, --verbose count          When parsing and printing, produce (slightly more) verbose output
+      --version                Print the ptcpdump and libpcap version strings and exit
+  -w, --write-file string      Write the raw packets to file rather than parsing and printing them out. They can later be printed with the -r option. Standard output is used if file is '-'. e.g. ptcpdump.pcapng
 ```
 
 <p align="right"><a href="#top">🔝</a></p>
