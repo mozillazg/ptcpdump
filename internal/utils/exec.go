@@ -2,12 +2,13 @@ package utils
 
 import (
 	"context"
-	"log"
 	"os"
 	"os/exec"
 	"os/signal"
 	"strings"
 	"syscall"
+
+	"github.com/mozillazg/ptcpdump/internal/log"
 )
 
 const EnvIsSubProgramLoader = "PTCPDUMP-IS-SUB-PROGRAM-LOADER"
@@ -25,13 +26,14 @@ func StartSubProcessLoader(ctx context.Context, program string, subProgramArgs [
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr
 
+	log.Debugf("start to run subprocess loader %s", cmd.String())
 	if err := cmd.Start(); err != nil {
 		return 0, chFinished, err
 	}
 
 	go func() {
 		if err := cmd.Wait(); err != nil {
-			log.Printf("subprocess failed: %s", err)
+			log.Errorf("subprocess failed: %s", err)
 		}
 		close(chFinished)
 	}()
@@ -45,7 +47,7 @@ func StartSubProcess(ctx context.Context, Args []string) error {
 
 	<-ch
 
-	log.Printf("start to run %q", strings.Join(Args, " "))
+	log.Infof("start to run %q", strings.Join(Args, " "))
 	os.Unsetenv(EnvIsSubProgramLoader)
 	cmd := exec.CommandContext(ctx, Args[0], Args[1:]...)
 	cmd.Stdin = os.Stdin

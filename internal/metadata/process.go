@@ -1,10 +1,10 @@
 package metadata
 
 import (
-	"log"
 	"sync"
 
 	"github.com/mozillazg/ptcpdump/internal/event"
+	"github.com/mozillazg/ptcpdump/internal/log"
 	"github.com/mozillazg/ptcpdump/internal/types"
 	"github.com/mozillazg/ptcpdump/internal/utils"
 	"github.com/shirou/gopsutil/v3/process"
@@ -47,7 +47,7 @@ func (c *ProcessCache) WithContainerCache(cc *ContainerCache) *ProcessCache {
 
 func (c *ProcessCache) Start() {
 	if err := c.fillRunningProcesses(); err != nil {
-		log.Printf("fill running processes info failed: %+v", err)
+		log.Errorf("fill running processes info failed: %s", err)
 	}
 }
 
@@ -107,7 +107,8 @@ func (c *ProcessCache) AddItemWithContext(exec event.ProcessExec, rawCtx types.P
 		Container: rawCtx.Container,
 		Pod:       rawCtx.Pod,
 	}
-	// log.Printf("new exec event: %#v, %#v\n\n", exec, *pctx)
+	log.Debugf("new exec event: %#v, %#v", exec, *pctx)
+
 	if c.cc != nil && pctx.Container.Id == "" {
 		pctx.Container = c.getContainer(*pctx, exec.CgroupName)
 		if pctx.Container.Id != "" {
@@ -119,27 +120,27 @@ func (c *ProcessCache) AddItemWithContext(exec event.ProcessExec, rawCtx types.P
 	c.m[pid] = pctx
 	c.lock.Unlock()
 
-	// log.Printf("add new cache: %d, %#v\n\n", pid, *pctx)
+	log.Debugf("add new cache: %d, %#v", pid, *pctx)
 }
 
 func (c *ProcessCache) getContainer(ctx types.PacketContext, cgroupName string) (cr types.Container) {
 	cr = ctx.Container
 	if cr.Id == "" && cgroupName != "" {
-		// log.Printf("exec name: %#v", exec)
+		log.Debugf("exec name: %#v", cgroupName)
 		cr = c.cc.GetById(cgroupName)
-		// log.Printf("get by cgroup")
+		log.Debug("get by cgroup")
 	}
 	if cr.Id == "" {
 		cr = c.cc.GetByPid(ctx.Process.Pid)
-		// log.Printf("get by pid")
+		log.Debug("get by pid")
 	}
 	if cr.Id == "" {
 		cr = c.cc.GetByMntNs(ctx.Process.MountNamespaceId)
-		// log.Printf("get by mnt")
+		log.Debug("get by mnt")
 	}
 	if cr.Id == "" {
 		cr = c.cc.GetByNetNs(ctx.Process.NetNamespaceId)
-		// log.Printf("get by net")
+		log.Debug("get by net")
 	}
 	return cr
 }
@@ -157,7 +158,7 @@ func (c *ProcessCache) Get(pid int, mntNs, netNs int, cgroupName string) types.P
 	pctx.MountNamespaceId = int64(mntNs)
 	pctx.NetNamespaceId = int64(netNs)
 
-	// log.Printf("get %#v", pctx)
+	log.Debugf("get %#v", pctx)
 
 	if pctx.Container.Id == "" && c.cc != nil {
 		pctx.Container = c.getContainer(pctx, cgroupName)

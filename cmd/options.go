@@ -36,6 +36,7 @@ type Options struct {
 	eventChanSize                 uint
 	delayBeforeHandlePacketEvents time.Duration
 	execEventsWorkerNumber        uint
+	logLevel                      string
 
 	subProgArgs []string
 

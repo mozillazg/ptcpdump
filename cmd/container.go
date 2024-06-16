@@ -2,8 +2,8 @@ package cmd
 
 import (
 	"context"
-	"log"
 
+	"github.com/mozillazg/ptcpdump/internal/log"
 	"github.com/mozillazg/ptcpdump/internal/metadata"
 	"github.com/mozillazg/ptcpdump/internal/types"
 )
@@ -14,7 +14,7 @@ func applyContainerFilter(ctx context.Context, opts *Options) (*metadata.Contain
 		if opts.filterByContainer() {
 			log.Fatalf("find container failed: %s", err)
 		} else {
-			log.Printf("start container cache failed: %s, will no container and pod context", err)
+			log.Warnf("will no container and pod context due to start container cache failed: %s", err)
 			return nil, nil
 		}
 	}
@@ -43,7 +43,7 @@ func applyContainerFilter(ctx context.Context, opts *Options) (*metadata.Contain
 		break
 	}
 
-	// log.Printf("%#v", container)
+	log.Debugf("filter by container %#v", container)
 	if container.PidNamespace > 0 && container.PidNamespace != metadata.HostPidNs {
 		opts.pidns_id = uint32(container.PidNamespace)
 	}

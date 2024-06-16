@@ -2,8 +2,8 @@ package container
 
 import (
 	"context"
-	"log"
 
+	"github.com/mozillazg/ptcpdump/internal/log"
 	"github.com/mozillazg/ptcpdump/internal/metadata/container/containerd"
 	"github.com/mozillazg/ptcpdump/internal/metadata/container/docker"
 	"github.com/mozillazg/ptcpdump/internal/types"
@@ -18,14 +18,16 @@ func NewMultipleEngineMetaData() *MultipleEngineMetaData {
 
 	dr, err := docker.NewMetaData("")
 	if err != nil {
-		log.Printf("skip Docker Engine integration: %s", err)
+		log.Infof(err.Error())
+		log.Warn("skip Docker Engine integration")
 	} else {
 		m.engines = append(m.engines, dr)
 	}
 
 	cd, err := containerd.NewMultipleNamespacesMetaData("", "")
 	if err != nil {
-		log.Printf("skip containerd integration: %s", err)
+		log.Infof(err.Error())
+		log.Warn("skip containerd integration")
 	} else {
 		for _, c := range cd {
 			c := c
@@ -39,7 +41,7 @@ func NewMultipleEngineMetaData() *MultipleEngineMetaData {
 func (m *MultipleEngineMetaData) Start(ctx context.Context) error {
 	for _, e := range m.engines {
 		if err := e.Start(ctx); err != nil {
-			log.Print(err)
+			log.Error(err.Error())
 		}
 	}
 

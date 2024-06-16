@@ -5,10 +5,12 @@ import (
 	"context"
 	"encoding/binary"
 	"errors"
+	"unsafe"
+
 	"github.com/cilium/ebpf/perf"
 	"golang.org/x/xerrors"
-	"log"
-	"unsafe"
+
+	"github.com/mozillazg/ptcpdump/internal/log"
 )
 
 func (b *BPF) PullPacketEvents(ctx context.Context, chanSize int) (<-chan BpfPacketEventT, error) {
@@ -39,12 +41,12 @@ func (b *BPF) handlePacketEvents(ctx context.Context, reader *perf.Reader, ch ch
 			if errors.Is(err, perf.ErrClosed) {
 				return
 			}
-			log.Printf("read packet event failed: %s", err)
+			log.Errorf("read packet event failed: %s", err)
 			continue
 		}
 		event, err := parsePacketEvent(record.RawSample)
 		if err != nil {
-			log.Printf("parse packet event failed: %s", err)
+			log.Errorf("parse packet event failed: %s", err)
 		} else {
 			ch <- *event
 		}
@@ -91,12 +93,12 @@ func (b *BPF) handleExecEvents(ctx context.Context, reader *perf.Reader, ch chan
 			if errors.Is(err, perf.ErrClosed) {
 				return
 			}
-			log.Printf("read exec event failed: %s", err)
+			log.Errorf("read exec event failed: %s", err)
 			continue
 		}
 		event, err := parseExecEvent(record.RawSample)
 		if err != nil {
-			log.Printf("parse exec event failed: %s", err)
+			log.Errorf("parse exec event failed: %s", err)
 		} else {
 			ch <- *event
 		}

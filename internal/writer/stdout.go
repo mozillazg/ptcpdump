@@ -3,12 +3,12 @@ package writer
 import (
 	"fmt"
 	"io"
-	"log"
 	"strings"
 
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
 	"github.com/mozillazg/ptcpdump/internal/event"
+	"github.com/mozillazg/ptcpdump/internal/log"
 	"github.com/mozillazg/ptcpdump/internal/metadata"
 	"github.com/x-way/pktdump"
 )
@@ -132,7 +132,7 @@ func (w *StdoutWriter) Write(e *event.Packet) error {
 	}
 
 	if _, err := w.w.Write([]byte(msg)); err != nil {
-		log.Printf("write packet failed: %+v", err)
+		log.Errorf("write packet failed: %+v", err)
 	} else {
 		w.n++
 	}

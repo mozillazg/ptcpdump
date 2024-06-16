@@ -3,7 +3,6 @@ package docker
 import (
 	"context"
 	"errors"
-	"log"
 	"regexp"
 	"strings"
 	"sync"
@@ -14,6 +13,7 @@ import (
 	"github.com/docker/docker/api/types/events"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
+	"github.com/mozillazg/ptcpdump/internal/log"
 	"github.com/mozillazg/ptcpdump/internal/types"
 	"github.com/mozillazg/ptcpdump/internal/utils"
 	"golang.org/x/xerrors"
@@ -36,6 +36,7 @@ type MetaData struct {
 }
 
 func NewMetaData(host string) (*MetaData, error) {
+	log.Infof("init docker metadata with host=%s", host)
 	opts := []client.Opt{
 		client.FromEnv,
 		client.WithAPIVersionNegotiation(),
@@ -240,7 +241,7 @@ func (d *MetaData) watchContainerEvents(ctx context.Context) {
 			if errors.Is(err, context.Canceled) {
 				return
 			}
-			log.Printf("docker events failed: %s", err)
+			log.Errorf("docker events failed: %s", err)
 			return
 		case msg = <-chMsg:
 		}
@@ -259,7 +260,7 @@ func (d *MetaData) watchContainerEvents(ctx context.Context) {
 func (d *MetaData) handleContainerEvent(ctx context.Context, containerId string) {
 	cr, err := d.inspectContainer(ctx, containerId)
 	if err != nil {
-		log.Print(err)
+		log.Errorf("inspect container failed: %s", err)
 		return
 	}
 
@@ -270,7 +271,7 @@ func (d *MetaData) setContainer(c types.Container) {
 	d.mux.Lock()
 	defer d.mux.Unlock()
 
-	// log.Printf("new container: %#v", c)
+	log.Debugf("new container: %#v", c)
 
 	d.containerById[c.Id] = c
 }

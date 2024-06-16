@@ -2,9 +2,9 @@ package bpf
 
 import (
 	"errors"
-	"log"
 
 	"github.com/cilium/ebpf"
+	"github.com/mozillazg/ptcpdump/internal/log"
 	"github.com/mozillazg/ptcpdump/internal/types"
 )
 
@@ -13,7 +13,7 @@ func (b *BPF) CountReport() types.CountReport {
 	var value uint32
 	if err := b.objs.FilterByKernelCount.Lookup(&zero, &value); err != nil {
 		if !errors.Is(err, ebpf.ErrKeyNotExist) {
-			log.Printf("get value of filter_by_kernel_count failed: %s", err)
+			log.Errorf("get value of filter_by_kernel_count failed: %s", err)
 		}
 	}
 	b.report.Received = int(value)

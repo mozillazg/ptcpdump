@@ -157,6 +157,7 @@ Flags:
   -h, --help                 help for ptcpdump
   -i, --interface strings    Interfaces to capture (default [lo])
       --list-interfaces      Print the list of the network interfaces available on the system
+      --log-level string     Set the logging level ("debug", "info", "warn", "error", "fatal") (default "warn")
       --oneline              Print parsed packet output in a single line
       --pid uint             Filter by process ID (only TCP and UDP packets are supported)
       --pname string         Filter by process name (only TCP and UDP packets are supported)

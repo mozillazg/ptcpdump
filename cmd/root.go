@@ -35,10 +35,11 @@ Expression: see "man 7 pcap-filter"`,
 		" More info: https://github.com/mozillazg/ptcpdump",
 	Run: func(cmd *cobra.Command, args []string) {
 		prepareOptions(&opts, os.Args, args)
+		setupLogger(opts)
 
 		err := run(opts)
 		if err != nil {
-			logErr(err)
+			logFatal(err)
 		}
 	},
 }
@@ -83,6 +84,7 @@ func init() {
 		"When parsing and printing, produce (slightly more) verbose output")
 	rootCmd.Flags().StringVar(&opts.containerId, "container-id", "", "Filter by container id (only TCP and UDP packets are supported)")
 	rootCmd.Flags().StringVar(&opts.containerName, "container-name", "", "Filter by container name (only TCP and UDP packets are supported)")
+	rootCmd.Flags().StringVar(&opts.logLevel, "log-level", "warn", `Set the logging level ("debug", "info", "warn", "error", "fatal")`)
 
 }
 

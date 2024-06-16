@@ -2,9 +2,9 @@ package k8s
 
 import (
 	"context"
-	"log"
 	"time"
 
+	"github.com/mozillazg/ptcpdump/internal/log"
 	"github.com/mozillazg/ptcpdump/internal/types"
 	"go.opentelemetry.io/otel/trace"
 	"go.opentelemetry.io/otel/trace/noop"
@@ -28,7 +28,7 @@ type MetaData struct {
 func NewMetaData() (*MetaData, error) {
 	res, err := getRuntimeService()
 	if err != nil {
-		log.Print(err)
+		log.Warn("skip kubernetes integration")
 	}
 
 	return &MetaData{
@@ -85,11 +85,13 @@ func getRuntimeService() (res cri.RuntimeService, err error) {
 	var tp trace.TracerProvider = noop.NewTracerProvider()
 
 	for _, endPoint := range defaultRuntimeEndpoints {
+		log.Debugf("Connect using endpoint %q with %q timeout", endPoint, t)
 		res, err = remote.NewRemoteRuntimeService(endPoint, t, tp, &logger)
 		if err != nil {
-			log.Print(err)
+			log.Infof(err.Error())
 			continue
 		}
+		log.Debugf("Connected successfully using endpoint: %s", endPoint)
 		break
 	}
 
