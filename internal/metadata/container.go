@@ -2,8 +2,8 @@ package metadata
 
 import (
 	"context"
-	"log"
 
+	"github.com/mozillazg/ptcpdump/internal/log"
 	"github.com/mozillazg/ptcpdump/internal/metadata/container"
 	"github.com/mozillazg/ptcpdump/internal/metadata/k8s"
 	"github.com/mozillazg/ptcpdump/internal/types"
@@ -22,7 +22,7 @@ func NewContainerCache(ctx context.Context) (*ContainerCache, error) {
 	}
 	k8sd, err := k8s.NewMetaData()
 	if err != nil {
-		log.Print(err)
+		log.Warnf("skip k8s integration: %s", err)
 	}
 
 	return &ContainerCache{

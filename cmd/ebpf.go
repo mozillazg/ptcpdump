@@ -2,15 +2,14 @@ package cmd
 
 import (
 	"encoding/binary"
-	"log"
 	"net/netip"
-
-	"github.com/mozillazg/ptcpdump/internal/utils"
 
 	"github.com/cilium/ebpf/rlimit"
 	"github.com/mozillazg/ptcpdump/bpf"
 	"github.com/mozillazg/ptcpdump/internal/dev"
+	"github.com/mozillazg/ptcpdump/internal/log"
 	"github.com/mozillazg/ptcpdump/internal/metadata"
+	"github.com/mozillazg/ptcpdump/internal/utils"
 	"golang.org/x/xerrors"
 )
 
@@ -40,7 +39,7 @@ func attachHooks(currentConns []metadata.Connection, opts Options) (*bpf.BPF, er
 
 	cgroupPath, err := utils.GetCgroupV2RootDir()
 	if err != nil {
-		log.Print(err)
+		log.Warnf("skip attach cgroup due to get cgroup v2 root dir failed: %s", err)
 	}
 	if cgroupPath != "" {
 		if err := bf.AttachCgroups(cgroupPath); err != nil {

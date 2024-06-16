@@ -2,12 +2,12 @@ package event
 
 import (
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/gopacket/gopacket"
 	"github.com/mozillazg/ptcpdump/bpf"
 	"github.com/mozillazg/ptcpdump/internal/dev"
+	"github.com/mozillazg/ptcpdump/internal/log"
 	"github.com/mozillazg/ptcpdump/internal/utils"
 	"golang.org/x/sys/unix"
 )
@@ -37,7 +37,7 @@ type Packet struct {
 func ParsePacketEvent(devices map[int]dev.Device, event bpf.BpfPacketEventT) (*Packet, error) {
 	var p Packet
 	if t, err := convertBpfKTimeNs(event.Meta.Timestamp); err != nil {
-		log.Printf("convert bpf time failed: %+v", err)
+		log.Errorf("convert bpf time failed: %s", err)
 		p.Time = time.Now().UTC()
 	} else {
 		p.Time = t.UTC()
@@ -48,7 +48,7 @@ func ParsePacketEvent(devices map[int]dev.Device, event bpf.BpfPacketEventT) (*P
 	p.CgroupName = utils.GoString(event.Meta.Process.CgroupName[:])
 	p.Device = devices[int(event.Meta.Ifindex)]
 
-	// log.Printf("mntns: %d, netns: %d, cgroupName: %s", p.MntNs, p.NetNs, utils.GoString(event.Meta.Process.CgroupName[:]))
+	log.Debugf("mntns: %d, netns: %d, cgroupName: %s", p.MntNs, p.NetNs, utils.GoString(event.Meta.Process.CgroupName[:]))
 
 	if event.Meta.PacketType == 1 {
 		p.Type = packetTypeEgress

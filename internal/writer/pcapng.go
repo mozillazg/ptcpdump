@@ -6,6 +6,7 @@ import (
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/pcapgo"
 	"github.com/mozillazg/ptcpdump/internal/event"
+	"github.com/mozillazg/ptcpdump/internal/log"
 	"github.com/mozillazg/ptcpdump/internal/metadata"
 	"golang.org/x/xerrors"
 )
@@ -33,7 +34,7 @@ func (w *PcapNGWriter) Write(e *event.Packet) error {
 
 	opts := pcapgo.NgPacketOptions{}
 	if p.Pid != 0 {
-		// log.Printf("not found pid from cache: %d", e.Pid)
+		log.Debugf("not found pid from cache: %d", e.Pid)
 		opts.Comments = append(opts.Comments,
 			fmt.Sprintf("PID: %d\nCommand: %s\nArgs: %s",
 				e.Pid, p.Cmd, p.FormatArgs()),

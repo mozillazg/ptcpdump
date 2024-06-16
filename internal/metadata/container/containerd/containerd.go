@@ -3,7 +3,6 @@ package containerd
 import (
 	"context"
 	"errors"
-	"log"
 	"regexp"
 	"strings"
 	"sync"
@@ -12,7 +11,9 @@ import (
 	"github.com/containerd/containerd"
 	apievents "github.com/containerd/containerd/api/events"
 	"github.com/containerd/containerd/events"
+	"github.com/containerd/errdefs"
 	"github.com/containerd/typeurl/v2"
+	"github.com/mozillazg/ptcpdump/internal/log"
 	"github.com/mozillazg/ptcpdump/internal/types"
 	"github.com/mozillazg/ptcpdump/internal/utils"
 	"golang.org/x/xerrors"
@@ -47,6 +48,8 @@ func NewMetaData(host string, namespace string) (*MetaData, error) {
 	if host == "" {
 		host = DefaultSocket
 	}
+
+	log.Infof("init containerd metadata with host=%s, namespace=%s", host, namespace)
 	opts := []containerd.ClientOpt{
 		containerd.WithDefaultNamespace(namespace),
 		containerd.WithTimeout(time.Second * 5),
@@ -121,7 +124,7 @@ func (d *MetaData) GetById(containerId string) types.Container {
 	defer d.mux.RUnlock()
 
 	id := getContainerId(containerId)
-	// log.Printf("get by id, id: %s", id)
+	log.Debugf("get by id, id: %s", id)
 
 	if len(id) == shortContainerIdLength {
 		return d.getByShortId(id)
@@ -276,18 +279,18 @@ func (d *MetaData) watchContainerEvents(ctx context.Context) {
 			if errors.Is(err, context.Canceled) {
 				return
 			}
-			log.Printf("containerd events failed: %s", err)
+			log.Errorf("containerd events failed: %s", err)
 			return
 		case msg = <-chMsg:
 		}
 
 		event, err := typeurl.UnmarshalAny(msg.Event)
 		if err != nil {
-			log.Printf("parse containerd event failed: %s", err)
+			log.Errorf("parse containerd event failed: %s", err)
 			continue
 		}
 
-		// log.Printf("new event: %#v", event)
+		log.Debugf("new event: %#v", event)
 		switch ev := event.(type) {
 		case *apievents.ContainerCreate:
 			d.handleContainerEvent(ctx, ev.ID)
@@ -303,7 +306,7 @@ func (d *MetaData) handleContainerEvent(ctx context.Context, containerId string)
 	c := d.client
 	containers, err := c.Containers(ctx)
 	if err != nil {
-		log.Print(err)
+		log.Error(err.Error())
 		return
 	}
 	for _, container := range containers {
@@ -316,7 +319,7 @@ func (d *MetaData) handleContainerEvent(ctx context.Context, containerId string)
 func (d *MetaData) saveContainer(ctx context.Context, container containerd.Container) {
 	cr, err := d.inspectContainer(ctx, container)
 	if err != nil {
-		log.Print(err)
+		log.Errorf(err.Error())
 		return
 	}
 
@@ -327,7 +330,7 @@ func (d *MetaData) setContainer(c types.Container) {
 	d.mux.Lock()
 	defer d.mux.Unlock()
 
-	// log.Printf("new container: %#v", c)
+	log.Debugf("new container: %#v", c)
 
 	d.containerById[c.Id] = c
 }
@@ -339,6 +342,11 @@ func (d *MetaData) inspectContainer(ctx context.Context, container containerd.Co
 	}
 	task, err := container.Task(ctx, nil)
 	if err != nil {
+		if errors.Is(err, errdefs.ErrNotFound) {
+			log.Debugf("get task failed: %s", err)
+		} else {
+			log.Errorf("get task failed: %s", err)
+		}
 		// return nil, err
 	}
 

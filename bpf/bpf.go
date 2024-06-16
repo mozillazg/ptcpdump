@@ -2,7 +2,6 @@ package bpf
 
 import (
 	"encoding/binary"
-	"log"
 	"strings"
 	"unsafe"
 
@@ -11,6 +10,7 @@ import (
 	"github.com/florianl/go-tc"
 	"github.com/florianl/go-tc/core"
 	"github.com/jschwinger233/elibpcap"
+	"github.com/mozillazg/ptcpdump/internal/log"
 	"github.com/mozillazg/ptcpdump/internal/types"
 	"golang.org/x/sys/unix"
 	"golang.org/x/xerrors"
@@ -20,6 +20,7 @@ import (
 //go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc clang -no-strip -target $TARGET -type packet_event_t -type exec_event_t -type flow_pid_key_t -type process_meta_t -type packet_event_meta_t Bpf ./ptcpdump.c -- -I./headers -I./headers/$TARGET -I. -Wall
 
 const tcFilterName = "ptcpdump"
+const logSzie = ebpf.DefaultVerifierLogSize * 32
 
 type BpfObjectsWithoutCgroup struct {
 	KprobeTcpSendmsg              *ebpf.Program `ebpf:"kprobe__tcp_sendmsg"`
@@ -100,7 +101,7 @@ func NewOptions(pid uint, comm string, followForks bool, pcapFilter string,
 }
 
 func (b *BPF) Load(opts Options) error {
-	// log.Printf("%#v", opts)
+	log.Debugf("load with opts: %#v", opts)
 	err := b.spec.RewriteConstants(map[string]interface{}{
 		"filter_pid":          opts.Pid,
 		"filter_comm":         opts.Comm,
@@ -138,19 +139,19 @@ func (b *BPF) Load(opts Options) error {
 	err = b.spec.LoadAndAssign(b.objs, &ebpf.CollectionOptions{
 		Programs: ebpf.ProgramOptions{
 			LogLevel: ebpf.LogLevelInstruction,
-			LogSize:  ebpf.DefaultVerifierLogSize * 32,
+			LogSize:  logSzie,
 		},
 	})
 	if err != nil {
 		if strings.Contains(err.Error(), "unknown func bpf_get_socket_cookie") {
-			log.Printf("will skip attach cgroup due to %s", err)
+			log.Warnf("will skip attach cgroup due to %s", err)
 
 			b.skipAttachCgroup = true
 			objs := BpfObjectsWithoutCgroup{}
 			if err = b.spec.LoadAndAssign(&objs, &ebpf.CollectionOptions{
 				Programs: ebpf.ProgramOptions{
 					LogLevel: ebpf.LogLevelInstruction,
-					LogSize:  ebpf.DefaultVerifierLogSize * 32,
+					LogSize:  logSzie,
 				},
 			}); err != nil {
 				return err
@@ -179,7 +180,7 @@ func (b *BPF) Load(opts Options) error {
 func (b *BPF) Close() {
 	for _, lk := range b.links {
 		if err := lk.Close(); err != nil {
-			log.Printf("[bpf] close link %v failed: %+v", lk, err)
+			log.Warnf("[bpf] close link %v failed: %+v", lk, err)
 		}
 	}
 	for i := len(b.closeFuncs) - 1; i >= 0; i-- {
@@ -187,7 +188,7 @@ func (b *BPF) Close() {
 		f()
 	}
 	if err := b.objs.Close(); err != nil {
-		log.Printf("[bpf] close objects failed: %+v", err)
+		log.Warnf("[bpf] close objects failed: %+v", err)
 	}
 }
 
@@ -264,7 +265,7 @@ func (b *BPF) AttachKprobes() error {
 		b.objs.KprobeNfNatPacket, &link.KprobeOptions{})
 	if err != nil {
 		if strings.Contains(err.Error(), "nf_nat_packet: not found: no such file or directory") {
-			log.Println("current system doest not enable netfilter based NAT feature, skip attach kprobe/nf_nat_packet")
+			log.Warn("current system doest not enable netfilter based NAT feature, skip attach kprobe/nf_nat_packet")
 		} else {
 			return xerrors.Errorf("attach kprobe/nf_nat_packet: %w", err)
 		}
@@ -277,7 +278,7 @@ func (b *BPF) AttachKprobes() error {
 		b.objs.KprobeNfNatManipPkt, &link.KprobeOptions{})
 	if err != nil {
 		if strings.Contains(err.Error(), "nf_nat_manip_pkt: not found: no such file or directory") {
-			log.Println("current system doest not enable netfilter based NAT feature, skip attach kprobe/nf_nat_manip_pkt")
+			log.Warn("current system doest not enable netfilter based NAT feature, skip attach kprobe/nf_nat_manip_pkt")
 		} else {
 			return xerrors.Errorf("attach kprobe/nf_nat_manip_pkt: %w", err)
 		}
@@ -369,7 +370,9 @@ func attachTcHook(ifindex int, prog *ebpf.Program, ingress bool) (func(), error)
 	}
 	closeFunc := func() {
 		if err := tcnl.Close(); err != nil {
-			log.Printf("tcnl.Close() failed: %+v", err)
+			if !strings.Contains(err.Error(), "no such device") {
+				log.Warnf("tcnl.Close() failed: %+v", err)
+			}
 		}
 	}
 
@@ -402,7 +405,9 @@ func attachTcHook(ifindex int, prog *ebpf.Program, ingress bool) (func(), error)
 
 	newCloseFunc := func() {
 		if err := tcnl.Filter().Delete(&filter); err != nil {
-			log.Printf("delete tcnl filter failed: %+v", err)
+			if !strings.Contains(err.Error(), "no such device") {
+				log.Warnf("delete tcnl filter failed: %+v", err)
+			}
 		}
 		closeFunc()
 	}
@@ -416,7 +421,9 @@ func ensureTcQdisc(ifindex int) (func(), error) {
 	}
 	closeFunc := func() {
 		if err := tcnl.Close(); err != nil {
-			log.Printf("tcnl.Close() failed: %+v", err)
+			if !strings.Contains(err.Error(), "no such device") {
+				log.Warnf("tcnl.Close() failed: %+v", err)
+			}
 		}
 	}
 
@@ -438,7 +445,9 @@ func ensureTcQdisc(ifindex int) (func(), error) {
 
 	newCloseFunc := func() {
 		if err := tcnl.Qdisc().Delete(&qdisc); err != nil {
-			log.Printf("delete tcnl qdisc failed: %+v", err)
+			if !strings.Contains(err.Error(), "no such device") {
+				log.Warnf("delete tcnl qdisc failed: %+v", err)
+			}
 		}
 		closeFunc()
 	}

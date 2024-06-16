@@ -2,11 +2,11 @@ package consumer
 
 import (
 	"context"
-	"log"
 	"sync"
 
 	"github.com/mozillazg/ptcpdump/bpf"
 	"github.com/mozillazg/ptcpdump/internal/event"
+	"github.com/mozillazg/ptcpdump/internal/log"
 	"github.com/mozillazg/ptcpdump/internal/metadata"
 )
 
@@ -48,7 +48,7 @@ func (c *ExecEventConsumer) worker(ctx context.Context, ch <-chan bpf.BpfExecEve
 func (c *ExecEventConsumer) handleExecEvent(et bpf.BpfExecEventT) {
 	e, err := event.ParseProcessExecEvent(et)
 	if err != nil {
-		log.Printf("[ExecEventConsumer] parse event failed: %s", err)
+		log.Errorf("[ExecEventConsumer] parse event failed: %s", err)
 		return
 	}
 	c.pcache.AddItem(*e)

@@ -6,6 +6,7 @@ import (
 
 	"github.com/gopacket/gopacket/pcapgo"
 	"github.com/mozillazg/ptcpdump/bpf"
+	"github.com/mozillazg/ptcpdump/internal/log"
 	"github.com/mozillazg/ptcpdump/internal/types"
 	"github.com/mozillazg/ptcpdump/internal/utils"
 )
@@ -65,7 +66,7 @@ func FromPacketOptions(opts pcapgo.NgPacketOptions) (ProcessExec, types.PacketCo
 	p.Args = pctx.Args
 	p.ArgsTruncated = pctx.ArgsTruncated
 
-	// log.Printf("new packet: %#v, %#v", *p, *pctx)
+	log.Debugf("new packet: %#v, %#v", *p, *pctx)
 
 	return *p, *pctx
 }

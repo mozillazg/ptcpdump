@@ -5,8 +5,8 @@ import (
 	"github.com/mozillazg/ptcpdump/bpf"
 	"github.com/mozillazg/ptcpdump/internal/dev"
 	"github.com/mozillazg/ptcpdump/internal/event"
+	"github.com/mozillazg/ptcpdump/internal/log"
 	"github.com/mozillazg/ptcpdump/internal/writer"
-	"log"
 )
 
 type PacketEventConsumer struct {
@@ -41,13 +41,13 @@ func (c *PacketEventConsumer) Start(ctx context.Context, ch <-chan bpf.BpfPacket
 func (c *PacketEventConsumer) handlePacketEvent(pt bpf.BpfPacketEventT) {
 	pevent, err := event.ParsePacketEvent(c.devices, pt)
 	if err != nil {
-		log.Printf("[PacketEventConsumer] parse event failed: %s", err)
+		log.Errorf("[PacketEventConsumer] parse event failed: %s", err)
 		return
 	}
 
 	for _, w := range c.writers {
 		if err := w.Write(pevent); err != nil {
-			log.Printf("[PacketEventConsumer] write packet failed: %s, device: %#v", err, pevent.Device)
+			log.Errorf("[PacketEventConsumer] write packet failed: %s, device: %#v", err, pevent.Device)
 		}
 		w.Flush()
 	}
