@@ -14,7 +14,7 @@ function test_ptcpdump() {
   nerdctl pull alpine:3.18
 
   timeout 120s ${CMD} -i any --print -w "${FNAME}" --oneline -v --exec-events-worker-number=50 \
-    'host 1.1.1.1' -w "${FNAME}" | tee "${LNAME}" &
+    'host 1.1.1.1 and port 80' -w "${FNAME}" | tee "${LNAME}" &
   sleep 10
 
   cid1=$(nerdctl run -d busybox:1 sh -c 'sleep 10; wget -T 10 1.1.1.1')

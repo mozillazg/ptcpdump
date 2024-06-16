@@ -11,7 +11,7 @@ RNAME="${FILE_PREFIX}_arp.read.txt"
 
 function test_ptcpdump() {
   which arping || (apt update || true && apt install -y iputils-arping)
-  timeout 30s ${CMD} -c 2 -i any --print -w "${FNAME}" \
+  timeout 30s ${CMD} -c 2 -i any -v --print -w "${FNAME}" \
 	  'arp host 1.1.1.1' | tee "${LNAME}" &
   sleep 10
   arping -w 10 -c 2 1.1.1.1 &>/dev/null || true
@@ -31,7 +31,7 @@ function test_tcpdump_read() {
 function test_ptcpdump_read() {
     EXPECT_NAME="${LNAME}.read.expect"
     sed 's/ [a-zA-Z0-9_-]\+ \(In\|Out\) / /g' "${LNAME}" > "${EXPECT_NAME}"
-    timeout 30s ${CMD} -r "${FNAME}" > "${RNAME}"
+    timeout 30s ${CMD} -v -r "${FNAME}" > "${RNAME}"
     diff "${EXPECT_NAME}" "${RNAME}"
 }
 

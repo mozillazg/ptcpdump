@@ -10,7 +10,7 @@ RNAME="${FILE_PREFIX}_default.read.txt"
 
 
 function test_ptcpdump() {
-  timeout 30s ${CMD} -c 2 -i lo --print -w "${FNAME}" \
+  timeout 30s ${CMD} -c 2 -i lo -v --print -w "${FNAME}" \
       'icmp and host 127.0.0.1' | tee "${LNAME}" &
   sleep 10
   ping -c 1 127.0.0.1 &>/dev/null || true
@@ -30,7 +30,7 @@ function test_tcpdump_read() {
 function test_ptcpdump_read() {
     EXPECT_NAME="${LNAME}.read.expect"
     sed 's/ [a-zA-Z0-9_-]\+ \(In\|Out\) / /g' "${LNAME}" > "${EXPECT_NAME}"
-    timeout 30s ${CMD} -r "${FNAME}" > "${RNAME}"
+    timeout 30s ${CMD} -v -r "${FNAME}" > "${RNAME}"
     diff "${EXPECT_NAME}" "${RNAME}"
 }
 
