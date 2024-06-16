@@ -31,6 +31,7 @@ type Options struct {
 	dontConvertAddr    int
 	verbose            int
 	containerId        string
+	containerName      string
 
 	eventChanSize                 uint
 	delayBeforeHandlePacketEvents time.Duration
@@ -41,6 +42,10 @@ type Options struct {
 	mntns_id uint32
 	netns_id uint32
 	pidns_id uint32
+}
+
+func (o Options) filterByContainer() bool {
+	return o.containerId != "" || o.containerName != ""
 }
 
 func (o Options) WritePath() string {

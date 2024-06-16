@@ -132,6 +132,11 @@ jobs:
           command: |
             sudo bash testdata/test_docker_container_id_filter.sh ./ptcpdump
 
+      - run:
+          name: test docker filter by container name
+          command: |
+            sudo bash testdata/test_docker_container_name_filter.sh ./ptcpdump
+
   containerd-e2e:
     machine:
       image: ubuntu-2204:2024.04.4
@@ -176,9 +181,14 @@ jobs:
             sudo bash testdata/test_containerd.sh ./ptcpdump
 
       - run:
-          name: test filter by container id
+          name: test containerd filter by container id
           command: |
             sudo bash testdata/test_containerd_container_id_filter.sh ./ptcpdump
+
+      - run:
+          name: test containerd filter by container name
+          command: |
+            sudo bash testdata/test_containerd_container_name_filter.sh ./ptcpdump
 
   k8s-e2e:
     machine:

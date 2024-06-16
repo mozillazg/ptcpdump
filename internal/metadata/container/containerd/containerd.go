@@ -205,6 +205,20 @@ func (d *MetaData) GetByPid(pid int) types.Container {
 	return types.Container{}
 }
 
+func (d *MetaData) GetByName(name string) []types.Container {
+	d.mux.RLock()
+	defer d.mux.RUnlock()
+
+	var cs []types.Container
+	for _, c := range d.containerById {
+		if c.TidyName() == name {
+			cs = append(cs, c)
+		}
+	}
+
+	return cs
+}
+
 func (d *MetaData) getByShortId(shortId string) types.Container {
 	for _, c := range d.containerById {
 		if strings.HasPrefix(c.Id, shortId) {
