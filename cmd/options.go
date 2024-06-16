@@ -1,8 +1,11 @@
 package cmd
 
 import (
+	"fmt"
 	"strings"
 	"time"
+
+	"github.com/mozillazg/ptcpdump/internal/metadata/k8s"
 )
 
 const (
@@ -37,6 +40,10 @@ type Options struct {
 	delayBeforeHandlePacketEvents time.Duration
 	execEventsWorkerNumber        uint
 	logLevel                      string
+
+	dockerEndpoint     string
+	containerdEndpoint string
+	criRuntimeEndpoint string
 
 	subProgArgs []string
 
@@ -76,4 +83,32 @@ func prepareOptions(opts *Options, rawArgs []string, args []string) {
 		opts.pcapFilter = strings.TrimSuffix(opts.pcapFilter, strings.Join(subProgArgs, " "))
 	}
 	opts.pcapFilter = strings.TrimSpace(opts.pcapFilter)
+
+	if opts.dockerEndpoint != "" {
+		opts.dockerEndpoint = getEndpoint(opts.dockerEndpoint)
+	}
+	// if opts.containerdEndpoint != "" {
+	// 	opts.containerdEndpoint = getEndpoint(opts.containerdEndpoint)
+	// }
+	if opts.criRuntimeEndpoint != "" {
+		opts.criRuntimeEndpoint = getEndpoint(opts.criRuntimeEndpoint)
+	}
+}
+
+func getEndpoint(raw string) string {
+	if strings.HasPrefix(raw, "http") {
+		return raw
+	}
+	if strings.HasPrefix(raw, "unix://") {
+		return raw
+	}
+	return fmt.Sprintf("unix://%s", raw)
+}
+
+func getDefaultCriRuntimeEndpoint() []string {
+	var rs []string
+	for _, end := range k8s.DefaultRuntimeEndpoints {
+		rs = append(rs, strings.TrimPrefix(end, "unix://"))
+	}
+	return rs
 }
