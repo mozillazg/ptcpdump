@@ -64,7 +64,7 @@ func (w *StdoutWriter) Write(e *event.Packet) error {
 			p.Pod.Name, p.Pod.Namespace, p.Pod.Uid, p.Pod.FormatLabels(), p.Pod.FormatAnnotations())
 		break
 	default:
-		pidInfo = fmt.Sprintf("Process [%s.%d]", p.Cmd, e.Pid)
+		pidInfo = fmt.Sprintf("%s.%d", p.Comm(), e.Pid)
 		containerInfo = fmt.Sprintf("Container [%s]", p.Container.TidyName())
 		PodInfo = fmt.Sprintf("Pod [%s.%s]", p.Pod.Name, p.Pod.Namespace)
 	}
@@ -86,6 +86,9 @@ func (w *StdoutWriter) Write(e *event.Packet) error {
 	if ifName != "" {
 		builder.WriteString(fmt.Sprintf("%s ", ifName))
 	}
+	if p.Pid > 0 && w.FormatStyle <= pktdump.FormatStyleNormal {
+		builder.WriteString(fmt.Sprintf("%s ", pidInfo))
+	}
 	if packetType != "" {
 		builder.WriteString(fmt.Sprintf("%s ", packetType))
 	}
@@ -105,9 +108,6 @@ func (w *StdoutWriter) Write(e *event.Packet) error {
 		break
 	default:
 		builder.WriteString(formated)
-		if p.Pid > 0 {
-			builder.WriteString(fmt.Sprintf(", %s", pidInfo))
-		}
 		if p.Container.Id != "" {
 			builder.WriteString(fmt.Sprintf(", %s", containerInfo))
 		}

@@ -107,8 +107,8 @@ ptcpdump -r demo.pcapng
 Default:
 
 ```
-09:32:09.718892 vethee2a302f In IP 10.244.0.2.33426 > 139.178.84.217.80: Flags [S], seq 4113492822, win 64240, length 0, Process [/usr/bin/wget.3553008], Container [test], Pod [test.default]
-09:32:09.718941 eth0 Out IP 172.19.0.2.33426 > 139.178.84.217.80: Flags [S], seq 4113492822, win 64240, length 0, Process [/usr/bin/wget.3553008], Container [test], Pod [test.default]
+09:32:09.718892 vethee2a302f wget.3553008 In IP 10.244.0.2.33426 > 139.178.84.217.80: Flags [S], seq 4113492822, win 64240, length 0, Container [test], Pod [test.default]
+09:32:09.718941 eth0 wget.3553008 Out IP 172.19.0.2.33426 > 139.178.84.217.80: Flags [S], seq 4113492822, win 64240, length 0, Container [test], Pod [test.default]
 ```
 
 With `-v`:
