@@ -19,7 +19,10 @@ import (
 	"golang.org/x/xerrors"
 )
 
-const DefaultSocket = "/var/run/docker.sock"
+const (
+	DefaultSocket          = "/var/run/docker.sock"
+	shortContainerIdLength = 12
+)
 
 type MetaData struct {
 	client *client.Client
@@ -27,6 +30,7 @@ type MetaData struct {
 	containerById map[string]types.Container
 	mux           sync.RWMutex
 
+	hostPidNs int64
 	hostMntNs int64
 	hostNetNs int64
 }
@@ -74,6 +78,10 @@ func (d *MetaData) GetById(containerId string) types.Container {
 	defer d.mux.RUnlock()
 
 	id := getDockerContainerId(containerId)
+
+	if len(id) == shortContainerIdLength {
+		return d.getByShortId(id)
+	}
 
 	return d.containerById[id]
 }
@@ -153,7 +161,18 @@ func (d *MetaData) GetByPid(pid int) types.Container {
 	return types.Container{}
 }
 
+func (d *MetaData) getByShortId(shortId string) types.Container {
+	for _, c := range d.containerById {
+		if strings.HasPrefix(c.Id, shortId) {
+			return c
+		}
+	}
+
+	return types.Container{}
+}
+
 func (d *MetaData) init(ctx context.Context) error {
+	d.hostPidNs = utils.GetPidNamespaceFromPid(1)
 	d.hostMntNs = utils.GetMountNamespaceFromPid(1)
 	d.hostNetNs = utils.GetNetworkNamespaceFromPid(1)
 
@@ -261,6 +280,7 @@ func (d *MetaData) inspectContainer(ctx context.Context, containerId string) (*t
 	}
 	if state := data.State; state != nil && state.Pid != 0 {
 		cr.RootPid = state.Pid
+		cr.PidNamespace = utils.GetPidNamespaceFromPid(cr.RootPid)
 		cr.MountNamespace = utils.GetMountNamespaceFromPid(cr.RootPid)
 		cr.NetworkNamespace = utils.GetNetworkNamespaceFromPid(cr.RootPid)
 	}

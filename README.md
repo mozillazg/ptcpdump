@@ -2,8 +2,8 @@
 
 <div id="top"></div>
 
-![amd64-e2e](https://img.shields.io/github/actions/workflow/status/mozillazg/ptcpdump/test.yml?label=x86_64%20(amd64)%20e2e)
-![arm64-e2e](https://img.shields.io/circleci/build/gh/mozillazg/ptcpdump/master?label=aarch64%20(arm64)%20e2e)
+[![amd64-e2e](https://img.shields.io/github/actions/workflow/status/mozillazg/ptcpdump/test.yml?label=x86_64%20(amd64)%20e2e)](https://github.com/mozillazg/ptcpdump/actions/workflows/test.yml)
+[![arm64-e2e](https://img.shields.io/circleci/build/gh/mozillazg/ptcpdump/master?label=aarch64%20(arm64)%20e2e)](https://app.circleci.com/pipelines/github/mozillazg/ptcpdump?branch=master)
 
 
 ptcpdump is the tcpdump(8) implementation using eBPF, with an extra feature:
@@ -119,6 +119,7 @@ Examples:
 Expression: see "man 7 pcap-filter"
 
 Flags:
+  --container-id string      Filter by container id (only TCP and UDP packets are supported)
   -Q, --direction string     Choose send/receive direction for which packets should be captured. Possible values are 'in', 'out' and 'inout' (default "inout")
   -f, --follow-forks         Trace child processes as they are created by currently traced processes when filter by process
   -h, --help                 help for ptcpdump
@@ -151,6 +152,7 @@ Flags:
 | -r *-*                                            | ✅       |                          |
 | --pid *process_id*                                |         | ✅                        |
 | --pname *process_name*                            |         | ✅                        |
+| --container-id *container_id*                     |         | ✅                        |
 | -f, --follow-forks                                |         | ✅                        |
 | -- *command [args]*                               |         | ✅                        |
 | --oneline                                       |         | ✅                        |

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"regexp"
+	"strings"
 	"sync"
 	"time"
 
@@ -18,8 +19,9 @@ import (
 )
 
 const (
-	DefaultSocket    = "/run/containerd/containerd.sock"
-	defaultNamespace = "default"
+	DefaultSocket          = "/run/containerd/containerd.sock"
+	defaultNamespace       = "default"
+	shortContainerIdLength = 12
 )
 
 var containerNameLabels = []string{
@@ -33,6 +35,7 @@ type MetaData struct {
 	containerById map[string]types.Container
 	mux           sync.RWMutex
 
+	hostPidNs int64
 	hostMntNs int64
 	hostNetNs int64
 }
@@ -46,6 +49,7 @@ func NewMetaData(host string, namespace string) (*MetaData, error) {
 	}
 	opts := []containerd.ClientOpt{
 		containerd.WithDefaultNamespace(namespace),
+		containerd.WithTimeout(time.Second * 5),
 	}
 	c, err := containerd.New(host, opts...)
 	if err != nil {
@@ -118,6 +122,10 @@ func (d *MetaData) GetById(containerId string) types.Container {
 
 	id := getContainerId(containerId)
 	// log.Printf("get by id, id: %s", id)
+
+	if len(id) == shortContainerIdLength {
+		return d.getByShortId(id)
+	}
 
 	return d.containerById[id]
 }
@@ -197,7 +205,18 @@ func (d *MetaData) GetByPid(pid int) types.Container {
 	return types.Container{}
 }
 
+func (d *MetaData) getByShortId(shortId string) types.Container {
+	for _, c := range d.containerById {
+		if strings.HasPrefix(c.Id, shortId) {
+			return c
+		}
+	}
+
+	return types.Container{}
+}
+
 func (d *MetaData) init(ctx context.Context) error {
+	d.hostPidNs = utils.GetPidNamespaceFromPid(1)
 	d.hostMntNs = utils.GetMountNamespaceFromPid(1)
 	d.hostNetNs = utils.GetNetworkNamespaceFromPid(1)
 
@@ -319,6 +338,7 @@ func (d *MetaData) inspectContainer(ctx context.Context, container containerd.Co
 
 	if task != nil {
 		cr.RootPid = int(task.Pid())
+		cr.PidNamespace = utils.GetPidNamespaceFromPid(cr.RootPid)
 		cr.MountNamespace = utils.GetMountNamespaceFromPid(cr.RootPid)
 		cr.NetworkNamespace = utils.GetNetworkNamespaceFromPid(cr.RootPid)
 	}

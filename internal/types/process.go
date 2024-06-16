@@ -7,6 +7,7 @@ import (
 
 type Process struct {
 	Pid              int
+	PidNamespaceId   int64
 	MountNamespaceId int64
 	NetNamespaceId   int64
 

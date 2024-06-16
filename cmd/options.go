@@ -30,12 +30,17 @@ type Options struct {
 	onlyPrintCount     bool
 	dontConvertAddr    int
 	verbose            int
+	containerId        string
 
 	eventChanSize                 uint
 	delayBeforeHandlePacketEvents time.Duration
 	execEventsWorkerNumber        uint
 
 	subProgArgs []string
+
+	mntns_id uint32
+	netns_id uint32
+	pidns_id uint32
 }
 
 func (o Options) WritePath() string {

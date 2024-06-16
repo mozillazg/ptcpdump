@@ -79,6 +79,7 @@ func init() {
 		"Don't convert addresses (i.e., host addresses, port numbers, etc.) to names")
 	rootCmd.Flags().CountVarP(&opts.verbose, "verbose", "v",
 		"When parsing and printing, produce (slightly more) verbose output")
+	rootCmd.Flags().StringVar(&opts.containerId, "container-id", "", "Filter by container id (only TCP and UDP packets are supported)")
 }
 
 func Execute() error {
