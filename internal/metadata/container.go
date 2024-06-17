@@ -55,3 +55,7 @@ func (c *ContainerCache) GetByName(containerName string) []types.Container {
 func (c *ContainerCache) GetPodByContainer(cr types.Container) types.Pod {
 	return c.k8s.GetPodByContainer(cr)
 }
+
+func (c *ContainerCache) GetByPodName(name, namespace string) []types.Container {
+	return c.d.GetByPod(name, namespace)
+}

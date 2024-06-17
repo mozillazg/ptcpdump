@@ -23,14 +23,15 @@ func applyContainerFilter(ctx context.Context, opts *Options) (*metadata.Contain
 		return cc, nil
 	}
 
-	var container types.Container
+	var containers []types.Container
 
 	switch {
 	case opts.containerId != "":
-		container = cc.GetById(opts.containerId)
+        container := cc.GetById(opts.containerId)
 		if container.IsNull() {
 			log.Fatalf("can not found any container by id %s", opts.containerId)
 		}
+		containers = append(containers, container)
 		break
 	case opts.containerName != "":
 		cs := cc.GetByName(opts.containerName)
@@ -40,21 +41,31 @@ func applyContainerFilter(ctx context.Context, opts *Options) (*metadata.Contain
 		if len(cs) > 1 {
 			log.Fatalf("found more than one containers by name %s", opts.containerName)
 		}
-		container = cs[0]
+        container := cs[0]
+		containers = append(containers, container)
+		break
+	case opts.podName != "":
+		cs := cc.GetByPodName(opts.podName, opts.podNamespace)
+		if len(cs) == 0 {
+			log.Fatalf("can not found any pod by name %s in namespace %s", opts.podName, opts.podNamespace)
+		}
+		containers = append(containers, cs...)
 		break
 	}
 
-	log.Debugf("filter by container %#v", container)
-	if container.PidNamespace > 0 && container.PidNamespace != metadata.HostPidNs {
-		opts.pidns_id = uint32(container.PidNamespace)
+	for _, container := range containers {
+		log.Debugf("filter by container %#v", container)
+		if container.PidNamespace > 0 && container.PidNamespace != metadata.HostPidNs {
+			opts.pidns_id = uint32(container.PidNamespace)
+		}
+		if container.MountNamespace > 0 && container.MountNamespace != metadata.HostMntNs {
+			opts.mntns_id = uint32(container.MountNamespace)
+		}
+		if container.NetworkNamespace > 0 && container.NetworkNamespace != metadata.HostNetNs {
+			opts.netns_id = uint32(container.NetworkNamespace)
+		}
+		opts.followForks = true
 	}
-	if container.MountNamespace > 0 && container.MountNamespace != metadata.HostMntNs {
-		opts.mntns_id = uint32(container.MountNamespace)
-	}
-	if container.NetworkNamespace > 0 && container.NetworkNamespace != metadata.HostNetNs {
-		opts.netns_id = uint32(container.NetworkNamespace)
-	}
-	opts.followForks = true
 
 	return cc, nil
 }

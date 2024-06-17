@@ -4,7 +4,6 @@ metadata:
   labels:
     run: test
   name: test-ptcpdump
-  namespace: default
 spec:
   containers:
   - args:

@@ -17,6 +17,8 @@ type Container struct {
 
 	Image       string
 	ImageDigest string
+
+	p Pod
 }
 
 func (c *Container) IsNull() bool {
@@ -43,6 +45,16 @@ func (c Container) IsSanbox() bool {
 		return false
 	}
 	return c.Labels["io.cri-containerd.kind"] == "sanbox"
+}
+
+func (c *Container) Pod() Pod {
+	if c.p.Name != "" {
+		return c.p
+	}
+	p := Pod{}
+	p.LoadFromContainer(*c)
+	c.p = p
+	return p
 }
 
 func ParseContainerLabels(s string) map[string]string {

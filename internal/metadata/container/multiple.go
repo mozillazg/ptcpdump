@@ -100,3 +100,15 @@ func (m *MultipleEngineMetaData) GetByName(name string) []types.Container {
 
 	return cs
 }
+
+func (m *MultipleEngineMetaData) GetByPod(name, namespace string) []types.Container {
+	var cs []types.Container
+	for _, e := range m.engines {
+		cs = e.GetByPod(name, namespace)
+		if len(cs) > 0 {
+			return cs
+		}
+	}
+
+	return cs
+}

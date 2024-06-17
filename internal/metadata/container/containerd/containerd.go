@@ -222,6 +222,21 @@ func (d *MetaData) GetByName(name string) []types.Container {
 	return cs
 }
 
+func (d *MetaData) GetByPod(name, namespace string) []types.Container {
+	d.mux.RLock()
+	defer d.mux.RUnlock()
+
+	var cs []types.Container
+	for _, c := range d.containerById {
+		p := c.Pod()
+		if p.Name == name && p.Namespace == namespace {
+			cs = append(cs, c)
+		}
+	}
+
+	return cs
+}
+
 func (d *MetaData) getByShortId(shortId string) types.Container {
 	for _, c := range d.containerById {
 		if strings.HasPrefix(c.Id, shortId) {
