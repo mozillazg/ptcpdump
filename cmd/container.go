@@ -27,7 +27,7 @@ func applyContainerFilter(ctx context.Context, opts *Options) (*metadata.Contain
 
 	switch {
 	case opts.containerId != "":
-        container := cc.GetById(opts.containerId)
+		container := cc.GetById(opts.containerId)
 		if container.IsNull() {
 			log.Fatalf("can not found any container by id %s", opts.containerId)
 		}
@@ -41,7 +41,7 @@ func applyContainerFilter(ctx context.Context, opts *Options) (*metadata.Contain
 		if len(cs) > 1 {
 			log.Fatalf("found more than one containers by name %s", opts.containerName)
 		}
-        container := cs[0]
+		container := cs[0]
 		containers = append(containers, container)
 		break
 	case opts.podName != "":
