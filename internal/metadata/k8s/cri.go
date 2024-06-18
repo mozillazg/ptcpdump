@@ -41,20 +41,24 @@ func (m *MetaData) GetPodByContainer(c types.Container) types.Pod {
 	p := types.Pod{}
 	p.LoadFromContainer(c)
 	if m.res != nil {
-		tmp := m.GetPodByName(context.TODO(), p.Name)
+		tmp := m.GetPodByName(context.TODO(), p.Name, p.Namespace)
 		p.Labels = tmp.Labels
 		p.Annotations = tmp.Annotations
 	}
 	return p
 }
 
-func (m *MetaData) GetPodByName(ctx context.Context, name string) (p types.Pod) {
+func (m *MetaData) GetPodByName(ctx context.Context, name, namespace string) (p types.Pod) {
+	if m.res == nil {
+		return
+	}
 	sanboxes, err := m.res.ListPodSandbox(ctx, nil)
 	if err != nil {
+		log.Errorf("list pod sanbox failed: %s", err)
 		return
 	}
 	for _, sanbox := range sanboxes {
-		if sanbox.Metadata.Name != name {
+		if sanbox.Metadata.Name != name || sanbox.Metadata.Namespace != namespace {
 			continue
 		}
 		p.Labels = tidyLabels(sanbox.Labels)

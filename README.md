@@ -34,16 +34,16 @@ Table of Contents
 * Container-aware and Kubernetes-aware
   * Aware of the container and pod information associated with the packets.
   * Supports multiple container runtimes: Docker Engine and containerd
-  * Supports filtering packets by container ID and container name.
+  * Supports filtering packets by container ID, container name and pod name.
 * Supports using pcap-filter(7) syntax for filtering packets.
 * Directly applies filters in the kernel space.
 * Supports saving captured packets in the PcapNG format for offline analysis with third-party tools such as Wireshark.
-* Supports reading packets from pcapng file.
 
 
 ## Installation
 
-Please download the latest binary in the [releases](https://github.com/mozillazg/ptcpdump/releases).
+You can download the statically linked executable for x86_64 and arm64 from the [releases page](https://github.com/mozillazg/ptcpdump/releases).
+
 
 ### Requirements
 
@@ -87,6 +87,12 @@ Filter by container:
 ```
 sudo ptcpdump -i any --container-id 36f0310403b1
 sudo ptcpdump -i any --container-name test
+```
+
+Filter by Pod:
+
+```
+sudo ptcpdump -i any --pod-name test.default
 ```
 
 Save/read pcapng file:
@@ -165,6 +171,7 @@ Flags:
       --oneline                Print parsed packet output in a single line
       --pid uint               Filter by process ID (only TCP and UDP packets are supported)
       --pname string           Filter by process name (only TCP and UDP packets are supported)
+      --pod-name string        Filter by pod name (format: NAME.NAMESPACE, only TCP and UDP packets are supported)
       --print                  Print parsed packet output, even if the raw packets are being saved to a file with the -w flag
   -r, --read-file string       Read packets from file (which was created with the -w option). e.g. ptcpdump.pcapng
   -c, --receive-count uint     Exit after receiving count packets

@@ -242,7 +242,12 @@ jobs:
       - run:
           name: test k8s filter by container id
           command: |
-            sudo bash testdata/run_test_k8s_filter.sh 
+            sudo bash testdata/run_test_k8s_filter_by_container.sh
+
+      - run:
+          name: test k8s filter by pod name
+          command: |
+            sudo bash testdata/run_test_k8s_filter_by_pod.sh
 
 workflows:
   e2e:

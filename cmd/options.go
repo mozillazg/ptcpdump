@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -35,6 +36,8 @@ type Options struct {
 	verbose            int
 	containerId        string
 	containerName      string
+	podName            string
+	podNamespace       string
 
 	eventChanSize                 uint
 	delayBeforeHandlePacketEvents time.Duration
@@ -53,7 +56,7 @@ type Options struct {
 }
 
 func (o Options) filterByContainer() bool {
-	return o.containerId != "" || o.containerName != ""
+	return o.containerId != "" || o.containerName != "" || o.podName != ""
 }
 
 func (o Options) WritePath() string {
@@ -92,6 +95,19 @@ func prepareOptions(opts *Options, rawArgs []string, args []string) {
 	// }
 	if opts.criRuntimeEndpoint != "" {
 		opts.criRuntimeEndpoint = getEndpoint(opts.criRuntimeEndpoint)
+	}
+
+	if opts.podName != "" {
+		parts := strings.Split(opts.podName, ".")
+		if len(parts) > 2 {
+			logFatal(errors.New("the format of `--pod-name` should be NAME.NAMESPACE"))
+		}
+		opts.podName = parts[0]
+		if len(parts) > 1 {
+			opts.podNamespace = parts[1]
+		} else {
+			opts.podNamespace = "default"
+		}
 	}
 }
 

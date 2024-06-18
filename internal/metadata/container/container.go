@@ -13,4 +13,5 @@ type MetaData interface {
 	GetByNetNs(netNs int64) types.Container
 	GetByPid(pid int) types.Container
 	GetByName(name string) []types.Container
+	GetByPod(name, namespace string) []types.Container
 }
