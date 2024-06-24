@@ -175,6 +175,7 @@ Flags:
       --print                  Print parsed packet output, even if the raw packets are being saved to a file with the -w flag
   -r, --read-file string       Read packets from file (which was created with the -w option). e.g. ptcpdump.pcapng
   -c, --receive-count uint     Exit after receiving count packets
+  -s, --snapshot-length uint32 Snarf snaplen bytes of data from each packet rather than the default of 262144 bytes (default 262144)
   -v, --verbose count          When parsing and printing, produce (slightly more) verbose output
       --version                Print the ptcpdump and libpcap version strings and exit
   -w, --write-file string      Write the raw packets to file rather than parsing and printing them out. They can later be printed with the -r option. Standard output is used if file is '-'. e.g. ptcpdump.pcapng
@@ -198,6 +199,7 @@ Flags:
 | --pname *process_name*                            |         | ✅                        |
 | --container-id *container_id*                     |         | ✅                        |
 | --container-name *container_name*                 |         | ✅                        |
+| --pod-name *pod_name.namespace*                   |         | ✅                        |
 | -f, --follow-forks                                |         | ✅                        |
 | -- *command [args]*                               |         | ✅                        |
 | --oneline                                       |         | ✅                        |
@@ -237,7 +239,7 @@ Flags:
 | -O, --no-optimize                                 | ✅       |                          |
 | -p, --no-promiscuous-mode                         | ✅       | ⛔                        |
 | -S, --absolute-tcp-sequence-numbers               | ✅       |                          |
-| -s *snaplen*, --snapshot-length=*snaplen*         | ✅       |                          |
+| -s *snaplen*, --snapshot-length=*snaplen*         | ✅       | ✅                       |
 | -T *type*                                         | ✅       |                          |
 | -t                                                | ✅       | ✅                       |
 | -tt                                               | ✅       |                          |

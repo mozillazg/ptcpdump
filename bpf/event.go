@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/binary"
 	"errors"
+	"io"
+	"os"
 	"unsafe"
 
 	"github.com/cilium/ebpf/perf"
@@ -13,12 +15,26 @@ import (
 	"github.com/mozillazg/ptcpdump/internal/log"
 )
 
-func (b *BPF) PullPacketEvents(ctx context.Context, chanSize int) (<-chan BpfPacketEventT, error) {
-	reader, err := perf.NewReader(b.objs.PacketEvents, 1500*1000)
+type BpfPacketEventWithPayloadT struct {
+	BpfPacketEventT
+	Payload []byte
+}
+
+func (b *BPF) PullPacketEvents(ctx context.Context, chanSize int, maxPacketSize int) (<-chan BpfPacketEventWithPayloadT, error) {
+	perCPUBuffer := os.Getpagesize()
+	log.Debugf("pagesize is %d", perCPUBuffer)
+	perCPUBuffer = perCPUBuffer * 64
+	eventSize := int(unsafe.Sizeof(BpfPacketEventT{})) + maxPacketSize
+	if eventSize >= perCPUBuffer {
+		perCPUBuffer = perCPUBuffer * (1 + (eventSize / perCPUBuffer))
+	}
+	log.Debugf("use %d as perCPUBuffer", perCPUBuffer)
+
+	reader, err := perf.NewReader(b.objs.PacketEvents, perCPUBuffer)
 	if err != nil {
 		return nil, xerrors.Errorf(": %w", err)
 	}
-	ch := make(chan BpfPacketEventT, chanSize)
+	ch := make(chan BpfPacketEventWithPayloadT, chanSize)
 	go func() {
 		defer close(ch)
 		defer reader.Close()
@@ -28,7 +44,7 @@ func (b *BPF) PullPacketEvents(ctx context.Context, chanSize int) (<-chan BpfPac
 	return ch, nil
 }
 
-func (b *BPF) handlePacketEvents(ctx context.Context, reader *perf.Reader, ch chan<- BpfPacketEventT) {
+func (b *BPF) handlePacketEvents(ctx context.Context, reader *perf.Reader, ch chan<- BpfPacketEventWithPayloadT) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -40,6 +56,10 @@ func (b *BPF) handlePacketEvents(ctx context.Context, reader *perf.Reader, ch ch
 		if err != nil {
 			if errors.Is(err, perf.ErrClosed) {
 				return
+			}
+			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+				log.Debugf("got EOF error: %s", err)
+				continue
 			}
 			log.Errorf("read packet event failed: %s", err)
 			continue
@@ -56,16 +76,25 @@ func (b *BPF) handlePacketEvents(ctx context.Context, reader *perf.Reader, ch ch
 	}
 }
 
-func parsePacketEvent(rawSample []byte) (*BpfPacketEventT, error) {
-	event := BpfPacketEventT{}
+func parsePacketEvent(rawSample []byte) (*BpfPacketEventWithPayloadT, error) {
+	event := BpfPacketEventWithPayloadT{}
 	if err := binary.Read(bytes.NewBuffer(rawSample), binary.LittleEndian, &event.Meta); err != nil {
 		return nil, xerrors.Errorf("parse meta: %w", err)
 	}
-	copy(event.Payload[:], rawSample[unsafe.Offsetof(event.Payload):])
+	event.Payload = make([]byte, int(event.Meta.PacketSize))
+	copy(event.Payload[:], rawSample[unsafe.Sizeof(BpfPacketEventT{}):])
 	return &event, nil
 }
 
 func (b *BPF) PullExecEvents(ctx context.Context, chanSize int) (<-chan BpfExecEventT, error) {
+	perCPUBuffer := os.Getpagesize()
+	log.Debugf("pagesize is %d", perCPUBuffer)
+	eventSize := int(unsafe.Sizeof(BpfExecEventT{}))
+	if eventSize >= perCPUBuffer {
+		perCPUBuffer = perCPUBuffer * (1 + (eventSize / perCPUBuffer))
+	}
+	log.Debugf("use %d as perCPUBuffer", perCPUBuffer)
+
 	reader, err := perf.NewReader(b.objs.ExecEvents, 1024*256)
 	if err != nil {
 		return nil, xerrors.Errorf(": %w", err)
@@ -92,6 +121,10 @@ func (b *BPF) handleExecEvents(ctx context.Context, reader *perf.Reader, ch chan
 		if err != nil {
 			if errors.Is(err, perf.ErrClosed) {
 				return
+			}
+			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+				log.Debugf("got EOF error: %s", err)
+				continue
 			}
 			log.Errorf("read exec event failed: %s", err)
 			continue

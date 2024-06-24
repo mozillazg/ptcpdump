@@ -34,7 +34,7 @@ type Packet struct {
 	CgroupName string
 }
 
-func ParsePacketEvent(devices map[int]dev.Device, event bpf.BpfPacketEventT) (*Packet, error) {
+func ParsePacketEvent(devices map[int]dev.Device, event bpf.BpfPacketEventWithPayloadT) (*Packet, error) {
 	var p Packet
 	if t, err := convertBpfKTimeNs(event.Meta.Timestamp); err != nil {
 		log.Errorf("convert bpf time failed: %s", err)

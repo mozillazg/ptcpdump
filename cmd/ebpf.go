@@ -26,7 +26,7 @@ func attachHooks(currentConns []metadata.Connection, opts Options) (*bpf.BPF, er
 		return nil, err
 	}
 	bpfopts := bpf.NewOptions(opts.pid, opts.comm, opts.followForks, opts.pcapFilter,
-		opts.mntns_id, opts.pidns_id, opts.netns_id)
+		opts.mntnsId, opts.pidnsId, opts.netnsId, opts.snapshotLength)
 	if err := bf.Load(bpfopts); err != nil {
 		return nil, err
 	}
