@@ -47,11 +47,7 @@ type BpfPacketEventMetaT struct {
 	_          [4]byte
 }
 
-type BpfPacketEventT struct {
-	Meta    BpfPacketEventMetaT
-	Payload [1500]uint8
-	_       [4]byte
-}
+type BpfPacketEventT struct{ Meta BpfPacketEventMetaT }
 
 type BpfProcessMetaT struct {
 	Pid        uint32

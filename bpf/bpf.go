@@ -50,14 +50,15 @@ type BPF struct {
 }
 
 type Options struct {
-	Pid         uint32
-	Comm        [16]int8
-	filterComm  uint8
-	FollowForks uint8
-	PcapFilter  string
-	mntns_id    uint32
-	pidns_id    uint32
-	netns_id    uint32
+	Pid            uint32
+	Comm           [16]int8
+	filterComm     uint8
+	FollowForks    uint8
+	PcapFilter     string
+	mntnsId        uint32
+	pidnsId        uint32
+	netnsId        uint32
+	maxPayloadSize uint32
 }
 
 func NewBPF() (*BPF, error) {
@@ -73,12 +74,13 @@ func NewBPF() (*BPF, error) {
 }
 
 func NewOptions(pid uint, comm string, followForks bool, pcapFilter string,
-	mntns_id uint32, pidns_id uint32, netns_id uint32) Options {
+	mntnsId uint32, pidnsId uint32, netnsId uint32, maxPayloadSize uint32) Options {
 	opts := Options{
-		Pid:      uint32(pid),
-		mntns_id: mntns_id,
-		pidns_id: pidns_id,
-		netns_id: netns_id,
+		Pid:            uint32(pid),
+		mntnsId:        mntnsId,
+		pidnsId:        pidnsId,
+		netnsId:        netnsId,
+		maxPayloadSize: maxPayloadSize,
 	}
 	opts.Comm = [16]int8{}
 	if len(comm) > 0 {
@@ -107,9 +109,10 @@ func (b *BPF) Load(opts Options) error {
 		"filter_comm":         opts.Comm,
 		"filter_comm_enable":  opts.filterComm,
 		"filter_follow_forks": opts.FollowForks,
-		"filter_mntns_id":     opts.mntns_id,
-		"filter_netns_id":     opts.netns_id,
-		"filter_pidns_id":     opts.pidns_id,
+		"filter_mntns_id":     opts.mntnsId,
+		"filter_netns_id":     opts.netnsId,
+		"filter_pidns_id":     opts.pidnsId,
+		"max_payload_size":    opts.maxPayloadSize,
 	})
 	if err != nil {
 		return xerrors.Errorf("rewrite constants: %w", err)

@@ -56,13 +56,13 @@ func applyContainerFilter(ctx context.Context, opts *Options) (*metadata.Contain
 	for _, container := range containers {
 		log.Debugf("filter by container %#v", container)
 		if container.PidNamespace > 0 && container.PidNamespace != metadata.HostPidNs {
-			opts.pidns_id = uint32(container.PidNamespace)
+			opts.pidnsId = uint32(container.PidNamespace)
 		}
 		if container.MountNamespace > 0 && container.MountNamespace != metadata.HostMntNs {
-			opts.mntns_id = uint32(container.MountNamespace)
+			opts.mntnsId = uint32(container.MountNamespace)
 		}
 		if container.NetworkNamespace > 0 && container.NetworkNamespace != metadata.HostNetNs {
-			opts.netns_id = uint32(container.NetworkNamespace)
+			opts.netnsId = uint32(container.NetworkNamespace)
 		}
 		opts.followForks = true
 	}

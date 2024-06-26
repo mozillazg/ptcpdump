@@ -23,7 +23,7 @@ func NewPacketEventConsumer(writers []writer.PacketWriter) *PacketEventConsumer 
 	}
 }
 
-func (c *PacketEventConsumer) Start(ctx context.Context, ch <-chan bpf.BpfPacketEventT, maxPacketCount uint) {
+func (c *PacketEventConsumer) Start(ctx context.Context, ch <-chan bpf.BpfPacketEventWithPayloadT, maxPacketCount uint) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -38,7 +38,7 @@ func (c *PacketEventConsumer) Start(ctx context.Context, ch <-chan bpf.BpfPacket
 	}
 }
 
-func (c *PacketEventConsumer) handlePacketEvent(pt bpf.BpfPacketEventT) {
+func (c *PacketEventConsumer) handlePacketEvent(pt bpf.BpfPacketEventWithPayloadT) {
 	pevent, err := event.ParsePacketEvent(c.devices, pt)
 	if err != nil {
 		log.Errorf("[PacketEventConsumer] parse event failed: %s", err)

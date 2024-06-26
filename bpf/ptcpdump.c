@@ -23,7 +23,6 @@
 #define TC_ACT_SHOT 2
 #define AF_INET 2
 #define AF_INET6 10
-#define MAX_PAYLOAD_SIZE 1500
 #define INGRESS_PACKET 0
 #define EGRESS_PACKET 1
 #define EXEC_FILENAME_LEN 512
@@ -36,6 +35,7 @@ static volatile const u8 filter_comm_enable = 0;
 static volatile const u32 filter_mntns_id = 0;
 static volatile const u32 filter_netns_id = 0;
 static volatile const u32 filter_pidns_id = 0;
+static volatile const u32 max_payload_size = 0;
 static const u8 u8_zero = 0;
 static const u32 u32_zero = 0;
 
@@ -97,7 +97,6 @@ struct packet_event_meta_t {
 
 struct packet_event_t {
     struct packet_event_meta_t meta;
-    u8 payload[MAX_PAYLOAD_SIZE];
 };
 
 struct exec_event_t {
@@ -786,11 +785,13 @@ static __always_inline void handle_tc(struct __sk_buff *skb, bool egress) {
 
     u64 payload_len = (u64)skb->len;
     event->meta.packet_size = payload_len;
-    payload_len = payload_len < MAX_PAYLOAD_SIZE ? payload_len : MAX_PAYLOAD_SIZE;
+    if (max_payload_size > 0) {
+        payload_len = payload_len < max_payload_size ? payload_len : max_payload_size;
+    }
     event->meta.payload_len = payload_len;
 
     bpf_perf_event_output(skb, &packet_events, BPF_F_CURRENT_CPU | (payload_len << 32), event,
-                          offsetof(struct packet_event_t, payload));
+                          sizeof(struct packet_event_t));
 
     return;
 }

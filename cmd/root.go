@@ -96,6 +96,8 @@ func init() {
 		"Address of CRI container runtime service "+
 			fmt.Sprintf("(default: uses in order the first successful one of [%s])",
 				strings.Join(getDefaultCriRuntimeEndpoint(), ", ")))
+	rootCmd.Flags().Uint32VarP(&opts.snapshotLength, "snapshot-length", "s", 262144,
+		"Snarf snaplen bytes of data from each packet rather than the default of 262144 bytes")
 
 }
 

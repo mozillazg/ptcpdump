@@ -43,6 +43,7 @@ type Options struct {
 	delayBeforeHandlePacketEvents time.Duration
 	execEventsWorkerNumber        uint
 	logLevel                      string
+	snapshotLength                uint32
 
 	dockerEndpoint     string
 	containerdEndpoint string
@@ -50,9 +51,9 @@ type Options struct {
 
 	subProgArgs []string
 
-	mntns_id uint32
-	netns_id uint32
-	pidns_id uint32
+	mntnsId uint32
+	netnsId uint32
+	pidnsId uint32
 }
 
 func (o Options) filterByContainer() bool {

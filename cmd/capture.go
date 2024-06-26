@@ -67,7 +67,7 @@ func capture(ctx context.Context, stop context.CancelFunc, opts Options) error {
 	}
 	defer bf.Close()
 
-	packetEvensCh, err := bf.PullPacketEvents(ctx, int(opts.eventChanSize))
+	packetEvensCh, err := bf.PullPacketEvents(ctx, int(opts.eventChanSize), int(opts.snapshotLength))
 	if err != nil {
 		return err
 	}
@@ -113,11 +113,13 @@ func headerTips(opts Options) {
 	if len(opts.ifaces) > 1 {
 		interfaces = fmt.Sprintf("[%s]", strings.Join(opts.ifaces, ", "))
 	}
+	msg := fmt.Sprintf("capturing on %s, link-type EN10MB (Ethernet), snapshot length %d bytes",
+		interfaces, opts.snapshotLength)
 	if opts.verbose < 1 {
 		log.Warn("ptcpdump: verbose output suppressed, use -v[v]... for verbose output")
-		log.Warnf("capturing on %s, link-type EN10MB (Ethernet)", interfaces)
+		log.Warn(msg)
 	} else {
-		log.Warnf("tcpdump: capturing on %s, link-type EN10MB (Ethernet)", interfaces)
+		log.Warnf("tcpdump: %s", msg)
 	}
 }
 
@@ -149,34 +151,34 @@ func getCaptureCounts(bf *bpf.BPF, c *consumer.PacketEventConsumer) []string {
 
 func getCurrentConnects(ctx context.Context, pcache *metadata.ProcessCache, opts Options) []metadata.Connection {
 	var pids []int
-	var filter_pid bool
+	var filterPid bool
 
 	if opts.pid != 0 {
-		filter_pid = true
+		filterPid = true
 		pids = append(pids, int(opts.pid))
 	}
 	if opts.comm != "" {
-		filter_pid = true
+		filterPid = true
 		ps := pcache.GetPidsByComm(opts.comm)
 		pids = append(pids, ps...)
 	}
-	if opts.pidns_id > 0 {
-		filter_pid = true
-		ps := pcache.GetPidsByPidNsId(int64(opts.pidns_id))
+	if opts.pidnsId > 0 {
+		filterPid = true
+		ps := pcache.GetPidsByPidNsId(int64(opts.pidnsId))
 		pids = append(pids, ps...)
 	}
-	if opts.mntns_id > 0 {
-		filter_pid = true
-		ps := pcache.GetPidsByPidNsId(int64(opts.mntns_id))
+	if opts.mntnsId > 0 {
+		filterPid = true
+		ps := pcache.GetPidsByPidNsId(int64(opts.mntnsId))
 		pids = append(pids, ps...)
 	}
-	if opts.netns_id > 0 {
-		filter_pid = true
-		ps := pcache.GetPidsByPidNsId(int64(opts.netns_id))
+	if opts.netnsId > 0 {
+		filterPid = true
+		ps := pcache.GetPidsByPidNsId(int64(opts.netnsId))
 		pids = append(pids, ps...)
 	}
 
-	if filter_pid {
+	if filterPid {
 		if len(pids) == 0 {
 			return nil
 		}
