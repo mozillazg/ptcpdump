@@ -6,16 +6,16 @@ require (
 	github.com/cilium/ebpf v0.15.0
 	github.com/containerd/containerd v1.7.18
 	github.com/containerd/typeurl/v2 v2.1.1
-	github.com/docker/docker v26.1.3+incompatible
+	github.com/docker/docker v26.1.4+incompatible
 	github.com/florianl/go-tc v0.4.3
 	github.com/gopacket/gopacket v1.2.0
 	github.com/jschwinger233/elibpcap v0.0.0-20231010035657-e99300096f5e
 	github.com/phuslu/log v1.0.106
-	github.com/shirou/gopsutil/v3 v3.24.4
-	github.com/spf13/cobra v1.8.0
+	github.com/shirou/gopsutil/v3 v3.24.5
+	github.com/spf13/cobra v1.8.1
 	github.com/x-way/pktdump v0.0.5
 	golang.org/x/sys v0.20.0
-	k8s.io/cri-client v0.31.0-alpha.0.0.20240530211015-c9749ee02fc0
+	k8s.io/cri-client v0.31.0-alpha.2
 	k8s.io/klog/v2 v2.120.1
 )
 
@@ -35,9 +35,10 @@ require (
 	go.opentelemetry.io/proto/otlp v1.2.0 // indirect
 	golang.org/x/oauth2 v0.20.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240227224415-6ceb2ff114de // indirect
-	k8s.io/apimachinery v0.26.2 // indirect
-	k8s.io/client-go v0.26.2 // indirect
-	k8s.io/component-base v0.26.2 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
+	k8s.io/apimachinery v0.31.0-alpha.2 // indirect
+	k8s.io/client-go v0.31.0-alpha.2 // indirect
+	k8s.io/component-base v0.31.0-alpha.2 // indirect
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b // indirect
 )
 
@@ -108,7 +109,7 @@ require (
 	google.golang.org/grpc v1.63.2 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
 	gotest.tools/v3 v3.5.1 // indirect
-	k8s.io/cri-api v0.31.0-alpha.0.0.20240528091733-69e407966029
+	k8s.io/cri-api v0.31.0-alpha.2
 )
 
 replace (
