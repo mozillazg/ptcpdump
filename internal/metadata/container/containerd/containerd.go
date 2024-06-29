@@ -3,6 +3,7 @@ package containerd
 import (
 	"context"
 	"errors"
+	"fmt"
 	"regexp"
 	"strings"
 	"sync"
@@ -16,7 +17,6 @@ import (
 	"github.com/mozillazg/ptcpdump/internal/log"
 	"github.com/mozillazg/ptcpdump/internal/types"
 	"github.com/mozillazg/ptcpdump/internal/utils"
-	"golang.org/x/xerrors"
 )
 
 const (
@@ -255,7 +255,7 @@ func (d *MetaData) init(ctx context.Context) error {
 	c := d.client
 	containers, err := c.Containers(ctx)
 	if err != nil {
-		return xerrors.Errorf("list containers: %w", err)
+		return fmt.Errorf("list containers: %w", err)
 	}
 	for _, cr := range containers {
 		d.saveContainer(ctx, cr)

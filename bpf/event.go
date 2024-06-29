@@ -5,12 +5,12 @@ import (
 	"context"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"unsafe"
 
 	"github.com/cilium/ebpf/perf"
-	"golang.org/x/xerrors"
 
 	"github.com/mozillazg/ptcpdump/internal/log"
 )
@@ -32,7 +32,7 @@ func (b *BPF) PullPacketEvents(ctx context.Context, chanSize int, maxPacketSize 
 
 	reader, err := perf.NewReader(b.objs.PacketEvents, perCPUBuffer)
 	if err != nil {
-		return nil, xerrors.Errorf(": %w", err)
+		return nil, fmt.Errorf(": %w", err)
 	}
 	ch := make(chan BpfPacketEventWithPayloadT, chanSize)
 	go func() {
@@ -79,7 +79,7 @@ func (b *BPF) handlePacketEvents(ctx context.Context, reader *perf.Reader, ch ch
 func parsePacketEvent(rawSample []byte) (*BpfPacketEventWithPayloadT, error) {
 	event := BpfPacketEventWithPayloadT{}
 	if err := binary.Read(bytes.NewBuffer(rawSample), binary.LittleEndian, &event.Meta); err != nil {
-		return nil, xerrors.Errorf("parse meta: %w", err)
+		return nil, fmt.Errorf("parse meta: %w", err)
 	}
 	event.Payload = make([]byte, int(event.Meta.PacketSize))
 	copy(event.Payload[:], rawSample[unsafe.Sizeof(BpfPacketEventT{}):])
@@ -98,7 +98,7 @@ func (b *BPF) PullExecEvents(ctx context.Context, chanSize int) (<-chan BpfExecE
 
 	reader, err := perf.NewReader(b.objs.ExecEvents, perCPUBuffer)
 	if err != nil {
-		return nil, xerrors.Errorf(": %w", err)
+		return nil, fmt.Errorf(": %w", err)
 	}
 	ch := make(chan BpfExecEventT, chanSize)
 	go func() {
@@ -145,7 +145,7 @@ func (b *BPF) handleExecEvents(ctx context.Context, reader *perf.Reader, ch chan
 func parseExecEvent(rawSample []byte) (*BpfExecEventT, error) {
 	event := BpfExecEventT{}
 	if err := binary.Read(bytes.NewBuffer(rawSample), binary.LittleEndian, &event); err != nil {
-		return nil, xerrors.Errorf("parse event: %w", err)
+		return nil, fmt.Errorf("parse event: %w", err)
 	}
 	return &event, nil
 }
@@ -162,7 +162,7 @@ func (b *BPF) PullExitEvents(ctx context.Context, chanSize int) (<-chan BpfExitE
 
 	reader, err := perf.NewReader(b.objs.ExitEvents, perCPUBuffer)
 	if err != nil {
-		return nil, xerrors.Errorf(": %w", err)
+		return nil, fmt.Errorf(": %w", err)
 	}
 	ch := make(chan BpfExitEventT, chanSize)
 	go func() {
@@ -209,7 +209,7 @@ func (b *BPF) handleExitEvents(ctx context.Context, reader *perf.Reader, ch chan
 func parseExitEvent(rawSample []byte) (*BpfExitEventT, error) {
 	event := BpfExitEventT{}
 	if err := binary.Read(bytes.NewBuffer(rawSample), binary.LittleEndian, &event); err != nil {
-		return nil, xerrors.Errorf("parse event: %w", err)
+		return nil, fmt.Errorf("parse event: %w", err)
 	}
 	return &event, nil
 }

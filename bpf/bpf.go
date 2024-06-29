@@ -2,6 +2,7 @@ package bpf
 
 import (
 	"encoding/binary"
+	"fmt"
 	"strings"
 	"unsafe"
 
@@ -13,7 +14,6 @@ import (
 	"github.com/mozillazg/ptcpdump/internal/log"
 	"github.com/mozillazg/ptcpdump/internal/types"
 	"golang.org/x/sys/unix"
-	"golang.org/x/xerrors"
 )
 
 // $TARGET is set by the Makefile
@@ -115,14 +115,14 @@ func (b *BPF) Load(opts Options) error {
 		"max_payload_size":    opts.maxPayloadSize,
 	})
 	if err != nil {
-		return xerrors.Errorf("rewrite constants: %w", err)
+		return fmt.Errorf("rewrite constants: %w", err)
 	}
 
 	if opts.PcapFilter != "" {
 		for _, progName := range []string{"tc_ingress", "tc_egress"} {
 			prog, ok := b.spec.Programs[progName]
 			if !ok {
-				return xerrors.Errorf("program %s not found", progName)
+				return fmt.Errorf("program %s not found", progName)
 			}
 			prog.Instructions, err = elibpcap.Inject(
 				opts.PcapFilter,
@@ -134,7 +134,7 @@ func (b *BPF) Load(opts Options) error {
 				},
 			)
 			if err != nil {
-				return xerrors.Errorf("inject pcap filter: %w", err)
+				return fmt.Errorf("inject pcap filter: %w", err)
 			}
 		}
 	}
@@ -202,7 +202,7 @@ func (b *BPF) UpdateFlowPidMapValues(data map[*BpfFlowPidKeyT]BpfProcessMetaT) e
 			if err == ebpf.ErrKeyExist || strings.Contains(err.Error(), "key already exists") {
 				continue
 			}
-			return xerrors.Errorf(": %w", err)
+			return fmt.Errorf(": %w", err)
 		}
 	}
 	return nil
@@ -219,7 +219,7 @@ func (b *BPF) AttachCgroups(cgroupPath string) error {
 		Program: b.objs.CgroupSockCreate,
 	})
 	if err != nil {
-		return xerrors.Errorf("attach cgroup/sock_create: %w", err)
+		return fmt.Errorf("attach cgroup/sock_create: %w", err)
 	}
 	b.links = append(b.links, lk)
 
@@ -229,7 +229,7 @@ func (b *BPF) AttachCgroups(cgroupPath string) error {
 		Program: b.objs.CgroupSockRelease,
 	})
 	if err != nil {
-		return xerrors.Errorf("attach cgroup/sock_release: %w", err)
+		return fmt.Errorf("attach cgroup/sock_release: %w", err)
 	}
 	b.links = append(b.links, lk)
 
@@ -240,14 +240,14 @@ func (b *BPF) AttachKprobes() error {
 	lk, err := link.Kprobe("security_sk_classify_flow",
 		b.objs.KprobeSecuritySkClassifyFlow, &link.KprobeOptions{})
 	if err != nil {
-		return xerrors.Errorf("attach kprobe/security_sk_classify_flow: %w", err)
+		return fmt.Errorf("attach kprobe/security_sk_classify_flow: %w", err)
 	}
 	b.links = append(b.links, lk)
 
 	lk, err = link.Kprobe("tcp_sendmsg",
 		b.objs.KprobeTcpSendmsg, &link.KprobeOptions{})
 	if err != nil {
-		return xerrors.Errorf("attach kprobe/tcp_sendmsg: %w", err)
+		return fmt.Errorf("attach kprobe/tcp_sendmsg: %w", err)
 	}
 	b.links = append(b.links, lk)
 
@@ -256,10 +256,10 @@ func (b *BPF) AttachKprobes() error {
 		if strings.Contains(err.Error(), "no such file or directory") {
 			lk, err = link.Kprobe("udp_sendmsg", b.objs.KprobeUdpSendmsg, &link.KprobeOptions{})
 			if err != nil {
-				return xerrors.Errorf("attach kprobe/udp_sendmsg: %w", err)
+				return fmt.Errorf("attach kprobe/udp_sendmsg: %w", err)
 			}
 		} else {
-			return xerrors.Errorf("attach kprobe/udp_send_skb: %w", err)
+			return fmt.Errorf("attach kprobe/udp_send_skb: %w", err)
 		}
 	}
 	b.links = append(b.links, lk)
@@ -270,7 +270,7 @@ func (b *BPF) AttachKprobes() error {
 		if strings.Contains(err.Error(), "nf_nat_packet: not found: no such file or directory") {
 			log.Warn("current system doest not enable netfilter based NAT feature, skip attach kprobe/nf_nat_packet")
 		} else {
-			return xerrors.Errorf("attach kprobe/nf_nat_packet: %w", err)
+			return fmt.Errorf("attach kprobe/nf_nat_packet: %w", err)
 		}
 	}
 	if lk != nil {
@@ -283,7 +283,7 @@ func (b *BPF) AttachKprobes() error {
 		if strings.Contains(err.Error(), "nf_nat_manip_pkt: not found: no such file or directory") {
 			log.Warn("current system doest not enable netfilter based NAT feature, skip attach kprobe/nf_nat_manip_pkt")
 		} else {
-			return xerrors.Errorf("attach kprobe/nf_nat_manip_pkt: %w", err)
+			return fmt.Errorf("attach kprobe/nf_nat_manip_pkt: %w", err)
 		}
 	}
 	if lk != nil {
@@ -299,7 +299,7 @@ func (b *BPF) AttachTracepoints() error {
 		Program: b.objs.RawTracepointSchedProcessExec,
 	})
 	if err != nil {
-		return xerrors.Errorf("attach raw_tracepoint/sched_process_exec: %w", err)
+		return fmt.Errorf("attach raw_tracepoint/sched_process_exec: %w", err)
 	}
 	b.links = append(b.links, lk)
 
@@ -308,7 +308,7 @@ func (b *BPF) AttachTracepoints() error {
 		Program: b.objs.RawTracepointSchedProcessExit,
 	})
 	if err != nil {
-		return xerrors.Errorf("attach raw_tracepoint/sched_process_exit: %w", err)
+		return fmt.Errorf("attach raw_tracepoint/sched_process_exit: %w", err)
 	}
 	b.links = append(b.links, lk)
 
@@ -318,7 +318,7 @@ func (b *BPF) AttachTracepoints() error {
 			Program: b.objs.RawTracepointSchedProcessFork,
 		})
 		if err != nil {
-			return xerrors.Errorf("attach raw_tracepoint/sched_process_fork: %w", err)
+			return fmt.Errorf("attach raw_tracepoint/sched_process_fork: %w", err)
 		}
 		b.links = append(b.links, lk)
 	}
@@ -332,7 +332,7 @@ func (b *BPF) AttachTcHooks(ifindex int, egress, ingress bool) error {
 		if closeFunc != nil {
 			closeFunc()
 		}
-		return xerrors.Errorf("attach tc hooks: %w", err)
+		return fmt.Errorf("attach tc hooks: %w", err)
 	}
 
 	if egress {
@@ -342,7 +342,7 @@ func (b *BPF) AttachTcHooks(ifindex int, egress, ingress bool) error {
 				c1()
 			}
 			closeFunc()
-			return xerrors.Errorf("attach tc hooks: %w", err)
+			return fmt.Errorf("attach tc hooks: %w", err)
 		}
 		b.closeFuncs = append(b.closeFuncs, c1)
 	}
@@ -354,7 +354,7 @@ func (b *BPF) AttachTcHooks(ifindex int, egress, ingress bool) error {
 				c2()
 			}
 			closeFunc()
-			return xerrors.Errorf("attach tc hooks: %w", err)
+			return fmt.Errorf("attach tc hooks: %w", err)
 		}
 		b.closeFuncs = append(b.closeFuncs, c2)
 	}
@@ -403,7 +403,7 @@ func attachTcHook(ifindex int, prog *ebpf.Program, ingress bool) (func(), error)
 		},
 	}
 	if err := tcnl.Filter().Add(&filter); err != nil {
-		return closeFunc, xerrors.Errorf("add filter: %w", err)
+		return closeFunc, fmt.Errorf("add filter: %w", err)
 	}
 
 	newCloseFunc := func() {

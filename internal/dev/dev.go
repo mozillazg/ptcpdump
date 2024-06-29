@@ -1,10 +1,9 @@
 package dev
 
 import (
+	"fmt"
 	"net"
 	"sync"
-
-	"golang.org/x/xerrors"
 )
 
 var allLinks []net.Interface
@@ -30,7 +29,7 @@ func GetDevices(names []string) (map[int]Device, error) {
 
 	allLinks, err := getAllLinks()
 	if err != nil {
-		return nil, xerrors.Errorf(": %w", err)
+		return nil, fmt.Errorf(": %w", err)
 	}
 	if len(names) == 0 || names[0] == "any" {
 		links = append(links, allLinks...)
