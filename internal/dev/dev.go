@@ -1,12 +1,13 @@
 package dev
 
 import (
-	"github.com/vishvananda/netlink"
-	"golang.org/x/xerrors"
+	"net"
 	"sync"
+
+	"golang.org/x/xerrors"
 )
 
-var allLinks []netlink.Link
+var allLinks []net.Interface
 var once sync.Once
 
 type Device struct {
@@ -14,16 +15,16 @@ type Device struct {
 	Ifindex int
 }
 
-func getAllLinks() ([]netlink.Link, error) {
+func getAllLinks() ([]net.Interface, error) {
 	var err error
 	once.Do(func() {
-		allLinks, err = netlink.LinkList()
+		allLinks, err = net.Interfaces()
 	})
 	return allLinks, err
 }
 
 func GetDevices(names []string) (map[int]Device, error) {
-	var links []netlink.Link
+	var links []net.Interface
 	var err error
 	ifindexMap := make(map[int]Device)
 
@@ -36,7 +37,7 @@ func GetDevices(names []string) (map[int]Device, error) {
 	} else {
 		for _, name := range names {
 			for _, lk := range allLinks {
-				if lk.Attrs().Name == name {
+				if lk.Name == name {
 					links = append(links, lk)
 					continue
 				}
@@ -45,10 +46,9 @@ func GetDevices(names []string) (map[int]Device, error) {
 	}
 
 	for _, link := range links {
-		linkAttrs := link.Attrs()
 		dev := Device{
-			Name:    linkAttrs.Name,
-			Ifindex: linkAttrs.Index,
+			Name:    link.Name,
+			Ifindex: link.Index,
 		}
 		ifindexMap[dev.Ifindex] = dev
 	}
