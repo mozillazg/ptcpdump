@@ -109,6 +109,10 @@ struct exec_event_t {
     char args[EXEC_ARGS_LEN];
 };
 
+struct exit_event_t {
+    u32 pid;
+};
+
 struct {
     __uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
     __uint(max_entries, 1);
@@ -121,6 +125,12 @@ struct {
     __uint(key_size, sizeof(u32));
     __uint(value_size, sizeof(u32));
 } exec_events SEC(".maps");
+
+struct {
+    __uint(type, BPF_MAP_TYPE_PERF_EVENT_ARRAY);
+    __uint(key_size, sizeof(u32));
+    __uint(value_size, sizeof(u32));
+} exit_events SEC(".maps");
 
 struct {
     __uint(type, BPF_MAP_TYPE_LRU_HASH);
@@ -177,6 +187,7 @@ const struct packet_event_t *unused1 __attribute__((unused));
 const struct exec_event_t *unused2 __attribute__((unused));
 const struct flow_pid_key_t *unused3 __attribute__((unused));
 const struct process_meta_t *unused4 __attribute__((unused));
+const struct exit_event_t *unused5 __attribute__((unused));
 
 static __always_inline int parse_skb_l2(struct __sk_buff *skb, struct l2_t *l2, u32 *offset) {
     if (bpf_skb_load_bytes(skb, *offset + offsetof(struct ethhdr, h_proto), &l2->h_protocol, sizeof(l2->h_protocol)) <
@@ -790,8 +801,11 @@ static __always_inline void handle_tc(struct __sk_buff *skb, bool egress) {
     }
     event->meta.payload_len = payload_len;
 
-    bpf_perf_event_output(skb, &packet_events, BPF_F_CURRENT_CPU | (payload_len << 32), event,
-                          sizeof(struct packet_event_t));
+    int event_ret = bpf_perf_event_output(skb, &packet_events, BPF_F_CURRENT_CPU | (payload_len << 32), event,
+                                          sizeof(struct packet_event_t));
+    if (event_ret != 0) {
+        bpf_printk("[ptcpdump] bpf_perf_event_output exec_events failed: %d", event_ret);
+    }
 
     return;
 }
@@ -848,9 +862,22 @@ static __always_inline void handle_exit(struct bpf_raw_tracepoint_args *ctx) {
     // args: struct task_struct *p
     struct task_struct *task = (struct task_struct *)BPF_CORE_READ(ctx, args[0]);
 
+    atomic_t live = BPF_CORE_READ(task, signal, live);
+    if (live.counter > 0) {
+        return;
+    }
+
     u32 pid = BPF_CORE_READ(task, tgid);
     if (bpf_map_lookup_elem(&filter_pid_map, &pid)) {
         bpf_map_delete_elem(&filter_pid_map, &pid);
+    }
+
+    struct exit_event_t event = {
+        .pid = pid,
+    };
+    int event_ret = bpf_perf_event_output(ctx, &exit_events, BPF_F_CURRENT_CPU, &event, sizeof(event));
+    if (event_ret != 0) {
+        bpf_printk("[ptcpdump] bpf_perf_event_output exit_events failed: %d", event_ret);
     }
 
     return;
