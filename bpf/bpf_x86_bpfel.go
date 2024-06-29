@@ -22,6 +22,8 @@ type BpfExecEventT struct {
 	Args              [4096]int8
 }
 
+type BpfExitEventT struct{ Pid uint32 }
+
 type BpfFlowPidKeyT struct {
 	Saddr [2]uint64
 	Sport uint16
@@ -118,6 +120,7 @@ type BpfProgramSpecs struct {
 type BpfMapSpecs struct {
 	ExecEventStack      *ebpf.MapSpec `ebpf:"exec_event_stack"`
 	ExecEvents          *ebpf.MapSpec `ebpf:"exec_events"`
+	ExitEvents          *ebpf.MapSpec `ebpf:"exit_events"`
 	FilterByKernelCount *ebpf.MapSpec `ebpf:"filter_by_kernel_count"`
 	FilterPidMap        *ebpf.MapSpec `ebpf:"filter_pid_map"`
 	FlowPidMap          *ebpf.MapSpec `ebpf:"flow_pid_map"`
@@ -148,6 +151,7 @@ func (o *BpfObjects) Close() error {
 type BpfMaps struct {
 	ExecEventStack      *ebpf.Map `ebpf:"exec_event_stack"`
 	ExecEvents          *ebpf.Map `ebpf:"exec_events"`
+	ExitEvents          *ebpf.Map `ebpf:"exit_events"`
 	FilterByKernelCount *ebpf.Map `ebpf:"filter_by_kernel_count"`
 	FilterPidMap        *ebpf.Map `ebpf:"filter_pid_map"`
 	FlowPidMap          *ebpf.Map `ebpf:"flow_pid_map"`
@@ -161,6 +165,7 @@ func (m *BpfMaps) Close() error {
 	return _BpfClose(
 		m.ExecEventStack,
 		m.ExecEvents,
+		m.ExitEvents,
 		m.FilterByKernelCount,
 		m.FilterPidMap,
 		m.FlowPidMap,

@@ -95,13 +95,12 @@ Filter by Pod:
 sudo ptcpdump -i any --pod-name test.default
 ```
 
-Save/read pcapng file:
+Save data in PcapNG format:
 
 ```
 sudo ptcpdump -i any -w demo.pcapng
 sudo ptcpdump -i any -w - port 80 | tcpdump -n -r -
 sudo ptcpdump -i any -w - port 80 | tshark -r -
-ptcpdump -r demo.pcapng
 ```
 
 <p align="right"><a href="#top">🔝</a></p>

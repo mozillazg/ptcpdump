@@ -52,7 +52,7 @@ func capture(ctx context.Context, stop context.CancelFunc, opts Options) error {
 			fcloser()
 		}
 	}()
-	pcache.Start()
+	pcache.Start(ctx)
 
 	log.Debug("start get current connections")
 	conns := getCurrentConnects(ctx, pcache, opts)
@@ -75,9 +75,15 @@ func capture(ctx context.Context, stop context.CancelFunc, opts Options) error {
 	if err != nil {
 		return err
 	}
+	exitEvensCh, err := bf.PullExitEvents(ctx, int(opts.eventChanSize))
+	if err != nil {
+		return err
+	}
 
 	execConsumer := consumer.NewExecEventConsumer(pcache, int(opts.execEventsWorkerNumber))
 	go execConsumer.Start(ctx, execEvensCh)
+	exitConsumer := consumer.NewExitEventConsumer(pcache, 10)
+	go exitConsumer.Start(ctx, exitEvensCh)
 
 	var stopByInternal bool
 	packetConsumer := consumer.NewPacketEventConsumer(writers)
@@ -119,7 +125,7 @@ func headerTips(opts Options) {
 		log.Warn("ptcpdump: verbose output suppressed, use -v[v]... for verbose output")
 		log.Warn(msg)
 	} else {
-		log.Warnf("tcpdump: %s", msg)
+		log.Warnf("ptcpdump: %s", msg)
 	}
 }
 

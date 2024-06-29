@@ -1,7 +1,9 @@
 package metadata
 
 import (
+	"context"
 	"sync"
+	"time"
 
 	"github.com/mozillazg/ptcpdump/internal/event"
 	"github.com/mozillazg/ptcpdump/internal/log"
@@ -20,11 +22,11 @@ var (
 )
 
 type ProcessCache struct {
-	m map[int]*types.PacketContext
+	pids sync.Map // map[int]*types.PacketContext
+
+	deadPids sync.Map // map[int]time.Time
 
 	cc *ContainerCache
-
-	lock sync.RWMutex
 }
 
 func init() {
@@ -35,8 +37,8 @@ func init() {
 
 func NewProcessCache() *ProcessCache {
 	return &ProcessCache{
-		m:    make(map[int]*types.PacketContext),
-		lock: sync.RWMutex{},
+		pids:     sync.Map{},
+		deadPids: sync.Map{},
 	}
 }
 
@@ -45,14 +47,15 @@ func (c *ProcessCache) WithContainerCache(cc *ContainerCache) *ProcessCache {
 	return c
 }
 
-func (c *ProcessCache) Start() {
-	if err := c.fillRunningProcesses(); err != nil {
+func (c *ProcessCache) Start(ctx context.Context) {
+	if err := c.fillRunningProcesses(ctx); err != nil {
 		log.Errorf("fill running processes info failed: %s", err)
 	}
+	go c.cleanDeadsLoop(ctx)
 }
 
-func (c *ProcessCache) fillRunningProcesses() error {
-	ps, err := process.Processes()
+func (c *ProcessCache) fillRunningProcesses(ctx context.Context) error {
+	ps, err := process.ProcessesWithContext(ctx)
 	if err != nil {
 		return xerrors.Errorf(": %w", err)
 	}
@@ -79,6 +82,50 @@ func (c *ProcessCache) fillRunningProcesses() error {
 
 func (c *ProcessCache) AddItem(exec event.ProcessExec) {
 	c.AddItemWithContext(exec, types.PacketContext{})
+}
+
+func (c *ProcessCache) MarkDead(pid int) {
+	c.deadPids.LoadOrStore(pid, time.Now().Add(time.Second*15))
+}
+
+func (c *ProcessCache) cleanDeadsLoop(ctx context.Context) {
+	ticker := time.NewTicker(time.Second * 30)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			c.jobCleanDead()
+		}
+	}
+}
+
+func (c *ProcessCache) jobCleanDead() {
+	var pids []int
+	c.deadPids.Range(func(key, value any) bool {
+		exp, ok := value.(time.Time)
+		if !ok {
+			return true
+		}
+		if time.Now().Before(exp) {
+			return true
+		}
+		pid, ok := key.(int)
+		if !ok {
+			return true
+		}
+		pids = append(pids, pid)
+
+		return true
+	})
+
+	for _, pid := range pids {
+		c.deadPids.Delete(pid)
+		c.pids.Delete(pid)
+	}
+	log.Debugf("cleaned %d dead pids", len(pids))
 }
 
 func (c *ProcessCache) AddItemWithContext(exec event.ProcessExec, rawCtx types.PacketContext) {
@@ -116,9 +163,7 @@ func (c *ProcessCache) AddItemWithContext(exec event.ProcessExec, rawCtx types.P
 		}
 	}
 
-	c.lock.Lock()
-	c.m[pid] = pctx
-	c.lock.Unlock()
+	c.pids.Store(pid, pctx)
 
 	log.Debugf("add new cache: %d, %#v", pid, *pctx)
 }
@@ -146,15 +191,17 @@ func (c *ProcessCache) getContainer(ctx types.PacketContext, cgroupName string) 
 }
 
 func (c *ProcessCache) Get(pid int, mntNs, netNs int, cgroupName string) types.PacketContext {
-	c.lock.RLock()
-	ret := c.m[pid]
-	c.lock.RUnlock()
+	ret, ok := c.pids.Load(pid)
 
-	if ret == nil {
+	if ret == nil || !ok {
+		return types.PacketContext{}
+	}
+	ppx, ok := ret.(*types.PacketContext)
+	if ppx == nil || !ok {
 		return types.PacketContext{}
 	}
 
-	pctx := *ret
+	pctx := *ppx
 	pctx.MountNamespaceId = int64(mntNs)
 	pctx.NetNamespaceId = int64(netNs)
 
@@ -171,53 +218,85 @@ func (c *ProcessCache) Get(pid int, mntNs, netNs int, cgroupName string) types.P
 }
 
 func (c *ProcessCache) GetPidsByComm(name string) []int {
-	c.lock.RLock()
-	defer c.lock.RUnlock()
-
 	var pids []int
-	for pid, info := range c.m {
+
+	c.pids.Range(func(key, value any) bool {
+		pid, ok := key.(int)
+		if !ok {
+			return true
+		}
+		info, ok := value.(*types.PacketContext)
+		if !ok {
+			return true
+		}
 		if info.MatchComm(name) {
 			pids = append(pids, pid)
 		}
-	}
+		return true
+	})
+
 	return pids
 }
 
 func (c *ProcessCache) GetPidsByPidNsId(nsid int64) []int {
-	c.lock.RLock()
-	defer c.lock.RUnlock()
-
 	var pids []int
-	for pid, info := range c.m {
+
+	c.pids.Range(func(key, value any) bool {
+		pid, ok := key.(int)
+		if !ok {
+			return true
+		}
+		info, ok := value.(*types.PacketContext)
+		if !ok {
+			return true
+		}
 		if info.PidNamespaceId == nsid {
 			pids = append(pids, pid)
 		}
-	}
+		return true
+	})
+
 	return pids
 }
 
 func (c *ProcessCache) GetPidsByMntNsId(nsid int64) []int {
-	c.lock.RLock()
-	defer c.lock.RUnlock()
-
 	var pids []int
-	for pid, info := range c.m {
+
+	c.pids.Range(func(key, value any) bool {
+		pid, ok := key.(int)
+		if !ok {
+			return true
+		}
+		info, ok := value.(*types.PacketContext)
+		if !ok {
+			return true
+		}
 		if info.MountNamespaceId == nsid {
 			pids = append(pids, pid)
 		}
-	}
+		return true
+	})
+
 	return pids
 }
 
 func (c *ProcessCache) GetPidsByNetNsId(nsid int64) []int {
-	c.lock.RLock()
-	defer c.lock.RUnlock()
-
 	var pids []int
-	for pid, info := range c.m {
+
+	c.pids.Range(func(key, value any) bool {
+		pid, ok := key.(int)
+		if !ok {
+			return true
+		}
+		info, ok := value.(*types.PacketContext)
+		if !ok {
+			return true
+		}
 		if info.NetNamespaceId == nsid {
 			pids = append(pids, pid)
 		}
-	}
+		return true
+	})
+
 	return pids
 }
