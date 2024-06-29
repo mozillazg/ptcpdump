@@ -8,7 +8,6 @@ import (
 	"github.com/mozillazg/ptcpdump/internal/event"
 	"github.com/mozillazg/ptcpdump/internal/log"
 	"github.com/mozillazg/ptcpdump/internal/metadata"
-	"golang.org/x/xerrors"
 )
 
 type PcapNGWriter struct {
@@ -54,7 +53,7 @@ func (w *PcapNGWriter) Write(e *event.Packet) error {
 	}
 
 	if err := w.pw.WritePacketWithOptions(info, e.Data, opts); err != nil {
-		return xerrors.Errorf("writing packet: %w", err)
+		return fmt.Errorf("writing packet: %w", err)
 	}
 	if w.noBuffer {
 		w.pw.Flush()

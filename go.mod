@@ -13,10 +13,8 @@ require (
 	github.com/phuslu/log v1.0.106
 	github.com/shirou/gopsutil/v3 v3.24.4
 	github.com/spf13/cobra v1.8.0
-	github.com/vishvananda/netlink v1.2.1-beta.2
 	github.com/x-way/pktdump v0.0.5
 	golang.org/x/sys v0.20.0
-	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028
 	k8s.io/cri-client v0.31.0-alpha.0.0.20240530211015-c9749ee02fc0
 	k8s.io/klog/v2 v2.120.1
 )
@@ -92,7 +90,6 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
-	github.com/vishvananda/netns v0.0.0-20211101163701-50045581ed74 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.51.0 // indirect

@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -10,7 +11,6 @@ import (
 	"github.com/mozillazg/ptcpdump/internal/types"
 	"github.com/mozillazg/ptcpdump/internal/utils"
 	"github.com/shirou/gopsutil/v3/process"
-	"golang.org/x/xerrors"
 )
 
 const defaultProcDir = "/proc"
@@ -57,7 +57,7 @@ func (c *ProcessCache) Start(ctx context.Context) {
 func (c *ProcessCache) fillRunningProcesses(ctx context.Context) error {
 	ps, err := process.ProcessesWithContext(ctx)
 	if err != nil {
-		return xerrors.Errorf(": %w", err)
+		return fmt.Errorf(": %w", err)
 	}
 	for _, p := range ps {
 		filename, _ := p.Exe()

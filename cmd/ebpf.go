@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/binary"
+	"fmt"
 	"net/netip"
 
 	"github.com/cilium/ebpf/rlimit"
@@ -10,7 +11,6 @@ import (
 	"github.com/mozillazg/ptcpdump/internal/log"
 	"github.com/mozillazg/ptcpdump/internal/metadata"
 	"github.com/mozillazg/ptcpdump/internal/utils"
-	"golang.org/x/xerrors"
 )
 
 func attachHooks(currentConns []metadata.Connection, opts Options) (*bpf.BPF, error) {
@@ -77,7 +77,7 @@ func updateFlowPidMapValues(bf *bpf.BPF, conns []metadata.Connection) error {
 		data[&k] = v
 	}
 	if err := bf.UpdateFlowPidMapValues(data); err != nil {
-		return xerrors.Errorf(": %w", err)
+		return fmt.Errorf(": %w", err)
 	}
 	return nil
 }

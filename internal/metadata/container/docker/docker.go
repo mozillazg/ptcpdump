@@ -3,6 +3,7 @@ package docker
 import (
 	"context"
 	"errors"
+	"fmt"
 	"regexp"
 	"strings"
 	"sync"
@@ -16,7 +17,6 @@ import (
 	"github.com/mozillazg/ptcpdump/internal/log"
 	"github.com/mozillazg/ptcpdump/internal/types"
 	"github.com/mozillazg/ptcpdump/internal/utils"
-	"golang.org/x/xerrors"
 )
 
 const (
@@ -211,7 +211,7 @@ func (d *MetaData) init(ctx context.Context) error {
 		Filters: filters.NewArgs(filters.Arg("status", "running")),
 	})
 	if err != nil {
-		return xerrors.Errorf("list containers: %w", err)
+		return fmt.Errorf("list containers: %w", err)
 	}
 	for _, cr := range containers {
 		d.handleContainerEvent(ctx, cr.ID)
@@ -296,7 +296,7 @@ func (d *MetaData) inspectContainer(ctx context.Context, containerId string) (*t
 
 	data, err := c.ContainerInspect(ctx, containerId)
 	if err != nil {
-		return nil, xerrors.Errorf("inspect container %s: %w", containerId, err)
+		return nil, fmt.Errorf("inspect container %s: %w", containerId, err)
 	}
 
 	cr := &types.Container{

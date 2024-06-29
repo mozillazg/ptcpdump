@@ -1,10 +1,10 @@
 package utils
 
 import (
+	"errors"
+	"fmt"
 	"os"
 	"regexp"
-
-	"golang.org/x/xerrors"
 )
 
 var PathProcMounts = "/proc/mounts"
@@ -17,11 +17,11 @@ func GetCgroupV2RootDir() (string, error) {
 func getCgroupV2RootDir(pathProcMounts string) (string, error) {
 	data, err := os.ReadFile(pathProcMounts)
 	if err != nil {
-		return "", xerrors.Errorf("read file %s: %w", pathProcMounts, err)
+		return "", fmt.Errorf("read file %s: %w", pathProcMounts, err)
 	}
 	items := reCgroup2Mount.FindStringSubmatch(string(data))
 	if len(items) < 2 {
-		return "", xerrors.New("cgroupv2 is not mounted")
+		return "", errors.New("cgroupv2 is not mounted")
 	}
 	return items[1], nil
 }

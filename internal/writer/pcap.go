@@ -1,10 +1,11 @@
 package writer
 
 import (
+	"fmt"
+
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/pcapgo"
 	"github.com/mozillazg/ptcpdump/internal/event"
-	"golang.org/x/xerrors"
 )
 
 type PcapWriter struct {
@@ -24,7 +25,7 @@ func (w *PcapWriter) Write(e *event.Packet) error {
 		InterfaceIndex: e.Device.Ifindex,
 	}
 	if err := w.pw.WritePacket(info, e.Data); err != nil {
-		return xerrors.Errorf("writing packet: %w", err)
+		return fmt.Errorf("writing packet: %w", err)
 	}
 
 	return nil
