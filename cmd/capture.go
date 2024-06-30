@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/mozillazg/ptcpdump/bpf"
+	"github.com/mozillazg/ptcpdump/internal/btf"
 	"github.com/mozillazg/ptcpdump/internal/consumer"
 	"github.com/mozillazg/ptcpdump/internal/log"
 	"github.com/mozillazg/ptcpdump/internal/metadata"
@@ -17,8 +18,13 @@ import (
 )
 
 func capture(ctx context.Context, stop context.CancelFunc, opts Options) error {
-	headerTips(opts)
-	log.Info("capturing...")
+	btfSpec, btfPath, err := btf.LoadBTFSpec(opts.btfPath)
+	if err != nil {
+		logFatal(err)
+	}
+	if btfPath != btf.DefaultPath {
+		log.Warnf("use BTF specs from %s", btfPath)
+	}
 
 	log.Debug("start process and container cache")
 	pcache := metadata.NewProcessCache()
@@ -28,7 +34,6 @@ func capture(ctx context.Context, stop context.CancelFunc, opts Options) error {
 	}
 
 	var subProcessFinished <-chan struct{}
-	var err error
 	var subProcessLoaderPid int
 	if len(opts.subProgArgs) > 0 {
 		log.Debug("start sub process loader")
@@ -58,7 +63,7 @@ func capture(ctx context.Context, stop context.CancelFunc, opts Options) error {
 	conns := getCurrentConnects(ctx, pcache, opts)
 
 	log.Debug("start attach hooks")
-	bf, err := attachHooks(conns, opts)
+	bf, err := attachHooks(btfSpec, conns, opts)
 	if err != nil {
 		if bf != nil {
 			bf.Close()
@@ -79,6 +84,9 @@ func capture(ctx context.Context, stop context.CancelFunc, opts Options) error {
 	if err != nil {
 		return err
 	}
+
+	headerTips(opts)
+	log.Info("capturing...")
 
 	execConsumer := consumer.NewExecEventConsumer(pcache, int(opts.execEventsWorkerNumber))
 	go execConsumer.Start(ctx, execEvensCh)
