@@ -98,6 +98,7 @@ func init() {
 				strings.Join(getDefaultCriRuntimeEndpoint(), ", ")))
 	rootCmd.Flags().Uint32VarP(&opts.snapshotLength, "snapshot-length", "s", 262144,
 		"Snarf snaplen bytes of data from each packet rather than the default of 262144 bytes")
+	rootCmd.Flags().StringVar(&opts.btfPath, "kernel-btf", "", "specify kernel BTF file")
 
 }
 
