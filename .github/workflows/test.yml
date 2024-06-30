@@ -47,6 +47,8 @@ jobs:
       matrix:
         kernel:
           # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
+          - '4.19-20240612.090637'
+          # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
           - '5.4-20240612.090637'
           # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
           - '5.10-20240612.090637'
@@ -80,6 +82,34 @@ jobs:
           install-dependencies: 'true'
           cmd: |
             chmod +x /host/ptcpdump/ptcpdump
+      
+      - name: download btf file
+        if: ${{ startsWith(matrix.kernel, '4.') }}
+        run: |
+          img=quay.io/lvh-images/kernel-images:${{ matrix.kernel }} 
+          docker pull $img
+          id=$(docker create $img)
+          mkdir data/
+          docker cp $id:/data/kernels data/
+          ls -la data/
+          find data/ -path "*vmlinuz*" -type f
+          find data/ -path "*btf*" -type f
+      
+      - name: copy btf file
+        if: ${{ startsWith(matrix.kernel, '4.') }}
+        uses: cilium/little-vm-helper@3c748d6fc9d6c44a433de85a66f70e8f7043be04 # v0.0.18
+        with:
+          provision: 'false'
+          cmd: |
+            uname -a
+            cat /etc/issue
+            cat /etc/os-release
+
+            sudo mkdir -p /var/lib/ptcpdump/btf/
+             
+            sudo cp /host/data/kernels/4.*/boot/btf-4.* /var/lib/ptcpdump/btf/vmlinux
+            # btf_file=$(find /host/ -path "*btf*" -type f)
+            # sudo cp $btf_file /var/lib/ptcpdump/btf/vmlinux
 
       - name: Test default
         uses: cilium/little-vm-helper@3c748d6fc9d6c44a433de85a66f70e8f7043be04 # v0.0.18
@@ -170,7 +200,7 @@ jobs:
             bash /host/testdata/test_exist_connection.sh /host/ptcpdump/ptcpdump
 
       - name: Test arp and icmp
-        if: ${{ !startsWith(matrix.kernel, '5.4') }}
+        if: ${{ (!startsWith(matrix.kernel, '5.4')) && (!startsWith(matrix.kernel, '4.')) }}
         uses: cilium/little-vm-helper@3c748d6fc9d6c44a433de85a66f70e8f7043be04 # v0.0.18
         with:
           provision: 'false'

@@ -7,6 +7,7 @@ import (
 	"unsafe"
 
 	"github.com/cilium/ebpf"
+	"github.com/cilium/ebpf/btf"
 	"github.com/cilium/ebpf/link"
 	"github.com/florianl/go-tc"
 	"github.com/florianl/go-tc/core"
@@ -17,7 +18,7 @@ import (
 )
 
 // $TARGET is set by the Makefile
-//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc clang -no-strip -target $TARGET -type packet_event_t -type exec_event_t -type exit_event_t -type flow_pid_key_t -type process_meta_t -type packet_event_meta_t Bpf ./ptcpdump.c -- -I./headers -I./headers/$TARGET -I. -Wall
+//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc clang -no-strip -target $TARGET -type gconfig_t -type packet_event_t -type exec_event_t -type exit_event_t -type flow_pid_key_t -type process_meta_t -type packet_event_meta_t Bpf ./ptcpdump.c -- -I./headers -I./headers/$TARGET -I. -Wall
 
 const tcFilterName = "ptcpdump"
 const logSzie = ebpf.DefaultVerifierLogSize * 32
@@ -45,8 +46,9 @@ type BPF struct {
 	opts       Options
 	closeFuncs []func()
 
-	skipAttachCgroup bool
-	report           *types.CountReport
+	skipAttachCgroup   bool
+	supportGlobalConst bool
+	report             *types.CountReport
 }
 
 type Options struct {
@@ -59,18 +61,34 @@ type Options struct {
 	pidnsId        uint32
 	netnsId        uint32
 	maxPayloadSize uint32
+	KernelTypes    *btf.Spec
 }
 
 func NewBPF() (*BPF, error) {
-	spec, err := LoadBpf()
+	var supportConst bool
+	if ok, err := supportGlobalConst(); err != nil {
+		log.Warnf("%s", err)
+	} else {
+		supportConst = ok
+	}
+	b := _BpfBytes
+	if !supportConst {
+		b = _Bpf_legacyBytes
+	}
+
+	spec, err := LoadBpfWithData(b)
 	if err != nil {
 		return nil, err
 	}
-	return &BPF{
-		spec:   spec,
-		objs:   &BpfObjects{},
-		report: &types.CountReport{},
-	}, nil
+
+	bf := &BPF{
+		spec:               spec,
+		objs:               &BpfObjects{},
+		report:             &types.CountReport{},
+		supportGlobalConst: supportConst,
+	}
+
+	return bf, nil
 }
 
 func NewOptions(pid uint, comm string, followForks bool, pcapFilter string,
@@ -104,18 +122,25 @@ func NewOptions(pid uint, comm string, followForks bool, pcapFilter string,
 
 func (b *BPF) Load(opts Options) error {
 	log.Debugf("load with opts: %#v", opts)
-	err := b.spec.RewriteConstants(map[string]interface{}{
-		"filter_pid":          opts.Pid,
-		"filter_comm":         opts.Comm,
-		"filter_comm_enable":  opts.filterComm,
-		"filter_follow_forks": opts.FollowForks,
-		"filter_mntns_id":     opts.mntnsId,
-		"filter_netns_id":     opts.netnsId,
-		"filter_pidns_id":     opts.pidnsId,
-		"max_payload_size":    opts.maxPayloadSize,
-	})
-	if err != nil {
-		return fmt.Errorf("rewrite constants: %w", err)
+	var err error
+
+	config := BpfGconfigT{
+		FilterPid:         opts.Pid,
+		FilterComm:        opts.Comm,
+		FilterCommEnable:  opts.filterComm,
+		FilterFollowForks: opts.FollowForks,
+		FilterMntnsId:     opts.mntnsId,
+		FilterNetnsId:     opts.netnsId,
+		FilterPidnsId:     opts.pidnsId,
+		MaxPayloadSize:    opts.maxPayloadSize,
+	}
+	if b.supportGlobalConst {
+		err = b.spec.RewriteConstants(map[string]interface{}{
+			"g": config,
+		})
+		if err != nil {
+			return fmt.Errorf("rewrite constants: %w", err)
+		}
 	}
 
 	if opts.PcapFilter != "" {
@@ -141,8 +166,9 @@ func (b *BPF) Load(opts Options) error {
 
 	err = b.spec.LoadAndAssign(b.objs, &ebpf.CollectionOptions{
 		Programs: ebpf.ProgramOptions{
-			LogLevel: ebpf.LogLevelInstruction,
-			LogSize:  logSzie,
+			KernelTypes: opts.KernelTypes,
+			LogLevel:    ebpf.LogLevelInstruction,
+			LogSize:     logSzie,
 		},
 	})
 	if err != nil {
@@ -153,8 +179,9 @@ func (b *BPF) Load(opts Options) error {
 			objs := BpfObjectsWithoutCgroup{}
 			if err = b.spec.LoadAndAssign(&objs, &ebpf.CollectionOptions{
 				Programs: ebpf.ProgramOptions{
-					LogLevel: ebpf.LogLevelInstruction,
-					LogSize:  logSzie,
+					KernelTypes: opts.KernelTypes,
+					LogLevel:    ebpf.LogLevelInstruction,
+					LogSize:     logSzie,
 				},
 			}); err != nil {
 				return err
@@ -176,6 +203,13 @@ func (b *BPF) Load(opts Options) error {
 		}
 	}
 	b.opts = opts
+
+	if !b.supportGlobalConst {
+		key := uint8(0)
+		if err := b.objs.BpfMaps.ConfigMap.Update(key, config, ebpf.UpdateNoExist); err != nil {
+			return fmt.Errorf(": %w", err)
+		}
+	}
 
 	return nil
 }

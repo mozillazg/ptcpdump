@@ -48,6 +48,7 @@ type Options struct {
 	dockerEndpoint     string
 	containerdEndpoint string
 	criRuntimeEndpoint string
+	btfPath            string
 
 	subProgArgs []string
 
