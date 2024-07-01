@@ -14,9 +14,9 @@ require (
 	github.com/shirou/gopsutil/v3 v3.24.4
 	github.com/spf13/cobra v1.8.0
 	github.com/x-way/pktdump v0.0.5
-	golang.org/x/sys v0.20.0
+	golang.org/x/sys v0.21.0
 	k8s.io/cri-client v0.31.0-alpha.0.0.20240530211015-c9749ee02fc0
-	k8s.io/klog/v2 v2.120.1
+	k8s.io/klog/v2 v2.130.1
 )
 
 require (
@@ -93,11 +93,11 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.51.0 // indirect
-	go.opentelemetry.io/otel v1.26.0 // indirect
+	go.opentelemetry.io/otel v1.27.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.26.0 // indirect
-	go.opentelemetry.io/otel/metric v1.26.0 // indirect
+	go.opentelemetry.io/otel/metric v1.27.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.26.0 // indirect
-	go.opentelemetry.io/otel/trace v1.26.0
+	go.opentelemetry.io/otel/trace v1.27.0
 	golang.org/x/exp v0.0.0-20230224173230-c95f2b4c22f2 // indirect
 	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
