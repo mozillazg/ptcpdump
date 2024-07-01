@@ -11,7 +11,7 @@ require (
 	github.com/gopacket/gopacket v1.2.0
 	github.com/jschwinger233/elibpcap v0.0.0-20231010035657-e99300096f5e
 	github.com/phuslu/log v1.0.106
-	github.com/shirou/gopsutil/v3 v3.24.4
+	github.com/shirou/gopsutil/v4 v4.24.6
 	github.com/spf13/cobra v1.8.0
 	github.com/x-way/pktdump v0.0.5
 	golang.org/x/sys v0.20.0
