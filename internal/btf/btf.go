@@ -1,6 +1,7 @@
 package btf
 
 import (
+	"debug/elf"
 	"context"
 	"fmt"
 	"io"
@@ -19,10 +20,10 @@ const (
 	candidatePath = "/var/lib/ptcpdump/btf/vmlinux"
 
 	// https://github.com/aquasecurity/btfhub-archive/raw/main/centos/7/x86_64/4.19.113-300.el7.x86_64.btf.tar.xz
-	btfHubURL = "https://github.com/aquasecurity/btfhub-archive/raw/main/%s/%s/%s/%s.%s.btf.tar.xz"
+	btfHubURL = "https://github.com/aquasecurity/btfhub-archive/raw/main/%s/%s/%s/%s.btf.tar.xz"
 
 	// https://mirrors.openanolis.cn/coolbpf/btf/x86_64/vmlinux-4.19.91-21.al7.x86_64
-	openanolisURL = "https://mirrors.openanolis.cn/coolbpf/btf/%s/vmlinux-%s.%s"
+	openanolisURL = "https://mirrors.openanolis.cn/coolbpf/btf/%s/vmlinux-%s"
 )
 
 const (
@@ -34,15 +35,15 @@ func GetBTFSpec(path string) (*btf.Spec, error) {
 	if path != "" {
 		spec, err := btf.LoadSpec(path)
 		if err == nil {
-			log.Debugf("use btf from %s", path)
+			log.Warnf("use BTF specs from %s", path)
 			return spec, nil
 		}
-		return nil, fmt.Errorf("load btf from %s: %w", path, err)
+		return nil, fmt.Errorf("load BTF specs from %s: %w", path, err)
 	}
 
 	spec, err := btf.LoadKernelSpec()
 	if err == nil {
-		log.Debug("use btf from default location")
+		log.Debug("use BTF specs from default locations")
 		return spec, nil
 	}
 
@@ -51,6 +52,7 @@ func GetBTFSpec(path string) (*btf.Spec, error) {
 		return spec, nil
 	}
 
+	log.Warn("could not load BTF specs from local, try to load from remote")
 	spec, err = loadSpecFromRemote()
 	if err != nil {
 		return nil, err
@@ -79,28 +81,29 @@ func loadSpecFromRemote() (*btf.Spec, error) {
 
 	spec, err := loadSpecFromOpenanolis(arch, *release, kernelVersion, saveDir)
 	if err != nil {
-		log.Debugf("load BTF specs from Openanolis: %s", err)
+		log.Errorf("load BTF specs from OpenAnolis failed: %s", err)
 	}
 	if spec != nil {
+		log.Warnf("use BTF specs from %s")
 		return spec, nil
 	}
 
 	spec, err = loadSpecFromBTFHub(arch, *release, kernelVersion, saveDir)
 	if err != nil {
-		log.Debugf("load BTF specs from BTFHub: %s", err)
+		log.Errorf("load BTF specs from BTFHub failed: %s", err)
 	}
 	return spec, err
 }
 
 func loadSpecFromBTFHub(arch string, release host.Release, kernelVersion, saveDir string) (*btf.Spec, error) {
-	path := filepath.Join(saveDir, fmt.Sprintf("%s.%s.btf", kernelVersion, arch))
+	path := filepath.Join(saveDir, fmt.Sprintf("%s.btf", kernelVersion))
 	if exist, err := fileExist(path); err != nil {
 		return nil, err
 	} else if exist {
 		return btf.LoadSpec(path)
 	}
 
-	downloadUrl := fmt.Sprintf(btfHubURL, release.Id, release.VersionId, arch, kernelVersion, arch)
+	downloadUrl := fmt.Sprintf(btfHubURL, release.Id, release.VersionId, arch, kernelVersion)
 	resp, err := httpGet(context.TODO(), downloadUrl)
 	if err != nil {
 		return nil, fmt.Errorf("download BTF specs from %s: %w", downloadUrl, err)
@@ -126,21 +129,21 @@ func loadSpecFromBTFHub(arch string, release host.Release, kernelVersion, saveDi
 		return nil, fmt.Errorf("rename %s to %s: %w", tmpPath, path, err)
 	}
 
-	return btf.LoadSpec(path)
+	return loadSpec(path)
 }
 
 func loadSpecFromOpenanolis(arch string, _ host.Release, kernelVersion, saveDir string) (*btf.Spec, error) {
 	if arch == "arm64" {
 		arch = "aarch64"
 	}
-	path := filepath.Join(saveDir, fmt.Sprintf("vmlinux-%s.%s ", kernelVersion, arch))
+	path := filepath.Join(saveDir, fmt.Sprintf("vmlinux-%s", kernelVersion))
 	if exist, err := fileExist(path); err != nil {
 		return nil, err
 	} else if exist {
 		return btf.LoadSpec(path)
 	}
 
-	downloadUrl := fmt.Sprintf(openanolisURL, arch, kernelVersion, arch)
+	downloadUrl := fmt.Sprintf(openanolisURL, arch, kernelVersion)
 	resp, err := httpGet(context.TODO(), downloadUrl)
 	if err != nil {
 		return nil, fmt.Errorf("download BTF specs from %s: %w", downloadUrl, err)
@@ -159,15 +162,22 @@ func loadSpecFromOpenanolis(arch string, _ host.Release, kernelVersion, saveDir 
 		return nil, fmt.Errorf("rename %s to %s: %w", tmpPath, path, err)
 	}
 
-	return btf.LoadSpec(path)
+	return loadSpec(path)
 }
 
 func httpGet(ctx context.Context, url string) (*http.Response, error) {
+	// TODO: add timeout
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
 	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("status code is not 200: %d", resp.StatusCode)
+	}
 	return resp, err
 }
 
@@ -186,22 +196,67 @@ func loadSpecFromCandidateLocations() (*btf.Spec, error) {
 	path := candidatePath
 	spec, err := btf.LoadSpec(path)
 	if err == nil {
-		log.Debugf("use btf from %s", path)
+		log.Debugf("use BTF specs from %s", path)
 		return spec, nil
 	}
-	log.Debugf("load btf from %s failed: %s", path, err)
+	log.Debugf("load BTF specs from %s failed: %s", path, err)
 
 	kernelVersion, err := host.GetKernelVersion()
 	if err != nil {
 		return nil, fmt.Errorf("get kernel version: %w", err)
 	}
 	path = fmt.Sprintf("%s-%s", candidatePath, kernelVersion)
-	spec, err = btf.LoadSpec(path)
+
+	return loadSpec(path)
+}
+
+func loadSpec(path string) (*btf.Spec, error) {
+	spec, err := btf.LoadSpec(path)
 	if err == nil {
-		log.Debugf("use btf from %s", path)
+		log.Debugf("use BTF specs from %s", path)
 		return spec, nil
 	}
-	log.Debugf("load btf from %s failed: %s", path, err)
-
+	if spec, err := loadSpecFromELF(path); err == nil {
+		return spec, nil
+	}
+	log.Warnf("load BTF specs from %s failed: %s", path, err)
 	return nil, err
+}
+
+func loadSpecFromELF(path string) (spec *btf.Spec, err error) {
+	defer func() {
+		r := recover()
+		if r == nil {
+			return
+		}
+		err = fmt.Errorf("reading ELF file panicked: %s", r)
+	}()
+
+	file, err := elf.Open(path)
+	if err != nil {
+		return nil, err
+	}
+
+	var (
+		btfSection   *elf.Section
+	)
+
+	for _, sec := range file.Sections {
+		switch sec.Name {
+		case ".BTF":
+			btfSection = sec
+		default:
+		}
+	}
+
+	if btfSection == nil {
+		return nil, fmt.Errorf("btf: %w", btf.ErrNotFound)
+	}
+
+	if btfSection.ReaderAt == nil {
+		return nil, fmt.Errorf("compressed BTF is not supported")
+	}
+
+	spec, err = btf.LoadSpecFromReader(btfSection.ReaderAt)
+	return spec, err
 }

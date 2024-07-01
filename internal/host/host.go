@@ -77,7 +77,7 @@ func GetKernelVersion() (string, error) {
 		if err != nil {
 			kernelVersionInfo.err = fmt.Errorf(": %w", err)
 		} else {
-			kernelVersionInfo.version = unix.ByteSliceToString(uname.Release[:])
+			kernelVersionInfo.version = strings.TrimSpace(unix.ByteSliceToString(uname.Release[:]))
 		}
 	})
 
