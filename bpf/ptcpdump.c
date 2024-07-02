@@ -502,11 +502,9 @@ int raw_tracepoint__sched_process_fork(struct bpf_raw_tracepoint_args *ctx) {
     return 0;
 }
 
+#ifndef NO_CONST
 SEC("cgroup/sock_create")
 int cgroup__sock_create(void *ctx) {
-#ifdef NO_CONST
-	return 1;
-#else
     u64 cookie = bpf_get_socket_cookie(ctx);
     if (cookie <= 0) {
         // bpf_printk("[ptcpdump] sock_create: bpf_get_socket_cookie failed");
@@ -530,14 +528,12 @@ int cgroup__sock_create(void *ctx) {
     }
 
     return 1;
-#endif
 }
+#endif
 
+#ifndef NO_CONST
 SEC("cgroup/sock_release")
 int cgroup__sock_release(void *ctx) {
-#ifdef NO_CONST
-	return 1;
-#else
     u64 cookie = bpf_get_socket_cookie(ctx);
     if (cookie <= 0) {
         return 1;
@@ -545,8 +541,8 @@ int cgroup__sock_release(void *ctx) {
 
     bpf_map_delete_elem(&sock_cookie_pid_map, &cookie);
     return 1;
-#endif
 }
+#endif
 
 SEC("kprobe/security_sk_classify_flow")
 int BPF_KPROBE(kprobe__security_sk_classify_flow, struct sock *sk) {

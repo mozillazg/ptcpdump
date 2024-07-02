@@ -53,8 +53,6 @@ type bpf_legacySpecs struct {
 //
 // It can be passed ebpf.CollectionSpec.Assign.
 type bpf_legacyProgramSpecs struct {
-	CgroupSockCreate              *ebpf.ProgramSpec `ebpf:"cgroup__sock_create"`
-	CgroupSockRelease             *ebpf.ProgramSpec `ebpf:"cgroup__sock_release"`
 	KprobeNfNatManipPkt           *ebpf.ProgramSpec `ebpf:"kprobe__nf_nat_manip_pkt"`
 	KprobeNfNatPacket             *ebpf.ProgramSpec `ebpf:"kprobe__nf_nat_packet"`
 	KprobeSecuritySkClassifyFlow  *ebpf.ProgramSpec `ebpf:"kprobe__security_sk_classify_flow"`
@@ -137,8 +135,6 @@ func (m *bpf_legacyMaps) Close() error {
 //
 // It can be passed to loadBpf_legacyObjects or ebpf.CollectionSpec.LoadAndAssign.
 type bpf_legacyPrograms struct {
-	CgroupSockCreate              *ebpf.Program `ebpf:"cgroup__sock_create"`
-	CgroupSockRelease             *ebpf.Program `ebpf:"cgroup__sock_release"`
 	KprobeNfNatManipPkt           *ebpf.Program `ebpf:"kprobe__nf_nat_manip_pkt"`
 	KprobeNfNatPacket             *ebpf.Program `ebpf:"kprobe__nf_nat_packet"`
 	KprobeSecuritySkClassifyFlow  *ebpf.Program `ebpf:"kprobe__security_sk_classify_flow"`
@@ -154,8 +150,6 @@ type bpf_legacyPrograms struct {
 
 func (p *bpf_legacyPrograms) Close() error {
 	return _Bpf_legacyClose(
-		p.CgroupSockCreate,
-		p.CgroupSockRelease,
 		p.KprobeNfNatManipPkt,
 		p.KprobeNfNatPacket,
 		p.KprobeSecuritySkClassifyFlow,

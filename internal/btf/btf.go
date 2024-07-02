@@ -1,8 +1,8 @@
 package btf
 
 import (
-	"debug/elf"
 	"context"
+	"debug/elf"
 	"fmt"
 	"io"
 	"net/http"
@@ -238,7 +238,7 @@ func loadSpecFromELF(path string) (spec *btf.Spec, err error) {
 	}
 
 	var (
-		btfSection   *elf.Section
+		btfSection *elf.Section
 	)
 
 	for _, sec := range file.Sections {
