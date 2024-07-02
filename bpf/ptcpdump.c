@@ -504,6 +504,9 @@ int raw_tracepoint__sched_process_fork(struct bpf_raw_tracepoint_args *ctx) {
 
 SEC("cgroup/sock_create")
 int cgroup__sock_create(void *ctx) {
+#ifdef NO_CONST
+	return 1;
+#else
     u64 cookie = bpf_get_socket_cookie(ctx);
     if (cookie <= 0) {
         // bpf_printk("[ptcpdump] sock_create: bpf_get_socket_cookie failed");
@@ -527,10 +530,14 @@ int cgroup__sock_create(void *ctx) {
     }
 
     return 1;
+#endif
 }
 
 SEC("cgroup/sock_release")
 int cgroup__sock_release(void *ctx) {
+#ifdef NO_CONST
+	return 1;
+#else
     u64 cookie = bpf_get_socket_cookie(ctx);
     if (cookie <= 0) {
         return 1;
@@ -538,6 +545,7 @@ int cgroup__sock_release(void *ctx) {
 
     bpf_map_delete_elem(&sock_cookie_pid_map, &cookie);
     return 1;
+#endif
 }
 
 SEC("kprobe/security_sk_classify_flow")
@@ -728,6 +736,8 @@ static __always_inline void route_packet(struct packet_meta_t *packet_meta, stru
 }
 
 static __always_inline int get_pid_meta(struct __sk_buff *skb, struct process_meta_t *pid_meta, bool egress) {
+#ifdef NO_CONST
+#else
     u64 cookie = bpf_get_socket_cookie(skb);
     if (cookie > 0) {
         struct process_meta_t *value = bpf_map_lookup_elem(&sock_cookie_pid_map, &cookie);
@@ -745,6 +755,7 @@ static __always_inline int get_pid_meta(struct __sk_buff *skb, struct process_me
             //            bpf_printk("[ptcpdump] tc ingress: bpf_get_socket_cookie failed");
         }
     }
+#endif
 
     struct packet_meta_t packet_meta = {0};
     int ret = parse_skb_meta(skb, &packet_meta);
