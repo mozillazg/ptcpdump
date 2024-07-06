@@ -653,14 +653,15 @@ struct nf_conn__older_52 {
     struct nf_conntrack_tuple_hash tuplehash[IP_CT_DIR_MAX];
 };
 
-static __always_inline void handle_nat(struct nf_conn *ct) {
+static __always_inline void handle_nat(void *ct) {
     struct nf_conntrack_tuple_hash tuplehash[IP_CT_DIR_MAX];
 
     struct nf_conn__older_52 *nf_conn_old = (void *) ct;
+    struct nf_conn *nf_conn_new = (void *) ct;
     if (bpf_core_field_exists(nf_conn_old->cpu)) {
         bpf_core_read(&tuplehash, sizeof(tuplehash), &nf_conn_old->tuplehash);
     } else {
-        bpf_core_read(&tuplehash, sizeof(tuplehash), &ct->tuplehash);
+        bpf_core_read(&tuplehash, sizeof(tuplehash), &nf_conn_new->tuplehash);
     }
 
     struct nf_conntrack_tuple *orig_tuple = &tuplehash[IP_CT_DIR_ORIGINAL].tuple;
@@ -693,13 +694,13 @@ static __always_inline void handle_nat(struct nf_conn *ct) {
 }
 
 SEC("kprobe/nf_nat_packet")
-int BPF_KPROBE(kprobe__nf_nat_packet, struct nf_conn *ct) {
+int BPF_KPROBE(kprobe__nf_nat_packet, void *ct) {
     handle_nat(ct);
     return 0;
 }
 
 SEC("kprobe/nf_nat_manip_pkt")
-int BPF_KPROBE(kprobe__nf_nat_manip_pkt, void *_, struct nf_conn *ct) {
+int BPF_KPROBE(kprobe__nf_nat_manip_pkt, void *_, void *ct) {
     handle_nat(ct);
     return 0;
 }
