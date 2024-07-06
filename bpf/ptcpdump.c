@@ -644,9 +644,24 @@ static __always_inline void reverse_flow(struct nat_flow_t *orig_flow, struct na
     new_flow->dport = orig_flow->sport;
 }
 
+// https://elixir.bootlin.com/linux/v5.2.21/source/include/net/netfilter/nf_conntrack.h
+struct nf_conn__older_52 {
+    struct nf_conntrack ct_general;
+    spinlock_t	lock;
+    u16		cpu;
+    struct nf_conntrack_zone zone;
+    struct nf_conntrack_tuple_hash tuplehash[IP_CT_DIR_MAX];
+};
+
 static __always_inline void handle_nat(struct nf_conn *ct) {
     struct nf_conntrack_tuple_hash tuplehash[IP_CT_DIR_MAX];
-    bpf_probe_read(&tuplehash, sizeof(tuplehash), &ct->tuplehash);
+
+    struct nf_conn__older_52 *nf_conn_old = (void *) ct;
+    if (bpf_core_field_exists(nf_conn_old->cpu)) {
+        bpf_core_read(&tuplehash, sizeof(tuplehash), &nf_conn_old->tuplehash);
+    } else {
+        bpf_core_read(&tuplehash, sizeof(tuplehash), &ct->tuplehash);
+    }
 
     struct nf_conntrack_tuple *orig_tuple = &tuplehash[IP_CT_DIR_ORIGINAL].tuple;
     struct nf_conntrack_tuple *reply_tuple = &tuplehash[IP_CT_DIR_REPLY].tuple;
