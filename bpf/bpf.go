@@ -213,7 +213,7 @@ func (b *BPF) Load(opts Options) error {
 
 	if b.isLegacyKernel {
 		key := uint32(0)
-		if err := b.objs.BpfMaps.ConfigMap.Update(key, config, ebpf.UpdateNoExist); err != nil {
+		if err := b.objs.BpfMaps.ConfigMap.Update(key, config, ebpf.UpdateAny); err != nil {
 			return fmt.Errorf(": %w", err)
 		}
 	}
