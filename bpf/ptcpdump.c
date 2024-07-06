@@ -643,6 +643,41 @@ static __always_inline void reverse_flow(struct nat_flow_t *orig_flow, struct na
     new_flow->sport = orig_flow->dport;
     new_flow->dport = orig_flow->sport;
 }
+struct nf_conntrack_tuple__custom {
+	struct nf_conntrack_man src;
+	struct {
+		union nf_inet_addr u3;
+		union {
+			__be16 all;
+			struct {
+				__be16 port;
+			} tcp;
+			struct {
+				__be16 port;
+			} udp;
+			struct {
+				u_int8_t type;
+				u_int8_t code;
+			} icmp;
+			struct {
+				__be16 port;
+			} dccp;
+			struct {
+				__be16 port;
+			} sctp;
+			struct {
+				__be16 key;
+			} gre;
+		} u;
+		u_int8_t protonum;
+		u_int8_t dir;
+	} dst;
+} __attribute__((preserve_access_index));
+
+struct nf_conntrack_tuple_hash__custom {
+	struct hlist_nulls_node hnnode;
+	struct nf_conntrack_tuple__custom tuple;
+} __attribute__((preserve_access_index));
 
 // https://elixir.bootlin.com/linux/v5.2.21/source/include/net/netfilter/nf_conntrack.h
 struct nf_conn__older_52 {
@@ -650,28 +685,23 @@ struct nf_conn__older_52 {
     spinlock_t	lock;
     u16		__cpu;
     struct nf_conntrack_zone zone;
-    struct nf_conntrack_tuple_hash tuplehash[IP_CT_DIR_MAX];
-} __attribute__((preserve_access_index));
-
-struct nf_conn__new {
-    struct nf_conntrack ct_general;
-    spinlock_t	lock;
-    u32 __timeout;
-    struct nf_conntrack_zone zone;
-    struct nf_conntrack_tuple_hash tuplehash[IP_CT_DIR_MAX];
+    struct nf_conntrack_tuple_hash__custom tuplehash[IP_CT_DIR_MAX];
 } __attribute__((preserve_access_index));
 
 static __always_inline void handle_nat(struct nf_conn *ct) {
     struct nf_conntrack_tuple_hash tuplehash[IP_CT_DIR_MAX];
 
-    struct nf_conn__older_52 *nf_conn_old = (void *) ct;
-    struct nf_conn__new *nf_conn_new = (void *) ct;
-    if (bpf_core_field_exists(nf_conn_old->tuplehash)) {
-         BPF_CORE_READ_INTO(&tuplehash, nf_conn_old, tuplehash);
-
-    } else if (bpf_core_field_exists(ct->tuplehash)) {
+    if (bpf_core_field_exists(ct->tuplehash)) {
          BPF_CORE_READ_INTO(&tuplehash, ct, tuplehash);
+    } else { 
+	    struct nf_conn__older_52 *nf_conn_old = (void *) ct;
+	    if (bpf_core_field_exists(nf_conn_old->tuplehash)) {
+		 BPF_CORE_READ_INTO(&tuplehash, nf_conn_old, tuplehash);
+	    } else {
+		    return;
+	    }
     }
+
 
     struct nf_conntrack_tuple *orig_tuple = &tuplehash[IP_CT_DIR_ORIGINAL].tuple;
     struct nf_conntrack_tuple *reply_tuple = &tuplehash[IP_CT_DIR_REPLY].tuple;
