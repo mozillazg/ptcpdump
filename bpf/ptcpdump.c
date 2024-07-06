@@ -653,14 +653,24 @@ struct nf_conn__older_52 {
     struct nf_conntrack_tuple_hash tuplehash[IP_CT_DIR_MAX];
 } __attribute__((preserve_access_index));
 
+struct nf_conn__new {
+    struct nf_conntrack ct_general;
+    spinlock_t	lock;
+    u32 __timeout;
+    struct nf_conntrack_zone zone;
+    struct nf_conntrack_tuple_hash tuplehash[IP_CT_DIR_MAX];
+} __attribute__((preserve_access_index));
+
 static __always_inline void handle_nat(struct nf_conn *ct) {
     struct nf_conntrack_tuple_hash tuplehash[IP_CT_DIR_MAX];
 
     struct nf_conn__older_52 *nf_conn_old = (void *) ct;
+    struct nf_conn__new *nf_conn_new = (void *) ct;
     if (bpf_core_field_exists(nf_conn_old->__cpu)) {
          BPF_CORE_READ_INTO(&tuplehash, nf_conn_old, tuplehash);
-    } else {
-         BPF_CORE_READ_INTO(&tuplehash, ct, tuplehash);
+
+    } else if (bpf_core_field_exists(nf_conn_new->__timeout)) {
+         BPF_CORE_READ_INTO(&tuplehash, nf_conn_new, tuplehash);
     }
 
     struct nf_conntrack_tuple *orig_tuple = &tuplehash[IP_CT_DIR_ORIGINAL].tuple;
