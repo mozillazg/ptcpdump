@@ -173,9 +173,9 @@ func (b *BPF) Load(opts Options) error {
 			},
 		})
 	}
-	if err != nil || !b.supportGlobalConst {
-		if strings.Contains(err.Error(), "unknown func bpf_get_socket_cookie") ||
-			strings.Contains(err.Error(), "bad CO-RE relocatoin") || !b.supportGlobalConst {
+	if !b.supportGlobalConst || err != nil {
+		if !b.supportGlobalConst || strings.Contains(err.Error(), "unknown func bpf_get_socket_cookie") ||
+			strings.Contains(err.Error(), "bad CO-RE relocatoin") {
 			log.Warnf("will skip attach cgroup due to %s", err)
 
 			b.skipAttachCgroup = true
