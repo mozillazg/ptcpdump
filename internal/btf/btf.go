@@ -33,7 +33,7 @@ const (
 
 func GetBTFSpec(path string) (*btf.Spec, error) {
 	if path != "" {
-		spec, err := btf.LoadSpec(path)
+		spec, err := loadSpec(path)
 		if err == nil {
 			log.Warnf("use BTF specs from %s", path)
 			return spec, nil
@@ -140,7 +140,7 @@ func loadSpecFromOpenanolis(arch string, _ host.Release, kernelVersion, saveDir 
 	if exist, err := fileExist(path); err != nil {
 		return nil, err
 	} else if exist {
-		return btf.LoadSpec(path)
+		return loadSpec(path)
 	}
 
 	downloadUrl := fmt.Sprintf(openanolisURL, arch, kernelVersion)
@@ -194,7 +194,7 @@ func fileExist(path string) (bool, error) {
 
 func loadSpecFromCandidateLocations() (*btf.Spec, error) {
 	path := candidatePath
-	spec, err := btf.LoadSpec(path)
+	spec, err := loadSpec(path)
 	if err == nil {
 		log.Debugf("use BTF specs from %s", path)
 		return spec, nil
