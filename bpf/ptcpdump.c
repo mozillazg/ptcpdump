@@ -666,11 +666,11 @@ static __always_inline void handle_nat(struct nf_conn *ct) {
 
     struct nf_conn__older_52 *nf_conn_old = (void *) ct;
     struct nf_conn__new *nf_conn_new = (void *) ct;
-    if (bpf_core_field_exists(nf_conn_old->__cpu)) {
+    if (bpf_core_field_exists(nf_conn_old->tuplehash)) {
          BPF_CORE_READ_INTO(&tuplehash, nf_conn_old, tuplehash);
 
-    } else if (bpf_core_field_exists(nf_conn_new->__timeout)) {
-         BPF_CORE_READ_INTO(&tuplehash, nf_conn_new, tuplehash);
+    } else if (bpf_core_field_exists(ct->tuplehash)) {
+         BPF_CORE_READ_INTO(&tuplehash, ct, tuplehash);
     }
 
     struct nf_conntrack_tuple *orig_tuple = &tuplehash[IP_CT_DIR_ORIGINAL].tuple;
