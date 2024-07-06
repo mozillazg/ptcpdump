@@ -646,7 +646,7 @@ static __always_inline void reverse_flow(struct nat_flow_t *orig_flow, struct na
 
 static __always_inline void handle_nat(struct nf_conn *ct) {
     struct nf_conntrack_tuple_hash tuplehash[IP_CT_DIR_MAX];
-    BPF_CORE_READ_INTO(&tuplehash, ct, tuplehash);
+    bpf_probe_read(&tuplehash, sizeof(tuplehash), &ct->tuplehash);
 
     struct nf_conntrack_tuple *orig_tuple = &tuplehash[IP_CT_DIR_ORIGINAL].tuple;
     struct nf_conntrack_tuple *reply_tuple = &tuplehash[IP_CT_DIR_REPLY].tuple;
