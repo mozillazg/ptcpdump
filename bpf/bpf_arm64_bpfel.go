@@ -30,6 +30,18 @@ type BpfFlowPidKeyT struct {
 	_     [6]byte
 }
 
+type BpfGconfigT struct {
+	FilterPid         uint32
+	FilterFollowForks uint8
+	FilterComm        [16]int8
+	FilterCommEnable  uint8
+	_                 [2]byte
+	FilterMntnsId     uint32
+	FilterNetnsId     uint32
+	FilterPidnsId     uint32
+	MaxPayloadSize    uint32
+}
+
 type BpfNatFlowT struct {
 	Saddr [2]uint64
 	Daddr [2]uint64
@@ -118,6 +130,7 @@ type BpfProgramSpecs struct {
 //
 // It can be passed ebpf.CollectionSpec.Assign.
 type BpfMapSpecs struct {
+	ConfigMap           *ebpf.MapSpec `ebpf:"config_map"`
 	ExecEventStack      *ebpf.MapSpec `ebpf:"exec_event_stack"`
 	ExecEvents          *ebpf.MapSpec `ebpf:"exec_events"`
 	ExitEvents          *ebpf.MapSpec `ebpf:"exit_events"`
@@ -149,6 +162,7 @@ func (o *BpfObjects) Close() error {
 //
 // It can be passed to LoadBpfObjects or ebpf.CollectionSpec.LoadAndAssign.
 type BpfMaps struct {
+	ConfigMap           *ebpf.Map `ebpf:"config_map"`
 	ExecEventStack      *ebpf.Map `ebpf:"exec_event_stack"`
 	ExecEvents          *ebpf.Map `ebpf:"exec_events"`
 	ExitEvents          *ebpf.Map `ebpf:"exit_events"`
@@ -163,6 +177,7 @@ type BpfMaps struct {
 
 func (m *BpfMaps) Close() error {
 	return _BpfClose(
+		m.ConfigMap,
 		m.ExecEventStack,
 		m.ExecEvents,
 		m.ExitEvents,

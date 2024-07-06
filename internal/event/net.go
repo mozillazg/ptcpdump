@@ -1,15 +1,14 @@
 package event
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/gopacket/gopacket"
 	"github.com/mozillazg/ptcpdump/bpf"
 	"github.com/mozillazg/ptcpdump/internal/dev"
+	"github.com/mozillazg/ptcpdump/internal/host"
 	"github.com/mozillazg/ptcpdump/internal/log"
 	"github.com/mozillazg/ptcpdump/internal/utils"
-	"golang.org/x/sys/unix"
 )
 
 type packetType int
@@ -93,20 +92,10 @@ func strComm(comm [16]int8) string {
 }
 
 func convertBpfKTimeNs(t uint64) (time.Time, error) {
-	b, err := getBootTimeNs()
+	b, err := host.GetBootTimeNs()
 	if err != nil {
 		return time.Time{}, err
 	}
 
 	return time.Now().Add(-time.Duration(b - int64(t))), nil
-}
-
-func getBootTimeNs() (int64, error) {
-	var ts unix.Timespec
-	err := unix.ClockGettime(unix.CLOCK_MONOTONIC, &ts)
-	if err != nil {
-		return 0, fmt.Errorf("could not get time: %s", err)
-	}
-
-	return unix.TimespecToNsec(ts), nil
 }

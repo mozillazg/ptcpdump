@@ -7,6 +7,7 @@ import (
 	"unsafe"
 
 	"github.com/cilium/ebpf"
+	"github.com/cilium/ebpf/btf"
 	"github.com/cilium/ebpf/link"
 	"github.com/florianl/go-tc"
 	"github.com/florianl/go-tc/core"
@@ -17,10 +18,10 @@ import (
 )
 
 // $TARGET is set by the Makefile
-//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc clang -no-strip -target $TARGET -type packet_event_t -type exec_event_t -type exit_event_t -type flow_pid_key_t -type process_meta_t -type packet_event_meta_t Bpf ./ptcpdump.c -- -I./headers -I./headers/$TARGET -I. -Wall
+//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc clang -no-strip -target $TARGET -type gconfig_t -type packet_event_t -type exec_event_t -type exit_event_t -type flow_pid_key_t -type process_meta_t -type packet_event_meta_t Bpf ./ptcpdump.c -- -I./headers -I./headers/$TARGET -I. -Wall
 
 const tcFilterName = "ptcpdump"
-const logSzie = ebpf.DefaultVerifierLogSize * 32
+const logSzie = ebpf.DefaultVerifierLogSize * 64
 
 type BpfObjectsWithoutCgroup struct {
 	KprobeTcpSendmsg              *ebpf.Program `ebpf:"kprobe__tcp_sendmsg"`
@@ -46,6 +47,7 @@ type BPF struct {
 	closeFuncs []func()
 
 	skipAttachCgroup bool
+	isLegacyKernel   bool
 	report           *types.CountReport
 }
 
@@ -59,18 +61,34 @@ type Options struct {
 	pidnsId        uint32
 	netnsId        uint32
 	maxPayloadSize uint32
+	KernelTypes    *btf.Spec
 }
 
 func NewBPF() (*BPF, error) {
-	spec, err := LoadBpf()
+	var legacyKernel bool
+	if ok, err := isLegacyKernel(); err != nil {
+		log.Warnf("%s", err)
+	} else {
+		legacyKernel = ok
+	}
+	b := _BpfBytes
+	if legacyKernel {
+		b = _Bpf_legacyBytes
+	}
+
+	spec, err := loadBpfWithData(b)
 	if err != nil {
 		return nil, err
 	}
-	return &BPF{
-		spec:   spec,
-		objs:   &BpfObjects{},
-		report: &types.CountReport{},
-	}, nil
+
+	bf := &BPF{
+		spec:           spec,
+		objs:           &BpfObjects{},
+		report:         &types.CountReport{},
+		isLegacyKernel: legacyKernel,
+	}
+
+	return bf, nil
 }
 
 func NewOptions(pid uint, comm string, followForks bool, pcapFilter string,
@@ -104,18 +122,25 @@ func NewOptions(pid uint, comm string, followForks bool, pcapFilter string,
 
 func (b *BPF) Load(opts Options) error {
 	log.Debugf("load with opts: %#v", opts)
-	err := b.spec.RewriteConstants(map[string]interface{}{
-		"filter_pid":          opts.Pid,
-		"filter_comm":         opts.Comm,
-		"filter_comm_enable":  opts.filterComm,
-		"filter_follow_forks": opts.FollowForks,
-		"filter_mntns_id":     opts.mntnsId,
-		"filter_netns_id":     opts.netnsId,
-		"filter_pidns_id":     opts.pidnsId,
-		"max_payload_size":    opts.maxPayloadSize,
-	})
-	if err != nil {
-		return fmt.Errorf("rewrite constants: %w", err)
+	var err error
+
+	config := BpfGconfigT{
+		FilterPid:         opts.Pid,
+		FilterComm:        opts.Comm,
+		FilterCommEnable:  opts.filterComm,
+		FilterFollowForks: opts.FollowForks,
+		FilterMntnsId:     opts.mntnsId,
+		FilterNetnsId:     opts.netnsId,
+		FilterPidnsId:     opts.pidnsId,
+		MaxPayloadSize:    opts.maxPayloadSize,
+	}
+	if !b.isLegacyKernel {
+		err = b.spec.RewriteConstants(map[string]interface{}{
+			"g": config,
+		})
+		if err != nil {
+			return fmt.Errorf("rewrite constants: %w", err)
+		}
 	}
 
 	if opts.PcapFilter != "" {
@@ -139,43 +164,59 @@ func (b *BPF) Load(opts Options) error {
 		}
 	}
 
-	err = b.spec.LoadAndAssign(b.objs, &ebpf.CollectionOptions{
-		Programs: ebpf.ProgramOptions{
-			LogLevel: ebpf.LogLevelInstruction,
-			LogSize:  logSzie,
-		},
-	})
+	var skipAttachCgroup bool
+	if b.isLegacyKernel {
+		skipAttachCgroup = true
+	} else {
+		err = b.spec.LoadAndAssign(b.objs, &ebpf.CollectionOptions{
+			Programs: ebpf.ProgramOptions{
+				KernelTypes: opts.KernelTypes,
+				LogLevel:    ebpf.LogLevelInstruction,
+				LogSize:     logSzie,
+			},
+		})
+	}
 	if err != nil {
 		if strings.Contains(err.Error(), "unknown func bpf_get_socket_cookie") {
 			log.Warnf("will skip attach cgroup due to %s", err)
-
-			b.skipAttachCgroup = true
-			objs := BpfObjectsWithoutCgroup{}
-			if err = b.spec.LoadAndAssign(&objs, &ebpf.CollectionOptions{
-				Programs: ebpf.ProgramOptions{
-					LogLevel: ebpf.LogLevelInstruction,
-					LogSize:  logSzie,
-				},
-			}); err != nil {
-				return err
-			}
-			b.objs.KprobeTcpSendmsg = objs.KprobeTcpSendmsg
-			b.objs.KprobeUdpSendmsg = objs.KprobeUdpSendmsg
-			b.objs.KprobeUdpSendSkb = objs.KprobeUdpSendSkb
-			b.objs.KprobeNfNatManipPkt = objs.KprobeNfNatManipPkt
-			b.objs.KprobeNfNatPacket = objs.KprobeNfNatPacket
-			b.objs.KprobeSecuritySkClassifyFlow = objs.KprobeSecuritySkClassifyFlow
-			b.objs.RawTracepointSchedProcessExec = objs.RawTracepointSchedProcessExec
-			b.objs.RawTracepointSchedProcessExit = objs.RawTracepointSchedProcessExit
-			b.objs.RawTracepointSchedProcessFork = objs.RawTracepointSchedProcessFork
-			b.objs.TcEgress = objs.TcEgress
-			b.objs.TcIngress = objs.TcIngress
-			b.objs.BpfMaps = objs.BpfMaps
+			skipAttachCgroup = true
 		} else {
-			return err
+			return fmt.Errorf("bpf load: %w", err)
 		}
 	}
+	if skipAttachCgroup {
+		b.skipAttachCgroup = true
+		objs := BpfObjectsWithoutCgroup{}
+		if err = b.spec.LoadAndAssign(&objs, &ebpf.CollectionOptions{
+			Programs: ebpf.ProgramOptions{
+				KernelTypes: opts.KernelTypes,
+				LogLevel:    ebpf.LogLevelInstruction,
+				LogSize:     logSzie,
+			},
+		}); err != nil {
+			return fmt.Errorf("bpf load: %w", err)
+		}
+		b.objs.KprobeTcpSendmsg = objs.KprobeTcpSendmsg
+		b.objs.KprobeUdpSendmsg = objs.KprobeUdpSendmsg
+		b.objs.KprobeUdpSendSkb = objs.KprobeUdpSendSkb
+		b.objs.KprobeNfNatManipPkt = objs.KprobeNfNatManipPkt
+		b.objs.KprobeNfNatPacket = objs.KprobeNfNatPacket
+		b.objs.KprobeSecuritySkClassifyFlow = objs.KprobeSecuritySkClassifyFlow
+		b.objs.RawTracepointSchedProcessExec = objs.RawTracepointSchedProcessExec
+		b.objs.RawTracepointSchedProcessExit = objs.RawTracepointSchedProcessExit
+		b.objs.RawTracepointSchedProcessFork = objs.RawTracepointSchedProcessFork
+		b.objs.TcEgress = objs.TcEgress
+		b.objs.TcIngress = objs.TcIngress
+		b.objs.BpfMaps = objs.BpfMaps
+	}
 	b.opts = opts
+
+	if b.isLegacyKernel {
+		key := uint32(0)
+		if err := b.objs.BpfMaps.ConfigMap.Update(key, config, ebpf.UpdateAny); err != nil {
+			return fmt.Errorf(": %w", err)
+		}
+	}
 
 	return nil
 }

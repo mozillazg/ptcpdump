@@ -1,6 +1,7 @@
 // go:build ignore
 //  +build ignore
 
+#include "custom.h"
 #include "vmlinux.h"
 #include <bpf/bpf_core_read.h>
 #include <bpf/bpf_endian.h>
@@ -28,18 +29,24 @@
 #define EXEC_FILENAME_LEN 512
 #define EXEC_ARGS_LEN 4096
 
-static volatile const u32 filter_pid = 0;
-static volatile const u8 filter_follow_forks = 0;
-volatile const char filter_comm[TASK_COMM_LEN];
-static volatile const u8 filter_comm_enable = 0;
-static volatile const u32 filter_mntns_id = 0;
-static volatile const u32 filter_netns_id = 0;
-static volatile const u32 filter_pidns_id = 0;
-static volatile const u32 max_payload_size = 0;
+char _license[] SEC("license") = "Dual MIT/GPL";
+
+struct gconfig_t {
+    u32 filter_pid;
+    u8 filter_follow_forks;
+    char filter_comm[TASK_COMM_LEN];
+    u8 filter_comm_enable;
+    u32 filter_mntns_id;
+    u32 filter_netns_id;
+    u32 filter_pidns_id;
+    u32 max_payload_size;
+};
+
+#ifndef LEGACY_KERNEL
+static volatile const struct gconfig_t g = {0};
 static const u8 u8_zero = 0;
 static const u32 u32_zero = 0;
-
-char _license[] SEC("license") = "Dual MIT/GPL";
+#endif
 
 struct l2_t {
     u16 h_protocol;
@@ -112,6 +119,13 @@ struct exec_event_t {
 struct exit_event_t {
     u32 pid;
 };
+
+struct {
+    __uint(type, BPF_MAP_TYPE_ARRAY);
+    __uint(max_entries, 1);
+    __type(key, u32);
+    __type(value, struct gconfig_t);
+} config_map SEC(".maps");
 
 struct {
     __uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
@@ -188,6 +202,19 @@ const struct exec_event_t *unused2 __attribute__((unused));
 const struct flow_pid_key_t *unused3 __attribute__((unused));
 const struct process_meta_t *unused4 __attribute__((unused));
 const struct exit_event_t *unused5 __attribute__((unused));
+const struct gconfig_t *unused6 __attribute__((unused));
+
+#ifdef LEGACY_KERNEL
+#define GET_CONFIG()                                                                                                   \
+    struct gconfig_t g = {0};                                                                                          \
+    u32 configk = 0;                                                                                                   \
+    struct gconfig_t *configv = bpf_map_lookup_elem(&config_map, &configk);                                            \
+    if (configv) {                                                                                                     \
+        g = *configv;                                                                                                  \
+    }
+#else
+#define GET_CONFIG()
+#endif
 
 static __always_inline int parse_skb_l2(struct __sk_buff *skb, struct l2_t *l2, u32 *offset) {
     if (bpf_skb_load_bytes(skb, *offset + offsetof(struct ethhdr, h_proto), &l2->h_protocol, sizeof(l2->h_protocol)) <
@@ -358,8 +385,10 @@ static __always_inline int str_cmp(const char *a, const volatile char *b, int le
 }
 
 static __always_inline bool have_pid_filter_rules() {
-    return filter_pid > 0 || filter_comm_enable == 1 || filter_mntns_id > 0 || filter_netns_id > 0 ||
-           filter_pidns_id > 0;
+    GET_CONFIG()
+
+    return g.filter_pid > 0 || g.filter_comm_enable == 1 || g.filter_mntns_id > 0 || g.filter_netns_id > 0 ||
+           g.filter_pidns_id > 0;
 }
 
 static __always_inline int process_filter(struct task_struct *task) {
@@ -375,8 +404,13 @@ static __always_inline int process_filter(struct task_struct *task) {
         return 0;
     }
 
+    GET_CONFIG()
+#ifdef LEGACY_KERNEL
+    u8 u8_zero = 0;
+#endif
+
     bool should_filter = false;
-    if (filter_pid > 0 && pid == filter_pid) {
+    if (g.filter_pid > 0 && pid == g.filter_pid) {
         // bpf_printk("filter_id");
         should_filter = true;
     }
@@ -385,18 +419,18 @@ static __always_inline int process_filter(struct task_struct *task) {
         u32 mntns_id = BPF_CORE_READ(task, nsproxy, mnt_ns, ns.inum);
         u32 netns_id = BPF_CORE_READ(task, nsproxy, net_ns, ns.inum);
         u32 pidns_id = BPF_CORE_READ(task, nsproxy, pid_ns_for_children, ns.inum);
-        if ((mntns_id > 0 && mntns_id == filter_mntns_id) || (netns_id > 0 && netns_id == filter_netns_id) ||
-            (pidns_id > 0 && pidns_id == filter_pidns_id)) {
+        if ((mntns_id > 0 && mntns_id == g.filter_mntns_id) || (netns_id > 0 && netns_id == g.filter_netns_id) ||
+            (pidns_id > 0 && pidns_id == g.filter_pidns_id)) {
             // bpf_printk("%u %u %u", mntns_id, netns_id, pidns_id);
             should_filter = true;
         }
     }
 
     if (!should_filter) {
-        if (filter_comm_enable == 1) {
+        if (g.filter_comm_enable == 1) {
             char comm[TASK_COMM_LEN];
             BPF_CORE_READ_STR_INTO(&comm, task, comm);
-            if (str_cmp(comm, filter_comm, TASK_COMM_LEN) == 0) {
+            if (str_cmp(comm, g.filter_comm, TASK_COMM_LEN) == 0) {
                 should_filter = true;
             }
         }
@@ -416,7 +450,13 @@ static __always_inline int parent_process_filter(struct task_struct *current) {
         // bpf_printk("no filter");
         return 0;
     }
-    if (filter_follow_forks != 1) {
+
+    GET_CONFIG()
+#ifdef LEGACY_KERNEL
+    u8 u8_zero = 0;
+#endif
+
+    if (g.filter_follow_forks != 1) {
         return -1;
     }
     struct task_struct *parent = BPF_CORE_READ(current, real_parent);
@@ -432,7 +472,12 @@ static __always_inline int parent_process_filter(struct task_struct *current) {
 }
 
 static __always_inline void handle_fork(struct bpf_raw_tracepoint_args *ctx) {
-    if (filter_follow_forks != 1) {
+    GET_CONFIG()
+#ifdef LEGACY_KERNEL
+    u8 u8_zero = 0;
+#endif
+
+    if (g.filter_follow_forks != 1) {
         return;
     }
 
@@ -457,11 +502,12 @@ int raw_tracepoint__sched_process_fork(struct bpf_raw_tracepoint_args *ctx) {
     return 0;
 }
 
+#ifndef LEGACY_KERNEL
 SEC("cgroup/sock_create")
 int cgroup__sock_create(void *ctx) {
     u64 cookie = bpf_get_socket_cookie(ctx);
     if (cookie <= 0) {
-        bpf_printk("[ptcpdump] sock_create: bpf_get_socket_cookie failed");
+        // bpf_printk("[ptcpdump] sock_create: bpf_get_socket_cookie failed");
         return 1;
     }
 
@@ -478,12 +524,14 @@ int cgroup__sock_create(void *ctx) {
 
     int ret = bpf_map_update_elem(&sock_cookie_pid_map, &cookie, &meta, BPF_ANY);
     if (ret != 0) {
-        bpf_printk("[ptcpdump] bpf_map_update_elem sock_cookie_pid_map failed: %d", ret);
+        // bpf_printk("[ptcpdump] bpf_map_update_elem sock_cookie_pid_map failed: %d", ret);
     }
 
     return 1;
 }
+#endif
 
+#ifndef LEGACY_KERNEL
 SEC("cgroup/sock_release")
 int cgroup__sock_release(void *ctx) {
     u64 cookie = bpf_get_socket_cookie(ctx);
@@ -494,6 +542,7 @@ int cgroup__sock_release(void *ctx) {
     bpf_map_delete_elem(&sock_cookie_pid_map, &cookie);
     return 1;
 }
+#endif
 
 SEC("kprobe/security_sk_classify_flow")
 int BPF_KPROBE(kprobe__security_sk_classify_flow, struct sock *sk) {
@@ -519,7 +568,7 @@ int BPF_KPROBE(kprobe__security_sk_classify_flow, struct sock *sk) {
 
     int ret = bpf_map_update_elem(&flow_pid_map, &key, &value, BPF_ANY);
     if (ret != 0) {
-        bpf_printk("bpf_map_update_elem flow_pid_map failed: %d", ret);
+        // bpf_printk("bpf_map_update_elem flow_pid_map failed: %d", ret);
     }
     return 0;
 }
@@ -548,7 +597,7 @@ static __always_inline void handle_sendmsg(struct sock *sk) {
     // bpf_printk("[ptcpdump][sendmsg] flow key: %pI4 %d", &key.saddr[0], key.sport);
     int ret = bpf_map_update_elem(&flow_pid_map, &key, &value, BPF_NOEXIST);
     if (ret != 0) {
-        bpf_printk("[handle_tcp_sendmsg] bpf_map_update_elem flow_pid_map failed: %d", ret);
+        // bpf_printk("[handle_tcp_sendmsg] bpf_map_update_elem flow_pid_map failed: %d", ret);
     }
     return;
 }
@@ -597,7 +646,17 @@ static __always_inline void reverse_flow(struct nat_flow_t *orig_flow, struct na
 
 static __always_inline void handle_nat(struct nf_conn *ct) {
     struct nf_conntrack_tuple_hash tuplehash[IP_CT_DIR_MAX];
-    BPF_CORE_READ_INTO(&tuplehash, ct, tuplehash);
+
+    if (bpf_core_field_exists(ct->tuplehash)) {
+        BPF_CORE_READ_INTO(&tuplehash, ct, tuplehash);
+    } else {
+        struct nf_conn__older_52 *nf_conn_old = (void *)ct;
+        if (bpf_core_field_exists(nf_conn_old->tuplehash)) {
+            BPF_CORE_READ_INTO(&tuplehash, nf_conn_old, tuplehash);
+        } else {
+            return;
+        }
+    }
 
     struct nf_conntrack_tuple *orig_tuple = &tuplehash[IP_CT_DIR_ORIGINAL].tuple;
     struct nf_conntrack_tuple *reply_tuple = &tuplehash[IP_CT_DIR_REPLY].tuple;
@@ -683,6 +742,7 @@ static __always_inline void route_packet(struct packet_meta_t *packet_meta, stru
 }
 
 static __always_inline int get_pid_meta(struct __sk_buff *skb, struct process_meta_t *pid_meta, bool egress) {
+#ifndef LEGACY_KERNEL
     u64 cookie = bpf_get_socket_cookie(skb);
     if (cookie > 0) {
         struct process_meta_t *value = bpf_map_lookup_elem(&sock_cookie_pid_map, &cookie);
@@ -700,6 +760,7 @@ static __always_inline int get_pid_meta(struct __sk_buff *skb, struct process_me
             //            bpf_printk("[ptcpdump] tc ingress: bpf_get_socket_cookie failed");
         }
     }
+#endif
 
     struct packet_meta_t packet_meta = {0};
     int ret = parse_skb_meta(skb, &packet_meta);
@@ -765,6 +826,9 @@ static __always_inline void handle_tc(struct __sk_buff *skb, bool egress) {
     };
 
     u32 *count;
+#ifdef LEGACY_KERNEL
+    u32 u32_zero = 0;
+#endif
     count = bpf_map_lookup_or_try_init(&filter_by_kernel_count, &u32_zero, &u32_zero);
     if (count) {
         __sync_fetch_and_add(count, 1);
@@ -773,7 +837,7 @@ static __always_inline void handle_tc(struct __sk_buff *skb, bool egress) {
     struct packet_event_t *event;
     event = bpf_map_lookup_elem(&packet_event_stack, &u32_zero);
     if (!event) {
-        bpf_printk("[ptcpdump] packet_event_stack failed");
+        // bpf_printk("[ptcpdump] packet_event_stack failed");
         return;
     }
     /* __builtin_memset(&event->payload, 0, sizeof(event->payload)); */
@@ -794,17 +858,19 @@ static __always_inline void handle_tc(struct __sk_buff *skb, bool egress) {
         /* __builtin_memcpy(&event->meta.comm, &pid_meta->comm, sizeof(pid_meta->comm)); */
     }
 
+    GET_CONFIG()
+
     u64 payload_len = (u64)skb->len;
     event->meta.packet_size = payload_len;
-    if (max_payload_size > 0) {
-        payload_len = payload_len < max_payload_size ? payload_len : max_payload_size;
+    if (g.max_payload_size > 0) {
+        payload_len = payload_len < g.max_payload_size ? payload_len : g.max_payload_size;
     }
     event->meta.payload_len = payload_len;
 
     int event_ret = bpf_perf_event_output(skb, &packet_events, BPF_F_CURRENT_CPU | (payload_len << 32), event,
                                           sizeof(struct packet_event_t));
     if (event_ret != 0) {
-        bpf_printk("[ptcpdump] bpf_perf_event_output exec_events failed: %d", event_ret);
+        // bpf_printk("[ptcpdump] bpf_perf_event_output exec_events failed: %d", event_ret);
     }
 
     return;
@@ -818,9 +884,12 @@ static __always_inline void handle_exec(struct bpf_raw_tracepoint_args *ctx) {
     }
 
     struct exec_event_t *event;
+#ifdef LEGACY_KERNEL
+    u32 u32_zero = 0;
+#endif
     event = bpf_map_lookup_elem(&exec_event_stack, &u32_zero);
     if (!event) {
-        bpf_printk("[ptcpdump] exec_event_stack failed");
+        // bpf_printk("[ptcpdump] exec_event_stack failed");
         return;
     }
     __builtin_memset(&event->meta, 0, sizeof(event->meta));
@@ -831,7 +900,7 @@ static __always_inline void handle_exec(struct bpf_raw_tracepoint_args *ctx) {
     const char *filename_p = BPF_CORE_READ(bprm, filename);
     int f_ret = bpf_probe_read_str(&event->filename, sizeof(event->filename), filename_p);
     if (f_ret < 0) {
-        bpf_printk("[ptcpdump] read exec filename failed: %d", f_ret);
+        // bpf_printk("[ptcpdump] read exec filename failed: %d", f_ret);
     }
     if (f_ret == EXEC_FILENAME_LEN) {
         event->filename_truncated = 1;
@@ -846,14 +915,14 @@ static __always_inline void handle_exec(struct bpf_raw_tracepoint_args *ctx) {
     }
     int arg_ret = bpf_probe_read(&event->args, arg_length, arg_start);
     if (arg_ret < 0) {
-        bpf_printk("[ptcpdump] read exec args failed: %d", arg_ret);
+        // bpf_printk("[ptcpdump] read exec args failed: %d", arg_ret);
     } else {
         event->args_size = arg_length;
     }
 
     int event_ret = bpf_perf_event_output(ctx, &exec_events, BPF_F_CURRENT_CPU, event, sizeof(*event));
     if (event_ret != 0) {
-        bpf_printk("[ptcpdump] bpf_perf_event_output exec_events failed: %d", event_ret);
+        // bpf_printk("[ptcpdump] bpf_perf_event_output exec_events failed: %d", event_ret);
     }
     return;
 }
@@ -877,7 +946,7 @@ static __always_inline void handle_exit(struct bpf_raw_tracepoint_args *ctx) {
     };
     int event_ret = bpf_perf_event_output(ctx, &exit_events, BPF_F_CURRENT_CPU, &event, sizeof(event));
     if (event_ret != 0) {
-        bpf_printk("[ptcpdump] bpf_perf_event_output exit_events failed: %d", event_ret);
+        // bpf_printk("[ptcpdump] bpf_perf_event_output exit_events failed: %d", event_ret);
     }
 
     return;
