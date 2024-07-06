@@ -164,16 +164,18 @@ func (b *BPF) Load(opts Options) error {
 		}
 	}
 
-	err = b.spec.LoadAndAssign(b.objs, &ebpf.CollectionOptions{
-		Programs: ebpf.ProgramOptions{
-			KernelTypes: opts.KernelTypes,
-			LogLevel:    ebpf.LogLevelInstruction,
-			LogSize:     logSzie,
-		},
-	})
-	if err != nil {
+	if b.supportGlobalConst {
+		err = b.spec.LoadAndAssign(b.objs, &ebpf.CollectionOptions{
+			Programs: ebpf.ProgramOptions{
+				KernelTypes: opts.KernelTypes,
+				LogLevel:    ebpf.LogLevelInstruction,
+				LogSize:     logSzie,
+			},
+		})
+	}
+	if err != nil || !b.supportGlobalConst {
 		if strings.Contains(err.Error(), "unknown func bpf_get_socket_cookie") ||
-			strings.Contains(err.Error(), "bad CO-RE relocatoin") {
+			strings.Contains(err.Error(), "bad CO-RE relocatoin") || !b.supportGlobalConst {
 			log.Warnf("will skip attach cgroup due to %s", err)
 
 			b.skipAttachCgroup = true

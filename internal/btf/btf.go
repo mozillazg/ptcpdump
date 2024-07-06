@@ -52,9 +52,10 @@ func GetBTFSpec(path string) (*btf.Spec, error) {
 		return spec, nil
 	}
 
-	log.Warn("could not load BTF specs from local, try to load from remote")
+	log.Warnf("could not load BTF specs from local: %s, try to load from remote", err)
 	spec, err = loadSpecFromRemote()
 	if err != nil {
+		log.Warnf("load BTF specs from remote failed: %s", err)
 		return nil, err
 	}
 	return spec, nil

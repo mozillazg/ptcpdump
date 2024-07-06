@@ -5,16 +5,16 @@ import (
 	"fmt"
 	"net/netip"
 
+	btftype "github.com/cilium/ebpf/btf"
 	"github.com/cilium/ebpf/rlimit"
 	"github.com/mozillazg/ptcpdump/bpf"
-	"github.com/mozillazg/ptcpdump/internal/btf"
 	"github.com/mozillazg/ptcpdump/internal/dev"
 	"github.com/mozillazg/ptcpdump/internal/log"
 	"github.com/mozillazg/ptcpdump/internal/metadata"
 	"github.com/mozillazg/ptcpdump/internal/utils"
 )
 
-func attachHooks(currentConns []metadata.Connection, opts Options) (*bpf.BPF, error) {
+func attachHooks(btfSpec *btftype.Spec, currentConns []metadata.Connection, opts Options) (*bpf.BPF, error) {
 	devices, err := dev.GetDevices(opts.ifaces)
 	if err != nil {
 		return nil, err
@@ -28,7 +28,7 @@ func attachHooks(currentConns []metadata.Connection, opts Options) (*bpf.BPF, er
 	}
 	bpfopts := bpf.NewOptions(opts.pid, opts.comm, opts.followForks, opts.pcapFilter,
 		opts.mntnsId, opts.pidnsId, opts.netnsId, opts.snapshotLength)
-	bpfopts.KernelTypes, _ = btf.GetBTFSpec(opts.btfPath)
+	bpfopts.KernelTypes = btfSpec
 	if err := bf.Load(bpfopts); err != nil {
 		return nil, err
 	}
