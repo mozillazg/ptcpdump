@@ -1,8 +1,8 @@
 // go:build ignore
 //  +build ignore
 
-#include "vmlinux.h"
 #include "custom.h"
+#include "vmlinux.h"
 #include <bpf/bpf_core_read.h>
 #include <bpf/bpf_endian.h>
 #include <bpf/bpf_helpers.h>
@@ -207,7 +207,7 @@ const struct gconfig_t *unused6 __attribute__((unused));
 #ifdef LEGACY_KERNEL
 #define GET_CONFIG()                                                                                                   \
     struct gconfig_t g = {0};                                                                                          \
-    u8 configk = 0;                                                                                                    \
+    u32 configk = 0;                                                                                                   \
     struct gconfig_t *configv = bpf_map_lookup_elem(&config_map, &configk);                                            \
     if (configv) {                                                                                                     \
         g = *configv;                                                                                                  \
@@ -648,16 +648,15 @@ static __always_inline void handle_nat(struct nf_conn *ct) {
     struct nf_conntrack_tuple_hash tuplehash[IP_CT_DIR_MAX];
 
     if (bpf_core_field_exists(ct->tuplehash)) {
-         BPF_CORE_READ_INTO(&tuplehash, ct, tuplehash);
-    } else { 
-	    struct nf_conn__older_52 *nf_conn_old = (void *) ct;
-	    if (bpf_core_field_exists(nf_conn_old->tuplehash)) {
-		 BPF_CORE_READ_INTO(&tuplehash, nf_conn_old, tuplehash);
-	    } else {
-		    return;
-	    }
+        BPF_CORE_READ_INTO(&tuplehash, ct, tuplehash);
+    } else {
+        struct nf_conn__older_52 *nf_conn_old = (void *)ct;
+        if (bpf_core_field_exists(nf_conn_old->tuplehash)) {
+            BPF_CORE_READ_INTO(&tuplehash, nf_conn_old, tuplehash);
+        } else {
+            return;
+        }
     }
-
 
     struct nf_conntrack_tuple *orig_tuple = &tuplehash[IP_CT_DIR_ORIGINAL].tuple;
     struct nf_conntrack_tuple *reply_tuple = &tuplehash[IP_CT_DIR_REPLY].tuple;
