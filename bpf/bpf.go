@@ -181,7 +181,7 @@ func (b *BPF) Load(opts Options) error {
 			log.Warnf("will skip attach cgroup due to %s", err)
 			skipAttachCgroup = true
 		} else {
-			return err
+			return fmt.Errorf("bpf load: %w", err)
 		}
 	}
 	if skipAttachCgroup {
@@ -194,7 +194,7 @@ func (b *BPF) Load(opts Options) error {
 				LogSize:     logSzie,
 			},
 		}); err != nil {
-			return err
+			return fmt.Errorf("bpf load: %w", err)
 		}
 		b.objs.KprobeTcpSendmsg = objs.KprobeTcpSendmsg
 		b.objs.KprobeUdpSendmsg = objs.KprobeUdpSendmsg
@@ -212,7 +212,7 @@ func (b *BPF) Load(opts Options) error {
 	b.opts = opts
 
 	if b.isLegacyKernel {
-		key := uint8(0)
+		key := uint32(0)
 		if err := b.objs.BpfMaps.ConfigMap.Update(key, config, ebpf.UpdateNoExist); err != nil {
 			return fmt.Errorf(": %w", err)
 		}

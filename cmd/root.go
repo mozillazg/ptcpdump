@@ -98,7 +98,13 @@ func init() {
 				strings.Join(getDefaultCriRuntimeEndpoint(), ", ")))
 	rootCmd.Flags().Uint32VarP(&opts.snapshotLength, "snapshot-length", "s", 262144,
 		"Snarf snaplen bytes of data from each packet rather than the default of 262144 bytes")
-	rootCmd.Flags().StringVar(&opts.btfPath, "kernel-btf", "", "specify kernel BTF file")
+	rootCmd.Flags().StringVar(&opts.btfPath, "kernel-btf", "",
+		fmt.Sprintf("specify kernel BTF file (default: uses in order the first successful one of [%s]",
+			strings.Join([]string{"/sys/kernel/btf/vmlinux", "/var/lib/ptcpdump/btf/vmlinux",
+				"/var/lib/ptcpdump/btf/vmlinux-$(uname -r)",
+				"/var/lib/ptcpdump/btf/$(uname -r).btf",
+				"download BTF file from https://mirrors.openanolis.cn/coolbpf/btf/ and https://github.com/aquasecurity/btfhub-archive/"}, ", ")),
+	)
 
 }
 

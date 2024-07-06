@@ -123,7 +123,7 @@ struct exit_event_t {
 struct {
     __uint(type, BPF_MAP_TYPE_ARRAY);
     __uint(max_entries, 1);
-    __type(key, u8);
+    __type(key, u32);
     __type(value, struct gconfig_t);
 } config_map SEC(".maps");
 

@@ -9,8 +9,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/mozillazg/ptcpdump/internal/btf"
 	"github.com/mozillazg/ptcpdump/bpf"
+	"github.com/mozillazg/ptcpdump/internal/btf"
 	"github.com/mozillazg/ptcpdump/internal/consumer"
 	"github.com/mozillazg/ptcpdump/internal/log"
 	"github.com/mozillazg/ptcpdump/internal/metadata"
@@ -18,12 +18,11 @@ import (
 )
 
 func capture(ctx context.Context, stop context.CancelFunc, opts Options) error {
-	headerTips(opts)
-	log.Info("capturing...")
-	btfSpec, err := btf.GetBTFSpec(opts.btfPath)
+	btfSpec, btfPath, err := btf.LoadBTFSpec(opts.btfPath)
 	if err != nil {
 		logFatal(err)
 	}
+	log.Warnf("use BTF specs from %s", btfPath)
 
 	log.Debug("start process and container cache")
 	pcache := metadata.NewProcessCache()
@@ -83,6 +82,9 @@ func capture(ctx context.Context, stop context.CancelFunc, opts Options) error {
 	if err != nil {
 		return err
 	}
+
+	headerTips(opts)
+	log.Info("capturing...")
 
 	execConsumer := consumer.NewExecEventConsumer(pcache, int(opts.execEventsWorkerNumber))
 	go execConsumer.Start(ctx, execEvensCh)
