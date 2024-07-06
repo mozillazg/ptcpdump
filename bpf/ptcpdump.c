@@ -2,6 +2,7 @@
 //  +build ignore
 
 #include "vmlinux.h"
+#include "custom.h"
 #include <bpf/bpf_core_read.h>
 #include <bpf/bpf_endian.h>
 #include <bpf/bpf_helpers.h>
@@ -41,8 +42,7 @@ struct gconfig_t {
     u32 max_payload_size;
 };
 
-#ifdef NO_CONST
-#else
+#ifndef LEGACY_KERNEL
 static volatile const struct gconfig_t g = {0};
 static const u8 u8_zero = 0;
 static const u32 u32_zero = 0;
@@ -121,7 +121,7 @@ struct exit_event_t {
 };
 
 struct {
-    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(type, BPF_MAP_TYPE_ARRAY);
     __uint(max_entries, 1);
     __type(key, u8);
     __type(value, struct gconfig_t);
@@ -204,7 +204,7 @@ const struct process_meta_t *unused4 __attribute__((unused));
 const struct exit_event_t *unused5 __attribute__((unused));
 const struct gconfig_t *unused6 __attribute__((unused));
 
-#ifdef NO_CONST
+#ifdef LEGACY_KERNEL
 #define GET_CONFIG()                                                                                                   \
     struct gconfig_t g = {0};                                                                                          \
     u8 configk = 0;                                                                                                    \
@@ -405,7 +405,7 @@ static __always_inline int process_filter(struct task_struct *task) {
     }
 
     GET_CONFIG()
-#ifdef NO_CONST
+#ifdef LEGACY_KERNEL
     u8 u8_zero = 0;
 #endif
 
@@ -452,7 +452,7 @@ static __always_inline int parent_process_filter(struct task_struct *current) {
     }
 
     GET_CONFIG()
-#ifdef NO_CONST
+#ifdef LEGACY_KERNEL
     u8 u8_zero = 0;
 #endif
 
@@ -473,7 +473,7 @@ static __always_inline int parent_process_filter(struct task_struct *current) {
 
 static __always_inline void handle_fork(struct bpf_raw_tracepoint_args *ctx) {
     GET_CONFIG()
-#ifdef NO_CONST
+#ifdef LEGACY_KERNEL
     u8 u8_zero = 0;
 #endif
 
@@ -502,7 +502,7 @@ int raw_tracepoint__sched_process_fork(struct bpf_raw_tracepoint_args *ctx) {
     return 0;
 }
 
-#ifndef NO_CONST
+#ifndef LEGACY_KERNEL
 SEC("cgroup/sock_create")
 int cgroup__sock_create(void *ctx) {
     u64 cookie = bpf_get_socket_cookie(ctx);
@@ -531,7 +531,7 @@ int cgroup__sock_create(void *ctx) {
 }
 #endif
 
-#ifndef NO_CONST
+#ifndef LEGACY_KERNEL
 SEC("cgroup/sock_release")
 int cgroup__sock_release(void *ctx) {
     u64 cookie = bpf_get_socket_cookie(ctx);
@@ -643,50 +643,6 @@ static __always_inline void reverse_flow(struct nat_flow_t *orig_flow, struct na
     new_flow->sport = orig_flow->dport;
     new_flow->dport = orig_flow->sport;
 }
-struct nf_conntrack_tuple__custom {
-	struct nf_conntrack_man src;
-	struct {
-		union nf_inet_addr u3;
-		union {
-			__be16 all;
-			struct {
-				__be16 port;
-			} tcp;
-			struct {
-				__be16 port;
-			} udp;
-			struct {
-				u_int8_t type;
-				u_int8_t code;
-			} icmp;
-			struct {
-				__be16 port;
-			} dccp;
-			struct {
-				__be16 port;
-			} sctp;
-			struct {
-				__be16 key;
-			} gre;
-		} u;
-		u_int8_t protonum;
-		u_int8_t dir;
-	} dst;
-} __attribute__((preserve_access_index));
-
-struct nf_conntrack_tuple_hash__custom {
-	struct hlist_nulls_node hnnode;
-	struct nf_conntrack_tuple__custom tuple;
-} __attribute__((preserve_access_index));
-
-// https://elixir.bootlin.com/linux/v5.2.21/source/include/net/netfilter/nf_conntrack.h
-struct nf_conn__older_52 {
-    struct nf_conntrack ct_general;
-    spinlock_t	lock;
-    u16		__cpu;
-    struct nf_conntrack_zone zone;
-    struct nf_conntrack_tuple_hash__custom tuplehash[IP_CT_DIR_MAX];
-} __attribute__((preserve_access_index));
 
 static __always_inline void handle_nat(struct nf_conn *ct) {
     struct nf_conntrack_tuple_hash tuplehash[IP_CT_DIR_MAX];
@@ -787,8 +743,7 @@ static __always_inline void route_packet(struct packet_meta_t *packet_meta, stru
 }
 
 static __always_inline int get_pid_meta(struct __sk_buff *skb, struct process_meta_t *pid_meta, bool egress) {
-#ifdef NO_CONST
-#else
+#ifndef LEGACY_KERNEL
     u64 cookie = bpf_get_socket_cookie(skb);
     if (cookie > 0) {
         struct process_meta_t *value = bpf_map_lookup_elem(&sock_cookie_pid_map, &cookie);
@@ -872,7 +827,7 @@ static __always_inline void handle_tc(struct __sk_buff *skb, bool egress) {
     };
 
     u32 *count;
-#ifdef NO_CONST
+#ifdef LEGACY_KERNEL
     u32 u32_zero = 0;
 #endif
     count = bpf_map_lookup_or_try_init(&filter_by_kernel_count, &u32_zero, &u32_zero);
@@ -930,7 +885,7 @@ static __always_inline void handle_exec(struct bpf_raw_tracepoint_args *ctx) {
     }
 
     struct exec_event_t *event;
-#ifdef NO_CONST
+#ifdef LEGACY_KERNEL
     u32 u32_zero = 0;
 #endif
     event = bpf_map_lookup_elem(&exec_event_stack, &u32_zero);

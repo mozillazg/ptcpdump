@@ -46,9 +46,9 @@ type BPF struct {
 	opts       Options
 	closeFuncs []func()
 
-	skipAttachCgroup   bool
-	supportGlobalConst bool
-	report             *types.CountReport
+	skipAttachCgroup bool
+	isLegacyKernel   bool
+	report           *types.CountReport
 }
 
 type Options struct {
@@ -65,27 +65,27 @@ type Options struct {
 }
 
 func NewBPF() (*BPF, error) {
-	var supportConst bool
-	if ok, err := supportGlobalConst(); err != nil {
+	var legacyKernel bool
+	if ok, err := isLegacyKernel(); err != nil {
 		log.Warnf("%s", err)
 	} else {
-		supportConst = ok
+		legacyKernel = ok
 	}
 	b := _BpfBytes
-	if !supportConst {
+	if legacyKernel {
 		b = _Bpf_legacyBytes
 	}
 
-	spec, err := LoadBpfWithData(b)
+	spec, err := loadBpfWithData(b)
 	if err != nil {
 		return nil, err
 	}
 
 	bf := &BPF{
-		spec:               spec,
-		objs:               &BpfObjects{},
-		report:             &types.CountReport{},
-		supportGlobalConst: supportConst,
+		spec:           spec,
+		objs:           &BpfObjects{},
+		report:         &types.CountReport{},
+		isLegacyKernel: legacyKernel,
 	}
 
 	return bf, nil
@@ -134,7 +134,7 @@ func (b *BPF) Load(opts Options) error {
 		FilterPidnsId:     opts.pidnsId,
 		MaxPayloadSize:    opts.maxPayloadSize,
 	}
-	if b.supportGlobalConst {
+	if !b.isLegacyKernel {
 		err = b.spec.RewriteConstants(map[string]interface{}{
 			"g": config,
 		})
@@ -164,7 +164,10 @@ func (b *BPF) Load(opts Options) error {
 		}
 	}
 
-	if b.supportGlobalConst {
+	var skipAttachCgroup bool
+	if b.isLegacyKernel {
+		skipAttachCgroup = true
+	} else {
 		err = b.spec.LoadAndAssign(b.objs, &ebpf.CollectionOptions{
 			Programs: ebpf.ProgramOptions{
 				KernelTypes: opts.KernelTypes,
@@ -173,41 +176,42 @@ func (b *BPF) Load(opts Options) error {
 			},
 		})
 	}
-	if !b.supportGlobalConst || err != nil {
-		if !b.supportGlobalConst || strings.Contains(err.Error(), "unknown func bpf_get_socket_cookie") ||
-			strings.Contains(err.Error(), "bad CO-RE relocatoin") {
+	if err != nil {
+		if strings.Contains(err.Error(), "unknown func bpf_get_socket_cookie") {
 			log.Warnf("will skip attach cgroup due to %s", err)
-
-			b.skipAttachCgroup = true
-			objs := BpfObjectsWithoutCgroup{}
-			if err = b.spec.LoadAndAssign(&objs, &ebpf.CollectionOptions{
-				Programs: ebpf.ProgramOptions{
-					KernelTypes: opts.KernelTypes,
-					LogLevel:    ebpf.LogLevelInstruction,
-					LogSize:     logSzie,
-				},
-			}); err != nil {
-				return err
-			}
-			b.objs.KprobeTcpSendmsg = objs.KprobeTcpSendmsg
-			b.objs.KprobeUdpSendmsg = objs.KprobeUdpSendmsg
-			b.objs.KprobeUdpSendSkb = objs.KprobeUdpSendSkb
-			b.objs.KprobeNfNatManipPkt = objs.KprobeNfNatManipPkt
-			b.objs.KprobeNfNatPacket = objs.KprobeNfNatPacket
-			b.objs.KprobeSecuritySkClassifyFlow = objs.KprobeSecuritySkClassifyFlow
-			b.objs.RawTracepointSchedProcessExec = objs.RawTracepointSchedProcessExec
-			b.objs.RawTracepointSchedProcessExit = objs.RawTracepointSchedProcessExit
-			b.objs.RawTracepointSchedProcessFork = objs.RawTracepointSchedProcessFork
-			b.objs.TcEgress = objs.TcEgress
-			b.objs.TcIngress = objs.TcIngress
-			b.objs.BpfMaps = objs.BpfMaps
+			skipAttachCgroup = true
 		} else {
 			return err
 		}
 	}
+	if skipAttachCgroup {
+		b.skipAttachCgroup = true
+		objs := BpfObjectsWithoutCgroup{}
+		if err = b.spec.LoadAndAssign(&objs, &ebpf.CollectionOptions{
+			Programs: ebpf.ProgramOptions{
+				KernelTypes: opts.KernelTypes,
+				LogLevel:    ebpf.LogLevelInstruction,
+				LogSize:     logSzie,
+			},
+		}); err != nil {
+			return err
+		}
+		b.objs.KprobeTcpSendmsg = objs.KprobeTcpSendmsg
+		b.objs.KprobeUdpSendmsg = objs.KprobeUdpSendmsg
+		b.objs.KprobeUdpSendSkb = objs.KprobeUdpSendSkb
+		b.objs.KprobeNfNatManipPkt = objs.KprobeNfNatManipPkt
+		b.objs.KprobeNfNatPacket = objs.KprobeNfNatPacket
+		b.objs.KprobeSecuritySkClassifyFlow = objs.KprobeSecuritySkClassifyFlow
+		b.objs.RawTracepointSchedProcessExec = objs.RawTracepointSchedProcessExec
+		b.objs.RawTracepointSchedProcessExit = objs.RawTracepointSchedProcessExit
+		b.objs.RawTracepointSchedProcessFork = objs.RawTracepointSchedProcessFork
+		b.objs.TcEgress = objs.TcEgress
+		b.objs.TcIngress = objs.TcIngress
+		b.objs.BpfMaps = objs.BpfMaps
+	}
 	b.opts = opts
 
-	if !b.supportGlobalConst {
+	if b.isLegacyKernel {
 		key := uint8(0)
 		if err := b.objs.BpfMaps.ConfigMap.Update(key, config, ebpf.UpdateNoExist); err != nil {
 			return fmt.Errorf(": %w", err)

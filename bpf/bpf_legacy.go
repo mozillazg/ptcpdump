@@ -9,7 +9,7 @@ import (
 )
 
 // $TARGET is set by the Makefile
-//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc clang -no-strip -no-global-types -target $TARGET bpf_legacy ./ptcpdump.c -- -I./headers -I./headers/$TARGET -I. -Wall -DNO_CONST
+//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc clang -no-strip -no-global-types -target $TARGET bpf_legacy ./ptcpdump.c -- -I./headers -I./headers/$TARGET -I. -Wall -DLEGACY_KERNEL
 
 func kernelVersion(a, b, c int) uint32 {
 	if c > 255 {
@@ -20,18 +20,18 @@ func kernelVersion(a, b, c int) uint32 {
 }
 
 // map .rodata: map create: read- and write-only maps not supported (requires >= 5.2)
-func supportGlobalConst() (bool, error) {
+func isLegacyKernel() (bool, error) {
 	versionCode, err := features.LinuxVersionCode()
 	if err != nil {
 		return false, fmt.Errorf(": %w", err)
 	}
-	if versionCode >= kernelVersion(5, 2, 0) {
+	if versionCode < kernelVersion(5, 2, 0) {
 		return true, nil
 	}
 	return false, nil
 }
 
-func LoadBpfWithData(b []byte) (*ebpf.CollectionSpec, error) {
+func loadBpfWithData(b []byte) (*ebpf.CollectionSpec, error) {
 	reader := bytes.NewReader(b)
 	spec, err := ebpf.LoadCollectionSpecFromReader(reader)
 	if err != nil {
