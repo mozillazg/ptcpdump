@@ -21,7 +21,7 @@ import (
 //go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc clang -no-strip -target $TARGET -type gconfig_t -type packet_event_t -type exec_event_t -type exit_event_t -type flow_pid_key_t -type process_meta_t -type packet_event_meta_t Bpf ./ptcpdump.c -- -I./headers -I./headers/$TARGET -I. -Wall
 
 const tcFilterName = "ptcpdump"
-const logSzie = ebpf.DefaultVerifierLogSize * 32
+const logSzie = ebpf.DefaultVerifierLogSize * 64
 
 type BpfObjectsWithoutCgroup struct {
 	KprobeTcpSendmsg              *ebpf.Program `ebpf:"kprobe__tcp_sendmsg"`
