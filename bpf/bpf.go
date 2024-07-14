@@ -149,7 +149,7 @@ func (b *BPF) Load(opts Options) error {
 		}
 	}
 
-	if b.isLegacyKernel {
+	if b.isLegacyKernel || !supportGetSocketCookieWithCgroup() {
 		b.skipAttachCgroup = true
 		objs := BpfObjectsForLegacyKernel{}
 		if err = b.spec.LoadAndAssign(&objs, &ebpf.CollectionOptions{

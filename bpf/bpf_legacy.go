@@ -5,7 +5,9 @@ import (
 	"fmt"
 
 	"github.com/cilium/ebpf"
+	"github.com/cilium/ebpf/asm"
 	"github.com/cilium/ebpf/features"
+	"github.com/mozillazg/ptcpdump/internal/log"
 )
 
 // $TARGET is set by the Makefile
@@ -41,6 +43,15 @@ func (b *BpfObjects) FromLegacy(o *BpfObjectsForLegacyKernel) {
 	b.TcIngress = o.TcIngress
 
 	b.BpfMaps = o.BpfMaps
+}
+
+func supportGetSocketCookieWithCgroup() bool {
+	err := features.HaveProgramHelper(ebpf.CGroupSock, asm.FnGetSocketCookie)
+	if err != nil {
+		log.Debugf("%+v", err)
+		return false
+	}
+	return true
 }
 
 func kernelVersion(a, b, c int) uint32 {
