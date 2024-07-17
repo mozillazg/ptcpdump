@@ -401,13 +401,13 @@ static __always_inline bool have_pid_filter_rules() {
 static __always_inline int process_filter(struct task_struct *task) {
     // no filter rules
     if (!have_pid_filter_rules()) {
-        // debug_log("no filter");
+        // debug_log("no filter\n");
         return 0;
     }
 
     u32 pid = BPF_CORE_READ(task, tgid);
     if (bpf_map_lookup_elem(&filter_pid_map, &pid)) {
-        // debug_log("match filter");
+        // debug_log("match filter\n");
         return 0;
     }
 
@@ -418,7 +418,7 @@ static __always_inline int process_filter(struct task_struct *task) {
 
     bool should_filter = false;
     if (g.filter_pid > 0 && pid == g.filter_pid) {
-        // debug_log("filter_id");
+        // debug_log("filter_id\n");
         should_filter = true;
     }
 
@@ -428,7 +428,7 @@ static __always_inline int process_filter(struct task_struct *task) {
         u32 pidns_id = BPF_CORE_READ(task, nsproxy, pid_ns_for_children, ns.inum);
         if ((mntns_id > 0 && mntns_id == g.filter_mntns_id) || (netns_id > 0 && netns_id == g.filter_netns_id) ||
             (pidns_id > 0 && pidns_id == g.filter_pidns_id)) {
-            // debug_log("%u %u %u", mntns_id, netns_id, pidns_id);
+            // debug_log("%u %u %u\n", mntns_id, netns_id, pidns_id);
             should_filter = true;
         }
     }
@@ -454,7 +454,7 @@ static __always_inline int process_filter(struct task_struct *task) {
 static __always_inline int parent_process_filter(struct task_struct *current) {
     // no filter rules
     if (!have_pid_filter_rules()) {
-        // debug_log("no filter");
+        // debug_log("no filter\n");
         return 0;
     }
 
@@ -517,7 +517,7 @@ int cgroup__sock_create(void *ctx) {
     }
     u64 cookie = bpf_get_socket_cookie(ctx);
     if (cookie <= 0) {
-        // debug_log("[ptcpdump] sock_create: bpf_get_socket_cookie failed");
+        // debug_log("[ptcpdump] sock_create: bpf_get_socket_cookie failed\n");
         return 1;
     }
 
@@ -527,14 +527,14 @@ int cgroup__sock_create(void *ctx) {
             return 1;
         }
     }
-    // debug_log("sock_create");
+    // debug_log("sock_create\n");
 
     struct process_meta_t meta = {0};
     fill_process_meta(task, &meta);
 
     int ret = bpf_map_update_elem(&sock_cookie_pid_map, &cookie, &meta, BPF_ANY);
     if (ret != 0) {
-        // debug_log("[ptcpdump] bpf_map_update_elem sock_cookie_pid_map failed: %d", ret);
+        // debug_log("[ptcpdump] bpf_map_update_elem sock_cookie_pid_map failed: %d\n", ret);
     }
 
     return 1;
@@ -568,7 +568,7 @@ int BPF_KPROBE(kprobe__security_sk_classify_flow, struct sock *sk) {
             return 0;
         }
     }
-    // debug_log("flow match");
+    // debug_log("flow match\n");
 
     fill_sk_meta(sk, &key);
     fill_process_meta(task, &value);
@@ -577,11 +577,11 @@ int BPF_KPROBE(kprobe__security_sk_classify_flow, struct sock *sk) {
         return 0;
     }
 
-    // debug_log("[ptcpdump] flow key: %pI4 %d", &key.saddr[0], key.sport);
+    // debug_log("[ptcpdump] flow key: %pI4 %d\n", &key.saddr[0], key.sport);
 
     int ret = bpf_map_update_elem(&flow_pid_map, &key, &value, BPF_ANY);
     if (ret != 0) {
-        // debug_log("bpf_map_update_elem flow_pid_map failed: %d", ret);
+        // debug_log("bpf_map_update_elem flow_pid_map failed: %d\n", ret);
     }
     return 0;
 }
@@ -596,7 +596,7 @@ static __always_inline void handle_sendmsg(struct sock *sk) {
             return;
         }
     }
-    // debug_log("sendmsg match");
+    // debug_log("sendmsg match\n");
 
     fill_sk_meta(sk, &key);
     if (bpf_map_lookup_elem(&flow_pid_map, &key)) {
@@ -607,10 +607,10 @@ static __always_inline void handle_sendmsg(struct sock *sk) {
     if (key.sport == 0) {
         return;
     }
-    // debug_log("[ptcpdump][sendmsg] flow key: %pI4 %d", &key.saddr[0], key.sport);
+    // debug_log("[ptcpdump][sendmsg] flow key: %pI4 %d\n", &key.saddr[0], key.sport);
     int ret = bpf_map_update_elem(&flow_pid_map, &key, &value, BPF_NOEXIST);
     if (ret != 0) {
-        // debug_log("[handle_tcp_sendmsg] bpf_map_update_elem flow_pid_map failed: %d", ret);
+        // debug_log("[handle_tcp_sendmsg] bpf_map_update_elem flow_pid_map failed: %d\n", ret);
     }
     return;
 }
@@ -681,20 +681,20 @@ static __always_inline void handle_nat(struct nf_conn *ct) {
 
     struct nat_flow_t reversed_orig = {0};
     reverse_flow(&orig, &reversed_orig);
-    // debug_log("[ptcpdump] nat flow %pI4:%d %pI4:%d ->",
+    // debug_log("[ptcpdump] nat flow %pI4:%d %pI4:%d ->\n",
     // 		&reply.saddr[0], reply.sport,
     // 	       	&reply.daddr[0], reply.dport);
-    // debug_log("[ptcpdump]                               -> %pI4:%d %pI4:%d",
+    // debug_log("[ptcpdump]                               -> %pI4:%d %pI4:%d\n",
     // 		&reversed_orig.saddr[0], reversed_orig.sport,
     // 		&reversed_orig.saddr[0], reversed_orig.dport);
     bpf_map_update_elem(&nat_flow_map, &reply, &reversed_orig, BPF_ANY);
 
     struct nat_flow_t reversed_reply = {0};
     reverse_flow(&reply, &reversed_reply);
-    // debug_log("[ptcpdump] nat flow %pI4:%d %pI4:%d ->",
+    // debug_log("[ptcpdump] nat flow %pI4:%d %pI4:%d ->\n",
     // 		&reversed_reply.saddr[0], reversed_reply.sport,
     // 	       	&reversed_reply.daddr[0], reversed_reply.dport);
-    // debug_log("[ptcpdump]                               -> %pI4:%d %pI4:%d",
+    // debug_log("[ptcpdump]                               -> %pI4:%d %pI4:%d\n",
     // 		&orig.saddr[0], orig.sport,
     // 		&orig.saddr[0], orig.dport);
     bpf_map_update_elem(&nat_flow_map, &reversed_reply, &orig, BPF_ANY);
@@ -738,13 +738,13 @@ static __always_inline void route_packet(struct packet_meta_t *packet_meta, stru
     for (int i = 0; i < 10; i++) {
         struct nat_flow_t *translated_flow = bpf_map_lookup_elem(&nat_flow_map, &tmp_flow);
         if (translated_flow == NULL) {
-            // debug_log("[ptcpdump]: no router %pI4:%d %pI4:%d",
+            // debug_log("[ptcpdump]: no router %pI4:%d %pI4:%d\n",
             // 		&tmp_flow.saddr[0], tmp_flow.sport, &tmp_flow.daddr[0],
             // tmp_flow.dport);
             break;
         }
 
-        // debug_log("[ptcpdump] route: %pI4 %pI4 => %pI4 %pI4",
+        // debug_log("[ptcpdump] route: %pI4 %pI4 => %pI4 %pI4\n",
         // 		&tmp_flow.saddr[0], &tmp_flow.daddr[0],
         // 		&translated_flow->saddr[0], &translated_flow->daddr[0]);
         clone_flow(translated_flow, flow);
@@ -769,9 +769,9 @@ static __always_inline int get_pid_meta(struct __sk_buff *skb, struct process_me
             }
         } else {
             if (egress) {
-                //            debug_log("[ptcpdump] tc egress: bpf_get_socket_cookie failed");
+                //            debug_log("[ptcpdump] tc egress: bpf_get_socket_cookie failed\n");
             } else {
-                //            debug_log("[ptcpdump] tc ingress: bpf_get_socket_cookie failed");
+                //            debug_log("[ptcpdump] tc ingress: bpf_get_socket_cookie failed\n");
             }
         }
     }
@@ -805,10 +805,10 @@ static __always_inline int get_pid_meta(struct __sk_buff *skb, struct process_me
         }
 
         if (key.sport > 0) {
-            // debug_log("[tc] check %pI4 %d", &key.saddr[0], key.sport);
+            // debug_log("[tc] check %pI4 %d\n", &key.saddr[0], key.sport);
             struct process_meta_t *value = bpf_map_lookup_elem(&flow_pid_map, &key);
             if (value) {
-                // debug_log("[tc] got %pI4 %d -> %pI4", &flow.saddr[0],
+                // debug_log("[tc] got %pI4 %d -> %pI4\n", &flow.saddr[0],
                 // flow.sport, &flow.daddr[0]);
                 pid_meta->pid = value->pid;
                 pid_meta->mntns_id = value->mntns_id;
@@ -817,7 +817,7 @@ static __always_inline int get_pid_meta(struct __sk_buff *skb, struct process_me
 
                 break;
             } else if (have_pid_filter) {
-                /* debug_log("[tc] %pI4 %d bpf_map_lookup_elem is empty",
+                /* debug_log("[tc] %pI4 %d bpf_map_lookup_elem is empty\n",
                  * &key.saddr[0], key.sport); */
                 return -1;
             }
@@ -852,7 +852,7 @@ static __always_inline void handle_tc(struct __sk_buff *skb, bool egress) {
     struct packet_event_t *event;
     event = bpf_map_lookup_elem(&packet_event_stack, &u32_zero);
     if (!event) {
-        // debug_log("[ptcpdump] packet_event_stack failed");
+        // debug_log("[ptcpdump] packet_event_stack failed\n");
         return;
     }
     /* __builtin_memset(&event->payload, 0, sizeof(event->payload)); */
@@ -885,7 +885,7 @@ static __always_inline void handle_tc(struct __sk_buff *skb, bool egress) {
     int event_ret = bpf_perf_event_output(skb, &packet_events, BPF_F_CURRENT_CPU | (payload_len << 32), event,
                                           sizeof(struct packet_event_t));
     if (event_ret != 0) {
-        // debug_log("[ptcpdump] bpf_perf_event_output exec_events failed: %d", event_ret);
+        // debug_log("[ptcpdump] bpf_perf_event_output exec_events failed: %d\n", event_ret);
     }
 
     return;
@@ -904,7 +904,7 @@ static __always_inline void handle_exec(struct bpf_raw_tracepoint_args *ctx) {
 #endif
     event = bpf_map_lookup_elem(&exec_event_stack, &u32_zero);
     if (!event) {
-        // debug_log("[ptcpdump] exec_event_stack failed");
+        // debug_log("[ptcpdump] exec_event_stack failed\n");
         return;
     }
     __builtin_memset(&event->meta, 0, sizeof(event->meta));
@@ -915,7 +915,7 @@ static __always_inline void handle_exec(struct bpf_raw_tracepoint_args *ctx) {
     const char *filename_p = BPF_CORE_READ(bprm, filename);
     int f_ret = bpf_probe_read_str(&event->filename, sizeof(event->filename), filename_p);
     if (f_ret < 0) {
-        // debug_log("[ptcpdump] read exec filename failed: %d", f_ret);
+        // debug_log("[ptcpdump] read exec filename failed: %d\n", f_ret);
     }
     if (f_ret == EXEC_FILENAME_LEN) {
         event->filename_truncated = 1;
@@ -930,14 +930,14 @@ static __always_inline void handle_exec(struct bpf_raw_tracepoint_args *ctx) {
     }
     int arg_ret = bpf_probe_read(&event->args, arg_length, arg_start);
     if (arg_ret < 0) {
-        // debug_log("[ptcpdump] read exec args failed: %d", arg_ret);
+        // debug_log("[ptcpdump] read exec args failed: %d\n", arg_ret);
     } else {
         event->args_size = arg_length;
     }
 
     int event_ret = bpf_perf_event_output(ctx, &exec_events, BPF_F_CURRENT_CPU, event, sizeof(*event));
     if (event_ret != 0) {
-        // debug_log("[ptcpdump] bpf_perf_event_output exec_events failed: %d", event_ret);
+        // debug_log("[ptcpdump] bpf_perf_event_output exec_events failed: %d\n", event_ret);
     }
     return;
 }
@@ -961,7 +961,7 @@ static __always_inline void handle_exit(struct bpf_raw_tracepoint_args *ctx) {
     };
     int event_ret = bpf_perf_event_output(ctx, &exit_events, BPF_F_CURRENT_CPU, &event, sizeof(event));
     if (event_ret != 0) {
-        // debug_log("[ptcpdump] bpf_perf_event_output exit_events failed: %d", event_ret);
+        // debug_log("[ptcpdump] bpf_perf_event_output exit_events failed: %d\n", event_ret);
     }
 
     return;
