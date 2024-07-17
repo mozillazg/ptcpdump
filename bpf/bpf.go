@@ -23,22 +23,6 @@ import (
 const tcFilterName = "ptcpdump"
 const logSzie = ebpf.DefaultVerifierLogSize * 64
 
-type BpfObjectsWithoutCgroup struct {
-	KprobeTcpSendmsg              *ebpf.Program `ebpf:"kprobe__tcp_sendmsg"`
-	KprobeUdpSendmsg              *ebpf.Program `ebpf:"kprobe__udp_sendmsg"`
-	KprobeUdpSendSkb              *ebpf.Program `ebpf:"kprobe__udp_send_skb"`
-	KprobeNfNatManipPkt           *ebpf.Program `ebpf:"kprobe__nf_nat_manip_pkt"`
-	KprobeNfNatPacket             *ebpf.Program `ebpf:"kprobe__nf_nat_packet"`
-	KprobeSecuritySkClassifyFlow  *ebpf.Program `ebpf:"kprobe__security_sk_classify_flow"`
-	RawTracepointSchedProcessExec *ebpf.Program `ebpf:"raw_tracepoint__sched_process_exec"`
-	RawTracepointSchedProcessExit *ebpf.Program `ebpf:"raw_tracepoint__sched_process_exit"`
-	RawTracepointSchedProcessFork *ebpf.Program `ebpf:"raw_tracepoint__sched_process_fork"`
-	TcEgress                      *ebpf.Program `ebpf:"tc_egress"`
-	TcIngress                     *ebpf.Program `ebpf:"tc_ingress"`
-
-	BpfMaps
-}
-
 type BPF struct {
 	spec       *ebpf.CollectionSpec
 	objs       *BpfObjects
@@ -135,6 +119,7 @@ func (b *BPF) Load(opts Options) error {
 		MaxPayloadSize:    opts.maxPayloadSize,
 	}
 	if !b.isLegacyKernel {
+		log.Debugf("rewrite constants with %+v", config)
 		err = b.spec.RewriteConstants(map[string]interface{}{
 			"g": config,
 		})
@@ -164,29 +149,9 @@ func (b *BPF) Load(opts Options) error {
 		}
 	}
 
-	var skipAttachCgroup bool
-	if b.isLegacyKernel {
-		skipAttachCgroup = true
-	} else {
-		err = b.spec.LoadAndAssign(b.objs, &ebpf.CollectionOptions{
-			Programs: ebpf.ProgramOptions{
-				KernelTypes: opts.KernelTypes,
-				LogLevel:    ebpf.LogLevelInstruction,
-				LogSize:     logSzie,
-			},
-		})
-	}
-	if err != nil {
-		if strings.Contains(err.Error(), "unknown func bpf_get_socket_cookie") {
-			log.Warnf("will skip attach cgroup due to %s", err)
-			skipAttachCgroup = true
-		} else {
-			return fmt.Errorf("bpf load: %w", err)
-		}
-	}
-	if skipAttachCgroup {
+	if b.isLegacyKernel || !supportGetSocketCookieWithCgroup() {
 		b.skipAttachCgroup = true
-		objs := BpfObjectsWithoutCgroup{}
+		objs := BpfObjectsForLegacyKernel{}
 		if err = b.spec.LoadAndAssign(&objs, &ebpf.CollectionOptions{
 			Programs: ebpf.ProgramOptions{
 				KernelTypes: opts.KernelTypes,
@@ -196,22 +161,24 @@ func (b *BPF) Load(opts Options) error {
 		}); err != nil {
 			return fmt.Errorf("bpf load: %w", err)
 		}
-		b.objs.KprobeTcpSendmsg = objs.KprobeTcpSendmsg
-		b.objs.KprobeUdpSendmsg = objs.KprobeUdpSendmsg
-		b.objs.KprobeUdpSendSkb = objs.KprobeUdpSendSkb
-		b.objs.KprobeNfNatManipPkt = objs.KprobeNfNatManipPkt
-		b.objs.KprobeNfNatPacket = objs.KprobeNfNatPacket
-		b.objs.KprobeSecuritySkClassifyFlow = objs.KprobeSecuritySkClassifyFlow
-		b.objs.RawTracepointSchedProcessExec = objs.RawTracepointSchedProcessExec
-		b.objs.RawTracepointSchedProcessExit = objs.RawTracepointSchedProcessExit
-		b.objs.RawTracepointSchedProcessFork = objs.RawTracepointSchedProcessFork
-		b.objs.TcEgress = objs.TcEgress
-		b.objs.TcIngress = objs.TcIngress
-		b.objs.BpfMaps = objs.BpfMaps
+		b.objs.FromLegacy(&objs)
+	} else {
+		err = b.spec.LoadAndAssign(b.objs, &ebpf.CollectionOptions{
+			Programs: ebpf.ProgramOptions{
+				KernelTypes: opts.KernelTypes,
+				LogLevel:    ebpf.LogLevelInstruction,
+				LogSize:     logSzie,
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("bpf load: %w", err)
+		}
 	}
+
 	b.opts = opts
 
 	if b.isLegacyKernel {
+		log.Debugf("update config map with %+v", config)
 		key := uint32(0)
 		if err := b.objs.BpfMaps.ConfigMap.Update(key, config, ebpf.UpdateAny); err != nil {
 			return fmt.Errorf(": %w", err)
@@ -238,7 +205,7 @@ func (b *BPF) Close() {
 
 func (b *BPF) UpdateFlowPidMapValues(data map[*BpfFlowPidKeyT]BpfProcessMetaT) error {
 	for k, v := range data {
-		err := b.objs.FlowPidMap.Update(*k, v, ebpf.UpdateNoExist)
+		err := b.objs.BpfMaps.FlowPidMap.Update(*k, v, ebpf.UpdateNoExist)
 		if err != nil {
 			if err == ebpf.ErrKeyExist || strings.Contains(err.Error(), "key already exists") {
 				continue
