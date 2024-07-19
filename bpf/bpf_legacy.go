@@ -45,12 +45,16 @@ func (b *BpfObjects) FromLegacy(o *BpfObjectsForLegacyKernel) {
 	b.BpfMaps = o.BpfMaps
 }
 
-func supportGetSocketCookieWithCgroup() bool {
-	err := features.HaveProgramHelper(ebpf.CGroupSock, asm.FnGetSocketCookie)
-	if err != nil {
+func supportCgroupSock() bool {
+	if err := features.HaveProgramHelper(ebpf.CGroupSock, asm.FnGetSocketCookie); err != nil {
 		log.Debugf("%+v", err)
 		return false
 	}
+	if err := features.HaveProgramHelper(ebpf.CGroupSock, asm.FnGetCurrentTask); err != nil {
+		log.Debugf("%+v", err)
+		return false
+	}
+
 	return true
 }
 

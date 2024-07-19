@@ -149,7 +149,8 @@ func (b *BPF) Load(opts Options) error {
 		}
 	}
 
-	if b.isLegacyKernel || !supportGetSocketCookieWithCgroup() {
+	if b.isLegacyKernel || !supportCgroupSock() {
+		log.Debug("will load the objs for legacy kernel")
 		b.skipAttachCgroup = true
 		objs := BpfObjectsForLegacyKernel{}
 		if err = b.spec.LoadAndAssign(&objs, &ebpf.CollectionOptions{
@@ -261,6 +262,7 @@ func (b *BPF) AttachKprobes() error {
 
 	lk, err = link.Kprobe("udp_send_skb", b.objs.KprobeUdpSendSkb, &link.KprobeOptions{})
 	if err != nil {
+		log.Debugf("%+v", err)
 		if strings.Contains(err.Error(), "no such file or directory") {
 			lk, err = link.Kprobe("udp_sendmsg", b.objs.KprobeUdpSendmsg, &link.KprobeOptions{})
 			if err != nil {
@@ -276,7 +278,7 @@ func (b *BPF) AttachKprobes() error {
 		b.objs.KprobeNfNatPacket, &link.KprobeOptions{})
 	if err != nil {
 		if strings.Contains(err.Error(), "nf_nat_packet: not found: no such file or directory") {
-			log.Warn("current system doest not enable netfilter based NAT feature, skip attach kprobe/nf_nat_packet")
+			log.Warn("the kernel does not support netfilter based NAT feature, skip attach kprobe/nf_nat_packet")
 		} else {
 			return fmt.Errorf("attach kprobe/nf_nat_packet: %w", err)
 		}
@@ -289,7 +291,7 @@ func (b *BPF) AttachKprobes() error {
 		b.objs.KprobeNfNatManipPkt, &link.KprobeOptions{})
 	if err != nil {
 		if strings.Contains(err.Error(), "nf_nat_manip_pkt: not found: no such file or directory") {
-			log.Warn("current system doest not enable netfilter based NAT feature, skip attach kprobe/nf_nat_manip_pkt")
+			log.Warn("the kernel does not support netfilter based NAT feature, skip attach kprobe/nf_nat_manip_pkt")
 		} else {
 			return fmt.Errorf("attach kprobe/nf_nat_manip_pkt: %w", err)
 		}
