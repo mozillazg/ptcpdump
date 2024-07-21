@@ -64,7 +64,9 @@ type BpfPacketEventMetaT struct {
 type BpfPacketEventT struct{ Meta BpfPacketEventMetaT }
 
 type BpfProcessMetaT struct {
+	Ppid       uint32
 	Pid        uint32
+	PidnsId    uint32
 	MntnsId    uint32
 	NetnsId    uint32
 	CgroupName [128]int8

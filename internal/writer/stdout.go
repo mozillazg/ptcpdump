@@ -50,21 +50,29 @@ func (w *StdoutWriter) Write(e *event.Packet) error {
 	}
 	p := w.pcache.Get(e.Pid, e.MntNs, e.NetNs, e.CgroupName)
 
-	pidInfo := ""
+	processInfo := ""
+	parentProcInfo := ""
 	containerInfo := ""
 	PodInfo := ""
 
 	switch {
 	case w.FormatStyle >= pktdump.FormatStyleVerbose:
-		pidInfo = fmt.Sprintf("Process (pid %d, cmd %s, args %s)",
+		processInfo = fmt.Sprintf("Process (pid %d, cmd %s, args %s)",
 			e.Pid, p.Cmd, p.FormatArgs())
+		if p.Parent.Pid > 0 {
+			parentProcInfo = fmt.Sprintf("ParentProc (pid %d, cmd %s, args %s)",
+				p.Parent.Pid, p.Parent.Cmd, p.Parent.FormatArgs())
+		}
 		containerInfo = fmt.Sprintf("Container (name %s, id %s, image %s, labels %s)",
 			p.Container.TidyName(), p.Container.Id, p.Container.Image, p.Container.FormatLabels())
 		PodInfo = fmt.Sprintf("Pod (name %s, namespace %s, UID %s, labels %s, annotations %s)",
 			p.Pod.Name, p.Pod.Namespace, p.Pod.Uid, p.Pod.FormatLabels(), p.Pod.FormatAnnotations())
 		break
 	default:
-		pidInfo = fmt.Sprintf("%s.%d", p.Comm(), e.Pid)
+		processInfo = fmt.Sprintf("%s.%d", p.Comm(), e.Pid)
+		if p.Parent.Pid > 0 {
+			parentProcInfo = fmt.Sprintf("ParentProc [%s.%d]", p.Parent.Comm(), p.Parent.Pid)
+		}
 		containerInfo = fmt.Sprintf("Container [%s]", p.Container.TidyName())
 		PodInfo = fmt.Sprintf("Pod [%s.%s]", p.Pod.Name, p.Pod.Namespace)
 	}
@@ -87,7 +95,7 @@ func (w *StdoutWriter) Write(e *event.Packet) error {
 		builder.WriteString(fmt.Sprintf("%s ", ifName))
 	}
 	if p.Pid > 0 && w.FormatStyle <= pktdump.FormatStyleNormal {
-		builder.WriteString(fmt.Sprintf("%s ", pidInfo))
+		builder.WriteString(fmt.Sprintf("%s ", processInfo))
 	}
 	if packetType != "" {
 		builder.WriteString(fmt.Sprintf("%s ", packetType))
@@ -97,7 +105,10 @@ func (w *StdoutWriter) Write(e *event.Packet) error {
 	case w.FormatStyle >= pktdump.FormatStyleVerbose:
 		builder.WriteString(fmt.Sprintf("%s\n", formated))
 		if p.Pid > 0 {
-			builder.WriteString(fmt.Sprintf("    %s\n", pidInfo))
+			builder.WriteString(fmt.Sprintf("    %s\n", processInfo))
+			if p.Parent.Pid > 0 {
+				builder.WriteString(fmt.Sprintf("    %s\n", parentProcInfo))
+			}
 		}
 		if p.Container.Id != "" {
 			builder.WriteString(fmt.Sprintf("    %s\n", containerInfo))
@@ -108,6 +119,9 @@ func (w *StdoutWriter) Write(e *event.Packet) error {
 		break
 	default:
 		builder.WriteString(formated)
+		if p.Parent.Pid > 0 {
+			builder.WriteString(fmt.Sprintf(", %s", parentProcInfo))
+		}
 		if p.Container.Id != "" {
 			builder.WriteString(fmt.Sprintf(", %s", containerInfo))
 		}
