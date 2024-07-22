@@ -59,6 +59,8 @@ jobs:
           # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
           - '6.6-20240717.161638'
           # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
+          - 'bpf-20240717.161638'
+          # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
           - 'bpf-next-20240718.013136'
     timeout-minutes: 10
     runs-on: ubuntu-latest

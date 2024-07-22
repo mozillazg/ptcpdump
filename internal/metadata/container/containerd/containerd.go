@@ -52,7 +52,7 @@ func NewMetaData(host string, namespace string) (*MetaData, error) {
 	log.Infof("init containerd metadata with host=%s, namespace=%s", host, namespace)
 	opts := []containerd.ClientOpt{
 		containerd.WithDefaultNamespace(namespace),
-		containerd.WithTimeout(time.Second * 5),
+		containerd.WithTimeout(time.Second * 2),
 	}
 	c, err := containerd.New(host, opts...)
 	if err != nil {
