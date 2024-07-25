@@ -263,6 +263,7 @@ func (b *BPF) AttachKprobes() error {
 	lk, err = link.Kprobe("udp_send_skb", b.objs.KprobeUdpSendSkb, &link.KprobeOptions{})
 	if err != nil {
 		log.Debugf("%+v", err)
+		// TODO: use errors.Is(xxx) or ==
 		if strings.Contains(err.Error(), "no such file or directory") {
 			lk, err = link.Kprobe("udp_sendmsg", b.objs.KprobeUdpSendmsg, &link.KprobeOptions{})
 			if err != nil {
@@ -277,6 +278,7 @@ func (b *BPF) AttachKprobes() error {
 	lk, err = link.Kprobe("nf_nat_packet",
 		b.objs.KprobeNfNatPacket, &link.KprobeOptions{})
 	if err != nil {
+		// TODO: use errors.Is(xxx) or ==
 		if strings.Contains(err.Error(), "nf_nat_packet: not found: no such file or directory") {
 			log.Warn("the kernel does not support netfilter based NAT feature, skip attach kprobe/nf_nat_packet")
 		} else {
@@ -290,6 +292,7 @@ func (b *BPF) AttachKprobes() error {
 	lk, err = link.Kprobe("nf_nat_manip_pkt",
 		b.objs.KprobeNfNatManipPkt, &link.KprobeOptions{})
 	if err != nil {
+		// TODO: use errors.Is(xxx) or ==
 		if strings.Contains(err.Error(), "nf_nat_manip_pkt: not found: no such file or directory") {
 			log.Warn("the kernel does not support netfilter based NAT feature, skip attach kprobe/nf_nat_manip_pkt")
 		} else {

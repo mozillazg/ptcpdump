@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"net/netip"
+	"strings"
 
 	btftype "github.com/cilium/ebpf/btf"
 	"github.com/cilium/ebpf/rlimit"
@@ -57,7 +58,12 @@ func attachHooks(btfSpec *btftype.Spec, currentConns []metadata.Connection, opts
 	}
 	for _, iface := range devices {
 		if err := bf.AttachTcHooks(iface.Ifindex, opts.DirectionOut(), opts.DirectionIn()); err != nil {
-			return bf, err
+			// TODO: use errors.Is(xxx) or ==
+			if strings.Contains(err.Error(), "netlink receive: no such file or directory") {
+				log.Warnf("skip interface %s due to %s", iface.Name, err)
+				continue
+			}
+			return bf, fmt.Errorf("attach tc hooks for interface %d.%s: %w", iface.Ifindex, iface.Name, err)
 		}
 	}
 
