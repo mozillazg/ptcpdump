@@ -10,7 +10,6 @@ import (
 	"time"
 
 	dockertypes "github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/events"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
@@ -207,7 +206,7 @@ func (d *MetaData) init(ctx context.Context) error {
 	d.hostNetNs = utils.GetNetworkNamespaceFromPid(1)
 
 	c := d.client
-	containers, err := c.ContainerList(ctx, container.ListOptions{
+	containers, err := c.ContainerList(ctx, dockertypes.ContainerListOptions{
 		Filters: filters.NewArgs(filters.Arg("status", "running")),
 	})
 	if err != nil {
@@ -264,9 +263,9 @@ func (d *MetaData) watchContainerEvents(ctx context.Context) {
 		if msg.Type != events.ContainerEventType {
 			continue
 		}
-		if msg.Action == events.ActionStart ||
-			strings.HasPrefix(string(msg.Action), string(events.ActionExecCreate)+": ") ||
-			strings.HasPrefix(string(msg.Action), string(events.ActionExecStart)+": ") {
+		if string(msg.Action) == string(ActionStart) ||
+			strings.HasPrefix(string(msg.Action), string(ActionExecCreate)+": ") ||
+			strings.HasPrefix(string(msg.Action), string(ActionExecStart)+": ") {
 			d.handleContainerEvent(ctx, msg.Actor.ID)
 		}
 	}

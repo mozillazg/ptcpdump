@@ -6,11 +6,8 @@ import (
 
 	"github.com/mozillazg/ptcpdump/internal/log"
 	"github.com/mozillazg/ptcpdump/internal/types"
-	"go.opentelemetry.io/otel/trace"
-	"go.opentelemetry.io/otel/trace/noop"
 	cri "k8s.io/cri-api/pkg/apis"
-	remote "k8s.io/cri-client/pkg"
-	"k8s.io/klog/v2"
+	"k8s.io/kubernetes/pkg/kubelet/cri/remote"
 )
 
 var DefaultRuntimeEndpoints = []string{
@@ -52,7 +49,7 @@ func (m *MetaData) GetPodByName(ctx context.Context, name, namespace string) (p 
 	if m.res == nil {
 		return
 	}
-	sanboxes, err := m.res.ListPodSandbox(ctx, nil)
+	sanboxes, err := m.res.ListPodSandbox(nil)
 	if err != nil {
 		log.Errorf("list pod sanbox failed: %s", err)
 		return
@@ -85,17 +82,16 @@ func tidyLabels(raw map[string]string) map[string]string {
 }
 
 func getRuntimeService(criRuntimeEndpoint string) (res cri.RuntimeService, err error) {
-	logger := klog.Background()
+	// logger := klog.Background()
 	t := defaultTimeout
 	endpoints := DefaultRuntimeEndpoints
-	var tp trace.TracerProvider = noop.NewTracerProvider()
 	if criRuntimeEndpoint != "" {
 		endpoints = []string{criRuntimeEndpoint}
 	}
 
 	for _, endPoint := range endpoints {
 		log.Debugf("Connect using endpoint %q with %q timeout", endPoint, t)
-		res, err = remote.NewRemoteRuntimeService(endPoint, t, tp, &logger)
+		res, err = remote.NewRemoteRuntimeService(endPoint, t)
 		if err != nil {
 			log.Infof(err.Error())
 			continue
