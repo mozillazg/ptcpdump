@@ -462,7 +462,7 @@ func ensureTcQdisc(ifindex int) (func(), error) {
 	newCloseFunc := func() {
 		if err := tcnl.Qdisc().Delete(&qdisc); err != nil {
 			if !strings.Contains(err.Error(), "no such device") &&
-              !strings.Contains(err.Error(), "no such file") {
+				!strings.Contains(err.Error(), "no such file") {
 				log.Warnf("delete tcnl qdisc failed: %+v", err)
 			}
 		}

@@ -91,6 +91,7 @@ struct process_meta_t {
     u32 pidns_id;
     u32 mntns_id;
     u32 netns_id;
+    char comm[TASK_COMM_LEN];
     char cgroup_name[128];
 };
 
@@ -345,7 +346,9 @@ static __always_inline void fill_process_meta(struct task_struct *task, struct p
     BPF_CORE_READ_INTO(&meta->mntns_id, task, nsproxy, mnt_ns, ns.inum);
     BPF_CORE_READ_INTO(&meta->netns_id, task, nsproxy, net_ns, ns.inum);
     BPF_CORE_READ_INTO(&meta->pid, task, tgid);
+    BPF_CORE_READ_INTO(&meta->ppid, task, real_parent, tgid);
 
+    BPF_CORE_READ_STR_INTO(&meta->comm, task, comm);
     const char *cname = BPF_CORE_READ(task, cgroups, subsys[0], cgroup, kn, name);
     bpf_core_read_str(&meta->cgroup_name, sizeof(meta->cgroup_name), cname);
 }
@@ -454,6 +457,40 @@ static __always_inline int process_filter(struct task_struct *task) {
     return -1;
 }
 
+static __always_inline int process_meta_filter(struct process_meta_t *meta) {
+    // no filter rules
+    if (!have_pid_filter_rules()) {
+        // debug_log("no filter\n");
+        return 0;
+    }
+
+    GET_CONFIG()
+
+    if (g.filter_pid > 0 && meta->pid == g.filter_pid) {
+        // debug_log("filter_pid\n");
+        return 0;
+    }
+    if (g.filter_pid > 0 && g.filter_follow_forks == 1 && meta->ppid == g.filter_pid) {
+        // debug_log("filter_pid by ppid\n");
+        return 0;
+    }
+
+    if ((meta->mntns_id > 0 && meta->mntns_id == g.filter_mntns_id) ||
+        (meta->netns_id > 0 && meta->netns_id == g.filter_netns_id) ||
+        (meta->pidns_id > 0 && meta->pidns_id == g.filter_pidns_id)) {
+        // debug_log("%u %u %u\n", meta->mntns_id, meta->netns_id, meta->pidns_id);
+        return 0;
+    }
+
+    if (g.filter_comm_enable == 1) {
+        if (str_cmp(meta->comm, g.filter_comm, TASK_COMM_LEN) == 0) {
+            return 0;
+        }
+    }
+
+    return -1;
+}
+
 static __always_inline int parent_process_filter(struct task_struct *current) {
     // no filter rules
     if (!have_pid_filter_rules()) {
@@ -525,11 +562,11 @@ int cgroup__sock_create(void *ctx) {
     }
 
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
-    if (parent_process_filter(task) < 0) {
-        if (process_filter(task) < 0) {
-            return 1;
-        }
-    }
+    // if (parent_process_filter(task) < 0) {
+    //     if (process_filter(task) < 0) {
+    //         return 1;
+    //     }
+    // }
     // debug_log("sock_create\n");
 
     struct process_meta_t meta = {0};
@@ -566,11 +603,11 @@ int BPF_KPROBE(kprobe__security_sk_classify_flow, struct sock *sk) {
     struct process_meta_t value = {0};
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
 
-    if (parent_process_filter(task) < 0) {
-        if (process_filter(task) < 0) {
-            return 0;
-        }
-    }
+    // if (parent_process_filter(task) < 0) {
+    //     if (process_filter(task) < 0) {
+    //         return 0;
+    //     }
+    // }
     // debug_log("flow match\n");
 
     fill_sk_meta(sk, &key);
@@ -594,11 +631,11 @@ static __always_inline void handle_sendmsg(struct sock *sk) {
     struct process_meta_t value = {0};
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
 
-    if (parent_process_filter(task) < 0) {
-        if (process_filter(task) < 0) {
-            return;
-        }
-    }
+    // if (parent_process_filter(task) < 0) {
+    //     if (process_filter(task) < 0) {
+    //         return;
+    //     }
+    // }
     // debug_log("sendmsg match\n");
 
     fill_sk_meta(sk, &key);
@@ -757,6 +794,16 @@ static __always_inline void route_packet(struct packet_meta_t *packet_meta, stru
     return;
 }
 
+static __always_inline void clone_process_meta(struct process_meta_t *origin, struct process_meta_t *target) {
+    target->ppid = origin->ppid;
+    target->pid = origin->pid;
+    target->mntns_id = origin->mntns_id;
+    target->netns_id = origin->netns_id;
+    target->pidns_id = origin->pidns_id;
+    __builtin_memcpy(&target->comm, &origin->comm, sizeof(origin->comm));
+    __builtin_memcpy(&target->cgroup_name, &origin->cgroup_name, sizeof(origin->cgroup_name));
+}
+
 static __always_inline int get_pid_meta(struct __sk_buff *skb, struct process_meta_t *pid_meta, bool egress) {
 #ifndef LEGACY_KERNEL
     if (bpf_core_enum_value_exists(enum bpf_func_id, BPF_FUNC_get_socket_cookie)) {
@@ -764,10 +811,7 @@ static __always_inline int get_pid_meta(struct __sk_buff *skb, struct process_me
         if (cookie > 0) {
             struct process_meta_t *value = bpf_map_lookup_elem(&sock_cookie_pid_map, &cookie);
             if (value) {
-                pid_meta->pid = value->pid;
-                pid_meta->mntns_id = value->mntns_id;
-                pid_meta->netns_id = value->netns_id;
-                __builtin_memcpy(&pid_meta->cgroup_name, &value->cgroup_name, sizeof(value->cgroup_name));
+                clone_process_meta(value, pid_meta);
                 return 0;
             }
         } else {
@@ -813,11 +857,7 @@ static __always_inline int get_pid_meta(struct __sk_buff *skb, struct process_me
             if (value) {
                 // debug_log("[tc] got %pI4 %d -> %pI4\n", &flow.saddr[0],
                 // flow.sport, &flow.daddr[0]);
-                pid_meta->pid = value->pid;
-                pid_meta->mntns_id = value->mntns_id;
-                pid_meta->netns_id = value->netns_id;
-                __builtin_memcpy(&pid_meta->cgroup_name, &value->cgroup_name, sizeof(value->cgroup_name));
-
+                clone_process_meta(value, pid_meta);
                 break;
             } else if (have_pid_filter) {
                 /* debug_log("[tc] %pI4 %d bpf_map_lookup_elem is empty\n",
@@ -840,6 +880,9 @@ static __always_inline void handle_tc(struct __sk_buff *skb, bool egress) {
 
     struct process_meta_t pid_meta = {0};
     if (get_pid_meta(skb, &pid_meta, egress) < 0) {
+        return;
+    };
+    if (process_meta_filter(&pid_meta) < 0) {
         return;
     };
 
@@ -913,7 +956,6 @@ static __always_inline void handle_exec(struct bpf_raw_tracepoint_args *ctx) {
     __builtin_memset(&event->meta, 0, sizeof(event->meta));
 
     fill_process_meta(task, &event->meta);
-    BPF_CORE_READ_INTO(&event->meta.ppid, task, real_parent, tgid);
 
     struct linux_binprm *bprm = (struct linux_binprm *)BPF_CORE_READ(ctx, args[2]);
     const char *filename_p = BPF_CORE_READ(bprm, filename);
