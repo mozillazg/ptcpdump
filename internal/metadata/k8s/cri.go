@@ -2,6 +2,7 @@ package k8s
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/mozillazg/ptcpdump/internal/log"
@@ -11,10 +12,10 @@ import (
 )
 
 var DefaultRuntimeEndpoints = []string{
-	"unix:///run/containerd/containerd.sock",
-	"unix:///run/crio/crio.sock",
-	"unix:///var/run/cri-dockerd.sock",
 	"unix:///var/run/dockershim.sock",
+	"unix:///var/run/cri-dockerd.sock",
+	"unix:///run/crio/crio.sock",
+	"unix:///run/containerd/containerd.sock",
 }
 
 const defaultTimeout = 2 * time.Second
@@ -51,7 +52,14 @@ func (m *MetaData) GetPodByName(ctx context.Context, name, namespace string) (p 
 	}
 	sanboxes, err := m.res.ListPodSandbox(nil)
 	if err != nil {
-		log.Errorf("list pod sanbox failed: %s", err)
+		// TODO: use errors.Is
+		if strings.Contains(err.Error(), "Unimplemented") &&
+			strings.Contains(err.Error(), "v1alpha2.RuntimeService") {
+
+			log.Infof("list pod sanbox failed: %s", err)
+		} else {
+			log.Errorf("list pod sanbox failed: %s", err)
+		}
 		return
 	}
 	for _, sanbox := range sanboxes {
@@ -90,13 +98,13 @@ func getRuntimeService(criRuntimeEndpoint string) (res cri.RuntimeService, err e
 	}
 
 	for _, endPoint := range endpoints {
-		log.Debugf("Connect using endpoint %q with %q timeout", endPoint, t)
+		log.Infof("Connect using endpoint %q with %q timeout", endPoint, t)
 		res, err = remote.NewRemoteRuntimeService(endPoint, t)
 		if err != nil {
 			log.Infof(err.Error())
 			continue
 		}
-		log.Debugf("Connected successfully using endpoint: %s", endPoint)
+		log.Infof("Connected successfully using endpoint: %s", endPoint)
 		break
 	}
 

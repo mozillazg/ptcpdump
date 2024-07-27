@@ -3,8 +3,8 @@ package docker
 type Action string
 
 const (
-	ActionCreate       Action = "create"
-	ActionStart        Action = "start"
+	ActionCreate Action = "create"
+	ActionStart  Action = "start"
 
 	// ActionExecCreate is the prefix used for exec_create events. These
 	// event-actions are commonly followed by a colon and space (": "),
@@ -23,5 +23,5 @@ const (
 	//
 	// This is far from ideal; it's a compromise to allow filtering and
 	// to preserve backward-compatibility.
-	ActionExecStart  Action = "exec_start"
+	ActionExecStart Action = "exec_start"
 )

@@ -36,7 +36,7 @@ func LoadBTFSpec(path string) (*btf.Spec, string, error) {
 	if path != "" {
 		spec, path, err := loadSpec(path)
 		if err == nil {
-			log.Debugf("use BTF specs from %s", path)
+			log.Infof("use BTF specs from %s", path)
 			return spec, path, nil
 		}
 		return nil, path, fmt.Errorf("load BTF specs from %s: %w", path, err)
@@ -44,7 +44,7 @@ func LoadBTFSpec(path string) (*btf.Spec, string, error) {
 
 	spec, err := btf.LoadKernelSpec()
 	if err == nil {
-		log.Debug("use BTF specs from default locations")
+		log.Info("use BTF specs from default locations")
 		return spec, DefaultPath, nil
 	}
 
@@ -86,7 +86,7 @@ func loadSpecFromRemote() (*btf.Spec, string, error) {
 		log.Errorf("load BTF specs from OpenAnolis failed: %s", err)
 	}
 	if spec != nil {
-		log.Debugf("use BTF specs from %s", path)
+		log.Infof("use BTF specs from %s", path)
 		return spec, path, nil
 	}
 
@@ -99,7 +99,7 @@ func loadSpecFromRemote() (*btf.Spec, string, error) {
 
 func loadSpecFromBTFHub(arch string, release host.Release, kernelVersion,
 	saveDir string) (*btf.Spec, string, error) {
-	log.Debug("try to load BTF specs from BTFHub")
+	log.Info("try to load BTF specs from BTFHub")
 
 	path := filepath.Join(saveDir, fmt.Sprintf("%s.btf", kernelVersion))
 	if exist, err := fileExist(path); err != nil {
@@ -141,7 +141,7 @@ func loadSpecFromBTFHub(arch string, release host.Release, kernelVersion,
 
 func loadSpecFromOpenanolis(arch string, _ host.Release, kernelVersion,
 	saveDir string) (*btf.Spec, string, error) {
-	log.Debug("try to load BTF specs from OpenAnolis mirror")
+	log.Info("try to load BTF specs from OpenAnolis mirror")
 	if arch == "arm64" {
 		arch = "aarch64"
 	}
@@ -205,14 +205,14 @@ func fileExist(path string) (bool, error) {
 
 func loadSpecFromCandidateLocations() (*btf.Spec, string, error) {
 	path := candidatePath
-	log.Debugf("try to load BTF specs from %s", path)
+	log.Infof("try to load BTF specs from %s", path)
 
 	spec, path, err := loadSpec(path)
 	if err == nil {
-		log.Debugf("use BTF specs from %s", path)
+		log.Infof("use BTF specs from %s", path)
 		return spec, path, nil
 	}
-	log.Debugf("load BTF specs from %s failed: %s", path, err)
+	log.Infof("load BTF specs from %s failed: %s", path, err)
 
 	kernelVersion, err := host.GetKernelVersion()
 	if err != nil {
@@ -226,7 +226,7 @@ func loadSpecFromCandidateLocations() (*btf.Spec, string, error) {
 func loadSpec(path string) (*btf.Spec, string, error) {
 	spec, err := btf.LoadSpec(path)
 	if err == nil {
-		log.Debugf("use BTF specs from %s", path)
+		log.Infof("use BTF specs from %s", path)
 		return spec, path, nil
 	}
 	if spec, err := loadSpecFromELF(path); err == nil {
