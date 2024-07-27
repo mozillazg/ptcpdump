@@ -2,6 +2,7 @@ package k8s
 
 import (
 	"context"
+	"fmt"
 	"github.com/mozillazg/ptcpdump/internal/utils"
 	"strings"
 	"time"
@@ -103,7 +104,7 @@ func getRuntimeService(criRuntimeEndpoint string) (res cri.RuntimeService, errs 
 		res, err = remote.NewRemoteRuntimeService(endPoint, t)
 		if err != nil {
 			log.Infof(err.Error())
-			errs = append(errs, utils.UnwrapErr(err))
+			errs = append(errs, fmt.Errorf("connect using endpoint %s: %w", endPoint, utils.UnwrapErr(err)))
 			continue
 		}
 		log.Infof("Connected successfully using endpoint: %s", endPoint)

@@ -228,6 +228,7 @@ const struct gconfig_t *unused6 __attribute__((unused));
 static __always_inline int parse_skb_l2(struct __sk_buff *skb, struct l2_t *l2, u32 *offset) {
     if (bpf_skb_load_bytes(skb, *offset + offsetof(struct ethhdr, h_proto), &l2->h_protocol, sizeof(l2->h_protocol)) <
         0) {
+        // debug_log("parse_skb_l2 1 failed:\n");
         return -1;
     }
     l2->h_protocol = bpf_ntohs(l2->h_protocol);
@@ -240,6 +241,7 @@ static __always_inline int parse_skb_l3(struct __sk_buff *skb, u16 protocol, str
     case ETH_P_IP: {
         struct iphdr ip_hdr;
         if (bpf_skb_load_bytes(skb, *offset, &ip_hdr, sizeof(struct iphdr)) < 0) {
+            // debug_log("parse_skb_l3 1 failed:\n");
             return -1;
         }
         l3->protocol = ip_hdr.protocol;
@@ -251,13 +253,16 @@ static __always_inline int parse_skb_l3(struct __sk_buff *skb, u16 protocol, str
     case ETH_P_IPV6: {
         struct ipv6hdr ip_hdr;
         if (bpf_skb_load_bytes(skb, *offset, &ip_hdr, sizeof(struct ipv6hdr)) < 0) {
+            // debug_log("parse_skb_l3 2 failed:\n");
             return -1;
         }
         l3->protocol = ip_hdr.nexthdr;
         if (bpf_skb_load_bytes(skb, *offset + offsetof(struct ipv6hdr, saddr), &l3->saddr, sizeof(l3->saddr)) < 0) {
+            // debug_log("parse_skb_l3 3 failed:\n");
             return -1;
         }
         if (bpf_skb_load_bytes(skb, *offset + offsetof(struct ipv6hdr, daddr), &l3->daddr, sizeof(l3->daddr)) < 0) {
+            // debug_log("parse_skb_l3 4 failed:\n");
             return -1;
         }
         *offset += sizeof(struct ipv6hdr);
@@ -288,6 +293,7 @@ static __always_inline int parse_skb_l4(struct __sk_buff *skb, u8 protocol, stru
     case IPPROTO_TCP: {
         struct tcphdr tcp_hdr;
         if (bpf_skb_load_bytes(skb, *offset, &tcp_hdr, sizeof(struct tcphdr)) < 0) {
+            // debug_log("parse_skb_l4 1 failed:\n");
             return -1;
         }
         l4->sport = bpf_ntohs(tcp_hdr.source);
@@ -298,6 +304,7 @@ static __always_inline int parse_skb_l4(struct __sk_buff *skb, u8 protocol, stru
     case IPPROTO_UDP: {
         struct udphdr udp_hdr;
         if (bpf_skb_load_bytes(skb, *offset, &udp_hdr, sizeof(struct udphdr)) < 0) {
+            // debug_log("parse_skb_l4 2 failed:\n");
             return -1;
         }
         l4->sport = bpf_ntohs(udp_hdr.source);
@@ -308,6 +315,7 @@ static __always_inline int parse_skb_l4(struct __sk_buff *skb, u8 protocol, stru
     case IPPROTO_SCTP: {
         struct sctphdr sctp_hdr;
         if (bpf_skb_load_bytes(skb, *offset, &sctp_hdr, sizeof(struct sctphdr)) < 0) {
+            bpf_printk("parse_skb_l4 3 failed:\n");
             return -1;
         }
         l4->sport = bpf_ntohs(sctp_hdr.source);
@@ -345,6 +353,7 @@ static __always_inline void fill_process_meta(struct task_struct *task, struct p
     BPF_CORE_READ_INTO(&meta->mntns_id, task, nsproxy, mnt_ns, ns.inum);
     BPF_CORE_READ_INTO(&meta->netns_id, task, nsproxy, net_ns, ns.inum);
     BPF_CORE_READ_INTO(&meta->pid, task, tgid);
+    BPF_CORE_READ_INTO(&meta->ppid, task, real_parent, tgid);
 
     const char *cname = BPF_CORE_READ(task, cgroups, subsys[0], cgroup, kn, name);
     bpf_core_read_str(&meta->cgroup_name, sizeof(meta->cgroup_name), cname);
@@ -451,8 +460,47 @@ static __always_inline int process_filter(struct task_struct *task) {
         return 0;
     }
 
+    // debug_log("process_filter not match, pid: %u, filter_pid: %u", pid, g.filter_pid);
+
     return -1;
 }
+
+// static __always_inline int process_meta_filter(struct process_meta_t *meta) {
+//     // no filter rules
+//     if (!have_pid_filter_rules()) {
+//         // debug_log("no filter\n");
+//         return 0;
+//     }
+//
+//     GET_CONFIG()
+//
+//     // debug_log("meta->pid: %u, filter_id: %u\n", meta->pid, g.filter_pid);
+//     if (g.filter_pid > 0 && meta->pid == g.filter_pid) {
+//         // debug_log("filter_pid\n");
+//         return 0;
+//     }
+//     if (g.filter_pid > 0 && g.filter_follow_forks == 1 && meta->ppid == g.filter_pid) {
+//         // debug_log("filter_pid by ppid\n");
+//         return 0;
+//     }
+//
+//     if ((meta->mntns_id > 0 && meta->mntns_id == g.filter_mntns_id) ||
+//         (meta->netns_id > 0 && meta->netns_id == g.filter_netns_id) ||
+//         (meta->pidns_id > 0 && meta->pidns_id == g.filter_pidns_id)) {
+//         // debug_log("%u %u %u\n", meta->mntns_id, meta->netns_id, meta->pidns_id);
+//         return 0;
+//     }
+//
+//     if (g.filter_comm_enable == 1) {
+//         if (str_cmp(meta->comm, g.filter_comm, TASK_COMM_LEN) == 0) {
+//             return 0;
+//         }
+//     }
+//
+//     // debug_log("meta_process not match, meta->pid: %u, filter_id: %u\n", meta->pid, g.filter_pid);
+//
+//     return -1;
+// }
 
 static __always_inline int parent_process_filter(struct task_struct *current) {
     // no filter rules
@@ -478,6 +526,7 @@ static __always_inline int parent_process_filter(struct task_struct *current) {
         bpf_map_update_elem(&filter_pid_map, &child_pid, &u8_zero, BPF_NOEXIST);
         return 0;
     }
+
     return -1;
 }
 
@@ -757,6 +806,15 @@ static __always_inline void route_packet(struct packet_meta_t *packet_meta, stru
     return;
 }
 
+static __always_inline void clone_process_meta(struct process_meta_t *origin, struct process_meta_t *target) {
+    target->ppid = origin->ppid;
+    target->pid = origin->pid;
+    target->mntns_id = origin->mntns_id;
+    target->netns_id = origin->netns_id;
+    target->pidns_id = origin->pidns_id;
+    __builtin_memcpy(&target->cgroup_name, &origin->cgroup_name, sizeof(origin->cgroup_name));
+}
+
 static __always_inline int get_pid_meta(struct __sk_buff *skb, struct process_meta_t *pid_meta, bool egress) {
 #ifndef LEGACY_KERNEL
     if (bpf_core_enum_value_exists(enum bpf_func_id, BPF_FUNC_get_socket_cookie)) {
@@ -764,17 +822,14 @@ static __always_inline int get_pid_meta(struct __sk_buff *skb, struct process_me
         if (cookie > 0) {
             struct process_meta_t *value = bpf_map_lookup_elem(&sock_cookie_pid_map, &cookie);
             if (value) {
-                pid_meta->pid = value->pid;
-                pid_meta->mntns_id = value->mntns_id;
-                pid_meta->netns_id = value->netns_id;
-                __builtin_memcpy(&pid_meta->cgroup_name, &value->cgroup_name, sizeof(value->cgroup_name));
+                clone_process_meta(value, pid_meta);
                 return 0;
             }
         } else {
             if (egress) {
-                //            debug_log("[ptcpdump] tc egress: bpf_get_socket_cookie failed\n");
+                // debug_log("[ptcpdump] tc egress: bpf_get_socket_cookie failed\n");
             } else {
-                //            debug_log("[ptcpdump] tc ingress: bpf_get_socket_cookie failed\n");
+                // debug_log("[ptcpdump] tc ingress: bpf_get_socket_cookie failed\n");
             }
         }
     }
@@ -783,6 +838,7 @@ static __always_inline int get_pid_meta(struct __sk_buff *skb, struct process_me
     struct packet_meta_t packet_meta = {0};
     int ret = parse_skb_meta(skb, &packet_meta);
     if (ret < 0) {
+        // debug_log("parse skb meta failed\n");
         return -1;
     }
     struct nat_flow_t flow = {0};
@@ -803,29 +859,34 @@ static __always_inline int get_pid_meta(struct __sk_buff *skb, struct process_me
             key.sport = flow.dport;
         }
 
-        if (have_pid_filter && key.sport == 0) {
+        if (have_pid_filter && flow.sport == 0 && flow.dport == 0) {
+            // debug_log("tc, sport is zero\n");
+            // debug_log("[tc] %pI4 %d sport is zero\n", &key.saddr[0], key.sport);
             return -1;
         }
 
+        // debug_log("tc, try to get pid\n");
+        // debug_log("[tc] check %pI4 %d\n", &key.saddr[0], key.sport);
         if (key.sport > 0) {
             // debug_log("[tc] check %pI4 %d\n", &key.saddr[0], key.sport);
             struct process_meta_t *value = bpf_map_lookup_elem(&flow_pid_map, &key);
             if (value) {
                 // debug_log("[tc] got %pI4 %d -> %pI4\n", &flow.saddr[0],
                 // flow.sport, &flow.daddr[0]);
-                pid_meta->pid = value->pid;
-                pid_meta->mntns_id = value->mntns_id;
-                pid_meta->netns_id = value->netns_id;
-                __builtin_memcpy(&pid_meta->cgroup_name, &value->cgroup_name, sizeof(value->cgroup_name));
-
-                break;
+                clone_process_meta(value, pid_meta);
+                return 0;
             } else if (have_pid_filter) {
-                /* debug_log("[tc] %pI4 %d bpf_map_lookup_elem is empty\n",
-                 * &key.saddr[0], key.sport); */
-                return -1;
+                // debug_log("tc, flow_pid_map is empty\n");
+                // debug_log("[tc] %pI4 %d bpf_map_lookup_elem flow_pid_map is empty\n", &key.saddr[0], key.sport);
             }
         }
         egress = !egress;
+    }
+
+    if (have_pid_filter) {
+        // debug_log("[tc] check %pI4 %d -> %pI4\n", &flow.saddr[0], flow.sport, &flow.daddr[0]);
+        // debug_log("tc, not found pid from flow_pid_map");
+        return -1;
     }
 
     return 0;
@@ -837,20 +898,9 @@ static __always_inline void handle_tc(struct __sk_buff *skb, bool egress) {
     if (!pcap_filter((void *)skb, (void *)skb, (void *)skb, (void *)(long)skb->data, (void *)(long)skb->data_end)) {
         return;
     }
-
-    struct process_meta_t pid_meta = {0};
-    if (get_pid_meta(skb, &pid_meta, egress) < 0) {
-        return;
-    };
-
-    u32 *count;
 #ifdef LEGACY_KERNEL
     u32 u32_zero = 0;
 #endif
-    count = bpf_map_lookup_or_try_init(&filter_by_kernel_count, &u32_zero, &u32_zero);
-    if (count) {
-        __sync_fetch_and_add(count, 1);
-    }
 
     struct packet_event_t *event;
     event = bpf_map_lookup_elem(&packet_event_stack, &u32_zero);
@@ -858,8 +908,22 @@ static __always_inline void handle_tc(struct __sk_buff *skb, bool egress) {
         // debug_log("[ptcpdump] packet_event_stack failed\n");
         return;
     }
-    /* __builtin_memset(&event->payload, 0, sizeof(event->payload)); */
     __builtin_memset(&event->meta, 0, sizeof(event->meta));
+
+    if (get_pid_meta(skb, &event->meta.process, egress) < 0) {
+        // debug_log("tc, not found pid\n");
+        return;
+    };
+    // if (process_meta_filter(&event->meta.process) < 0) {
+    //     // debug_log("tc, not match filter\n");
+    //     return;
+    // };
+
+    u32 *count;
+    count = bpf_map_lookup_or_try_init(&filter_by_kernel_count, &u32_zero, &u32_zero);
+    if (count) {
+        __sync_fetch_and_add(count, 1);
+    }
 
     if (egress) {
         event->meta.packet_type = EGRESS_PACKET;
@@ -868,13 +932,6 @@ static __always_inline void handle_tc(struct __sk_buff *skb, bool egress) {
     }
     event->meta.timestamp = bpf_ktime_get_ns();
     event->meta.ifindex = skb->ifindex;
-    if (pid_meta.pid > 0) {
-        event->meta.process.pid = pid_meta.pid;
-        event->meta.process.mntns_id = pid_meta.mntns_id;
-        event->meta.process.netns_id = pid_meta.netns_id;
-        __builtin_memcpy(&event->meta.process.cgroup_name, &pid_meta.cgroup_name, sizeof(pid_meta.cgroup_name));
-        /* __builtin_memcpy(&event->meta.comm, &pid_meta->comm, sizeof(pid_meta->comm)); */
-    }
 
     GET_CONFIG()
 
@@ -913,7 +970,6 @@ static __always_inline void handle_exec(struct bpf_raw_tracepoint_args *ctx) {
     __builtin_memset(&event->meta, 0, sizeof(event->meta));
 
     fill_process_meta(task, &event->meta);
-    BPF_CORE_READ_INTO(&event->meta.ppid, task, real_parent, tgid);
 
     struct linux_binprm *bprm = (struct linux_binprm *)BPF_CORE_READ(ctx, args[2]);
     const char *filename_p = BPF_CORE_READ(bprm, filename);
