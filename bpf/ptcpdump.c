@@ -86,7 +86,9 @@ struct flow_pid_key_t {
 };
 
 struct process_meta_t {
+    u32 ppid;
     u32 pid;
+    u32 pidns_id;
     u32 mntns_id;
     u32 netns_id;
     char cgroup_name[128];
@@ -339,6 +341,7 @@ static __always_inline int parse_skb_meta(struct __sk_buff *skb, struct packet_m
 }
 
 static __always_inline void fill_process_meta(struct task_struct *task, struct process_meta_t *meta) {
+    BPF_CORE_READ_INTO(&meta->pidns_id, task, nsproxy, pid_ns_for_children, ns.inum);
     BPF_CORE_READ_INTO(&meta->mntns_id, task, nsproxy, mnt_ns, ns.inum);
     BPF_CORE_READ_INTO(&meta->netns_id, task, nsproxy, net_ns, ns.inum);
     BPF_CORE_READ_INTO(&meta->pid, task, tgid);
@@ -894,9 +897,9 @@ static __always_inline void handle_tc(struct __sk_buff *skb, bool egress) {
 static __always_inline void handle_exec(struct bpf_raw_tracepoint_args *ctx) {
     // args: struct task_struct *p, pid_t old_pid, struct linux_binprm *bprm
     struct task_struct *task = (struct task_struct *)BPF_CORE_READ(ctx, args[0]);
-    if (process_filter(task) < 0) {
-        return;
-    }
+    //    if (process_filter(task) < 0) {
+    //        return;
+    //    }
 
     struct exec_event_t *event;
 #ifdef LEGACY_KERNEL
@@ -910,6 +913,7 @@ static __always_inline void handle_exec(struct bpf_raw_tracepoint_args *ctx) {
     __builtin_memset(&event->meta, 0, sizeof(event->meta));
 
     fill_process_meta(task, &event->meta);
+    BPF_CORE_READ_INTO(&event->meta.ppid, task, real_parent, tgid);
 
     struct linux_binprm *bprm = (struct linux_binprm *)BPF_CORE_READ(ctx, args[2]);
     const char *filename_p = BPF_CORE_READ(bprm, filename);

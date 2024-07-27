@@ -112,23 +112,19 @@ sudo ptcpdump -i any -w - port 80 | tshark -r -
 Default:
 
 ```
-09:32:09.718892 vethee2a302f wget.3553008 In IP 10.244.0.2.33426 > 139.178.84.217.80: Flags [S], seq 4113492822, win 64240, length 0, Container [test], Pod [test.default]
-09:32:09.718941 eth0 wget.3553008 Out IP 172.19.0.2.33426 > 139.178.84.217.80: Flags [S], seq 4113492822, win 64240, length 0, Container [test], Pod [test.default]
+09:32:09.718892 vethee2a302f wget.3553008 In IP 10.244.0.2.33426 > 139.178.84.217.80: Flags [S], seq 4113492822, win 64240, length 0, ParentProc [python3.834381], Container [test], Pod [test.default]
+09:32:09.718941 eth0 wget.3553008 Out IP 172.19.0.2.33426 > 139.178.84.217.80: Flags [S], seq 4113492822, win 64240, length 0, ParentProc [python3.834381], Container [test], Pod [test.default]
 ```
 
 With `-v`:
 
 ```
-09:32:44.613707 vethee2a302f In IP (tos 0x0, ttl 64, id 45068, offset 0, flags [DF], proto TCP (6), length 60)
-    10.244.0.2.60142 > 139.178.84.217.80: Flags [S], cksum 0xebaf, seq 1553234662, win 64240, options [mss 1460,sackOK,TS val 55511585 ecr 0,nop,wscale 7], length 0
-    Process (pid 3558755, cmd /usr/bin/wget, args wget kernel.org)
-    Container (name test, id 22786d2c79f70dbed0003c80915276943695a5674e589e72f45ea9469427bc70, image docker.io/library/alpine:3.18, labels {"io.cri-containerd.kind":"container","io.kubernetes.container.name":"test","io.kubernetes.pod.name":"test","io.kubernetes.pod.namespace":"default","io.kubernetes.pod.uid":"9e4bc54b-de48-4b1c-8b9e-54709f67ed0c"})
-    Pod (name test, namespace default, UID 9e4bc54b-de48-4b1c-8b9e-54709f67ed0c, labels {"run":"test"}, annotations {"kubernetes.io/config.seen":"2024-06-15T02:43:38.519669660Z","kubernetes.io/config.source":"api"})
-09:32:44.613758 eth0 Out IP (tos 0x0, ttl 63, id 45068, offset 0, flags [DF], proto TCP (6), length 60)
-    172.19.0.2.60142 > 139.178.84.217.80: Flags [S], cksum 0x8ccf, seq 1553234662, win 64240, options [mss 1460,sackOK,TS val 55511585 ecr 0,nop,wscale 7], length 0
-    Process (pid 3558755, cmd /usr/bin/wget, args wget kernel.org)
-    Container (name test, id 22786d2c79f70dbed0003c80915276943695a5674e589e72f45ea9469427bc70, image docker.io/library/alpine:3.18, labels {"io.cri-containerd.kind":"container","io.kubernetes.container.name":"test","io.kubernetes.pod.name":"test","io.kubernetes.pod.namespace":"default","io.kubernetes.pod.uid":"9e4bc54b-de48-4b1c-8b9e-54709f67ed0c"})
-    Pod (name test, namespace default, UID 9e4bc54b-de48-4b1c-8b9e-54709f67ed0c, labels {"run":"test"}, annotations {"kubernetes.io/config.seen":"2024-06-15T02:43:38.519669660Z","kubernetes.io/config.source":"api"})
+13:44:41.529003 eth0 In IP (tos 0x4, ttl 45, id 45428, offset 0, flags [DF], proto TCP (6), length 52)
+    139.178.84.217.443 > 172.19.0.2.42606: Flags [.], cksum 0x5284, seq 3173118145, ack 1385712707, win 118, options [nop,nop,TS val 134560683 ecr 1627716996], length 0
+    Process (pid 553587, cmd /usr/bin/wget, args wget kernel.org)
+    ParentProc (pid 553296, cmd /bin/sh, args sh)
+    Container (name test, id d9028334568bf75a5a084963a8f98f78c56bba7f45f823b3780a135b71b91e95, image docker.io/library/alpine:3.18, labels {"io.cri-containerd.kind":"container","io.kubernetes.container.name":"test","io.kubernetes.pod.name":"test","io.kubernetes.pod.namespace":"default","io.kubernetes.pod.uid":"9e4bc54b-de48-4b1c-8b9e-54709f67ed0c"})
+    Pod (name test, namespace default, UID 9e4bc54b-de48-4b1c-8b9e-54709f67ed0c, labels {"run":"test"}, annotations {"kubernetes.io/config.seen":"2024-07-21T12:41:00.460249620Z","kubernetes.io/config.source":"api"})
 ```
 
 <p align="right"><a href="#top">🔝</a></p>

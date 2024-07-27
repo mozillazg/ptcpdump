@@ -33,10 +33,14 @@ func (w *PcapNGWriter) Write(e *event.Packet) error {
 
 	opts := pcapgo.NgPacketOptions{}
 	if p.Pid != 0 {
-		log.Debugf("not found pid from cache: %d", e.Pid)
+		log.Debugf("found pid from cache: %d", e.Pid)
 		opts.Comments = append(opts.Comments,
-			fmt.Sprintf("PID: %d\nCommand: %s\nArgs: %s",
+			fmt.Sprintf("PID: %d\nCmd: %s\nArgs: %s",
 				e.Pid, p.Cmd, p.FormatArgs()),
+		)
+		opts.Comments = append(opts.Comments,
+			fmt.Sprintf("ParentPID: %d\nParentCmd: %s\nParentArgs: %s",
+				p.Parent.Pid, p.Parent.Cmd, p.Parent.FormatArgs()),
 		)
 	}
 	if p.Container.Id != "" {

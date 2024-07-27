@@ -59,6 +59,8 @@ jobs:
           # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
           - '6.6-20240717.161638'
           # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
+          - 'bpf-20240717.161638'
+          # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
           - 'bpf-next-20240718.013136'
     timeout-minutes: 10
     runs-on: ubuntu-latest
@@ -132,6 +134,17 @@ jobs:
             cat /etc/issue
 
             bash /host/testdata/test_base.sh /host/ptcpdump/ptcpdump
+
+      - name: Test parent info
+        uses: cilium/little-vm-helper@97c89f004bd0ab4caeacfe92ebc956e13e362e6b # v0.0.19
+        with:
+          provision: 'false'
+          cmd: |
+            set -ex
+            uname -a
+            cat /etc/issue
+
+            bash /host/testdata/test_parent_info.sh /host/ptcpdump/ptcpdump
 
       - name: Test filter by process name
         uses: cilium/little-vm-helper@97c89f004bd0ab4caeacfe92ebc956e13e362e6b # v0.0.19

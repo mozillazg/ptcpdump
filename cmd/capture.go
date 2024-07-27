@@ -191,6 +191,7 @@ func getCurrentConnects(ctx context.Context, pcache *metadata.ProcessCache, opts
 		ps := pcache.GetPidsByPidNsId(int64(opts.netnsId))
 		pids = append(pids, ps...)
 	}
+	pids = utils.GetUniqInts(pids)
 
 	if filterPid {
 		if len(pids) == 0 {

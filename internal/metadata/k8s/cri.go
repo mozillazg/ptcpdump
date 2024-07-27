@@ -2,6 +2,8 @@ package k8s
 
 import (
 	"context"
+	"github.com/mozillazg/ptcpdump/internal/utils"
+	"strings"
 	"time"
 
 	"github.com/mozillazg/ptcpdump/internal/log"
@@ -27,9 +29,9 @@ type MetaData struct {
 }
 
 func NewMetaData(criRuntimeEndpoint string) (*MetaData, error) {
-	res, err := getRuntimeService(criRuntimeEndpoint)
-	if err != nil {
-		log.Warn("skip kubernetes integration")
+	res, errs := getRuntimeService(criRuntimeEndpoint)
+	if len(errs) > 0 {
+		log.Warnf("skip kubernetes integration due to [%s]", formatErrors(errs))
 	}
 
 	return &MetaData{
@@ -84,7 +86,7 @@ func tidyLabels(raw map[string]string) map[string]string {
 	return newLabels
 }
 
-func getRuntimeService(criRuntimeEndpoint string) (res cri.RuntimeService, err error) {
+func getRuntimeService(criRuntimeEndpoint string) (res cri.RuntimeService, errs []error) {
 	logger := klog.Background()
 	t := defaultTimeout
 	endpoints := DefaultRuntimeEndpoints
@@ -94,15 +96,33 @@ func getRuntimeService(criRuntimeEndpoint string) (res cri.RuntimeService, err e
 	}
 
 	for _, endPoint := range endpoints {
+		var err error
 		log.Debugf("Connect using endpoint %q with %q timeout", endPoint, t)
 		res, err = remote.NewRemoteRuntimeService(endPoint, t, tp, &logger)
 		if err != nil {
 			log.Infof(err.Error())
+			errs = append(errs, utils.UnwrapErr(err))
 			continue
 		}
 		log.Debugf("Connected successfully using endpoint: %s", endPoint)
+		errs = nil
 		break
 	}
 
-	return res, err
+	return res, errs
+}
+
+func formatErrors(errs []error) string {
+	var messages []string
+	for _, err := range errs {
+		err = utils.UnwrapErr(err)
+		msg := err.Error()
+		if strings.Contains(msg, "while dialing: ") {
+			messages = append(messages, strings.Trim(strings.Split(msg, "while dialing: ")[1], `"'`))
+		} else {
+			messages = append(messages, msg)
+		}
+	}
+
+	return strings.Join(messages, ", ")
 }

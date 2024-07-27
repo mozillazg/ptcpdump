@@ -73,6 +73,9 @@ func attachHooks(btfSpec *btftype.Spec, currentConns []metadata.Connection, opts
 func updateFlowPidMapValues(bf *bpf.BPF, conns []metadata.Connection) error {
 	data := map[*bpf.BpfFlowPidKeyT]bpf.BpfProcessMetaT{}
 	for _, conn := range conns {
+		if conn.Pid == 0 {
+			continue
+		}
 		k := bpf.BpfFlowPidKeyT{
 			Saddr: addrTo128(conn.LocalIP),
 			Sport: uint16(conn.LocalPort),
