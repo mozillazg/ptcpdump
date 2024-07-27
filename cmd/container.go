@@ -54,6 +54,10 @@ func applyContainerFilter(ctx context.Context, opts *Options) (*metadata.Contain
 	}
 
 	for _, container := range containers {
+		if container.IsSandbox() {
+			log.Infof("skip sandbox container: %#v", container)
+			continue
+		}
 		log.Infof("filter by container %#v", container)
 		if container.PidNamespace > 0 && container.PidNamespace != metadata.HostPidNs {
 			opts.pidnsId = uint32(container.PidNamespace)
