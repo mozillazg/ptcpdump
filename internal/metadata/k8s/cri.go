@@ -51,24 +51,24 @@ func (m *MetaData) GetPodByName(ctx context.Context, name, namespace string) (p 
 	if m.res == nil {
 		return
 	}
-	sanboxes, err := m.res.ListPodSandbox(nil)
+	sandboxes, err := m.res.ListPodSandbox(nil)
 	if err != nil {
 		// TODO: use errors.Is
 		if strings.Contains(err.Error(), "Unimplemented") &&
 			strings.Contains(err.Error(), "v1alpha2.RuntimeService") {
 
-			log.Infof("list pod sanbox failed: %s", err)
+			log.Infof("list pod sandbox failed: %s", err)
 		} else {
-			log.Errorf("list pod sanbox failed: %s", err)
+			log.Errorf("list pod sandbox failed: %s", err)
 		}
 		return
 	}
-	for _, sanbox := range sanboxes {
-		if sanbox.Metadata.Name != name || sanbox.Metadata.Namespace != namespace {
+	for _, sandbox := range sandboxes {
+		if sandbox.Metadata.Name != name || sandbox.Metadata.Namespace != namespace {
 			continue
 		}
-		p.Labels = tidyLabels(sanbox.Labels)
-		p.Annotations = sanbox.Annotations
+		p.Labels = tidyLabels(sandbox.Labels)
+		p.Annotations = sandbox.Annotations
 		break
 	}
 	return p

@@ -40,11 +40,13 @@ func (c Container) FormatLabels() string {
 	return string(b)
 }
 
-func (c Container) IsSanbox() bool {
+func (c Container) IsSandbox() bool {
 	if len(c.Labels) == 0 {
 		return false
 	}
-	return c.Labels["io.cri-containerd.kind"] == "sanbox"
+	return c.Labels["io.cri-containerd.kind"] == "sandbox" ||
+		c.Labels["io.kubernetes.docker.type"] == "sandbox" ||
+		c.Labels["io.kubernetes.docker.type"] == "podsandbox"
 }
 
 func (c *Container) Pod() Pod {
