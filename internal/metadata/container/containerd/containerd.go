@@ -360,7 +360,7 @@ func (d *MetaData) inspectContainer(ctx context.Context, container containerd.Co
 		if errors.Is(err, errdefs.ErrNotFound) {
 			log.Debugf("get task failed: %s", err)
 		} else {
-			log.Errorf("get task failed: %s", err)
+			log.Infof("get task failed: %s", err)
 		}
 		// return nil, err
 	}
