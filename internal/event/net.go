@@ -47,7 +47,8 @@ func ParsePacketEvent(devices map[int]dev.Device, event bpf.BpfPacketEventWithPa
 	p.CgroupName = utils.GoString(event.Meta.Process.CgroupName[:])
 	p.Device = devices[int(event.Meta.Ifindex)]
 
-	log.Debugf("mntns: %d, netns: %d, cgroupName: %s", p.MntNs, p.NetNs, utils.GoString(event.Meta.Process.CgroupName[:]))
+	log.Infof("new packet event, pid: %d mntns: %d, netns: %d, cgroupName: %s",
+		p.Pid, p.MntNs, p.NetNs, p.CgroupName)
 
 	if event.Meta.PacketType == 1 {
 		p.Type = packetTypeEgress

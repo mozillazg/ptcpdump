@@ -47,11 +47,11 @@ func (b *BpfObjects) FromLegacy(o *BpfObjectsForLegacyKernel) {
 
 func supportCgroupSock() bool {
 	if err := features.HaveProgramHelper(ebpf.CGroupSock, asm.FnGetSocketCookie); err != nil {
-		log.Debugf("%+v", err)
+		log.Infof("%+v", err)
 		return false
 	}
 	if err := features.HaveProgramHelper(ebpf.CGroupSock, asm.FnGetCurrentTask); err != nil {
-		log.Debugf("%+v", err)
+		log.Infof("%+v", err)
 		return false
 	}
 

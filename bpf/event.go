@@ -22,13 +22,13 @@ type BpfPacketEventWithPayloadT struct {
 
 func (b *BPF) PullPacketEvents(ctx context.Context, chanSize int, maxPacketSize int) (<-chan BpfPacketEventWithPayloadT, error) {
 	pageSize := os.Getpagesize()
-	log.Debugf("pagesize is %d", pageSize)
+	log.Infof("pagesize is %d", pageSize)
 	perCPUBuffer := pageSize * 64
 	eventSize := int(unsafe.Sizeof(BpfPacketEventT{})) + maxPacketSize
 	if eventSize >= perCPUBuffer {
 		perCPUBuffer = perCPUBuffer * (1 + (eventSize / perCPUBuffer))
 	}
-	log.Debugf("use %d as perCPUBuffer", perCPUBuffer)
+	log.Infof("use %d as perCPUBuffer", perCPUBuffer)
 
 	reader, err := perf.NewReader(b.objs.PacketEvents, perCPUBuffer)
 	if err != nil {
@@ -58,7 +58,7 @@ func (b *BPF) handlePacketEvents(ctx context.Context, reader *perf.Reader, ch ch
 				return
 			}
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
-				log.Debugf("got EOF error: %s", err)
+				log.Infof("got EOF error: %s", err)
 				continue
 			}
 			log.Errorf("read packet event failed: %s", err)
@@ -88,13 +88,13 @@ func parsePacketEvent(rawSample []byte) (*BpfPacketEventWithPayloadT, error) {
 
 func (b *BPF) PullExecEvents(ctx context.Context, chanSize int) (<-chan BpfExecEventT, error) {
 	pageSize := os.Getpagesize()
-	log.Debugf("pagesize is %d", pageSize)
+	log.Infof("pagesize is %d", pageSize)
 	perCPUBuffer := pageSize * 64
 	eventSize := int(unsafe.Sizeof(BpfExecEventT{}))
 	if eventSize >= perCPUBuffer {
 		perCPUBuffer = perCPUBuffer * (1 + (eventSize / perCPUBuffer))
 	}
-	log.Debugf("use %d as perCPUBuffer", perCPUBuffer)
+	log.Infof("use %d as perCPUBuffer", perCPUBuffer)
 
 	reader, err := perf.NewReader(b.objs.ExecEvents, perCPUBuffer)
 	if err != nil {
@@ -124,7 +124,7 @@ func (b *BPF) handleExecEvents(ctx context.Context, reader *perf.Reader, ch chan
 				return
 			}
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
-				log.Debugf("got EOF error: %s", err)
+				log.Infof("got EOF error: %s", err)
 				continue
 			}
 			log.Errorf("read exec event failed: %s", err)
@@ -152,13 +152,13 @@ func parseExecEvent(rawSample []byte) (*BpfExecEventT, error) {
 
 func (b *BPF) PullExitEvents(ctx context.Context, chanSize int) (<-chan BpfExitEventT, error) {
 	pageSize := os.Getpagesize()
-	log.Debugf("pagesize is %d", pageSize)
+	log.Infof("pagesize is %d", pageSize)
 	perCPUBuffer := pageSize * 4
 	eventSize := int(unsafe.Sizeof(BpfExitEventT{}))
 	if eventSize >= perCPUBuffer {
 		perCPUBuffer = perCPUBuffer * (1 + (eventSize / perCPUBuffer))
 	}
-	log.Debugf("use %d as perCPUBuffer", perCPUBuffer)
+	log.Infof("use %d as perCPUBuffer", perCPUBuffer)
 
 	reader, err := perf.NewReader(b.objs.ExitEvents, perCPUBuffer)
 	if err != nil {
@@ -188,7 +188,7 @@ func (b *BPF) handleExitEvents(ctx context.Context, reader *perf.Reader, ch chan
 				return
 			}
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
-				log.Debugf("got EOF error: %s", err)
+				log.Infof("got EOF error: %s", err)
 				continue
 			}
 			log.Errorf("read exit event failed: %s", err)

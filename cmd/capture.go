@@ -26,7 +26,7 @@ func capture(ctx context.Context, stop context.CancelFunc, opts Options) error {
 		log.Warnf("use BTF specs from %s", btfPath)
 	}
 
-	log.Debug("start process and container cache")
+	log.Info("start process and container cache")
 	pcache := metadata.NewProcessCache()
 	cc, _ := applyContainerFilter(ctx, &opts)
 	if cc != nil {
@@ -36,7 +36,7 @@ func capture(ctx context.Context, stop context.CancelFunc, opts Options) error {
 	var subProcessFinished <-chan struct{}
 	var subProcessLoaderPid int
 	if len(opts.subProgArgs) > 0 {
-		log.Debug("start sub process loader")
+		log.Info("start sub process loader")
 		subProcessLoaderPid, subProcessFinished, err = utils.StartSubProcessLoader(ctx, os.Args[0], opts.subProgArgs)
 		if err != nil {
 			return err
@@ -59,10 +59,10 @@ func capture(ctx context.Context, stop context.CancelFunc, opts Options) error {
 	}()
 	pcache.Start(ctx)
 
-	log.Debug("start get current connections")
+	log.Info("start get current connections")
 	conns := getCurrentConnects(ctx, pcache, opts)
 
-	log.Debug("start attach hooks")
+	log.Info("start attach hooks")
 	bf, err := attachHooks(btfSpec, conns, opts)
 	if err != nil {
 		if bf != nil {
@@ -100,10 +100,10 @@ func capture(ctx context.Context, stop context.CancelFunc, opts Options) error {
 	}
 	if subProcessLoaderPid > 0 {
 		go func() {
-			log.Debugf("notify loader %d to start sub process", subProcessLoaderPid)
+			log.Info("notify loader %d to start sub process", subProcessLoaderPid)
 			syscall.Kill(subProcessLoaderPid, syscall.SIGHUP)
 			<-subProcessFinished
-			log.Debug("sub process exited")
+			log.Info("sub process exited")
 			time.Sleep(time.Second * 3)
 			stopByInternal = true
 			stop()

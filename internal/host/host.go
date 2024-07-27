@@ -28,7 +28,7 @@ func GetRelease() (*Release, error) {
 	for _, path := range osReleaseFiles {
 		data, err := os.ReadFile(path)
 		if err != nil {
-			log.Debugf("read file %s failed: %s", path, err)
+			log.Info("read file %s failed: %s", path, err)
 			errors = append(errors, err)
 			continue
 		}
