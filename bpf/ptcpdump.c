@@ -466,6 +466,7 @@ static __always_inline int process_meta_filter(struct process_meta_t *meta) {
 
     GET_CONFIG()
 
+    debug_log("meta->pid: %u, filter_id: %u\n", meta->pid, g.filter_pid);
     if (g.filter_pid > 0 && meta->pid == g.filter_pid) {
         // debug_log("filter_pid\n");
         return 0;
@@ -487,6 +488,8 @@ static __always_inline int process_meta_filter(struct process_meta_t *meta) {
             return 0;
         }
     }
+
+    debug_log("not match, meta->pid: %u, filter_id: %u\n", meta->pid, g.filter_pid);
 
     return -1;
 }
@@ -877,23 +880,9 @@ static __always_inline void handle_tc(struct __sk_buff *skb, bool egress) {
     if (!pcap_filter((void *)skb, (void *)skb, (void *)skb, (void *)(long)skb->data, (void *)(long)skb->data_end)) {
         return;
     }
-
-    struct process_meta_t pid_meta = {0};
-    if (get_pid_meta(skb, &pid_meta, egress) < 0) {
-        return;
-    };
-    if (process_meta_filter(&pid_meta) < 0) {
-        return;
-    };
-
-    u32 *count;
 #ifdef LEGACY_KERNEL
     u32 u32_zero = 0;
 #endif
-    count = bpf_map_lookup_or_try_init(&filter_by_kernel_count, &u32_zero, &u32_zero);
-    if (count) {
-        __sync_fetch_and_add(count, 1);
-    }
 
     struct packet_event_t *event;
     event = bpf_map_lookup_elem(&packet_event_stack, &u32_zero);
@@ -901,8 +890,22 @@ static __always_inline void handle_tc(struct __sk_buff *skb, bool egress) {
         // debug_log("[ptcpdump] packet_event_stack failed\n");
         return;
     }
-    /* __builtin_memset(&event->payload, 0, sizeof(event->payload)); */
     __builtin_memset(&event->meta, 0, sizeof(event->meta));
+
+    if (get_pid_meta(skb, &event->meta.process, egress) < 0) {
+        // debug_log("tc, not found pid\n");
+        return;
+    };
+    if (process_meta_filter(&event->meta.process) < 0) {
+        // debug_log("tc, not match filter\n");
+        return;
+    };
+
+    u32 *count;
+    count = bpf_map_lookup_or_try_init(&filter_by_kernel_count, &u32_zero, &u32_zero);
+    if (count) {
+        __sync_fetch_and_add(count, 1);
+    }
 
     if (egress) {
         event->meta.packet_type = EGRESS_PACKET;
@@ -911,13 +914,6 @@ static __always_inline void handle_tc(struct __sk_buff *skb, bool egress) {
     }
     event->meta.timestamp = bpf_ktime_get_ns();
     event->meta.ifindex = skb->ifindex;
-    if (pid_meta.pid > 0) {
-        event->meta.process.pid = pid_meta.pid;
-        event->meta.process.mntns_id = pid_meta.mntns_id;
-        event->meta.process.netns_id = pid_meta.netns_id;
-        __builtin_memcpy(&event->meta.process.cgroup_name, &pid_meta.cgroup_name, sizeof(pid_meta.cgroup_name));
-        /* __builtin_memcpy(&event->meta.comm, &pid_meta->comm, sizeof(pid_meta->comm)); */
-    }
 
     GET_CONFIG()
 
