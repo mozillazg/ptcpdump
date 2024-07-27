@@ -50,6 +50,7 @@ jobs:
           command: |
             sudo bash testdata/test_default.sh ./ptcpdump
             sudo bash testdata/test_base.sh ./ptcpdump
+            sudo bash testdata/test_parent_info.sh ./ptcpdump
 
       - run:
           name: e2e (test pname filter)

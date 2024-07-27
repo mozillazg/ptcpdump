@@ -48,6 +48,7 @@ func (c *ProcessCache) WithContainerCache(cc *ContainerCache) *ProcessCache {
 }
 
 func (c *ProcessCache) Start(ctx context.Context) {
+	// TODO: change to get running processes via ebpf task iter
 	if err := c.fillRunningProcesses(ctx); err != nil {
 		log.Errorf("fill running processes info failed: %s", err)
 	}
@@ -60,17 +61,26 @@ func (c *ProcessCache) fillRunningProcesses(ctx context.Context) error {
 		return fmt.Errorf(": %w", err)
 	}
 	for _, p := range ps {
+		if p.Pid == 0 {
+			continue
+		}
+		ppid := 0
+		if parent, err := p.ParentWithContext(ctx); err == nil {
+			ppid = int(parent.Pid)
+		}
 		filename, _ := p.Exe()
 		if filename == "" {
 			filename, _ = p.Name()
 		}
 		args, _ := p.CmdlineSlice()
 		e := event.ProcessExec{
+			PPid:              ppid,
 			Pid:               int(p.Pid),
 			Filename:          filename,
 			FilenameTruncated: false,
 			Args:              args,
 			ArgsTruncated:     false,
+			PidNs:             utils.GetPidNamespaceFromPid(int(p.Pid)),
 			MntNs:             utils.GetMountNamespaceFromPid(int(p.Pid)),
 			Netns:             utils.GetNetworkNamespaceFromPid(int(p.Pid)),
 		}
@@ -141,15 +151,27 @@ func (c *ProcessCache) AddItemWithContext(exec event.ProcessExec, rawCtx types.P
 	// 	return
 	// }
 
+	var parent types.ProcessBase
+	if rawCtx.Process.Parent.Pid != 0 {
+		parent = rawCtx.Process.Parent
+	} else {
+		parent = c.getProcessBase(exec.PPid)
+	}
+
 	pctx := &types.PacketContext{
 		Process: types.Process{
-			Pid:              exec.Pid,
-			PidNamespaceId:   utils.GetPidNamespaceFromPid(exec.Pid),
-			MountNamespaceId: int64(exec.MntNs),
-			NetNamespaceId:   int64(exec.Netns),
-			Cmd:              exec.FilenameStr(),
-			Args:             exec.Args,
-			ArgsTruncated:    exec.ArgsTruncated,
+			Parent: parent,
+			ProcessBase: types.ProcessBase{
+				Pid:           exec.Pid,
+				Cmd:           exec.FilenameStr(),
+				Args:          exec.Args,
+				ArgsTruncated: exec.ArgsTruncated,
+			},
+			ProcessNamespace: types.ProcessNamespace{
+				PidNamespaceId:   int64(exec.PidNs),
+				MountNamespaceId: int64(exec.MntNs),
+				NetNamespaceId:   int64(exec.Netns),
+			},
 		},
 		Container: rawCtx.Container,
 		Pod:       rawCtx.Pod,
@@ -166,6 +188,34 @@ func (c *ProcessCache) AddItemWithContext(exec event.ProcessExec, rawCtx types.P
 	c.pids.Store(pid, pctx)
 
 	log.Debugf("add new cache: %d, %#v", pid, *pctx)
+}
+
+func (c *ProcessCache) getProcessBase(pid int) types.ProcessBase {
+	ret, ok := c.pids.Load(pid)
+	if ok {
+		ppx, ok := ret.(*types.PacketContext)
+		if ok {
+			return ppx.ProcessBase
+		}
+	}
+
+	p, err := process.NewProcessWithContext(context.TODO(), int32(pid))
+	if err != nil {
+		log.Debugf("get info of process %d failed: %+v", pid, err)
+		return types.ProcessBase{
+			Pid: pid,
+		}
+	}
+	cmd, _ := p.Exe()
+	args, _ := p.CmdlineSlice()
+	pb := types.ProcessBase{
+		Pid:           pid,
+		Cmd:           cmd,
+		CmdTruncated:  false,
+		Args:          args,
+		ArgsTruncated: false,
+	}
+	return pb
 }
 
 func (c *ProcessCache) getContainer(ctx types.PacketContext, cgroupName string) (cr types.Container) {
@@ -202,8 +252,8 @@ func (c *ProcessCache) Get(pid int, mntNs, netNs int, cgroupName string) types.P
 	}
 
 	pctx := *ppx
-	pctx.MountNamespaceId = int64(mntNs)
-	pctx.NetNamespaceId = int64(netNs)
+	pctx.MountNamespaceId = int64(mntNs) // TODO: remove ??
+	pctx.NetNamespaceId = int64(netNs)   // TODO: remove ??
 
 	log.Debugf("get %#v", pctx)
 
@@ -211,6 +261,7 @@ func (c *ProcessCache) Get(pid int, mntNs, netNs int, cgroupName string) types.P
 		pctx.Container = c.getContainer(pctx, cgroupName)
 		if pctx.Container.Id != "" {
 			pctx.Pod = c.cc.GetPodByContainer(pctx.Container)
+			// TODO: update pids ??
 		}
 	}
 

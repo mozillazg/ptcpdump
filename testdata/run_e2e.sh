@@ -8,6 +8,7 @@ function main() {
 
   bash testdata/test_default.sh ./ptcpdump
   bash testdata/test_base.sh ./ptcpdump
+  bash testdata/test_parent_info.sh ./ptcpdump
 
   bash testdata/test_pname_filter.sh ./ptcpdump
   bash testdata/test_pid_filter.sh ./ptcpdump

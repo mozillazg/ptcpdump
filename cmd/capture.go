@@ -100,7 +100,7 @@ func capture(ctx context.Context, stop context.CancelFunc, opts Options) error {
 	}
 	if subProcessLoaderPid > 0 {
 		go func() {
-			log.Info("notify loader %d to start sub process", subProcessLoaderPid)
+			log.Infof("notify loader %d to start sub process", subProcessLoaderPid)
 			syscall.Kill(subProcessLoaderPid, syscall.SIGHUP)
 			<-subProcessFinished
 			log.Info("sub process exited")
@@ -191,6 +191,7 @@ func getCurrentConnects(ctx context.Context, pcache *metadata.ProcessCache, opts
 		ps := pcache.GetPidsByPidNsId(int64(opts.netnsId))
 		pids = append(pids, ps...)
 	}
+	pids = utils.GetUniqInts(pids)
 
 	if filterPid {
 		if len(pids) == 0 {

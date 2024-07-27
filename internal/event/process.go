@@ -12,7 +12,8 @@ import (
 )
 
 type ProcessExec struct {
-	Pid int
+	PPid int
+	Pid  int
 
 	Filename          string
 	FilenameTruncated bool
@@ -20,6 +21,7 @@ type ProcessExec struct {
 	Args          []string
 	ArgsTruncated bool
 
+	PidNs      int64
 	MntNs      int64
 	Netns      int64
 	CgroupName string
@@ -34,7 +36,9 @@ func ParseProcessExecEvent(event bpf.BpfExecEventT) (*ProcessExec, error) {
 		p.FilenameTruncated = true
 	}
 
+	p.PPid = int(event.Meta.Ppid)
 	p.Pid = int(event.Meta.Pid)
+	p.PidNs = int64(event.Meta.PidnsId)
 	p.MntNs = int64(event.Meta.MntnsId)
 	p.Netns = int64(event.Meta.NetnsId)
 
@@ -60,6 +64,7 @@ func FromPacketOptions(opts pcapgo.NgPacketOptions) (ProcessExec, types.PacketCo
 	pctx := &types.PacketContext{}
 
 	pctx.FromPacketComments(opts.Comments)
+	p.PPid = pctx.Parent.Pid
 	p.Pid = pctx.Pid
 	p.Filename = pctx.Cmd
 	p.FilenameTruncated = pctx.CmdTruncated

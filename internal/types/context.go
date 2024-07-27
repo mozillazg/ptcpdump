@@ -24,18 +24,37 @@ func (c *PacketContext) FromPacketComments(comments []string) {
 			switch key {
 			case "PID":
 				c.Pid, _ = strconv.Atoi(value)
-			case "Command":
+			case "ParentPID":
+				c.Parent.Pid, _ = strconv.Atoi(value)
+			case "Command", "Cmd", "ParentCommand", "ParentCmd":
+				var CmdTruncated bool
 				if strings.HasSuffix(value, "...") {
-					c.CmdTruncated = true
+					CmdTruncated = true
 					value = strings.TrimSuffix(value, "...")
 				}
-				c.Cmd = value
-			case "Args":
+				switch key {
+				case "Command", "Cmd":
+					c.Cmd = value
+					c.CmdTruncated = CmdTruncated
+				case "ParentCommand", "ParentCmd":
+					c.Parent.Cmd = value
+					c.Parent.CmdTruncated = CmdTruncated
+				}
+			case "Args", "ParentArgs":
+				var ArgsTruncated bool
 				if strings.HasSuffix(value, "...") {
-					c.ArgsTruncated = true
+					ArgsTruncated = true
 					value = strings.TrimSuffix(value, "...")
 				}
-				c.Args = strings.Split(value, " ")
+				args := strings.Split(value, " ")
+				switch key {
+				case "Args":
+					c.Args = args
+					c.ArgsTruncated = ArgsTruncated
+				case "ParentArgs":
+					c.Parent.Args = args
+					c.Parent.ArgsTruncated = ArgsTruncated
+				}
 			case "ContainerName":
 				c.Container.Name = value
 			case "ContainerId":
