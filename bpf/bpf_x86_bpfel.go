@@ -69,7 +69,6 @@ type BpfProcessMetaT struct {
 	PidnsId    uint32
 	MntnsId    uint32
 	NetnsId    uint32
-	Comm       [16]int8
 	CgroupName [128]int8
 }
 
