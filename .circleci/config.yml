@@ -97,6 +97,7 @@ jobs:
   docker-e2e:
     machine:
       image: ubuntu-2204:2024.04.4
+    resource_class: medium
     steps:
       - checkout
       - restore_cache:
@@ -141,6 +142,7 @@ jobs:
   containerd-e2e:
     machine:
       image: ubuntu-2204:2024.04.4
+    resource_class: medium
     steps:
       - checkout
       - run:
@@ -250,74 +252,6 @@ jobs:
           command: |
             sudo bash testdata/run_test_k8s_filter_by_pod.sh
 
-  k8s-1-20-e2e:
-    machine:
-      image: ubuntu-2204:2024.04.4
-    steps:
-      - checkout
-      - run:
-          name: setup kind
-          command: |
-            wget https://github.com/kubernetes-sigs/kind/releases/download/v0.10.0/kind-linux-amd64
-            chmod +x kind-linux-amd64
-            sudo cp ./kind-linux-amd64 /usr/local/bin/kind
-
-            IMG=kindest/node:v1.20.2@sha256:8f7ea6e7642c0da54f04a7ee10431549c0257315b3a634f6ef2fecaaedb19bab
-            sudo docker pull "${IMG}"
-            sudo docker pull alpine:3.18
-
-            sudo kind create cluster
-            sudo kind load docker-image alpine:3.18
-            sudo kind export kubeconfig
-
-            curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-            sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
-            sudo kubectl config use-context kind-kind
-            mkdir -p ~/.kube/
-            sudo cp /root/.kube/config ~/.kube/
-            sudo chown $USER ~/.kube/config
-            docker cp ~/.kube/config kind-control-plane:/root/.kube/
-            docker exec kind-control-plane sh -c "kubectl config set clusters.kind-kind.server https://127.0.0.1:6443"
-
-      - restore_cache:
-          keys:
-            - go-mod-v4-{{ checksum "go.sum" }}
-      - run:
-          name: Install Dependencies
-          command: go mod download
-      - save_cache:
-          key: go-mod-v4-{{ checksum "go.sum" }}
-          paths:
-            - "/go/pkg/mod"
-      - run:
-          name: install deps
-          command: |
-            sudo apt-get update && sudo apt-get install -y gcc flex bison make libelf-dev
-            make libpcap
-      - run:
-          name: build
-          command: |
-            make build
-
-            echo '========== info =========='
-            uname -a
-            cat /etc/issue
-            file ./ptcpdump
-      - run:
-          name: test k8s
-          command: |
-            sudo bash testdata/run_test_k8s.sh
-
-      - run:
-          name: test k8s filter by container id
-          command: |
-            sudo bash testdata/run_test_k8s_filter_by_container.sh
-
-      - run:
-          name: test k8s filter by pod name
-          command: |
-            sudo bash testdata/run_test_k8s_filter_by_pod.sh
-
 workflows:
   e2e:
     jobs:
@@ -330,4 +264,3 @@ workflows:
       - docker-e2e
       - containerd-e2e
       - k8s-1-30-e2e
-      - k8s-1-20-e2e
