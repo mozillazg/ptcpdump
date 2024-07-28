@@ -882,10 +882,16 @@ static __always_inline int get_pid_meta(struct __sk_buff *skb, struct process_me
             } else if (have_pid_filter) {
                 bpf_printk("tc, flow_pid_map is empty\n");
                 bpf_printk("[tc] %pI4 %d bpf_map_lookup_elem flow_pid_map is empty\n", &key.saddr[0], key.sport);
-                return -1;
+                // return -1;
             }
         }
         egress = !egress;
+    }
+
+    if (have_pid_filter) {
+        debug_log("[tc] check %pI4 %d -> %pI4\n", &flow.saddr[0], flow.sport, &flow.daddr[0]);
+        bpf_printk("tc, not found pid from flow_pid_map");
+        return -1;
     }
 
     return 0;
