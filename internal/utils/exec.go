@@ -26,7 +26,7 @@ func StartSubProcessLoader(ctx context.Context, program string, subProgramArgs [
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr
 
-	log.Debugf("start to run subprocess loader %s", cmd.String())
+	log.Infof("start to run subprocess loader %s", cmd.String())
 	if err := cmd.Start(); err != nil {
 		return 0, chFinished, err
 	}

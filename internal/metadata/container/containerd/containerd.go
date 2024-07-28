@@ -154,7 +154,7 @@ func (d *MetaData) GetByNetNs(netNs int64) types.Container {
 		return containers[0]
 	}
 	for _, c := range containers {
-		if !c.IsSanbox() {
+		if !c.IsSandbox() {
 			return c
 		}
 	}
@@ -183,7 +183,7 @@ func (d *MetaData) GetByMntNs(mntNs int64) types.Container {
 		return containers[0]
 	}
 	for _, c := range containers {
-		if !c.IsSanbox() {
+		if !c.IsSandbox() {
 			return c
 		}
 	}

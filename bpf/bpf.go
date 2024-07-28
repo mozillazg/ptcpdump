@@ -105,7 +105,7 @@ func NewOptions(pid uint, comm string, followForks bool, pcapFilter string,
 }
 
 func (b *BPF) Load(opts Options) error {
-	log.Debugf("load with opts: %#v", opts)
+	log.Infof("load with opts: %#v", opts)
 	var err error
 
 	config := BpfGconfigT{
@@ -119,7 +119,7 @@ func (b *BPF) Load(opts Options) error {
 		MaxPayloadSize:    opts.maxPayloadSize,
 	}
 	if !b.isLegacyKernel {
-		log.Debugf("rewrite constants with %+v", config)
+		log.Infof("rewrite constants with %+v", config)
 		err = b.spec.RewriteConstants(map[string]interface{}{
 			"g": config,
 		})
@@ -150,7 +150,7 @@ func (b *BPF) Load(opts Options) error {
 	}
 
 	if b.isLegacyKernel || !supportCgroupSock() {
-		log.Debug("will load the objs for legacy kernel")
+		log.Info("will load the objs for legacy kernel")
 		b.skipAttachCgroup = true
 		objs := BpfObjectsForLegacyKernel{}
 		if err = b.spec.LoadAndAssign(&objs, &ebpf.CollectionOptions{
@@ -179,7 +179,7 @@ func (b *BPF) Load(opts Options) error {
 	b.opts = opts
 
 	if b.isLegacyKernel {
-		log.Debugf("update config map with %+v", config)
+		log.Infof("update config map with %+v", config)
 		key := uint32(0)
 		if err := b.objs.BpfMaps.ConfigMap.Update(key, config, ebpf.UpdateAny); err != nil {
 			return fmt.Errorf(": %w", err)
@@ -262,7 +262,7 @@ func (b *BPF) AttachKprobes() error {
 
 	lk, err = link.Kprobe("udp_send_skb", b.objs.KprobeUdpSendSkb, &link.KprobeOptions{})
 	if err != nil {
-		log.Debugf("%+v", err)
+		log.Infof("%+v", err)
 		// TODO: use errors.Is(xxx) or ==
 		if strings.Contains(err.Error(), "no such file or directory") {
 			lk, err = link.Kprobe("udp_sendmsg", b.objs.KprobeUdpSendmsg, &link.KprobeOptions{})

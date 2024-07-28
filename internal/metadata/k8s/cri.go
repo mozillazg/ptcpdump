@@ -8,18 +8,15 @@ import (
 
 	"github.com/mozillazg/ptcpdump/internal/log"
 	"github.com/mozillazg/ptcpdump/internal/types"
-	"go.opentelemetry.io/otel/trace"
-	"go.opentelemetry.io/otel/trace/noop"
 	cri "k8s.io/cri-api/pkg/apis"
-	remote "k8s.io/cri-client/pkg"
-	"k8s.io/klog/v2"
+	"k8s.io/kubernetes/pkg/kubelet/cri/remote"
 )
 
 var DefaultRuntimeEndpoints = []string{
-	"unix:///run/containerd/containerd.sock",
-	"unix:///run/crio/crio.sock",
-	"unix:///var/run/cri-dockerd.sock",
 	"unix:///var/run/dockershim.sock",
+	"unix:///var/run/cri-dockerd.sock",
+	"unix:///run/crio/crio.sock",
+	"unix:///run/containerd/containerd.sock",
 }
 
 const defaultTimeout = 2 * time.Second
@@ -54,17 +51,24 @@ func (m *MetaData) GetPodByName(ctx context.Context, name, namespace string) (p 
 	if m.res == nil {
 		return
 	}
-	sanboxes, err := m.res.ListPodSandbox(ctx, nil)
+	sandboxes, err := m.res.ListPodSandbox(nil)
 	if err != nil {
-		log.Errorf("list pod sanbox failed: %s", err)
+		// TODO: use errors.Is
+		if strings.Contains(err.Error(), "Unimplemented") &&
+			strings.Contains(err.Error(), "v1alpha2.RuntimeService") {
+
+			log.Infof("list pod sandbox failed: %s", err)
+		} else {
+			log.Errorf("list pod sandbox failed: %s", err)
+		}
 		return
 	}
-	for _, sanbox := range sanboxes {
-		if sanbox.Metadata.Name != name || sanbox.Metadata.Namespace != namespace {
+	for _, sandbox := range sandboxes {
+		if sandbox.Metadata.Name != name || sandbox.Metadata.Namespace != namespace {
 			continue
 		}
-		p.Labels = tidyLabels(sanbox.Labels)
-		p.Annotations = sanbox.Annotations
+		p.Labels = tidyLabels(sandbox.Labels)
+		p.Annotations = sandbox.Annotations
 		break
 	}
 	return p
@@ -87,24 +91,22 @@ func tidyLabels(raw map[string]string) map[string]string {
 }
 
 func getRuntimeService(criRuntimeEndpoint string) (res cri.RuntimeService, errs []error) {
-	logger := klog.Background()
 	t := defaultTimeout
 	endpoints := DefaultRuntimeEndpoints
-	var tp trace.TracerProvider = noop.NewTracerProvider()
 	if criRuntimeEndpoint != "" {
 		endpoints = []string{criRuntimeEndpoint}
 	}
 
 	for _, endPoint := range endpoints {
 		var err error
-		log.Debugf("Connect using endpoint %q with %q timeout", endPoint, t)
-		res, err = remote.NewRemoteRuntimeService(endPoint, t, tp, &logger)
+		log.Infof("Connect using endpoint %q with %q timeout", endPoint, t)
+		res, err = remote.NewRemoteRuntimeService(endPoint, t)
 		if err != nil {
 			log.Infof(err.Error())
 			errs = append(errs, utils.UnwrapErr(err))
 			continue
 		}
-		log.Debugf("Connected successfully using endpoint: %s", endPoint)
+		log.Infof("Connected successfully using endpoint: %s", endPoint)
 		errs = nil
 		break
 	}
