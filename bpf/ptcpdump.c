@@ -229,6 +229,7 @@ const struct gconfig_t *unused6 __attribute__((unused));
 static __always_inline int parse_skb_l2(struct __sk_buff *skb, struct l2_t *l2, u32 *offset) {
     if (bpf_skb_load_bytes(skb, *offset + offsetof(struct ethhdr, h_proto), &l2->h_protocol, sizeof(l2->h_protocol)) <
         0) {
+        debug_log("parse_skb_l2 1 failed:\n");
         return -1;
     }
     l2->h_protocol = bpf_ntohs(l2->h_protocol);
@@ -241,6 +242,7 @@ static __always_inline int parse_skb_l3(struct __sk_buff *skb, u16 protocol, str
     case ETH_P_IP: {
         struct iphdr ip_hdr;
         if (bpf_skb_load_bytes(skb, *offset, &ip_hdr, sizeof(struct iphdr)) < 0) {
+        debug_log("parse_skb_l3 1 failed:\n");
             return -1;
         }
         l3->protocol = ip_hdr.protocol;
@@ -252,13 +254,16 @@ static __always_inline int parse_skb_l3(struct __sk_buff *skb, u16 protocol, str
     case ETH_P_IPV6: {
         struct ipv6hdr ip_hdr;
         if (bpf_skb_load_bytes(skb, *offset, &ip_hdr, sizeof(struct ipv6hdr)) < 0) {
+        debug_log("parse_skb_l3 2 failed:\n");
             return -1;
         }
         l3->protocol = ip_hdr.nexthdr;
         if (bpf_skb_load_bytes(skb, *offset + offsetof(struct ipv6hdr, saddr), &l3->saddr, sizeof(l3->saddr)) < 0) {
+        debug_log("parse_skb_l3 3 failed:\n");
             return -1;
         }
         if (bpf_skb_load_bytes(skb, *offset + offsetof(struct ipv6hdr, daddr), &l3->daddr, sizeof(l3->daddr)) < 0) {
+        debug_log("parse_skb_l3 4 failed:\n");
             return -1;
         }
         *offset += sizeof(struct ipv6hdr);
@@ -289,6 +294,7 @@ static __always_inline int parse_skb_l4(struct __sk_buff *skb, u8 protocol, stru
     case IPPROTO_TCP: {
         struct tcphdr tcp_hdr;
         if (bpf_skb_load_bytes(skb, *offset, &tcp_hdr, sizeof(struct tcphdr)) < 0) {
+        debug_log("parse_skb_l4 1 failed:\n");
             return -1;
         }
         l4->sport = bpf_ntohs(tcp_hdr.source);
@@ -299,6 +305,7 @@ static __always_inline int parse_skb_l4(struct __sk_buff *skb, u8 protocol, stru
     case IPPROTO_UDP: {
         struct udphdr udp_hdr;
         if (bpf_skb_load_bytes(skb, *offset, &udp_hdr, sizeof(struct udphdr)) < 0) {
+        debug_log("parse_skb_l4 2 failed:\n");
             return -1;
         }
         l4->sport = bpf_ntohs(udp_hdr.source);
@@ -309,6 +316,7 @@ static __always_inline int parse_skb_l4(struct __sk_buff *skb, u8 protocol, stru
     case IPPROTO_SCTP: {
         struct sctphdr sctp_hdr;
         if (bpf_skb_load_bytes(skb, *offset, &sctp_hdr, sizeof(struct sctphdr)) < 0) {
+        debug_log("parse_skb_l4 3 failed:\n");
             return -1;
         }
         l4->sport = bpf_ntohs(sctp_hdr.source);
@@ -833,6 +841,7 @@ static __always_inline int get_pid_meta(struct __sk_buff *skb, struct process_me
     struct packet_meta_t packet_meta = {0};
     int ret = parse_skb_meta(skb, &packet_meta);
     if (ret < 0) {
+        debug_log("parse skb meta failed\n");
         return -1;
     }
     struct nat_flow_t flow = {0};
