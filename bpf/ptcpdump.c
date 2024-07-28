@@ -853,7 +853,8 @@ static __always_inline int get_pid_meta(struct __sk_buff *skb, struct process_me
             key.sport = flow.dport;
         }
 
-        if (have_pid_filter && key.sport == 0) {
+        if (have_pid_filter && flow.sport == 0 && flow.dport == 0) {
+            debug_log("[tc] %pI4 %d sport is zero\n", &key.saddr[0], key.sport);
             return -1;
         }
 
