@@ -863,10 +863,13 @@ static __always_inline int get_pid_meta(struct __sk_buff *skb, struct process_me
         }
 
         if (have_pid_filter && flow.sport == 0 && flow.dport == 0) {
+
+            bpf_printk("tc, sport is zero\n");
             bpf_printk("[tc] %pI4 %d sport is zero\n", &key.saddr[0], key.sport);
             return -1;
         }
 
+        bpf_printk("tc, get pid\n");
         bpf_printk("[tc] check %pI4 %d\n", &key.saddr[0], key.sport);
         if (key.sport > 0) {
             bpf_printk("[tc] check %pI4 %d\n", &key.saddr[0], key.sport);
@@ -875,8 +878,9 @@ static __always_inline int get_pid_meta(struct __sk_buff *skb, struct process_me
                 // debug_log("[tc] got %pI4 %d -> %pI4\n", &flow.saddr[0],
                 // flow.sport, &flow.daddr[0]);
                 clone_process_meta(value, pid_meta);
-                break;
+                return 0;
             } else if (have_pid_filter) {
+                bpf_printk("tc, flow_pid_map is empty\n");
                 bpf_printk("[tc] %pI4 %d bpf_map_lookup_elem flow_pid_map is empty\n", &key.saddr[0], key.sport);
                 return -1;
             }
