@@ -454,6 +454,8 @@ static __always_inline int process_filter(struct task_struct *task) {
         return 0;
     }
 
+    debug_log("process_filter not match, pid: %u, filter_pid: %u", pid, g.filter_pid);
+
     return -1;
 }
 
@@ -489,7 +491,7 @@ static __always_inline int process_meta_filter(struct process_meta_t *meta) {
         }
     }
 
-    debug_log("not match, meta->pid: %u, filter_id: %u\n", meta->pid, g.filter_pid);
+    debug_log("meta_process not match, meta->pid: %u, filter_id: %u\n", meta->pid, g.filter_pid);
 
     return -1;
 }
@@ -518,6 +520,7 @@ static __always_inline int parent_process_filter(struct task_struct *current) {
         bpf_map_update_elem(&filter_pid_map, &child_pid, &u8_zero, BPF_NOEXIST);
         return 0;
     }
+
     return -1;
 }
 
@@ -819,9 +822,9 @@ static __always_inline int get_pid_meta(struct __sk_buff *skb, struct process_me
             }
         } else {
             if (egress) {
-                //            debug_log("[ptcpdump] tc egress: bpf_get_socket_cookie failed\n");
+                debug_log("[ptcpdump] tc egress: bpf_get_socket_cookie failed\n");
             } else {
-                //            debug_log("[ptcpdump] tc ingress: bpf_get_socket_cookie failed\n");
+                debug_log("[ptcpdump] tc ingress: bpf_get_socket_cookie failed\n");
             }
         }
     }
@@ -863,8 +866,7 @@ static __always_inline int get_pid_meta(struct __sk_buff *skb, struct process_me
                 clone_process_meta(value, pid_meta);
                 break;
             } else if (have_pid_filter) {
-                /* debug_log("[tc] %pI4 %d bpf_map_lookup_elem is empty\n",
-                 * &key.saddr[0], key.sport); */
+                debug_log("[tc] %pI4 %d bpf_map_lookup_elem flow_pid_map is empty\n", &key.saddr[0], key.sport);
                 return -1;
             }
         }
@@ -887,17 +889,17 @@ static __always_inline void handle_tc(struct __sk_buff *skb, bool egress) {
     struct packet_event_t *event;
     event = bpf_map_lookup_elem(&packet_event_stack, &u32_zero);
     if (!event) {
-        // debug_log("[ptcpdump] packet_event_stack failed\n");
+        debug_log("[ptcpdump] packet_event_stack failed\n");
         return;
     }
     __builtin_memset(&event->meta, 0, sizeof(event->meta));
 
     if (get_pid_meta(skb, &event->meta.process, egress) < 0) {
-        // debug_log("tc, not found pid\n");
+        debug_log("tc, not found pid\n");
         return;
     };
     if (process_meta_filter(&event->meta.process) < 0) {
-        // debug_log("tc, not match filter\n");
+        debug_log("tc, not match filter\n");
         return;
     };
 
@@ -927,7 +929,7 @@ static __always_inline void handle_tc(struct __sk_buff *skb, bool egress) {
     int event_ret = bpf_perf_event_output(skb, &packet_events, BPF_F_CURRENT_CPU | (payload_len << 32), event,
                                           sizeof(struct packet_event_t));
     if (event_ret != 0) {
-        // debug_log("[ptcpdump] bpf_perf_event_output exec_events failed: %d\n", event_ret);
+        debug_log("[ptcpdump] bpf_perf_event_output exec_events failed: %d\n", event_ret);
     }
 
     return;
@@ -946,7 +948,7 @@ static __always_inline void handle_exec(struct bpf_raw_tracepoint_args *ctx) {
 #endif
     event = bpf_map_lookup_elem(&exec_event_stack, &u32_zero);
     if (!event) {
-        // debug_log("[ptcpdump] exec_event_stack failed\n");
+        debug_log("[ptcpdump] exec_event_stack failed\n");
         return;
     }
     __builtin_memset(&event->meta, 0, sizeof(event->meta));
