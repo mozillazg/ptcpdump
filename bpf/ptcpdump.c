@@ -315,7 +315,7 @@ static __always_inline int parse_skb_l4(struct __sk_buff *skb, u8 protocol, stru
     case IPPROTO_SCTP: {
         struct sctphdr sctp_hdr;
         if (bpf_skb_load_bytes(skb, *offset, &sctp_hdr, sizeof(struct sctphdr)) < 0) {
-            bpf_printk("parse_skb_l4 3 failed:\n");
+            // debug_log("parse_skb_l4 3 failed:\n");
             return -1;
         }
         l4->sport = bpf_ntohs(sctp_hdr.source);
