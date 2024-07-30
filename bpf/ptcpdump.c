@@ -448,6 +448,7 @@ static __always_inline int process_filter(struct task_struct *task) {
     if (!should_filter) {
         if (g.filter_comm_enable == 1) {
             char comm[TASK_COMM_LEN];
+            __builtin_memset(&comm, 0, sizeof(comm));
             BPF_CORE_READ_STR_INTO(&comm, task, comm);
             if (str_cmp(comm, g.filter_comm, TASK_COMM_LEN) == 0) {
                 should_filter = true;
@@ -909,6 +910,8 @@ static __always_inline void handle_tc(struct __sk_buff *skb, bool egress) {
         return;
     }
     __builtin_memset(&event->meta, 0, sizeof(event->meta));
+    __builtin_memset(&event->meta.process, 0, sizeof(event->meta.process));
+    __builtin_memset(&event->meta.process.cgroup_name, 0, sizeof(event->meta.process.cgroup_name));
 
     if (get_pid_meta(skb, &event->meta.process, egress) < 0) {
         // debug_log("tc, not found pid\n");
