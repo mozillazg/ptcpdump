@@ -67,10 +67,10 @@ func init() {
 		"Exit after receiving count packets")
 	rootCmd.Flags().StringVarP(&opts.direction, "direction", "Q",
 		"inout", "Choose send/receive direction for which packets should be captured. Possible values are 'in', 'out' and 'inout'")
-	rootCmd.Flags().UintVar(&opts.eventChanSize, "event-chan-size", 10, "Size of event chan")
+	rootCmd.Flags().UintVar(&opts.eventChanSize, "event-chan-size", 20, "Size of event chan")
 	rootCmd.Flags().DurationVar(&opts.delayBeforeHandlePacketEvents, "delay-before-handle-packet-events", 0,
 		"Delay some durations before handle packet events")
-	rootCmd.Flags().UintVar(&opts.execEventsWorkerNumber, "exec-events-worker-number", 20,
+	rootCmd.Flags().UintVar(&opts.execEventsWorkerNumber, "exec-events-worker-number", 50,
 		"Number of worker to handle exec events")
 	rootCmd.Flags().BoolVar(&opts.oneLine, "oneline", false,
 		"Print parsed packet output in a single line")
