@@ -6,7 +6,7 @@ require (
 	github.com/cilium/ebpf v0.15.0
 	github.com/containerd/containerd v1.7.19
 	github.com/containerd/typeurl/v2 v2.1.1
-	github.com/docker/docker v26.1.4+incompatible
+	github.com/docker/docker v27.1.1+incompatible
 	github.com/florianl/go-tc v0.4.3
 	github.com/gopacket/gopacket v1.2.0
 	github.com/jschwinger233/elibpcap v0.0.0-20231010035657-e99300096f5e
@@ -110,7 +110,7 @@ replace (
 	github.com/Microsoft/hcsshim/test => github.com/Microsoft/hcsshim/test v0.0.0-20210514012740-eba372547321
 	github.com/containerd/containerd => github.com/containerd/containerd v1.4.12
 	// github.com/docker/docker => github.com/docker/docker v20.10.12+incompatible
-	github.com/docker/docker => github.com/docker/docker v24.0.9+incompatible
+	github.com/docker/docker => github.com/docker/docker v27.1.1+incompatible
 	github.com/gopacket/gopacket => github.com/mozillazg/gopacket v0.0.0-20240602032747-2b08f0c63614
 	github.com/x-way/pktdump => github.com/mozillazg/pktdump v0.0.7
 
