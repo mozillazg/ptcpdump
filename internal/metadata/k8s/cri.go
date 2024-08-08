@@ -29,7 +29,7 @@ type MetaData struct {
 func NewMetaData(criRuntimeEndpoint string) (*MetaData, error) {
 	res, errs := getRuntimeService(criRuntimeEndpoint)
 	if len(errs) > 0 {
-		log.Warnf("skip kubernetes integration due to [%s]", formatErrors(errs))
+		log.Warnf("skip kubernetes integration due to %s", errs)
 	}
 
 	return &MetaData{
@@ -106,6 +106,15 @@ func getRuntimeService(criRuntimeEndpoint string) (res cri.RuntimeService, errs 
 			log.Infof(err.Error())
 			errs = append(errs, fmt.Errorf("connect using endpoint %s: %w", endPoint, utils.UnwrapErr(err)))
 			continue
+		}
+		if _, err1 := res.Version(string(remote.CRIVersionV1)); err1 != nil {
+			log.Infof("check version %s failed: %s", remote.CRIVersionV1, err1)
+			if _, err2 := res.Version(string(remote.CRIVersionV1alpha2)); err2 != nil {
+				log.Infof("check version %s failed: %s", remote.CRIVersionV1alpha2, err2)
+				errs = append(errs, fmt.Errorf("using endpoint %s failed: %w", endPoint, err1))
+				res = nil
+				continue
+			}
 		}
 		log.Infof("Connected successfully using endpoint: %s", endPoint)
 		errs = nil
