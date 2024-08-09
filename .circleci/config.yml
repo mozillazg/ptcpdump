@@ -97,6 +97,7 @@ jobs:
   docker-e2e:
     machine:
       image: ubuntu-2204:2024.04.4
+    resource_class: medium
     steps:
       - checkout
       - restore_cache:
@@ -141,6 +142,7 @@ jobs:
   containerd-e2e:
     machine:
       image: ubuntu-2204:2024.04.4
+    resource_class: medium
     steps:
       - checkout
       - run:
@@ -191,7 +193,7 @@ jobs:
           command: |
             sudo bash testdata/test_containerd_container_name_filter.sh ./ptcpdump
 
-  k8s-e2e:
+  k8s-1-30-e2e:
     machine:
       image: ubuntu-2204:2024.04.4
     steps:
@@ -261,4 +263,4 @@ workflows:
                 - ubuntu-22-04
       - docker-e2e
       - containerd-e2e
-      - k8s-e2e
+      - k8s-1-30-e2e

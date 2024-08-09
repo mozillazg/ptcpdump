@@ -10,7 +10,7 @@ RNAME="${FILE_PREFIX}_nat.read.txt"
 
 
 function test_ptcpdump() {
-  timeout 60s ${CMD} -c 20 -i any -v --print -w "${FNAME}" --oneline --exec-events-worker-number=50 \
+  timeout 60s ${CMD} -c 20 -i any -v --print -w "${FNAME}" --oneline  \
     'host 1.1.1.1' | tee "${LNAME}" &
   sleep 10
   docker run --rm alpine:3.18 sh -c 'wget --timeout=10 1.1.1.1 &>/dev/null || true'

@@ -13,7 +13,7 @@ function test_ptcpdump() {
   docker pull busybox:1
   docker pull alpine:3.18
 
-  timeout 120s ${CMD} -i any --print -w "${FNAME}" -v --oneline --exec-events-worker-number=50 \
+  timeout 120s ${CMD} -i any --print -w "${FNAME}" -v --oneline  \
     'host 1.1.1.1' -w "${FNAME}" | tee "${LNAME}" &
   sleep 10
 

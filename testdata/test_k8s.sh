@@ -10,7 +10,7 @@ LNAME="${FILE_PREFIX}_k8s.log"
 RNAME="${FILE_PREFIX}_k8s.read.txt"
 
 function test_ptcpdump() {
-  timeout 120s ${CMD} -i any -c 10 --print -w "${FNAME}" --oneline -v --exec-events-worker-number=80 \
+  timeout 120s ${CMD} -i any -c 10 --print -w "${FNAME}" --oneline -v \
     'host 1.1.1.1' -w "${FNAME}" | tee "${LNAME}" &
   sleep 10
 
