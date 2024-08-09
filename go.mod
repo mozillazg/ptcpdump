@@ -18,7 +18,7 @@ require (
 	golang.org/x/sys v0.22.0
 )
 
-require k8s.io/klog/v2 v2.130.1 // indirect
+require k8s.io/klog/v2 v2.130.1
 
 require (
 	github.com/Microsoft/hcsshim/test v0.0.0-00010101000000-000000000000 // indirect
@@ -68,7 +68,7 @@ require (
 	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-events v0.0.0-20190806004212-e31b211e4f1c // indirect
 	github.com/docker/go-units v0.5.0 // indirect
-	github.com/go-logr/logr v1.4.2 // indirect
+	github.com/go-logr/logr v1.4.2
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect

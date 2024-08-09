@@ -4,11 +4,12 @@ import (
 	"errors"
 	"flag"
 	"io"
-	"k8s.io/klog/v2"
 
 	"github.com/cilium/ebpf"
+	"github.com/go-logr/logr"
 	"github.com/mozillazg/ptcpdump/internal/log"
 	plog "github.com/phuslu/log"
+	"k8s.io/klog/v2"
 )
 
 func logFatal(err error) {
@@ -29,10 +30,13 @@ func setupLogger(opts Options) {
 		log.SetLevel(plog.InfoLevel)
 	case "warn":
 		log.SetLevel(plog.WarnLevel)
+		klog.SetLogger(logr.Discard())
 	case "error":
 		log.SetLevel(plog.ErrorLevel)
+		klog.SetLogger(logr.Discard())
 	case "fatal":
 		log.SetLevel(plog.FatalLevel)
+		klog.SetLogger(logr.Discard())
 	}
 }
 

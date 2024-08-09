@@ -2,8 +2,10 @@ package k8s
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/mozillazg/ptcpdump/internal/utils"
+	"os"
 	"strings"
 	"time"
 
@@ -29,7 +31,7 @@ type MetaData struct {
 func NewMetaData(criRuntimeEndpoint string) (*MetaData, error) {
 	res, errs := getRuntimeService(criRuntimeEndpoint)
 	if len(errs) > 0 {
-		log.Warnf("skip kubernetes integration due to %s", errs)
+		log.Warnf("skip kubernetes integration due to [%s]", formatErrors(errs))
 	}
 
 	return &MetaData{
@@ -102,16 +104,21 @@ func getRuntimeService(criRuntimeEndpoint string) (res cri.RuntimeService, errs 
 		var err error
 		log.Infof("Connect using endpoint %q with %q timeout", endPoint, t)
 		res, err = remote.NewRemoteRuntimeService(endPoint, t)
+		path := strings.TrimPrefix(endPoint, "unix://")
 		if err != nil {
 			log.Infof(err.Error())
-			errs = append(errs, fmt.Errorf("connect using endpoint %s: %w", endPoint, utils.UnwrapErr(err)))
+			err = utils.UnwrapErr(err)
+			if os.IsNotExist(err) || strings.Contains(err.Error(), "no such file or directory") {
+				err = errors.New("no such file or directory")
+			}
+			errs = append(errs, fmt.Errorf("connect using endpoint %s: %w", path, err))
 			continue
 		}
 		if _, err1 := res.Version(string(remote.CRIVersionV1)); err1 != nil {
 			log.Infof("check version %s failed: %s", remote.CRIVersionV1, err1)
 			if _, err2 := res.Version(string(remote.CRIVersionV1alpha2)); err2 != nil {
 				log.Infof("check version %s failed: %s", remote.CRIVersionV1alpha2, err2)
-				errs = append(errs, fmt.Errorf("using endpoint %s failed: %w", endPoint, err1))
+				errs = append(errs, fmt.Errorf("using endpoint %s failed: %w", path, err1))
 				res = nil
 				continue
 			}
@@ -127,7 +134,9 @@ func getRuntimeService(criRuntimeEndpoint string) (res cri.RuntimeService, errs 
 func formatErrors(errs []error) string {
 	var messages []string
 	for _, err := range errs {
-		err = utils.UnwrapErr(err)
+		if err == nil {
+			continue
+		}
 		msg := err.Error()
 		if strings.Contains(msg, "while dialing: ") {
 			messages = append(messages, strings.Trim(strings.Split(msg, "while dialing: ")[1], `"'`))
