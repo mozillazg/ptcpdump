@@ -106,6 +106,7 @@ func init() {
 				"download BTF file from https://mirrors.openanolis.cn/coolbpf/btf/ and https://github.com/aquasecurity/btfhub-archive/"}, ", ")),
 	)
 
+	silenceKlog()
 }
 
 func Execute() error {

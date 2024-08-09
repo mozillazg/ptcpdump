@@ -2,6 +2,9 @@ package cmd
 
 import (
 	"errors"
+	"flag"
+	"io"
+	"k8s.io/klog/v2"
 
 	"github.com/cilium/ebpf"
 	"github.com/mozillazg/ptcpdump/internal/log"
@@ -31,4 +34,12 @@ func setupLogger(opts Options) {
 	case "fatal":
 		log.SetLevel(plog.FatalLevel)
 	}
+}
+
+func silenceKlog() {
+	klog.SetOutput(io.Discard)
+	flags := &flag.FlagSet{}
+	klog.InitFlags(flags)
+	flags.Set("logtostderr", "false")
+	flags.Set("alsologtostderr", "false")
 }
