@@ -28,26 +28,28 @@ func applyContainerFilter(ctx context.Context, opts *Options) (*metadata.Contain
 	switch {
 	case opts.containerId != "":
 		container := cc.GetById(opts.containerId)
-		if container.IsNull() {
-			log.Fatalf("can not found any container by id %s", opts.containerId)
+		if container.EmptyNS() {
+			log.Fatalf("can not find any running container by id %s", opts.containerId)
 		}
 		containers = append(containers, container)
 		break
 	case opts.containerName != "":
 		cs := cc.GetByName(opts.containerName)
-		if len(cs) == 0 {
-			log.Fatalf("can not found any container by name %s", opts.containerName)
-		}
+		cs = removeNonFilterAbleContainers(cs)
 		if len(cs) > 1 {
 			log.Fatalf("found more than one containers by name %s", opts.containerName)
+		}
+		if len(cs) == 0 {
+			log.Fatalf("can not find any running container by name %s", opts.containerName)
 		}
 		container := cs[0]
 		containers = append(containers, container)
 		break
 	case opts.podName != "":
 		cs := cc.GetByPodName(opts.podName, opts.podNamespace)
+		cs = removeNonFilterAbleContainers(cs)
 		if len(cs) == 0 {
-			log.Fatalf("can not found any pod by name %s in namespace %s", opts.podName, opts.podNamespace)
+			log.Fatalf("can not find any running pod by name %s in namespace %s", opts.podName, opts.podNamespace)
 		}
 		containers = append(containers, cs...)
 		break
@@ -72,4 +74,15 @@ func applyContainerFilter(ctx context.Context, opts *Options) (*metadata.Contain
 	}
 
 	return cc, nil
+}
+
+func removeNonFilterAbleContainers(containers []types.Container) []types.Container {
+	var final []types.Container
+	for _, c := range containers {
+		if c.IsSandbox() || c.EmptyNS() {
+			continue
+		}
+		final = append(final, c)
+	}
+	return final
 }

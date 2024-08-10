@@ -59,6 +59,10 @@ func (c *Container) Pod() Pod {
 	return p
 }
 
+func (c Container) EmptyNS() bool {
+	return c.PidNamespace == 0 && c.MountNamespace == 0 && c.NetworkNamespace == 0
+}
+
 func ParseContainerLabels(s string) map[string]string {
 	labels := make(map[string]string)
 	json.Unmarshal([]byte(s), &labels)
