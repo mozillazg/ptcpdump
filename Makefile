@@ -85,6 +85,7 @@ vet:
 .PHONY: deps
 deps:
 	go mod tidy
+	go mod vendor
 
 .PHONY: e2e
 e2e: lint build-bpf build
