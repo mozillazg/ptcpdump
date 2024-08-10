@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -100,17 +99,16 @@ func prepareOptions(opts *Options, rawArgs []string, args []string) {
 	}
 
 	if opts.podName != "" {
-		parts := strings.Split(opts.podName, ".")
-		if len(parts) > 2 {
-			logFatal(errors.New("the format of `--pod-name` should be NAME.NAMESPACE"))
-		}
-		opts.podName = parts[0]
-		if len(parts) > 1 {
-			opts.podNamespace = parts[1]
-		} else {
-			opts.podNamespace = "default"
-		}
+		opts.podName, opts.podNamespace = getPodNameFilter(opts.podName)
 	}
+}
+
+func getPodNameFilter(raw string) (name, ns string) {
+	if !strings.Contains(raw, ".") {
+		return raw, "default"
+	}
+	index := strings.LastIndex(raw, ".")
+	return raw[:index], raw[index+1:]
 }
 
 func getEndpoint(raw string) string {
