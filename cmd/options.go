@@ -51,9 +51,9 @@ type Options struct {
 
 	subProgArgs []string
 
-	mntnsId uint32
-	netnsId uint32
-	pidnsId uint32
+	mntnsIds []uint32
+	netnsIds []uint32
+	pidnsIds []uint32
 }
 
 func (o Options) filterByContainer() bool {

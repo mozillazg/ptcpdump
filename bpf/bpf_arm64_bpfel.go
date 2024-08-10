@@ -31,14 +31,11 @@ type BpfFlowPidKeyT struct {
 }
 
 type BpfGconfigT struct {
-	FilterPid         uint32
+	HaveFilter        uint8
 	FilterFollowForks uint8
 	FilterComm        [16]int8
 	FilterCommEnable  uint8
-	_                 [2]byte
-	FilterMntnsId     uint32
-	FilterNetnsId     uint32
-	FilterPidnsId     uint32
+	_                 [1]byte
 	MaxPayloadSize    uint32
 }
 
@@ -137,7 +134,10 @@ type BpfMapSpecs struct {
 	ExecEvents          *ebpf.MapSpec `ebpf:"exec_events"`
 	ExitEvents          *ebpf.MapSpec `ebpf:"exit_events"`
 	FilterByKernelCount *ebpf.MapSpec `ebpf:"filter_by_kernel_count"`
+	FilterMntnsMap      *ebpf.MapSpec `ebpf:"filter_mntns_map"`
+	FilterNetnsMap      *ebpf.MapSpec `ebpf:"filter_netns_map"`
 	FilterPidMap        *ebpf.MapSpec `ebpf:"filter_pid_map"`
+	FilterPidnsMap      *ebpf.MapSpec `ebpf:"filter_pidns_map"`
 	FlowPidMap          *ebpf.MapSpec `ebpf:"flow_pid_map"`
 	NatFlowMap          *ebpf.MapSpec `ebpf:"nat_flow_map"`
 	PacketEventStack    *ebpf.MapSpec `ebpf:"packet_event_stack"`
@@ -169,7 +169,10 @@ type BpfMaps struct {
 	ExecEvents          *ebpf.Map `ebpf:"exec_events"`
 	ExitEvents          *ebpf.Map `ebpf:"exit_events"`
 	FilterByKernelCount *ebpf.Map `ebpf:"filter_by_kernel_count"`
+	FilterMntnsMap      *ebpf.Map `ebpf:"filter_mntns_map"`
+	FilterNetnsMap      *ebpf.Map `ebpf:"filter_netns_map"`
 	FilterPidMap        *ebpf.Map `ebpf:"filter_pid_map"`
+	FilterPidnsMap      *ebpf.Map `ebpf:"filter_pidns_map"`
 	FlowPidMap          *ebpf.Map `ebpf:"flow_pid_map"`
 	NatFlowMap          *ebpf.Map `ebpf:"nat_flow_map"`
 	PacketEventStack    *ebpf.Map `ebpf:"packet_event_stack"`
@@ -184,7 +187,10 @@ func (m *BpfMaps) Close() error {
 		m.ExecEvents,
 		m.ExitEvents,
 		m.FilterByKernelCount,
+		m.FilterMntnsMap,
+		m.FilterNetnsMap,
 		m.FilterPidMap,
+		m.FilterPidnsMap,
 		m.FlowPidMap,
 		m.NatFlowMap,
 		m.PacketEventStack,

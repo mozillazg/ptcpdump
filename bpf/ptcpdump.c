@@ -32,13 +32,10 @@
 char _license[] SEC("license") = "Dual MIT/GPL";
 
 struct gconfig_t {
-    u32 filter_pid;
+    u8 have_filter;
     u8 filter_follow_forks;
     char filter_comm[TASK_COMM_LEN];
     u8 filter_comm_enable;
-    u32 filter_mntns_id;
-    u32 filter_netns_id;
-    u32 filter_pidns_id;
     u32 max_payload_size;
 };
 
@@ -128,6 +125,27 @@ struct {
     __type(key, u32);
     __type(value, struct gconfig_t);
 } config_map SEC(".maps");
+
+struct {
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, 10);
+    __type(key, u32);
+    __type(value, u8);
+} filter_mntns_map SEC(".maps");
+
+struct {
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, 10);
+    __type(key, u32);
+    __type(value, u8);
+} filter_pidns_map SEC(".maps");
+
+struct {
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, 10);
+    __type(key, u32);
+    __type(value, u8);
+} filter_netns_map SEC(".maps");
 
 struct {
     __uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
@@ -406,8 +424,35 @@ static __always_inline int str_cmp(const char *a, const volatile char *b, int le
 static __always_inline bool have_pid_filter_rules() {
     GET_CONFIG()
 
-    return g.filter_pid > 0 || g.filter_comm_enable == 1 || g.filter_mntns_id > 0 || g.filter_netns_id > 0 ||
-           g.filter_pidns_id > 0;
+    return g.have_filter > 0;
+}
+
+static __always_inline int filter_pid(u32 pid) {
+    if (bpf_map_lookup_elem(&filter_pid_map, &pid)) {
+        return 0;
+    }
+    return -1;
+}
+
+static __always_inline int filter_mntns(u32 ns) {
+    if (bpf_map_lookup_elem(&filter_mntns_map, &ns)) {
+        return 0;
+    }
+    return -1;
+}
+
+static __always_inline int filter_pidns(u32 ns) {
+    if (bpf_map_lookup_elem(&filter_pidns_map, &ns)) {
+        return 0;
+    }
+    return -1;
+}
+
+static __always_inline int filter_netns(u32 ns) {
+    if (bpf_map_lookup_elem(&filter_netns_map, &ns)) {
+        return 0;
+    }
+    return -1;
 }
 
 static __always_inline int process_filter(struct task_struct *task) {
@@ -418,7 +463,7 @@ static __always_inline int process_filter(struct task_struct *task) {
     }
 
     u32 pid = BPF_CORE_READ(task, tgid);
-    if (bpf_map_lookup_elem(&filter_pid_map, &pid)) {
+    if (filter_pid(pid) == 0) {
         // debug_log("match filter\n");
         return 0;
     }
@@ -429,20 +474,12 @@ static __always_inline int process_filter(struct task_struct *task) {
 #endif
 
     bool should_filter = false;
-    if (g.filter_pid > 0 && pid == g.filter_pid) {
-        // debug_log("filter_id\n");
+    u32 mntns_id = BPF_CORE_READ(task, nsproxy, mnt_ns, ns.inum);
+    u32 netns_id = BPF_CORE_READ(task, nsproxy, net_ns, ns.inum);
+    u32 pidns_id = BPF_CORE_READ(task, nsproxy, pid_ns_for_children, ns.inum);
+    if ((filter_pidns(pidns_id) == 0) || (filter_mntns(mntns_id) == 0) || (filter_netns(netns_id) == 0)) {
+        // debug_log("%u %u %u\n", mntns_id, netns_id, pidns_id);
         should_filter = true;
-    }
-
-    if (!should_filter) {
-        u32 mntns_id = BPF_CORE_READ(task, nsproxy, mnt_ns, ns.inum);
-        u32 netns_id = BPF_CORE_READ(task, nsproxy, net_ns, ns.inum);
-        u32 pidns_id = BPF_CORE_READ(task, nsproxy, pid_ns_for_children, ns.inum);
-        if ((mntns_id > 0 && mntns_id == g.filter_mntns_id) || (netns_id > 0 && netns_id == g.filter_netns_id) ||
-            (pidns_id > 0 && pidns_id == g.filter_pidns_id)) {
-            // debug_log("%u %u %u\n", mntns_id, netns_id, pidns_id);
-            should_filter = true;
-        }
     }
 
     if (!should_filter) {
@@ -465,43 +502,6 @@ static __always_inline int process_filter(struct task_struct *task) {
 
     return -1;
 }
-
-// static __always_inline int process_meta_filter(struct process_meta_t *meta) {
-//     // no filter rules
-//     if (!have_pid_filter_rules()) {
-//         // debug_log("no filter\n");
-//         return 0;
-//     }
-//
-//     GET_CONFIG()
-//
-//     // debug_log("meta->pid: %u, filter_id: %u\n", meta->pid, g.filter_pid);
-//     if (g.filter_pid > 0 && meta->pid == g.filter_pid) {
-//         // debug_log("filter_pid\n");
-//         return 0;
-//     }
-//     if (g.filter_pid > 0 && g.filter_follow_forks == 1 && meta->ppid == g.filter_pid) {
-//         // debug_log("filter_pid by ppid\n");
-//         return 0;
-//     }
-//
-//     if ((meta->mntns_id > 0 && meta->mntns_id == g.filter_mntns_id) ||
-//         (meta->netns_id > 0 && meta->netns_id == g.filter_netns_id) ||
-//         (meta->pidns_id > 0 && meta->pidns_id == g.filter_pidns_id)) {
-//         // debug_log("%u %u %u\n", meta->mntns_id, meta->netns_id, meta->pidns_id);
-//         return 0;
-//     }
-//
-//     if (g.filter_comm_enable == 1) {
-//         if (str_cmp(meta->comm, g.filter_comm, TASK_COMM_LEN) == 0) {
-//             return 0;
-//         }
-//     }
-//
-//     // debug_log("meta_process not match, meta->pid: %u, filter_id: %u\n", meta->pid, g.filter_pid);
-//
-//     return -1;
-// }
 
 static __always_inline int parent_process_filter(struct task_struct *current) {
     // no filter rules

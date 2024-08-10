@@ -36,16 +36,17 @@ type BPF struct {
 }
 
 type Options struct {
-	Pid            uint32
-	Comm           [16]int8
+	haveFilter     uint8
+	pids           []uint32
+	comm           [16]int8
 	filterComm     uint8
-	FollowForks    uint8
-	PcapFilter     string
-	mntnsId        uint32
-	pidnsId        uint32
-	netnsId        uint32
+	followForks    uint8
+	pcapFilter     string
+	mntnsIds       []uint32
+	pidnsIds       []uint32
+	netnsIds       []uint32
 	maxPayloadSize uint32
-	KernelTypes    *btf.Spec
+	kernelTypes    *btf.Spec
 }
 
 func NewBPF() (*BPF, error) {
@@ -75,47 +76,15 @@ func NewBPF() (*BPF, error) {
 	return bf, nil
 }
 
-func NewOptions(pid uint, comm string, followForks bool, pcapFilter string,
-	mntnsId uint32, pidnsId uint32, netnsId uint32, maxPayloadSize uint32) Options {
-	opts := Options{
-		Pid:            uint32(pid),
-		mntnsId:        mntnsId,
-		pidnsId:        pidnsId,
-		netnsId:        netnsId,
-		maxPayloadSize: maxPayloadSize,
-	}
-	opts.Comm = [16]int8{}
-	if len(comm) > 0 {
-		for i, s := range comm {
-			if i == 15 {
-				break
-			}
-			opts.Comm[i] = int8(s)
-		}
-		opts.Comm[15] = '\x00'
-		opts.filterComm = 1
-	}
-	opts.FollowForks = 0
-	if followForks {
-		opts.FollowForks = 1
-	}
-	opts.PcapFilter = strings.TrimSpace(pcapFilter)
-
-	return opts
-}
-
 func (b *BPF) Load(opts Options) error {
 	log.Infof("load with opts: %#v", opts)
 	var err error
 
 	config := BpfGconfigT{
-		FilterPid:         opts.Pid,
-		FilterComm:        opts.Comm,
+		HaveFilter:        opts.haveFilter,
+		FilterFollowForks: opts.followForks,
+		FilterComm:        opts.comm,
 		FilterCommEnable:  opts.filterComm,
-		FilterFollowForks: opts.FollowForks,
-		FilterMntnsId:     opts.mntnsId,
-		FilterNetnsId:     opts.netnsId,
-		FilterPidnsId:     opts.pidnsId,
 		MaxPayloadSize:    opts.maxPayloadSize,
 	}
 	if !b.isLegacyKernel {
@@ -128,14 +97,14 @@ func (b *BPF) Load(opts Options) error {
 		}
 	}
 
-	if opts.PcapFilter != "" {
+	if opts.pcapFilter != "" {
 		for _, progName := range []string{"tc_ingress", "tc_egress"} {
 			prog, ok := b.spec.Programs[progName]
 			if !ok {
 				return fmt.Errorf("program %s not found", progName)
 			}
 			prog.Instructions, err = elibpcap.Inject(
-				opts.PcapFilter,
+				opts.pcapFilter,
 				prog.Instructions,
 				elibpcap.Options{
 					AtBpf2Bpf:  "pcap_filter",
@@ -155,7 +124,7 @@ func (b *BPF) Load(opts Options) error {
 		objs := BpfObjectsForLegacyKernel{}
 		if err = b.spec.LoadAndAssign(&objs, &ebpf.CollectionOptions{
 			Programs: ebpf.ProgramOptions{
-				KernelTypes: opts.KernelTypes,
+				KernelTypes: opts.kernelTypes,
 				LogLevel:    ebpf.LogLevelInstruction,
 				LogSize:     logSzie,
 			},
@@ -166,7 +135,7 @@ func (b *BPF) Load(opts Options) error {
 	} else {
 		err = b.spec.LoadAndAssign(b.objs, &ebpf.CollectionOptions{
 			Programs: ebpf.ProgramOptions{
-				KernelTypes: opts.KernelTypes,
+				KernelTypes: opts.kernelTypes,
 				LogLevel:    ebpf.LogLevelInstruction,
 				LogSize:     logSzie,
 			},
@@ -184,6 +153,9 @@ func (b *BPF) Load(opts Options) error {
 		if err := b.objs.BpfMaps.ConfigMap.Update(key, config, ebpf.UpdateAny); err != nil {
 			return fmt.Errorf(": %w", err)
 		}
+	}
+	if err := b.applyFilters(); err != nil {
+		return fmt.Errorf(": %w", err)
 	}
 
 	return nil
@@ -375,8 +347,8 @@ func (b *BPF) AttachTcHooks(ifindex int, egress, ingress bool) error {
 	return nil
 }
 
-func (o Options) attachForks() bool {
-	return o.FollowForks == 1
+func (opts Options) attachForks() bool {
+	return opts.followForks == 1
 }
 
 func attachTcHook(ifindex int, prog *ebpf.Program, ingress bool) (func(), error) {
@@ -475,4 +447,132 @@ func ensureTcQdisc(ifindex int) (func(), error) {
 func htons(n uint16) uint16 {
 	b := *(*[2]byte)(unsafe.Pointer(&n))
 	return binary.BigEndian.Uint16(b[:])
+}
+
+func (b *BPF) applyFilters() error {
+	value := uint8(0)
+	opts := b.opts
+
+	log.Infof("start to update FilterPidMap with %+v", opts.pids)
+	for _, pid := range opts.pids {
+		pid := pid
+		if err := b.objs.BpfMaps.FilterPidMap.Update(pid, value, ebpf.UpdateAny); err != nil {
+			return fmt.Errorf("update FilterPidMap: %w", err)
+		}
+	}
+
+	log.Infof("start to update FilterPidnsMap with %+v", opts.pidnsIds)
+	for _, id := range opts.pidnsIds {
+		id := id
+		if err := b.objs.BpfMaps.FilterPidnsMap.Update(id, value, ebpf.UpdateAny); err != nil {
+			return fmt.Errorf("update FilterPidnsMap: %w", err)
+		}
+	}
+
+	log.Infof("start to update FilterMntnsMap with %+v", opts.mntnsIds)
+	for _, id := range opts.mntnsIds {
+		id := id
+		if err := b.objs.BpfMaps.FilterMntnsMap.Update(id, value, ebpf.UpdateAny); err != nil {
+			return fmt.Errorf("update FilterMntnsMap: %w", err)
+		}
+	}
+
+	log.Infof("start to update FilterNetnsMap with %+v", opts.netnsIds)
+	for _, id := range opts.netnsIds {
+		id := id
+		if err := b.objs.BpfMaps.FilterNetnsMap.Update(id, value, ebpf.UpdateAny); err != nil {
+			return fmt.Errorf("update FilterNetnsMap: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func (opts *Options) WithPids(pids []uint) *Options {
+	for _, id := range pids {
+		if id == 0 {
+			continue
+		}
+		opts.pids = append(opts.pids, uint32(id))
+	}
+	if len(opts.pids) > 0 {
+		opts.haveFilter = 1
+	}
+	return opts
+}
+
+func (opts *Options) WithComm(comm string) *Options {
+	opts.comm = [16]int8{}
+	if len(comm) > 0 {
+		opts.haveFilter = 1
+		for i, s := range comm {
+			if i == 15 {
+				break
+			}
+			opts.comm[i] = int8(s)
+		}
+		opts.comm[15] = '\x00'
+		opts.filterComm = 1
+	}
+	return opts
+}
+
+func (opts *Options) WithFollowFork(v bool) *Options {
+	if v {
+		opts.followForks = 1
+	} else {
+		opts.followForks = 0
+	}
+	return opts
+}
+
+func (opts *Options) WithPidNsIds(ids []uint32) *Options {
+	for _, id := range ids {
+		if id == 0 {
+			continue
+		}
+		opts.pidnsIds = append(opts.pidnsIds, id)
+	}
+	if len(opts.pidnsIds) > 0 {
+		opts.haveFilter = 1
+	}
+	return opts
+}
+func (opts *Options) WithMntNsIds(ids []uint32) *Options {
+	for _, id := range ids {
+		if id == 0 {
+			continue
+		}
+		opts.mntnsIds = append(opts.mntnsIds, id)
+	}
+	if len(opts.mntnsIds) > 0 {
+		opts.haveFilter = 1
+	}
+	return opts
+}
+func (opts *Options) WithNetNsIds(ids []uint32) *Options {
+	for _, id := range ids {
+		if id == 0 {
+			continue
+		}
+		opts.netnsIds = append(opts.netnsIds, id)
+	}
+	if len(opts.netnsIds) > 0 {
+		opts.haveFilter = 1
+	}
+	return opts
+}
+func (opts *Options) WithPcapFilter(pcapFilter string) *Options {
+	opts.pcapFilter = strings.TrimSpace(pcapFilter)
+	return opts
+}
+
+func (opts *Options) WithMaxPayloadSize(n uint32) *Options {
+	opts.maxPayloadSize = n
+	return opts
+}
+
+func (opts *Options) WithKernelTypes(spec *btf.Spec) *Options {
+	opts.kernelTypes = spec
+	return opts
 }

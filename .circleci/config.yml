@@ -208,9 +208,11 @@ jobs:
             IMG=kindest/node:v1.30.0@sha256:047357ac0cfea04663786a612ba1eaba9702bef25227a794b52890dd8bcd692e
             sudo docker pull "${IMG}"
             sudo docker pull alpine:3.18
+            sudo docker pull busybox:1
 
             sudo kind create cluster
             sudo kind load docker-image alpine:3.18
+            sudo kind load docker-image busybox:1
             sudo kind export kubeconfig
 
       - restore_cache:
@@ -251,6 +253,11 @@ jobs:
           name: test k8s filter by pod name
           command: |
             sudo bash testdata/run_test_k8s_filter_by_pod.sh
+
+      - run:
+          name: test k8s filter by pod name with multiple containers
+          command: |
+            sudo bash testdata/run_test_k8s_filter_by_pod_2.sh
 
 workflows:
   e2e:

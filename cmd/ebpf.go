@@ -27,10 +27,18 @@ func attachHooks(btfSpec *btftype.Spec, currentConns []metadata.Connection, opts
 	if err != nil {
 		return nil, err
 	}
-	bpfopts := bpf.NewOptions(opts.pid, opts.comm, opts.followForks, opts.pcapFilter,
-		opts.mntnsId, opts.pidnsId, opts.netnsId, opts.snapshotLength)
-	bpfopts.KernelTypes = btfSpec
-	if err := bf.Load(bpfopts); err != nil {
+	bpfopts := &bpf.Options{}
+	bpfopts = bpfopts.WithPids([]uint{opts.pid}).
+		WithComm(opts.comm).
+		WithFollowFork(opts.followForks).
+		WithPidNsIds(opts.pidnsIds).
+		WithMntNsIds(opts.mntnsIds).
+		WithNetNsIds(opts.netnsIds).
+		WithMaxPayloadSize(opts.snapshotLength).
+		WithPcapFilter(opts.pcapFilter).
+		WithKernelTypes(btfSpec)
+
+	if err := bf.Load(*bpfopts); err != nil {
 		return nil, err
 	}
 
