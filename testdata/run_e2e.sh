@@ -36,6 +36,8 @@ function main() {
   bash testdata/test_containerd_container_name_filter.sh ./ptcpdump
 
   bash testdata/run_test_k8s.sh
+  bash testdata/run_test_k8s_filter_by_container.sh
+  bash testdata/run_test_k8s_filter_by_pod.sh
 }
 
 main

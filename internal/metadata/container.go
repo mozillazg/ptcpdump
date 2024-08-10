@@ -15,8 +15,9 @@ type ContainerCache struct {
 }
 
 func NewContainerCache(ctx context.Context,
-	dockerEndpoint, containerdEndpoint, criRuntimeEndpoint string) (*ContainerCache, error) {
-	d := container.NewMultipleEngineMetaData(dockerEndpoint, containerdEndpoint)
+	dockerEndpoint, containerdEndpoint, criRuntimeEndpoint string,
+	watchEvents bool) (*ContainerCache, error) {
+	d := container.NewMultipleEngineMetaData(dockerEndpoint, containerdEndpoint, watchEvents)
 
 	if err := d.Start(ctx); err != nil {
 		return nil, err

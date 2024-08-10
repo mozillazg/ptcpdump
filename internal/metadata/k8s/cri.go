@@ -39,6 +39,7 @@ func NewMetaData(criRuntimeEndpoint string) (*MetaData, error) {
 	}, nil
 }
 
+// TODO: cache all pods
 func (m *MetaData) GetPodByContainer(c types.Container) types.Pod {
 	p := types.Pod{}
 	p.LoadFromContainer(c)

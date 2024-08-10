@@ -105,6 +105,8 @@ func init() {
 				"/var/lib/ptcpdump/btf/$(uname -r).btf",
 				"download BTF file from https://mirrors.openanolis.cn/coolbpf/btf/ and https://github.com/aquasecurity/btfhub-archive/"}, ", ")),
 	)
+	rootCmd.Flags().BoolVar(&opts.watchContainerEvents, "watch-container-events", false,
+		"enable watch container events")
 
 	silenceKlog()
 }

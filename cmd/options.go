@@ -44,10 +44,11 @@ type Options struct {
 	logLevel                      string
 	snapshotLength                uint32
 
-	dockerEndpoint     string
-	containerdEndpoint string
-	criRuntimeEndpoint string
-	btfPath            string
+	watchContainerEvents bool
+	dockerEndpoint       string
+	containerdEndpoint   string
+	criRuntimeEndpoint   string
+	btfPath              string
 
 	subProgArgs []string
 

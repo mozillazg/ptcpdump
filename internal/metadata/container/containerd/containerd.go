@@ -35,13 +35,14 @@ type MetaData struct {
 
 	containerById map[string]types.Container
 	mux           sync.RWMutex
+	watchEvents   bool
 
 	hostPidNs int64
 	hostMntNs int64
 	hostNetNs int64
 }
 
-func NewMetaData(host string, namespace string) (*MetaData, error) {
+func NewMetaData(host string, namespace string, watchEvents bool) (*MetaData, error) {
 	if namespace == "" {
 		namespace = defaultNamespace
 	}
@@ -69,14 +70,15 @@ func NewMetaData(host string, namespace string) (*MetaData, error) {
 		client:        c,
 		containerById: make(map[string]types.Container),
 		mux:           sync.RWMutex{},
+		watchEvents:   watchEvents,
 	}
 	return &m, nil
 }
 
-func NewMultipleNamespacesMetaData(host, namespace string) ([]*MetaData, error) {
+func NewMultipleNamespacesMetaData(host, namespace string, watchEvents bool) ([]*MetaData, error) {
 	var instances []*MetaData
 
-	cd, err := NewMetaData(host, namespace)
+	cd, err := NewMetaData(host, namespace, watchEvents)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +96,7 @@ func NewMultipleNamespacesMetaData(host, namespace string) ([]*MetaData, error) 
 		if ns == defaultNamespace {
 			continue
 		}
-		cd, err := NewMetaData(host, ns)
+		cd, err := NewMetaData(host, ns, watchEvents)
 		if err != nil {
 			return instances, err
 		}
@@ -113,9 +115,12 @@ func (d *MetaData) Start(ctx context.Context) error {
 		return err
 	}
 
-	go func() {
-		d.watchContainerEventsWithRetry(ctx)
-	}()
+	if d.watchEvents {
+		go func() {
+			d.watchContainerEventsWithRetry(ctx)
+		}()
+	}
+
 	return nil
 }
 
@@ -271,6 +276,7 @@ func (d *MetaData) watchContainerEventsWithRetry(ctx context.Context) {
 		default:
 		}
 
+		log.Info("start watch container events")
 		d.watchContainerEvents(ctx)
 
 		time.Sleep(time.Second * 15)

@@ -10,7 +10,7 @@ import (
 
 func applyContainerFilter(ctx context.Context, opts *Options) (*metadata.ContainerCache, error) {
 	cc, err := metadata.NewContainerCache(ctx, opts.dockerEndpoint,
-		opts.containerdEndpoint, opts.criRuntimeEndpoint)
+		opts.containerdEndpoint, opts.criRuntimeEndpoint, opts.watchContainerEvents)
 	if err != nil {
 		if opts.filterByContainer() {
 			log.Fatalf("find container failed: %s", err)

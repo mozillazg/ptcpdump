@@ -29,12 +29,14 @@ type MetaData struct {
 	containerById map[string]types.Container
 	mux           sync.RWMutex
 
+	watchEvents bool
+
 	hostPidNs int64
 	hostMntNs int64
 	hostNetNs int64
 }
 
-func NewMetaData(host string) (*MetaData, error) {
+func NewMetaData(host string, watchEvents bool) (*MetaData, error) {
 	log.Infof("init docker metadata with host=%s", host)
 	opts := []client.Opt{
 		client.FromEnv,
@@ -58,6 +60,7 @@ func NewMetaData(host string) (*MetaData, error) {
 		client:        c,
 		containerById: make(map[string]types.Container),
 		mux:           sync.RWMutex{},
+		watchEvents:   watchEvents,
 	}
 	return &m, nil
 }
@@ -67,9 +70,12 @@ func (d *MetaData) Start(ctx context.Context) error {
 		return err
 	}
 
-	go func() {
-		d.watchContainerEventsWithRetry(ctx)
-	}()
+	if d.watchEvents {
+		go func() {
+			d.watchContainerEventsWithRetry(ctx)
+		}()
+	}
+
 	return nil
 }
 
@@ -226,6 +232,7 @@ func (d *MetaData) watchContainerEventsWithRetry(ctx context.Context) {
 		default:
 		}
 
+		log.Info("start watch container events")
 		d.watchContainerEvents(ctx)
 
 		time.Sleep(time.Second * 15)
