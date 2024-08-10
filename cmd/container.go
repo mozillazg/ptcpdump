@@ -82,6 +82,11 @@ func removeNonFilterAbleContainers(containers []types.Container) []types.Contain
 		if c.IsSandbox() || c.EmptyNS() {
 			continue
 		}
+		if c.PidNamespace == metadata.HostPidNs &&
+			c.MountNamespace == metadata.HostMntNs &&
+			c.NetworkNamespace == metadata.HostNetNs {
+			continue
+		}
 		final = append(final, c)
 	}
 	return final
