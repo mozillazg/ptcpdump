@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    run: test
+  name: test-ptcpdump
+spec:
+  containers:
+  - args:
+    - sh
+    - '-c'
+    - 'sleep 20 && wget -T 10 8.8.8.8:53 || true'
+    image: busybox:1
+    name: test1
+  - args:
+      - sh
+      - '-c'
+      - 'sleep 20 && wget -T 10 1.1.1.1 || true'
+    image: alpine:3.18
+    name: test2
+

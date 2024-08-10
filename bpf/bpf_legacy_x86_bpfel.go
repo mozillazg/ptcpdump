@@ -75,7 +75,10 @@ type bpf_legacyMapSpecs struct {
 	ExecEvents          *ebpf.MapSpec `ebpf:"exec_events"`
 	ExitEvents          *ebpf.MapSpec `ebpf:"exit_events"`
 	FilterByKernelCount *ebpf.MapSpec `ebpf:"filter_by_kernel_count"`
+	FilterMntnsMap      *ebpf.MapSpec `ebpf:"filter_mntns_map"`
+	FilterNetnsMap      *ebpf.MapSpec `ebpf:"filter_netns_map"`
 	FilterPidMap        *ebpf.MapSpec `ebpf:"filter_pid_map"`
+	FilterPidnsMap      *ebpf.MapSpec `ebpf:"filter_pidns_map"`
 	FlowPidMap          *ebpf.MapSpec `ebpf:"flow_pid_map"`
 	NatFlowMap          *ebpf.MapSpec `ebpf:"nat_flow_map"`
 	PacketEventStack    *ebpf.MapSpec `ebpf:"packet_event_stack"`
@@ -107,7 +110,10 @@ type bpf_legacyMaps struct {
 	ExecEvents          *ebpf.Map `ebpf:"exec_events"`
 	ExitEvents          *ebpf.Map `ebpf:"exit_events"`
 	FilterByKernelCount *ebpf.Map `ebpf:"filter_by_kernel_count"`
+	FilterMntnsMap      *ebpf.Map `ebpf:"filter_mntns_map"`
+	FilterNetnsMap      *ebpf.Map `ebpf:"filter_netns_map"`
 	FilterPidMap        *ebpf.Map `ebpf:"filter_pid_map"`
+	FilterPidnsMap      *ebpf.Map `ebpf:"filter_pidns_map"`
 	FlowPidMap          *ebpf.Map `ebpf:"flow_pid_map"`
 	NatFlowMap          *ebpf.Map `ebpf:"nat_flow_map"`
 	PacketEventStack    *ebpf.Map `ebpf:"packet_event_stack"`
@@ -122,7 +128,10 @@ func (m *bpf_legacyMaps) Close() error {
 		m.ExecEvents,
 		m.ExitEvents,
 		m.FilterByKernelCount,
+		m.FilterMntnsMap,
+		m.FilterNetnsMap,
 		m.FilterPidMap,
+		m.FilterPidnsMap,
 		m.FlowPidMap,
 		m.NatFlowMap,
 		m.PacketEventStack,

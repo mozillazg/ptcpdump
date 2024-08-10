@@ -4,7 +4,7 @@ set -ex
 
 function main() {
   rm -rf /tmp/ptcpdump_* | true
-  kubectl delet pod test-ptcpdump | true
+  kubectl delete pod test-ptcpdump | true
 
   bash testdata/test_default.sh ./ptcpdump
   bash testdata/test_base.sh ./ptcpdump
