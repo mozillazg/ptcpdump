@@ -11,7 +11,6 @@ import (
 	"runtime"
 
 	"github.com/cilium/ebpf/btf"
-	"github.com/mholt/archiver/v4"
 	"github.com/mozillazg/ptcpdump/internal/host"
 	"github.com/mozillazg/ptcpdump/internal/log"
 )
@@ -117,23 +116,12 @@ func loadSpecFromBTFHub(arch string, release host.Release, kernelVersion,
 	}
 	defer resp.Body.Close()
 
-	xz := archiver.Xz{}
-	r, err := xz.OpenReader(resp.Body)
+	data, err := decompressXzReader(resp.Body)
 	if err != nil {
 		return nil, path, fmt.Errorf("download BTF specs from %s: %w", downloadUrl, err)
 	}
-	defer r.Close()
-	data, err := io.ReadAll(r)
-	if err != nil {
-		return nil, path, fmt.Errorf("download BTF specs from %s: %w", downloadUrl, err)
-	}
-
-	tmpPath := path + ".tmp"
-	if err := os.WriteFile(tmpPath, data, 0644); err != nil {
-		return nil, path, fmt.Errorf("save data to %s: %w", tmpPath, err)
-	}
-	if err := os.Rename(tmpPath, path); err != nil {
-		return nil, path, fmt.Errorf("rename %s to %s: %w", tmpPath, path, err)
+	if err := saveDataToFile(data, path); err != nil {
+		return nil, path, err
 	}
 
 	return loadSpec(path)
@@ -161,16 +149,12 @@ func loadSpecFromOpenanolis(arch string, _ host.Release, kernelVersion,
 	}
 	defer resp.Body.Close()
 
-	tmpPath := path + ".tmp"
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, path, fmt.Errorf("download BTF specs from %s: %w", downloadUrl, err)
 	}
-	if err := os.WriteFile(tmpPath, data, 0644); err != nil {
-		return nil, path, fmt.Errorf("save data to %s: %w", tmpPath, err)
-	}
-	if err := os.Rename(tmpPath, path); err != nil {
-		return nil, path, fmt.Errorf("rename %s to %s: %w", tmpPath, path, err)
+	if err := saveDataToFile(data, path); err != nil {
+		return nil, path, err
 	}
 
 	return loadSpec(path)
@@ -256,7 +240,7 @@ func loadSpecFromELF(path string) (spec *btf.Spec, err error) {
 
 	for _, sec := range file.Sections {
 		switch sec.Name {
-		case ".BTF":
+		case ".BTF", ".btf":
 			btfSection = sec
 		default:
 		}
