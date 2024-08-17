@@ -10,7 +10,6 @@ require (
 	github.com/florianl/go-tc v0.4.3
 	github.com/gopacket/gopacket v1.2.0
 	github.com/jschwinger233/elibpcap v0.0.0-20231010035657-e99300096f5e
-	github.com/mholt/archiver/v4 v4.0.0-alpha.8
 	github.com/phuslu/log v1.0.107
 	github.com/shirou/gopsutil/v3 v3.24.5
 	github.com/spf13/cobra v1.8.1
@@ -18,7 +17,11 @@ require (
 	golang.org/x/sys v0.22.0
 )
 
-require k8s.io/klog/v2 v2.130.1
+require (
+	github.com/smira/go-xz v0.1.0
+	github.com/stretchr/testify v1.9.0
+	k8s.io/klog/v2 v2.130.1
+)
 
 require (
 	github.com/Microsoft/hcsshim/test v0.0.0-00010101000000-000000000000 // indirect
@@ -28,28 +31,15 @@ require (
 	github.com/gogo/googleapis v1.4.1 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/opencontainers/runc v1.1.12 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/apimachinery v0.31.0-alpha.3 // indirect
 	k8s.io/apiserver v0.26.2 // indirect
 )
 
 require (
-	github.com/andybalholm/brotli v1.0.4 // indirect
-	github.com/bodgit/plumbing v1.2.0 // indirect
-	github.com/bodgit/sevenzip v1.3.0 // indirect
-	github.com/bodgit/windows v1.0.0 // indirect
-	github.com/connesc/cipherio v0.2.1 // indirect
-	github.com/dsnet/compress v0.0.1 // indirect
-	github.com/golang/snappy v0.0.4 // indirect
-	github.com/hashicorp/errwrap v1.1.0 // indirect
-	github.com/hashicorp/go-multierror v1.1.1 // indirect
-	github.com/klauspost/pgzip v1.2.5 // indirect
-	github.com/nwaples/rardecode/v2 v2.0.0-beta.2 // indirect
-	github.com/pierrec/lz4/v4 v4.1.15 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
-	github.com/therootcompany/xz v1.0.1 // indirect
-	github.com/ulikunitz/xz v0.5.10 // indirect
-	go4.org v0.0.0-20200411211856-f5505b9728dd // indirect
 	k8s.io/component-base v0.31.0-alpha.3 // indirect
 	k8s.io/kubernetes v0.31.0-alpha.3
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b // indirect
@@ -76,7 +66,6 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/josharian/native v1.1.0 // indirect
-	github.com/klauspost/compress v1.16.7 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/mdlayher/netlink v1.6.0 // indirect
 	github.com/mdlayher/socket v0.1.1 // indirect
