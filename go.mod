@@ -4,10 +4,10 @@ go 1.22.0
 
 require (
 	github.com/cilium/ebpf v0.15.0
-	github.com/containerd/containerd v1.7.19
+	github.com/containerd/containerd v1.7.20
 	github.com/containerd/typeurl/v2 v2.1.1
-	github.com/docker/docker v26.1.4+incompatible
-	github.com/florianl/go-tc v0.4.3
+	github.com/docker/docker v26.1.5+incompatible
+	github.com/florianl/go-tc v0.4.4
 	github.com/gopacket/gopacket v1.2.0
 	github.com/jschwinger233/elibpcap v0.0.0-20231010035657-e99300096f5e
 	github.com/phuslu/log v1.0.107
@@ -91,13 +91,13 @@ require (
 	google.golang.org/grpc v1.63.2 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	gotest.tools/v3 v3.5.1 // indirect
-	k8s.io/cri-api v0.31.0-alpha.3
+	k8s.io/cri-api v0.31.0
 )
 
 replace (
-	github.com/Microsoft/hcsshim => github.com/Microsoft/hcsshim v0.8.22
+	github.com/Microsoft/hcsshim => github.com/Microsoft/hcsshim v0.8.26
 	github.com/Microsoft/hcsshim/test => github.com/Microsoft/hcsshim/test v0.0.0-20210514012740-eba372547321
-	github.com/containerd/containerd => github.com/containerd/containerd v1.4.12
+	github.com/containerd/containerd => github.com/containerd/containerd v1.4.13
 	// github.com/docker/docker => github.com/docker/docker v20.10.12+incompatible
 	github.com/docker/docker => github.com/docker/docker v24.0.9+incompatible
 	github.com/gopacket/gopacket => github.com/mozillazg/gopacket v0.0.0-20240602032747-2b08f0c63614
@@ -109,9 +109,9 @@ replace (
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc => go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.20.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp => go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.20.0
 	go.opentelemetry.io/otel => go.opentelemetry.io/otel v0.20.0
-	go.opentelemetry.io/otel/exporters/otlp => go.opentelemetry.io/otel/exporters/otlp v0.20.0
+	go.opentelemetry.io/otel/exporters/otlp => go.opentelemetry.io/otel/exporters/otlp v0.20.1
 	go.opentelemetry.io/otel/metric => go.opentelemetry.io/otel/metric v0.20.0
-	go.opentelemetry.io/otel/oteltest => go.opentelemetry.io/otel/oteltest v0.20.0
+	go.opentelemetry.io/otel/oteltest => go.opentelemetry.io/otel/oteltest v0.20.1
 	go.opentelemetry.io/otel/sdk => go.opentelemetry.io/otel/sdk v0.20.0
 	go.opentelemetry.io/otel/sdk/export/metric => go.opentelemetry.io/otel/sdk/export/metric v0.20.0
 	go.opentelemetry.io/otel/sdk/metric => go.opentelemetry.io/otel/sdk/metric v0.20.0

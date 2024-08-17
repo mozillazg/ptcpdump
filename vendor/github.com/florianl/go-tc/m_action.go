@@ -1,8 +1,10 @@
 package tc
 
 import (
+	"errors"
 	"fmt"
 
+	"github.com/florianl/go-tc/internal/unix"
 	"github.com/mdlayher/netlink"
 )
 
@@ -14,6 +16,10 @@ const (
 	tcaActStats
 	tcaActPad
 	tcaActCookie
+	tcaActFlags
+	tcaActHwStats
+	tcaActUsedHwStats
+	tcaActInHwCount
 )
 
 // Various action binding types.
@@ -41,10 +47,15 @@ const (
 
 // Action represents action attributes of various filters and classes
 type Action struct {
-	Kind      string
-	Index     uint32
-	Stats     *GenStats
-	Cookie    *[]byte
+	Kind        string
+	Index       uint32
+	Stats       *GenStats
+	Cookie      *[]byte
+	Flags       *uint64 // 32-bit bitfield value; 32-bit bitfield selector
+	HwStats     *uint64 // 32-bit bitfield value; 32-bit bitfield selector
+	UsedHwStats *uint64 // 32-bit bitfield value; 32-bit bitfield selector
+	InHwCount   *uint32
+
 	Bpf       *ActBpf
 	ConnMark  *Connmark
 	CSum      *Csum
@@ -103,6 +114,18 @@ func unmarshalAction(data []byte, info *Action) error {
 				return err
 			}
 			info.Stats = stats
+		case tcaActFlags:
+			flags := ad.Uint64()
+			info.Flags = &flags
+		case tcaActHwStats:
+			hwStats := ad.Uint64()
+			info.HwStats = &hwStats
+		case tcaActUsedHwStats:
+			usedHwStats := ad.Uint64()
+			info.UsedHwStats = &usedHwStats
+		case tcaActInHwCount:
+			inHwCount := ad.Uint32()
+			info.InHwCount = &inHwCount
 		case tcaActPad:
 			// padding does not contain data, we just skip it
 		default:
@@ -118,11 +141,11 @@ func unmarshalAction(data []byte, info *Action) error {
 	return ad.Err()
 }
 
-func marshalActions(info []*Action) ([]byte, error) {
+func marshalActions(cmd int, info []*Action) ([]byte, error) {
 	options := []tcOption{}
 
 	for i, action := range info {
-		data, err := marshalAction(action, tcaActOptions|nlaFNnested)
+		data, err := marshalAction(cmd, action, tcaActOptions|nlaFNnested)
 		if err != nil {
 			return []byte{}, err
 		}
@@ -133,7 +156,7 @@ func marshalActions(info []*Action) ([]byte, error) {
 }
 
 // marshalAction returns the binary encoding of Action
-func marshalAction(info *Action, actOption uint16) ([]byte, error) {
+func marshalAction(cmd int, info *Action, actOption uint16) ([]byte, error) {
 	options := []tcOption{}
 
 	if info == nil {
@@ -220,7 +243,7 @@ func marshalAction(info *Action, actOption uint16) ([]byte, error) {
 	}
 	options = append(options, tcOption{Interpretation: vtString, Type: tcaActKind, Data: info.Kind})
 
-	if multiError != nil {
+	if multiError != nil && !errors.Is(multiError, ErrNoArg) && cmd != unix.RTM_DELACTION {
 		return []byte{}, multiError
 	}
 

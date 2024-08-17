@@ -93,6 +93,7 @@ const (
 	ematchInvalid
 )
 
+// Various Ematch flags
 const (
 	EmatchRelEnd uint16 = 0
 	EmatchRelAnd uint16 = 1 << (iota - 1)
@@ -130,6 +131,7 @@ type EmatchMatch struct {
 	IPSetMatch     *IPSetMatch
 	IptMatch       *IptMatch
 	ContainerMatch *ContainerMatch
+	NByteMatch     *NByteMatch
 }
 
 // unmarshalEmatch parses the Ematch-encoded data and stores the result in the value pointed to by info.
@@ -221,6 +223,11 @@ func unmarshalEmatchTreeList(data []byte, info *[]EmatchMatch) error {
 			err := unmarshalContainerMatch(tmp[8:], expr)
 			multiError = concatError(multiError, err)
 			match.ContainerMatch = expr
+		case EmatchNByte:
+			expr := &NByteMatch{}
+			err := unmarshalNByteMatch(tmp[8:], expr)
+			multiError = concatError(multiError, err)
+			match.NByteMatch = expr
 		default:
 			return fmt.Errorf("unmarshalEmatchTreeList() kind %d is not yet implemented", match.Hdr.Kind)
 		}
@@ -249,6 +256,8 @@ func marshalEmatchTreeList(info *[]EmatchMatch) ([]byte, error) {
 			expr, err = marshalIptMatch(m.IptMatch)
 		case EmatchContainer:
 			expr, err = marshalContainerMatch(m.ContainerMatch)
+		case EmatchNByte:
+			expr, err = marshalNByteMatch(m.NByteMatch)
 		default:
 			return []byte{}, fmt.Errorf("marshalEmatchTreeList() kind %d is not yet implemented", m.Hdr.Kind)
 		}

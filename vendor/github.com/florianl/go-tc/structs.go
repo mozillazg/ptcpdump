@@ -267,3 +267,26 @@ func marshalFqCodelXStats(v *FqCodelXStats) ([]byte, error) {
 	_, err2 := buf.Write(subStat)
 	return buf.Bytes(), concatError(err, err2)
 }
+
+// FqQdStats from include/uapi/linux/pkt_sched.h
+type FqQdStats struct {
+	GcFlows             uint64
+	HighPrioPackets     uint64
+	TCPRetrans          uint64
+	Throttled           uint64
+	FlowsPlimit         uint64
+	PktsTooLong         uint64
+	AllocationErrors    uint64
+	TimeNextDelayedFlow int64
+	Flows               uint32
+	InactiveFlows       uint32
+	ThrottledFlows      uint32
+	UnthrottleLatencyNs uint32
+	CEMark              uint64
+	HorizonDrops        uint64
+	HorizonCaps         uint64
+	FastpathPackets     uint64
+	BandDrops           [3]uint64 // FQ_BANDS = 3
+	BandPktCount        [3]uint32 // FQ_BANDS = 3
+	_                   uint32    // padding
+}

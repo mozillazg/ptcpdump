@@ -1,6 +1,8 @@
 package tc
 
 import (
+	"bytes"
+	"encoding/binary"
 	"fmt"
 
 	"github.com/mdlayher/netlink"
@@ -20,7 +22,18 @@ const (
 	tcaFqOrphanMask
 	tcaFqLowRateThreshold
 	tcaFqCEThreshold
+	tcaFqTimerSlack
+	tcaFqHorizon
+	tcaFqHorizonDrop
+	tcaFqPrioMap
+	tcaFqWeights
 )
+
+// FqPrioQopt according to tc_prio_qopt in /include/uapi/linux/pkt_sched.h
+type FqPrioQopt struct {
+	Bands   int32
+	PrioMap [16]uint8 // TC_PRIO_MAX + 1 = 16
+}
 
 // Fq contains attributes of the fq discipline
 type Fq struct {
@@ -36,6 +49,11 @@ type Fq struct {
 	OrphanMask       *uint32
 	LowRateThreshold *uint32
 	CEThreshold      *uint32
+	TimerSlack       *uint32
+	Horizon          *uint32
+	HorizonDrop      *uint8
+	PrioMap          *FqPrioQopt
+	Weights          *[]int32
 }
 
 // unmarshalFq parses the Fq-encoded data and stores the result in the value pointed to by info.
@@ -44,6 +62,7 @@ func unmarshalFq(data []byte, info *Fq) error {
 	if err != nil {
 		return err
 	}
+	var multiError error
 	for ad.Next() {
 		switch ad.Type() {
 		case tcaFqPLimit:
@@ -70,16 +89,35 @@ func unmarshalFq(data []byte, info *Fq) error {
 			info.LowRateThreshold = uint32Ptr(ad.Uint32())
 		case tcaFqCEThreshold:
 			info.CEThreshold = uint32Ptr(ad.Uint32())
+		case tcaFqTimerSlack:
+			info.TimerSlack = uint32Ptr(ad.Uint32())
+		case tcaFqHorizon:
+			info.Horizon = uint32Ptr(ad.Uint32())
+		case tcaFqHorizonDrop:
+			info.HorizonDrop = uint8Ptr(ad.Uint8())
+		case tcaFqPrioMap:
+			priomap := &FqPrioQopt{}
+			err := unmarshalStruct(ad.Bytes(), priomap)
+			multiError = concatError(multiError, err)
+			info.PrioMap = priomap
+		case tcaFqWeights:
+			size := len(ad.Bytes()) / 4
+			weights := make([]int32, size)
+			reader := bytes.NewReader(ad.Bytes())
+			err := binary.Read(reader, nativeEndian, weights)
+			multiError = concatError(multiError, err)
+			info.Weights = &weights
 		default:
 			return fmt.Errorf("unmarshalFq()\t%d\n\t%v", ad.Type(), ad.Bytes())
 		}
 	}
-	return ad.Err()
+	return concatError(multiError, ad.Err())
 }
 
 // marshalFq returns the binary encoding of Fq
 func marshalFq(info *Fq) ([]byte, error) {
 	options := []tcOption{}
+	var multiError error
 
 	if info == nil {
 		return []byte{}, fmt.Errorf("Fq: %w", ErrNoArg)
@@ -122,5 +160,30 @@ func marshalFq(info *Fq) ([]byte, error) {
 	if info.CEThreshold != nil {
 		options = append(options, tcOption{Interpretation: vtUint32, Type: tcaFqCEThreshold, Data: uint32Value(info.CEThreshold)})
 	}
+	if info.TimerSlack != nil {
+		options = append(options, tcOption{Interpretation: vtUint32, Type: tcaFqTimerSlack, Data: uint32Value(info.TimerSlack)})
+	}
+	if info.Horizon != nil {
+		options = append(options, tcOption{Interpretation: vtUint32, Type: tcaFqHorizon, Data: uint32Value(info.Horizon)})
+	}
+	if info.HorizonDrop != nil {
+		options = append(options, tcOption{Interpretation: vtUint8, Type: tcaFqHorizonDrop, Data: uint8Value(info.HorizonDrop)})
+	}
+	if info.PrioMap != nil {
+		data, err := marshalStruct(info.PrioMap)
+		multiError = concatError(multiError, err)
+		options = append(options, tcOption{Interpretation: vtBytes, Type: tcaFqPrioMap, Data: data})
+	}
+	if info.Weights != nil {
+		buf := new(bytes.Buffer)
+		err := binary.Write(buf, nativeEndian, *info.Weights)
+		multiError = concatError(multiError, err)
+		options = append(options, tcOption{Interpretation: vtBytes, Type: tcaFqWeights, Data: buf.Bytes()})
+	}
+
+	if multiError != nil {
+		return []byte{}, multiError
+	}
+
 	return marshalAttributes(options)
 }

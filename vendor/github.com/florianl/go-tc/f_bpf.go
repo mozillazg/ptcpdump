@@ -123,7 +123,7 @@ func marshalBpf(info *Bpf) ([]byte, error) {
 	}
 	if info.Action != nil {
 		actions := []*Action{info.Action}
-		data, err := marshalActions(actions)
+		data, err := marshalActions(0, actions)
 		if err != nil {
 			return []byte{}, err
 		}

@@ -52,7 +52,7 @@ func marshalTcIndex(info *TcIndex) ([]byte, error) {
 		options = append(options, tcOption{Interpretation: vtUint32, Type: tcaTcIndexClassID, Data: uint32Value(info.ClassID)})
 	}
 	if info.Actions != nil {
-		data, err := marshalActions(*info.Actions)
+		data, err := marshalActions(0, *info.Actions)
 		if err != nil {
 			return []byte{}, err
 		}

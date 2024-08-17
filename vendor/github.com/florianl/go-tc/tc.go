@@ -79,7 +79,7 @@ func (tc *Tc) query(req netlink.Message) ([]netlink.Message, error) {
 	return tc.con.Receive()
 }
 
-func (tc *Tc) action(action int, flags netlink.HeaderFlags, msg *Msg, opts []tcOption) error {
+func (tc *Tc) action(action int, flags netlink.HeaderFlags, msg interface{}, opts []tcOption) error {
 	tcminfo, err := marshalStruct(msg)
 	if err != nil {
 		return err
@@ -180,6 +180,7 @@ type Attribute struct {
 	XStats       *XStats
 	Stats2       *Stats2
 	Stab         *Stab
+	ExtWarnMsg   string
 
 	// Filters
 	Basic    *Basic
@@ -238,6 +239,7 @@ type XStats struct {
 	Hhf     *HhfXStats
 	Pie     *PieXStats
 	FqCodel *FqCodelXStats
+	Fq      *FqQdStats
 	Hfsc    *HfscXStats
 }
 
@@ -363,7 +365,8 @@ func (tc *Tc) monitor(ctx context.Context, deadline time.Duration,
 					tc.logger.Printf("could not extract tc.Msg from %v\n", msg.Data[:20])
 					continue
 				}
-				if err := extractTcmsgAttributes(int(msg.Header.Type), msg.Data[20:], &monitored.Attribute); err != nil {
+				if err := extractTcmsgAttributes(int(msg.Header.Type), msg.Data[20:],
+					&monitored.Attribute); err != nil {
 					tc.logger.Printf("could not extract attributes from %v\n", msg.Data[20:36])
 					continue
 				}
