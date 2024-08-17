@@ -2,6 +2,7 @@ package bpf
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"strings"
 	"unsafe"
@@ -364,36 +365,56 @@ func attachTcHook(ifindex int, prog *ebpf.Program, ingress bool) (func(), error)
 		}
 	}
 
+	var filter *tc.Object
 	fd := uint32(prog.FD())
 	name := tcFilterName
 	parent := tc.HandleMinEgress
 	if ingress {
 		parent = tc.HandleMinIngress
 	}
+	flags := uint32(tc.BpfActDirect)
 
-	filter := tc.Object{
-		Msg: tc.Msg{
-			Family:  unix.AF_UNSPEC,
-			Ifindex: uint32(ifindex),
-			Handle:  0,
-			Parent:  core.BuildHandle(tc.HandleRoot, parent),
-			Info:    1<<16 | uint32(htons(unix.ETH_P_ALL)),
-		},
-		Attribute: tc.Attribute{
-			Kind: "bpf",
-			BPF: &tc.Bpf{
-				FD:   &fd,
-				Name: &name,
+	// don't overwrite other filters
+	for hid := uint32(1); hid < 128; hid++ {
+		filter = &tc.Object{
+			Msg: tc.Msg{
+				Family:  unix.AF_UNSPEC,
+				Ifindex: uint32(ifindex),
+				Handle:  hid,
+				Parent:  core.BuildHandle(tc.HandleRoot, parent),
+				Info:    1<<16 | uint32(htons(unix.ETH_P_ALL)), // priority (1) << 16 | proto (htons(ETH_P_ALL))
 			},
-		},
+			Attribute: tc.Attribute{
+				Kind: "bpf",
+				BPF: &tc.Bpf{
+					FD:    &fd,
+					Name:  &name,
+					Flags: &flags,
+				},
+			},
+		}
+		log.Infof("try to add tc filter with handle %d", hid)
+		if err = tcnl.Filter().Add(filter); err != nil {
+			log.Infof("add tc filter: %s", err)
+			if !errors.Is(err, unix.EEXIST) {
+				return closeFunc, fmt.Errorf("add tc filter: %w", err)
+			} else {
+				// TODO: check and remove dead filter?
+			}
+		} else {
+			break
+		}
 	}
-	if err := tcnl.Filter().Add(&filter); err != nil {
-		return closeFunc, fmt.Errorf("add filter: %w", err)
+
+	if err != nil {
+		return closeFunc, fmt.Errorf("add tc filter: %w", err)
 	}
 
 	newCloseFunc := func() {
-		if err := tcnl.Filter().Delete(&filter); err != nil {
-			if !strings.Contains(err.Error(), "no such device") {
+		if err := tcnl.Filter().Delete(filter); err != nil {
+			// TODO: change to use errors.Is
+			if !(strings.Contains(err.Error(), "no such device") ||
+				strings.Contains(err.Error(), "no such file or directory")) {
 				log.Warnf("delete tcnl filter failed: %+v", err)
 			}
 		}
@@ -409,6 +430,7 @@ func ensureTcQdisc(ifindex int) (func(), error) {
 	}
 	closeFunc := func() {
 		if err := tcnl.Close(); err != nil {
+			// TODO: change to use errors.Is
 			if !strings.Contains(err.Error(), "no such device") {
 				log.Warnf("tcnl.Close() failed: %+v", err)
 			}
@@ -427,21 +449,14 @@ func ensureTcQdisc(ifindex int) (func(), error) {
 		},
 	}
 
-	if err := tcnl.Qdisc().Replace(&qdisc); err != nil {
-		return closeFunc, err
-	}
-
-	newCloseFunc := func() {
-		if err := tcnl.Qdisc().Delete(&qdisc); err != nil {
-			if !strings.Contains(err.Error(), "no such device") &&
-				!strings.Contains(err.Error(), "no such file") {
-				log.Warnf("delete tcnl qdisc failed: %+v", err)
-			}
+	if err := tcnl.Qdisc().Add(&qdisc); err != nil {
+		log.Infof("%s", err)
+		if !errors.Is(err, unix.EEXIST) {
+			return closeFunc, fmt.Errorf("add clsact qdisc to ifindex %d: %w", ifindex, err)
 		}
-		closeFunc()
 	}
 
-	return newCloseFunc, nil
+	return closeFunc, nil
 }
 
 func htons(n uint16) uint16 {
