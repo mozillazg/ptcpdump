@@ -66,7 +66,7 @@ func marshalMatchall(info *Matchall) ([]byte, error) {
 		options = append(options, tcOption{Interpretation: vtUint32, Type: tcaMatchallClassID, Data: uint32Value(info.ClassID)})
 	}
 	if info.Actions != nil {
-		data, err := marshalActions(*info.Actions)
+		data, err := marshalActions(0, *info.Actions)
 		multiError = concatError(multiError, err)
 		options = append(options, tcOption{Interpretation: vtBytes, Type: tcaMatchallAct, Data: data})
 	}

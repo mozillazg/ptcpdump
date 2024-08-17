@@ -407,7 +407,7 @@ func marshalFlower(info *Flower) ([]byte, error) {
 		options = append(options, tcOption{Interpretation: vtString, Type: tcaFlowerIndev, Data: *info.Indev})
 	}
 	if info.Actions != nil {
-		data, err := marshalActions(*info.Actions)
+		data, err := marshalActions(0, *info.Actions)
 		multiError = concatError(multiError, err)
 		options = append(options, tcOption{Interpretation: vtBytes, Type: tcaFlowerAct, Data: data})
 	}

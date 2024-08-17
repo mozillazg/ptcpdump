@@ -1,6 +1,7 @@
 package tc
 
 import (
+	"encoding/binary"
 	"fmt"
 
 	"github.com/mdlayher/netlink"
@@ -51,6 +52,10 @@ func extractTcmsgAttributes(action int, data []byte, info *Attribute) error {
 			err := unmarshalStab(ad.Bytes(), stab)
 			multiError = concatError(multiError, err)
 			info.Stab = stab
+		case tcaPad:
+			// padding does not contain data, we just skip it
+		case tcaExtWarnMsg:
+			info.ExtWarnMsg = ad.String()
 		default:
 			return fmt.Errorf("extractTcmsgAttributes()\t%d\n\t%v", ad.Type(), ad.Bytes())
 
@@ -369,6 +374,15 @@ func extractXStats(data []byte, tc *XStats, kind string) error {
 		err := unmarshalFqCodelXStats(data, info)
 		multiError = concatError(multiError, err)
 		tc.FqCodel = info
+	case "fq":
+		info := &FqQdStats{}
+		// Pad out data to size of our FqQdStats struct to handle
+		// unmarshalling data from older kernel versions with smaller structs
+		qd := make([]byte, binary.Size(info))
+		copy(qd, data)
+		err := unmarshalStruct(qd, info)
+		multiError = concatError(multiError, err)
+		tc.Fq = info
 	case "hfsc":
 		info := &HfscXStats{}
 		err := unmarshalStruct(data, info)
@@ -412,4 +426,6 @@ const (
 	tcaHwOffload
 	tcaIngressBlock
 	tcaEgressBlock
+	tcaDumpFlags
+	tcaExtWarnMsg
 )

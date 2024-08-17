@@ -124,7 +124,7 @@ func marshalFlow(info *Flow) ([]byte, error) {
 		options = append(options, tcOption{Interpretation: vtBytes, Type: tcaFlowEMatches, Data: data})
 	}
 	if info.Actions != nil {
-		data, err := marshalActions(*info.Actions)
+		data, err := marshalActions(0, *info.Actions)
 		multiError = concatError(multiError, err)
 		options = append(options, tcOption{Interpretation: vtBytes, Type: tcaFlowAct, Data: data})
 	}

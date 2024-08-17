@@ -44,3 +44,10 @@ const (
 	RTM_DELCHAIN = linux.RTM_DELCHAIN
 	RTM_GETCHAIN = linux.RTM_GETCHAIN
 )
+
+// Make linter happy with this comment.
+const (
+	RTM_NEWACTION = linux.RTM_NEWACTION
+	RTM_DELACTION = linux.RTM_DELACTION
+	RTM_GETACTION = linux.RTM_GETACTION
+)

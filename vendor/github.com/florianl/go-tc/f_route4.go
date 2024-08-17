@@ -77,7 +77,7 @@ func marshalRoute4(info *Route4) ([]byte, error) {
 		options = append(options, tcOption{Interpretation: vtUint32, Type: tcaRoute4IIf, Data: uint32Value(info.IIf)})
 	}
 	if info.Actions != nil {
-		data, err := marshalActions(*info.Actions)
+		data, err := marshalActions(0, *info.Actions)
 		if err != nil {
 			return []byte{}, err
 		}

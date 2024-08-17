@@ -22,6 +22,7 @@ const (
 	tcaTaPrioTcEntry                 /* nest */
 )
 
+// TaPrio contains TaPrio attributes
 type TaPrio struct {
 	PrioMap                 *MqPrioQopt
 	SchedBaseTime           *int64

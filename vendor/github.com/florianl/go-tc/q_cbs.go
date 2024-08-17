@@ -11,6 +11,7 @@ const (
 	tcaCbsParms
 )
 
+// CbsOpt contains attributes of the cbs discipline
 type CbsOpt struct {
 	Offload   uint8
 	Pad       [3]uint8

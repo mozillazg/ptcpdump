@@ -23,6 +23,7 @@ const (
 	tcaNetemJitter64
 	tcaNetemSlot
 	tcaNetemSlotDist
+	tcaNetemPrngSeed
 )
 
 // Netem contains attributes of the netem discipline
@@ -38,6 +39,7 @@ type Netem struct {
 	Latency64 *int64
 	Jitter64  *int64
 	Slot      *NetemSlot
+	PrngSeed  *uint64
 }
 
 // NetemQopt from include/uapi/linux/pkt_sched.h
@@ -153,6 +155,9 @@ func unmarshalNetem(data []byte, info *Netem) error {
 			info.Slot = tmp
 		case tcaNetemPad:
 			// padding does not contain data, we just skip it
+		case tcaNetemPrngSeed:
+			tmp := ad.Uint64()
+			info.PrngSeed = &tmp
 		default:
 			return fmt.Errorf("unmarshalNetem()\t%d\n\t%v", ad.Type(), ad.Bytes())
 		}
@@ -210,6 +215,9 @@ func marshalNetem(info *Netem) ([]byte, error) {
 		data, err := marshalStruct(info.Slot)
 		multiError = concatError(multiError, err)
 		options = append(options, tcOption{Interpretation: vtBytes, Type: tcaNetemSlot, Data: data})
+	}
+	if info.PrngSeed !=nil {
+		options = append(options, tcOption{Interpretation: vtUint64, Type: tcaNetemPrngSeed, Data: *info.PrngSeed})
 	}
 
 	data, err := marshalAttributes(options)

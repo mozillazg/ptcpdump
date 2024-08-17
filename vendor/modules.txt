@@ -7,7 +7,7 @@ github.com/Microsoft/go-winio/internal/stringbuffer
 github.com/Microsoft/go-winio/pkg/guid
 github.com/Microsoft/go-winio/pkg/security
 github.com/Microsoft/go-winio/vhd
-# github.com/Microsoft/hcsshim v0.11.7 => github.com/Microsoft/hcsshim v0.8.22
+# github.com/Microsoft/hcsshim v0.11.7 => github.com/Microsoft/hcsshim v0.8.26
 ## explicit; go 1.13
 github.com/Microsoft/hcsshim
 github.com/Microsoft/hcsshim/computestorage
@@ -55,7 +55,7 @@ github.com/cloudflare/cbpfc
 # github.com/containerd/cgroups v1.1.0
 ## explicit; go 1.17
 github.com/containerd/cgroups/stats/v1
-# github.com/containerd/containerd v1.7.19 => github.com/containerd/containerd v1.4.12
+# github.com/containerd/containerd v1.7.20 => github.com/containerd/containerd v1.4.13
 ## explicit
 github.com/containerd/containerd
 github.com/containerd/containerd/api/events
@@ -140,7 +140,7 @@ github.com/davecgh/go-spew/spew
 ## explicit
 github.com/docker/distribution/digestset
 github.com/docker/distribution/reference
-# github.com/docker/docker v26.1.4+incompatible => github.com/docker/docker v24.0.9+incompatible
+# github.com/docker/docker v26.1.5+incompatible => github.com/docker/docker v24.0.9+incompatible
 ## explicit
 github.com/docker/docker/api
 github.com/docker/docker/api/types
@@ -171,7 +171,7 @@ github.com/docker/go-events
 # github.com/docker/go-units v0.5.0
 ## explicit
 github.com/docker/go-units
-# github.com/florianl/go-tc v0.4.3
+# github.com/florianl/go-tc v0.4.4
 ## explicit; go 1.13
 github.com/florianl/go-tc
 github.com/florianl/go-tc/core
@@ -451,7 +451,7 @@ k8s.io/apiserver/pkg/util/feature
 ## explicit; go 1.19
 k8s.io/component-base/featuregate
 k8s.io/component-base/logs/logreduction
-# k8s.io/cri-api v0.31.0-alpha.3 => k8s.io/kubernetes/staging/src/k8s.io/cri-api v0.0.0-20230824000246-2cb31c9333ad
+# k8s.io/cri-api v0.31.0 => k8s.io/kubernetes/staging/src/k8s.io/cri-api v0.0.0-20230824000246-2cb31c9333ad
 ## explicit; go 1.19
 k8s.io/cri-api/pkg/apis
 k8s.io/cri-api/pkg/apis/runtime/v1
@@ -476,9 +476,9 @@ k8s.io/kubernetes/pkg/probe/exec
 # k8s.io/utils v0.0.0-20230726121419-3b25d923346b
 ## explicit; go 1.18
 k8s.io/utils/exec
-# github.com/Microsoft/hcsshim => github.com/Microsoft/hcsshim v0.8.22
+# github.com/Microsoft/hcsshim => github.com/Microsoft/hcsshim v0.8.26
 # github.com/Microsoft/hcsshim/test => github.com/Microsoft/hcsshim/test v0.0.0-20210514012740-eba372547321
-# github.com/containerd/containerd => github.com/containerd/containerd v1.4.12
+# github.com/containerd/containerd => github.com/containerd/containerd v1.4.13
 # github.com/docker/docker => github.com/docker/docker v24.0.9+incompatible
 # github.com/gopacket/gopacket => github.com/mozillazg/gopacket v0.0.0-20240602032747-2b08f0c63614
 # github.com/x-way/pktdump => github.com/mozillazg/pktdump v0.0.7
@@ -487,9 +487,9 @@ k8s.io/utils/exec
 # go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc => go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.20.0
 # go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp => go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.20.0
 # go.opentelemetry.io/otel => go.opentelemetry.io/otel v0.20.0
-# go.opentelemetry.io/otel/exporters/otlp => go.opentelemetry.io/otel/exporters/otlp v0.20.0
+# go.opentelemetry.io/otel/exporters/otlp => go.opentelemetry.io/otel/exporters/otlp v0.20.1
 # go.opentelemetry.io/otel/metric => go.opentelemetry.io/otel/metric v0.20.0
-# go.opentelemetry.io/otel/oteltest => go.opentelemetry.io/otel/oteltest v0.20.0
+# go.opentelemetry.io/otel/oteltest => go.opentelemetry.io/otel/oteltest v0.20.1
 # go.opentelemetry.io/otel/sdk => go.opentelemetry.io/otel/sdk v0.20.0
 # go.opentelemetry.io/otel/sdk/export/metric => go.opentelemetry.io/otel/sdk/export/metric v0.20.0
 # go.opentelemetry.io/otel/sdk/metric => go.opentelemetry.io/otel/sdk/metric v0.20.0

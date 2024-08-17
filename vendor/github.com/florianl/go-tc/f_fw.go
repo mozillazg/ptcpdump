@@ -81,7 +81,7 @@ func marshalFw(info *Fw) ([]byte, error) {
 		options = append(options, tcOption{Interpretation: vtBytes, Type: tcaFwPolice, Data: data})
 	}
 	if info.Actions != nil {
-		data, err := marshalActions(*info.Actions)
+		data, err := marshalActions(0, *info.Actions)
 		multiError = concatError(multiError, err)
 		options = append(options, tcOption{Interpretation: vtBytes, Type: tcaFwAct, Data: data})
 	}
