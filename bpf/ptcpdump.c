@@ -19,9 +19,7 @@
 #define IPPROTO_TCP 6     /* Transmission Control Protocol	*/
 #define IPPROTO_UDP 17    /* User Datagram Protocol		*/
 #define IPPROTO_SCTP 132  /* Stream Control Transport Protocol	*/
-#define TC_ACT_UNSPEC -1
-#define TC_ACT_OK 0
-#define TC_ACT_SHOT 2
+#define TC_ACT_UNSPEC (-1)
 #define AF_INET 2
 #define AF_INET6 10
 #define INGRESS_PACKET 0
@@ -1045,11 +1043,11 @@ int raw_tracepoint__sched_process_exit(struct bpf_raw_tracepoint_args *ctx) {
 SEC("tc")
 int tc_ingress(struct __sk_buff *skb) {
     handle_tc(skb, false);
-    return TC_ACT_OK;
+    return TC_ACT_UNSPEC;
 }
 
 SEC("tc")
 int tc_egress(struct __sk_buff *skb) {
     handle_tc(skb, true);
-    return TC_ACT_OK;
+    return TC_ACT_UNSPEC;
 }
