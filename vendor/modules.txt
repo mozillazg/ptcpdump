@@ -135,6 +135,7 @@ github.com/containerd/typeurl
 github.com/containerd/typeurl/v2
 # github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 ## explicit
+github.com/davecgh/go-spew/spew
 # github.com/docker/distribution v2.8.2+incompatible
 ## explicit
 github.com/docker/distribution/digestset
@@ -257,6 +258,9 @@ github.com/phuslu/log
 # github.com/pkg/errors v0.9.1
 ## explicit
 github.com/pkg/errors
+# github.com/pmezard/go-difflib v1.0.0
+## explicit
+github.com/pmezard/go-difflib/difflib
 # github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c
 ## explicit; go 1.14
 github.com/power-devops/perfstat
@@ -285,6 +289,9 @@ github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.5
 ## explicit; go 1.12
 github.com/spf13/pflag
+# github.com/stretchr/testify v1.9.0
+## explicit; go 1.17
+github.com/stretchr/testify/assert
 # github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635
 ## explicit
 github.com/syndtr/gocapability/capability
@@ -427,6 +434,9 @@ google.golang.org/protobuf/runtime/protoimpl
 google.golang.org/protobuf/types/known/anypb
 google.golang.org/protobuf/types/known/durationpb
 google.golang.org/protobuf/types/known/timestamppb
+# gopkg.in/yaml.v3 v3.0.1
+## explicit
+gopkg.in/yaml.v3
 # gotest.tools/v3 v3.5.1
 ## explicit; go 1.17
 # k8s.io/apimachinery v0.31.0-alpha.3 => k8s.io/apimachinery v0.24.17
