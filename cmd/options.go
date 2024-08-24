@@ -31,12 +31,18 @@ type Options struct {
 	printPacketNumber  bool
 	dontPrintTimestamp bool
 	onlyPrintCount     bool
-	dontConvertAddr    int
-	verbose            int
-	containerId        string
-	containerName      string
-	podName            string
-	podNamespace       string
+
+	timeStampPrecision string
+	timeStampMicro     bool
+	timeStampNano      bool
+
+	dontConvertAddr int
+	verbose         int
+
+	containerId   string
+	containerName string
+	podName       string
+	podNamespace  string
 
 	eventChanSize                 uint
 	delayBeforeHandlePacketEvents time.Duration
@@ -77,6 +83,10 @@ func (o Options) DirectionOut() bool {
 
 func (o Options) DirectionInOut() bool {
 	return o.direction == "inout"
+}
+
+func (o Options) TimeStampAsNano() bool {
+	return o.timeStampNano || o.timeStampPrecision == "nano"
 }
 
 func prepareOptions(opts *Options, rawArgs []string, args []string) {

@@ -37,7 +37,7 @@ func GetCurrentConnects(ctx context.Context, pids []int, all bool) ([]Connection
 		}
 	}
 	for _, stat := range stats {
-		if stat.Laddr.Port == 0 || stat.Raddr.Port == 0 || stat.Status != "ESTABLISHED" {
+		if stat.Pid == 0 || stat.Laddr.Port == 0 || stat.Raddr.Port == 0 || stat.Status != "ESTABLISHED" {
 			continue
 		}
 		conn, err := convertConnectionStat(stat)

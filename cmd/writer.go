@@ -61,6 +61,7 @@ func getWriters(opts Options, pcache *metadata.ProcessCache) ([]writer.PacketWri
 		stdoutWriter.OneLine = opts.oneLine
 		stdoutWriter.PrintNumber = opts.printPacketNumber
 		stdoutWriter.NoTimestamp = opts.dontPrintTimestamp
+		stdoutWriter.TimestampNano = opts.TimeStampAsNano()
 		if opts.verbose >= 1 {
 			stdoutWriter.FormatStyle = pktdump.FormatStyleVerbose
 		}

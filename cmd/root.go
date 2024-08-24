@@ -105,6 +105,12 @@ func init() {
 				"/var/lib/ptcpdump/btf/$(uname -r).btf",
 				"download BTF file from https://mirrors.openanolis.cn/coolbpf/btf/ and https://github.com/aquasecurity/btfhub-archive/"}, ", ")),
 	)
+	rootCmd.Flags().StringVar(&opts.timeStampPrecision, "time-stamp-precision", "micro",
+		"When capturing, set the time stamp precision for the capture to the format")
+	rootCmd.Flags().BoolVar(&opts.timeStampMicro, "micro", false,
+		"Shorthands for --time-stamp-precision=micro")
+	rootCmd.Flags().BoolVar(&opts.timeStampNano, "nano", false,
+		"Shorthands for --time-stamp-precision=nano")
 
 	silenceKlog()
 }

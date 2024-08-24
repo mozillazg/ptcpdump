@@ -3,6 +3,8 @@ package metadata
 import (
 	"context"
 	"fmt"
+	"runtime"
+	"sort"
 	"sync"
 	"time"
 
@@ -49,6 +51,7 @@ func (c *ProcessCache) WithContainerCache(cc *ContainerCache) *ProcessCache {
 
 func (c *ProcessCache) Start(ctx context.Context) {
 	// TODO: change to get running processes via ebpf task iter
+	log.Info("start to fill running process info")
 	if err := c.fillRunningProcesses(ctx); err != nil {
 		log.Errorf("fill running processes info failed: %s", err)
 	}
@@ -56,36 +59,54 @@ func (c *ProcessCache) Start(ctx context.Context) {
 }
 
 func (c *ProcessCache) fillRunningProcesses(ctx context.Context) error {
+	log.Info("start to get all processes")
 	ps, err := process.ProcessesWithContext(ctx)
 	if err != nil {
 		return fmt.Errorf(": %w", err)
 	}
+	sort.Slice(ps, func(i, j int) bool {
+		return ps[i].Pid < ps[j].Pid
+	})
+
+	log.Info("start to add process events with these processes data")
+	pool := make(chan struct{}, runtime.NumCPU())
+	wg := sync.WaitGroup{}
 	for _, p := range ps {
+		p := p
 		if p.Pid == 0 {
 			continue
 		}
-		ppid := 0
-		if parent, err := p.ParentWithContext(ctx); err == nil {
-			ppid = int(parent.Pid)
-		}
-		filename, _ := p.Exe()
-		if filename == "" {
-			filename, _ = p.Name()
-		}
-		args, _ := p.CmdlineSlice()
-		e := event.ProcessExec{
-			PPid:              ppid,
-			Pid:               int(p.Pid),
-			Filename:          filename,
-			FilenameTruncated: false,
-			Args:              args,
-			ArgsTruncated:     false,
-			PidNs:             utils.GetPidNamespaceFromPid(int(p.Pid)),
-			MntNs:             utils.GetMountNamespaceFromPid(int(p.Pid)),
-			Netns:             utils.GetNetworkNamespaceFromPid(int(p.Pid)),
-		}
-		c.AddItem(e)
+		pool <- struct{}{}
+		wg.Add(1)
+		go func(p *process.Process) {
+			defer func() {
+				<-pool
+				wg.Done()
+			}()
+			ppid := 0
+			if parent, err := p.ParentWithContext(ctx); err == nil {
+				ppid = int(parent.Pid)
+			}
+			filename, _ := p.Exe()
+			if filename == "" {
+				filename, _ = p.Name()
+			}
+			args, _ := p.CmdlineSlice()
+			e := event.ProcessExec{
+				PPid:              ppid,
+				Pid:               int(p.Pid),
+				Filename:          filename,
+				FilenameTruncated: false,
+				Args:              args,
+				ArgsTruncated:     false,
+				PidNs:             utils.GetPidNamespaceFromPid(int(p.Pid)),
+				MntNs:             utils.GetMountNamespaceFromPid(int(p.Pid)),
+				Netns:             utils.GetNetworkNamespaceFromPid(int(p.Pid)),
+			}
+			c.AddItem(e)
+		}(p)
 	}
+	wg.Wait()
 
 	return nil
 }
@@ -140,6 +161,9 @@ func (c *ProcessCache) jobCleanDead() {
 
 func (c *ProcessCache) AddItemWithContext(exec event.ProcessExec, rawCtx types.PacketContext) {
 	pid := exec.Pid
+	if pid == 0 {
+		return
+	}
 
 	// if exec.CgroupName == "" ||
 	// 	strings.HasSuffix(exec.CgroupName, ".slice") ||

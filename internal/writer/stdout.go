@@ -14,14 +14,15 @@ import (
 )
 
 type StdoutWriter struct {
-	pcache      *metadata.ProcessCache
-	w           io.Writer
-	Decoder     gopacket.Decoder
-	OneLine     bool
-	PrintNumber bool
-	NoTimestamp bool
-	DoNothing   bool
-	FormatStyle pktdump.FormatStyle
+	pcache        *metadata.ProcessCache
+	w             io.Writer
+	Decoder       gopacket.Decoder
+	OneLine       bool
+	PrintNumber   bool
+	NoTimestamp   bool
+	TimestampNano bool
+	DoNothing     bool
+	FormatStyle   pktdump.FormatStyle
 
 	n int64
 }
@@ -88,7 +89,11 @@ func (w *StdoutWriter) Write(e *event.Packet) error {
 	}
 
 	if !w.NoTimestamp {
-		builder.WriteString(fmt.Sprintf("%s ", e.Time.Local().Format("15:04:05.000000")))
+		layout := "15:04:05.000000"
+		if w.TimestampNano {
+			layout = "15:04:05.000000000"
+		}
+		builder.WriteString(fmt.Sprintf("%s ", e.Time.Local().Format(layout)))
 	}
 
 	if ifName != "" {
