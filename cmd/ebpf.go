@@ -28,7 +28,7 @@ func attachHooks(btfSpec *btftype.Spec, currentConns []metadata.Connection, opts
 		return nil, err
 	}
 	bpfopts := &bpf.Options{}
-	bpfopts = bpfopts.WithPids([]uint{opts.pid}).
+	bpfopts = bpfopts.WithPids(opts.pids).
 		WithComm(opts.comm).
 		WithFollowFork(opts.followForks).
 		WithPidNsIds(opts.pidnsIds).
@@ -67,7 +67,8 @@ func attachHooks(btfSpec *btftype.Spec, currentConns []metadata.Connection, opts
 	for _, iface := range devices {
 		if err := bf.AttachTcHooks(iface.Ifindex, opts.DirectionOut(), opts.DirectionIn()); err != nil {
 			// TODO: use errors.Is(xxx) or ==
-			if strings.Contains(err.Error(), "netlink receive: no such file or directory") {
+			if strings.Contains(err.Error(), "netlink receive: no such file or directory") ||
+				strings.Contains(err.Error(), "netlink receive: no such device") {
 				log.Warnf("skip interface %s due to %s", iface.Name, err)
 				continue
 			}

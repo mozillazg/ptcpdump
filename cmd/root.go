@@ -53,7 +53,7 @@ func init() {
 		"Read packets from file (which was created with the -w option). e.g. ptcpdump.pcapng")
 	rootCmd.Flags().StringSliceVarP(&opts.ifaces, "interface", "i", []string{"lo"},
 		"Interfaces to capture")
-	rootCmd.Flags().UintVar(&opts.pid, "pid", 0, "Filter by process ID (only TCP and UDP packets are supported)")
+	rootCmd.Flags().UintSliceVar(&opts.pids, "pid", nil, "Filter by process IDs (only TCP and UDP packets are supported)")
 	rootCmd.Flags().StringVar(&opts.comm, "pname", "", "Filter by process name (only TCP and UDP packets are supported)")
 	rootCmd.Flags().BoolVarP(&opts.followForks, "follow-forks", "f", false,
 		"Trace child processes as they are created by currently traced processes when filter by process")

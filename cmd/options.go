@@ -15,7 +15,7 @@ const (
 
 type Options struct {
 	ifaces         []string
-	pid            uint
+	pids           []uint
 	comm           string
 	followForks    bool
 	writeFilePath  string
