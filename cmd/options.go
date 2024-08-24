@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/mozillazg/ptcpdump/internal/writer"
+	"github.com/x-way/pktdump"
 	"strings"
 	"time"
 
@@ -28,9 +30,11 @@ type Options struct {
 	direction      string
 	oneLine        bool
 
-	printPacketNumber  bool
-	dontPrintTimestamp bool
-	onlyPrintCount     bool
+	printPacketNumber   bool
+	dontPrintTimestamp  bool
+	onlyPrintCount      bool
+	printDataAsHex      int
+	printDataAsHexASCII int
 
 	timeStampPrecision string
 	timeStampMicro     bool
@@ -137,4 +141,31 @@ func getDefaultCriRuntimeEndpoint() []string {
 		rs = append(rs, strings.TrimPrefix(end, "unix://"))
 	}
 	return rs
+}
+
+func (o Options) applyToStdoutWriter(w *writer.StdoutWriter) {
+	w.OneLine = opts.oneLine
+	w.PrintNumber = opts.printPacketNumber
+	w.NoTimestamp = opts.dontPrintTimestamp
+	w.TimestampNano = opts.TimeStampAsNano()
+	if opts.onlyPrintCount {
+		w.DoNothing = true
+	}
+	if opts.verbose >= 1 {
+		w.FormatStyle = pktdump.FormatStyleVerbose
+	}
+	switch {
+	case opts.printDataAsHexASCII > 1:
+		w.DataStyle = pktdump.ContentStyleHexWithLinkASCII
+		break
+	case opts.printDataAsHexASCII == 1:
+		w.DataStyle = pktdump.ContentStyleHexWithASCII
+		break
+	case opts.printDataAsHex > 1:
+		w.DataStyle = pktdump.ContentStyleHexWithLink
+		break
+	case opts.printDataAsHex == 1:
+		w.DataStyle = pktdump.ContentStyleHex
+		break
+	}
 }

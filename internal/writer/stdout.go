@@ -23,6 +23,7 @@ type StdoutWriter struct {
 	TimestampNano bool
 	DoNothing     bool
 	FormatStyle   pktdump.FormatStyle
+	DataStyle     pktdump.ContentStyle
 
 	n int64
 }
@@ -80,7 +81,13 @@ func (w *StdoutWriter) Write(e *event.Packet) error {
 
 	// Decode a packet
 	packet := gopacket.NewPacket(e.Data, w.Decoder, gopacket.NoCopy)
-	formated := pktdump.FormatWithStyle(packet, w.FormatStyle)
+	formatOpts := &pktdump.Options{
+		HeaderStyle:   w.FormatStyle,
+		ContentStyle:  w.DataStyle,
+		ContentIndent: "        ",
+	}
+	formatedHeader := pktdump.FormatWithOptions(packet, formatOpts)
+	formatedData := formatOpts.FormatedContent
 
 	builder := strings.Builder{}
 
@@ -108,7 +115,7 @@ func (w *StdoutWriter) Write(e *event.Packet) error {
 
 	switch {
 	case w.FormatStyle >= pktdump.FormatStyleVerbose:
-		builder.WriteString(fmt.Sprintf("%s\n", formated))
+		builder.WriteString(fmt.Sprintf("%s\n", formatedHeader))
 		if p.Pid > 0 {
 			builder.WriteString(fmt.Sprintf("    %s\n", processInfo))
 			if p.Parent.Pid > 0 {
@@ -123,7 +130,7 @@ func (w *StdoutWriter) Write(e *event.Packet) error {
 		}
 		break
 	default:
-		builder.WriteString(formated)
+		builder.WriteString(formatedHeader)
 		if p.Parent.Pid > 0 {
 			builder.WriteString(fmt.Sprintf(", %s", parentProcInfo))
 		}
@@ -148,6 +155,10 @@ func (w *StdoutWriter) Write(e *event.Packet) error {
 			newLines = append(newLines, s)
 		}
 		msg = strings.Join(newLines, ", ") + "\n"
+	}
+	if len(formatedData) > 0 {
+		msg = strings.TrimSuffix(msg, "\n")
+		msg += string(formatedData) + "\n"
 	}
 
 	if _, err := w.w.Write([]byte(msg)); err != nil {

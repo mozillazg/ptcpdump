@@ -111,6 +111,10 @@ func init() {
 		"Shorthands for --time-stamp-precision=micro")
 	rootCmd.Flags().BoolVar(&opts.timeStampNano, "nano", false,
 		"Shorthands for --time-stamp-precision=nano")
+	rootCmd.Flags().CountVarP(&opts.printDataAsHex, "print-data-in-hex", "x",
+		"When parsing and printing, in addition to printing the headers of each packet, print the data of each packet in hex")
+	rootCmd.Flags().CountVarP(&opts.printDataAsHexASCII, "print-data-in-hex-ascii", "X",
+		"When parsing and printing, in addition to printing the headers of each packet, print the data of each packet in hex and ASCII")
 
 	silenceKlog()
 }

@@ -10,7 +10,6 @@ import (
 	"github.com/mozillazg/ptcpdump/internal/metadata"
 	"github.com/mozillazg/ptcpdump/internal/parser"
 	"github.com/mozillazg/ptcpdump/internal/writer"
-	"github.com/x-way/pktdump"
 )
 
 func read(ctx context.Context, opts Options) error {
@@ -23,19 +22,9 @@ func read(ctx context.Context, opts Options) error {
 	var p parser.Parser
 	pcache := metadata.NewProcessCache()
 	stdoutWriter := writer.NewStdoutWriter(os.Stdout, pcache)
-	stdoutWriter.OneLine = opts.oneLine
-	stdoutWriter.PrintNumber = opts.printPacketNumber
-	stdoutWriter.NoTimestamp = opts.dontPrintTimestamp
-	stdoutWriter.TimestampNano = opts.TimeStampAsNano()
-	if opts.onlyPrintCount {
-		stdoutWriter.DoNothing = true
-	}
-	if opts.verbose >= 1 {
-		stdoutWriter.FormatStyle = pktdump.FormatStyleVerbose
-	}
+	opts.applyToStdoutWriter(stdoutWriter)
 
 	ext := filepath.Ext(opts.ReadPath())
-
 	switch ext {
 	case extPcap:
 		pr, err := parser.NewPcapParser(f)
