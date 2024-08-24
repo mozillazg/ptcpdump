@@ -41,7 +41,7 @@ func capture(ctx context.Context, stop context.CancelFunc, opts Options) error {
 		if err != nil {
 			return err
 		}
-		opts.pid = uint(subProcessLoaderPid)
+		opts.pids = []uint{uint(subProcessLoaderPid)}
 		opts.followForks = true
 	}
 
@@ -167,9 +167,11 @@ func getCurrentConnects(ctx context.Context, pcache *metadata.ProcessCache, opts
 	var pids []int
 	var filterPid bool
 
-	if opts.pid != 0 {
+	if len(opts.pids) > 0 {
 		filterPid = true
-		pids = append(pids, int(opts.pid))
+		for _, pid := range opts.pids {
+			pids = append(pids, int(pid))
+		}
 	}
 	if opts.comm != "" {
 		filterPid = true
