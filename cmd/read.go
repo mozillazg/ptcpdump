@@ -26,6 +26,7 @@ func read(ctx context.Context, opts Options) error {
 	stdoutWriter.OneLine = opts.oneLine
 	stdoutWriter.PrintNumber = opts.printPacketNumber
 	stdoutWriter.NoTimestamp = opts.dontPrintTimestamp
+	stdoutWriter.TimestampNano = opts.TimeStampAsNano()
 	if opts.onlyPrintCount {
 		stdoutWriter.DoNothing = true
 	}
