@@ -10,16 +10,6 @@ import (
 	"github.com/gopacket/gopacket/layers"
 )
 
-type FormatStyle int
-
-const (
-	FormatStyleQuiet FormatStyle = iota
-	FormatStyleNormal
-	FormatStyleVerbose
-	FormatStyleMoreVerbose
-	FormatStyleMoreMoreVerbose
-)
-
 func formatPacketTCP(tcp *layers.TCP, src, dst string, length int, style FormatStyle) string {
 	length -= int(tcp.DataOffset) * 4
 	flags := ""
@@ -432,7 +422,7 @@ func formatPacketPPP(ppp *layers.PPP, style FormatStyle) string {
 	}
 }
 
-func formatIPv4(ipv4 *layers.IPv4, style FormatStyle) string {
+func formatIPv4(ipv4 *layers.IPv4, opts *Options) string {
 	fields := []string{}
 	fields = append(fields, fmt.Sprintf("tos 0x%x", ipv4.TOS))
 	fields = append(fields, fmt.Sprintf("ttl %d", ipv4.TTL))
@@ -449,7 +439,7 @@ func formatIPv4(ipv4 *layers.IPv4, style FormatStyle) string {
 	return strings.Join(fields, ", ")
 }
 
-func formatIPv6(ipv6 *layers.IPv6, style FormatStyle) string {
+func formatIPv6(ipv6 *layers.IPv6, opts *Options) string {
 	fields := []string{}
 	fields = append(fields, fmt.Sprintf("flowlabel 0x%x", ipv6.FlowLabel))
 	fields = append(fields, fmt.Sprintf("hlim %d", ipv6.HopLimit))
@@ -459,7 +449,7 @@ func formatIPv6(ipv6 *layers.IPv6, style FormatStyle) string {
 	return strings.Join(fields, ", ")
 }
 
-func formatLinkLayer(packet gopacket.Packet, style FormatStyle) string {
+func formatLinkLayer(packet gopacket.Packet, opts *Options) string {
 	var layer gopacket.Layer
 	if layer = packet.LinkLayer(); layer == nil {
 		return ""
@@ -473,14 +463,14 @@ func formatLinkLayer(packet gopacket.Packet, style FormatStyle) string {
 		length = len(layer.LayerPayload())
 		break
 	default:
-		return formatUnknown(layer, packet, style)
+		return formatUnknown(layer, packet, opts)
 	}
 
 	switch nextLayerType {
 	case layers.LayerTypeARP:
 		if ly := packet.Layer(layers.LayerTypeARP); ly != nil {
 			arp, _ := ly.(*layers.ARP)
-			return formatARP(arp, length, style)
+			return formatARP(arp, length, opts)
 		}
 	}
 
@@ -493,10 +483,25 @@ func Format(packet gopacket.Packet) string {
 }
 
 func FormatWithStyle(packet gopacket.Packet, style FormatStyle) string {
+	return FormatWithOptions(packet, &Options{HeaderStyle: style})
+}
+
+func FormatWithOptions(packet gopacket.Packet, opts *Options) string {
+	data := formatWithOptions(packet, opts)
+	opts.formatContent()
+	return data
+}
+
+func formatWithOptions(packet gopacket.Packet, opts *Options) string {
 	var net gopacket.Layer
-	if net = packet.NetworkLayer(); net == nil {
-		return formatLinkLayer(packet, style)
+	if opts.needFormatLink() && packet.LinkLayer() != nil {
+		opts.rawContent = append(opts.rawContent, packet.LinkLayer().LayerContents()...)
 	}
+	if net = packet.NetworkLayer(); net == nil {
+		return formatLinkLayer(packet, opts)
+	}
+	opts.rawContent = append(opts.rawContent, net.LayerContents()...)
+	style := opts.HeaderStyle
 
 	var prefix, src, dst string
 	var nextLayerType gopacket.LayerType
@@ -506,7 +511,7 @@ func FormatWithStyle(packet gopacket.Packet, style FormatStyle) string {
 	case *layers.IPv4:
 		prefix = fmt.Sprintf("IP ")
 		if style >= FormatStyleVerbose {
-			prefix = fmt.Sprintf("IP (%s)\n    ", formatIPv4(net, style))
+			prefix = fmt.Sprintf("IP (%s)\n    ", formatIPv4(net, opts))
 		}
 		nextLayerType = net.NextLayerType()
 		nextLayerPayload = net.LayerPayload()
@@ -516,7 +521,7 @@ func FormatWithStyle(packet gopacket.Packet, style FormatStyle) string {
 	case *layers.IPv6:
 		prefix = "IP6 "
 		if style >= FormatStyleVerbose {
-			prefix = fmt.Sprintf("IP6 (%s)\n    ", formatIPv6(net, style))
+			prefix = fmt.Sprintf("IP6 (%s)\n    ", formatIPv6(net, opts))
 		}
 		nextLayerType = net.NextLayerType()
 		nextLayerPayload = net.LayerPayload()
@@ -524,8 +529,16 @@ func FormatWithStyle(packet gopacket.Packet, style FormatStyle) string {
 		dst = net.DstIP.String()
 		length = int(net.Length)
 	default:
-		return formatUnknown(net, packet, style)
+		return formatUnknown(net, packet, opts)
 	}
+
+	if packet.TransportLayer() != nil {
+		opts.rawContent = append(opts.rawContent, packet.TransportLayer().LayerContents()...)
+		if packet.ApplicationLayer() != nil {
+			opts.rawContent = append(opts.rawContent, packet.ApplicationLayer().LayerContents()...)
+		}
+	}
+
 	switch nextLayerType {
 	case layers.LayerTypeUDP:
 		if udpLayer := packet.Layer(layers.LayerTypeUDP); udpLayer != nil {

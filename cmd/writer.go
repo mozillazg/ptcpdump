@@ -14,7 +14,6 @@ import (
 	"github.com/mozillazg/ptcpdump/internal/dev"
 	"github.com/mozillazg/ptcpdump/internal/metadata"
 	"github.com/mozillazg/ptcpdump/internal/writer"
-	"github.com/x-way/pktdump"
 )
 
 func getWriters(opts Options, pcache *metadata.ProcessCache) ([]writer.PacketWriter, func() error, error) {
@@ -58,13 +57,7 @@ func getWriters(opts Options, pcache *metadata.ProcessCache) ([]writer.PacketWri
 	}
 	if opts.WritePath() == "" || opts.print {
 		stdoutWriter := writer.NewStdoutWriter(os.Stdout, pcache)
-		stdoutWriter.OneLine = opts.oneLine
-		stdoutWriter.PrintNumber = opts.printPacketNumber
-		stdoutWriter.NoTimestamp = opts.dontPrintTimestamp
-		stdoutWriter.TimestampNano = opts.TimeStampAsNano()
-		if opts.verbose >= 1 {
-			stdoutWriter.FormatStyle = pktdump.FormatStyleVerbose
-		}
+		opts.applyToStdoutWriter(stdoutWriter)
 		writers = append(writers, stdoutWriter)
 	}
 
