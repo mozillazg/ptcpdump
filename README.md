@@ -62,7 +62,7 @@ Linux kernel version >= 5.2.
 Filter like tcpdump:
 ```
 sudo ptcpdump -i eth0 tcp
-sudo ptcpdump -i eth0 tcp and port 80 and host 10.10.1.1
+sudo ptcpdump -i eth0 -A -v tcp and port 80 and host 10.10.1.1
 sudo ptcpdump -i eth0 'tcp[tcpflags] & (tcp-syn|tcp-fin) != 0'
 ```
 
