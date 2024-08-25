@@ -35,6 +35,7 @@ type Options struct {
 	onlyPrintCount      bool
 	printDataAsHex      int
 	printDataAsHexASCII int
+	printDataAsASCII    bool
 
 	timeStampPrecision string
 	timeStampMicro     bool
@@ -166,6 +167,9 @@ func (o Options) applyToStdoutWriter(w *writer.StdoutWriter) {
 		break
 	case opts.printDataAsHex == 1:
 		w.DataStyle = pktdump.ContentStyleHex
+		break
+	case opts.printDataAsASCII:
+		w.DataStyle = pktdump.ContentStyleASCII
 		break
 	}
 }

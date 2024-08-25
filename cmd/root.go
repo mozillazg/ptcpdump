@@ -115,6 +115,8 @@ func init() {
 		"When parsing and printing, in addition to printing the headers of each packet, print the data of each packet in hex")
 	rootCmd.Flags().CountVarP(&opts.printDataAsHexASCII, "print-data-in-hex-ascii", "X",
 		"When parsing and printing, in addition to printing the headers of each packet, print the data of each packet in hex and ASCII")
+	rootCmd.Flags().BoolVarP(&opts.printDataAsASCII, "print-data-in-ascii", "A", false,
+		"Print each packet (minus its link level header) in ASCII")
 
 	silenceKlog()
 }
