@@ -4,6 +4,7 @@
 
 [![amd64-e2e](https://img.shields.io/github/actions/workflow/status/mozillazg/ptcpdump/test.yml?label=x86_64%20(amd64)%20e2e)](https://github.com/mozillazg/ptcpdump/actions/workflows/test.yml)
 [![arm64-e2e](https://img.shields.io/circleci/build/gh/mozillazg/ptcpdump/master?label=aarch64%20(arm64)%20e2e)](https://app.circleci.com/pipelines/github/mozillazg/ptcpdump?branch=master)
+English | [中文](README.zh-CN.md)
 
 
 ptcpdump is the tcpdump(8) implementation using eBPF, with an extra feature:
@@ -23,7 +24,9 @@ Table of Contents
    * [Example output](#example-output)
    * [Flags](#flags)
 * [Compare with tcpdump](#compare-with-tcpdump)
-* [Build](#build)
+* [Developing](#developing)
+   * [Dependencies](#dependencies)
+   * [Building](#building)
 
 
 ## Features
@@ -72,7 +75,7 @@ sudo ptcpdump -i eth0 -i lo
 Filter by process:
 
 ```
-sudo ptcpdump -i any --pid 1234
+sudo ptcpdump -i any --pid 1234 --pid 233 -f
 sudo ptcpdump -i any --pname curl
 ```
 
@@ -127,6 +130,47 @@ With `-v`:
     Pod (name test, namespace default, UID 9e4bc54b-de48-4b1c-8b9e-54709f67ed0c, labels {"run":"test"}, annotations {"kubernetes.io/config.seen":"2024-07-21T12:41:00.460249620Z","kubernetes.io/config.source":"api"})
 ```
 
+With `-A`:
+
+```
+14:44:34.457504 ens33 curl.205562 Out IP 10.0.2.15.39984 > 139.178.84.217.80: Flags [P.], seq 2722472188:2722472262, ack 892036871, win 64240, length 74, ParentProc [bash.180205]
+E..r.,@.@.o.
+.....T..0.P.E..5+g.P.......GET / HTTP/1.1
+Host: kernel.org
+User-Agent: curl/7.81.0
+Accept: */*
+
+```
+
+With `-x`:
+
+```
+14:44:34.457504 ens33 curl.205562 IP 10.0.2.15.39984 > 139.178.84.217.80: Flags [P.], seq 2722472188:2722472262, ack 892036871, win 64240, length 74, ParentProc [bash.180205]
+        0x0000:  4500 0072 de2c 4000 4006 6fbf 0a00 020f
+        0x0010:  8bb2 54d9 9c30 0050 a245 a0fc 352b 6707
+        0x0020:  5018 faf0 ecfe 0000 4745 5420 2f20 4854
+        0x0030:  5450 2f31 2e31 0d0a 486f 7374 3a20 6b65
+        0x0040:  726e 656c 2e6f 7267 0d0a 5573 6572 2d41
+        0x0050:  6765 6e74 3a20 6375 726c 2f37 2e38 312e
+        0x0060:  300d 0a41 6363 6570 743a 202a 2f2a 0d0a
+        0x0070:  0d0a
+```
+
+With `-X`:
+
+```
+14:44:34.457504 ens33 curl.205562 IP 10.0.2.15.39984 > 139.178.84.217.80: Flags [P.], seq 2722472188:2722472262, ack 892036871, win 64240, length 74, ParentProc [bash.180205]
+        0x0000:  4500 0072 de2c 4000 4006 6fbf 0a00 020f  E..r.,@.@.o.....
+        0x0010:  8bb2 54d9 9c30 0050 a245 a0fc 352b 6707  ..T..0.P.E..5+g.
+        0x0020:  5018 faf0 ecfe 0000 4745 5420 2f20 4854  P.......GET / HT
+        0x0030:  5450 2f31 2e31 0d0a 486f 7374 3a20 6b65  TP/1.1..Host: ke
+        0x0040:  726e 656c 2e6f 7267 0d0a 5573 6572 2d41  rnel.org..User-A
+        0x0050:  6765 6e74 3a20 6375 726c 2f37 2e38 312e  gent: curl/7.81.
+        0x0060:  300d 0a41 6363 6570 743a 202a 2f2a 0d0a  0..Accept: */*..
+        0x0070:  0d0a                                     ..
+```
+
+
 <p align="right"><a href="#top">🔝</a></p>
 
 
@@ -141,39 +185,54 @@ Examples:
   sudo ptcpdump -i any tcp
   sudo ptcpdump -i eth0 -i lo
   sudo ptcpdump -i eth0 --pid 1234 port 80 and host 10.10.1.1
-  sudo ptcpdump -i any --pname curl
+  sudo ptcpdump -i any --pname curl -A
+  sudo ptcpdump -i any --container-id 36f0310403b1
+  sudo ptcpdump -i any --container-name test
   sudo ptcpdump -i any -- curl ubuntu.com
   sudo ptcpdump -i any -w ptcpdump.pcapng
-  sudo ptcpdump -i any -w - port 80 | tcpdump -n -r -
-  sudo ptcpdump -i any -w - port 80 | tshark -r -
+  sudo ptcpdump -i any -w - | tcpdump -n -r -
+  sudo ptcpdump -i any -w - | tshark -r -
   ptcpdump -r ptcpdump.pcapng
 
 Expression: see "man 7 pcap-filter"
 
 Flags:
-  --container-id string        Filter by container id (only TCP and UDP packets are supported)
-  --container-name string      Filter by container name (only TCP and UDP packets are supported)
-  --containerd-address string  Address of containerd service (default "/run/containerd/containerd.sock")
-  --count                      Print only on stdout the packet count when reading capture file instead of parsing/printing the packets
-  --cri-runtime-address string Address of CRI container runtime service (default: uses in order the first successful one of [/run/containerd/containerd.sock, /run/crio/crio.sock, /var/run/cri-dockerd.sock, /var/run/dockershim.sock])
-  -Q, --direction string       Choose send/receive direction for which packets should be captured. Possible values are 'in', 'out' and 'inout' (default "inout")
-  --docker-address string      Address of Docker Engine service (default "/var/run/docker.sock")
-  -f, --follow-forks           Trace child processes as they are created by currently traced processes when filter by process
-  -h, --help                   help for ptcpdump
-  -i, --interface strings      Interfaces to capture (default [lo])
-      --list-interfaces        Print the list of the network interfaces available on the system
-      --log-level string       Set the logging level ("debug", "info", "warn", "error", "fatal") (default "warn")
-      --oneline                Print parsed packet output in a single line
-      --pid uint               Filter by process ID (only TCP and UDP packets are supported)
-      --pname string           Filter by process name (only TCP and UDP packets are supported)
-      --pod-name string        Filter by pod name (format: NAME.NAMESPACE, only TCP and UDP packets are supported)
-      --print                  Print parsed packet output, even if the raw packets are being saved to a file with the -w flag
-  -r, --read-file string       Read packets from file (which was created with the -w option). e.g. ptcpdump.pcapng
-  -c, --receive-count uint     Exit after receiving count packets
-  -s, --snapshot-length uint32 Snarf snaplen bytes of data from each packet rather than the default of 262144 bytes (default 262144)
-  -v, --verbose count          When parsing and printing, produce (slightly more) verbose output
-      --version                Print the ptcpdump and libpcap version strings and exit
-  -w, --write-file string      Write the raw packets to file rather than parsing and printing them out. They can later be printed with the -r option. Standard output is used if file is '-'. e.g. ptcpdump.pcapng
+      --container-id string                          Filter by container id (only TCP and UDP packets are supported)
+      --container-name string                        Filter by container name (only TCP and UDP packets are supported)
+      --containerd-address string                    Address of containerd service (default "/run/containerd/containerd.sock")
+      --count                                        Print only on stdout the packet count when reading capture file instead of parsing/printing the packets
+      --cri-runtime-address string                   Address of CRI container runtime service (default: uses in order the first successful one of [/var/run/dockershim.sock, /var/run/cri-dockerd.sock, /run/crio/crio.sock, /run/containerd/containerd.sock])
+      --delay-before-handle-packet-events duration   Delay some durations before handle packet events
+  -Q, --direction string                             Choose send/receive direction for which packets should be captured. Possible values are 'in', 'out' and 'inout' (default "inout")
+      --docker-address string                        Address of Docker Engine service (default "/var/run/docker.sock")
+      --event-chan-size uint                         Size of event chan (default 20)
+      --exec-events-worker-number uint               Number of worker to handle exec events (default 50)
+  -f, --follow-forks                                 Trace child processes as they are created by currently traced processes when filter by process
+  -h, --help                                         help for ptcpdump
+  -i, --interface strings                            Interfaces to capture (default [lo])
+      --kernel-btf string                            specify kernel BTF file (default: uses in order the first successful one of [/sys/kernel/btf/vmlinux, /var/lib/ptcpdump/btf/vmlinux, /var/lib/ptcpdump/btf/vmlinux-$(uname -r), /var/lib/ptcpdump/btf/$(uname -r).btf, download BTF file from https://mirrors.openanolis.cn/coolbpf/btf/ and https://github.com/aquasecurity/btfhub-archive/]
+  -D, --list-interfaces                              Print the list of the network interfaces available on the system
+      --log-level string                             Set the logging level ("debug", "info", "warn", "error", "fatal") (default "warn")
+      --micro                                        Shorthands for --time-stamp-precision=micro
+      --nano                                         Shorthands for --time-stamp-precision=nano
+  -n, --no-convert-addr count                        Don't convert addresses (i.e., host addresses, port numbers, etc.) to names
+  -t, --no-timestamp                                 Don't print a timestamp on each dump line
+  -#, --number                                       Print an optional packet number at the beginning of the line
+      --oneline                                      Print parsed packet output in a single line
+      --pid uints                                    Filter by process IDs (only TCP and UDP packets are supported) (default [])
+      --pname string                                 Filter by process name (only TCP and UDP packets are supported)
+      --pod-name string                              Filter by pod name (format: NAME.NAMESPACE, only TCP and UDP packets are supported)
+      --print                                        Print parsed packet output, even if the raw packets are being saved to a file with the -w flag
+  -A, --print-data-in-ascii                          Print each packet (minus its link level header) in ASCII
+  -x, --print-data-in-hex count                      When parsing and printing, in addition to printing the headers of each packet, print the data of each packet in hex
+  -X, --print-data-in-hex-ascii count                When parsing and printing, in addition to printing the headers of each packet, print the data of each packet in hex and ASCII
+  -r, --read-file string                             Read packets from file (which was created with the -w option). e.g. ptcpdump.pcapng
+  -c, --receive-count uint                           Exit after receiving count packets
+  -s, --snapshot-length uint32                       Snarf snaplen bytes of data from each packet rather than the default of 262144 bytes (default 262144)
+      --time-stamp-precision string                  When capturing, set the time stamp precision for the capture to the format (default "micro")
+  -v, --verbose count                                When parsing and printing, produce (slightly more) verbose output
+      --version                                      Print the ptcpdump and libpcap version strings and exit
+  -w, --write-file string                            Write the raw packets to file rather than parsing and printing them out. They can later be printed with the -r option. Standard output is used if file is '-'. e.g. ptcpdump.pcapng
 ```
 
 <p align="right"><a href="#top">🔝</a></p>
@@ -202,7 +261,14 @@ Flags:
 | -c *count*                                        | ✅       | ✅                        |
 | -Q *direction*, --direction=*direction*           | ✅       | ✅                        |
 | -D, --list-interfaces                             | ✅       | ✅                        |
-| -A                                                | ✅       |                          |
+| -A                                                | ✅       | ✅                        |
+| -x                                                | ✅       | ✅                      |
+| -xx                                               | ✅       | ✅                      |
+| -X                                                | ✅       | ✅                     |
+| -XX                                               | ✅       | ✅                     |
+| -v                                                | ✅       | ✅                       |
+| -vv                                               | ✅       | ⭕                       |
+| -vvv                                              | ✅       | ⭕                       |
 | -B *bufer_size*, --buffer-size=*buffer_size*      | ✅       |                          |
 | --count                                           | ✅       | ✅                       |
 | -C *file_size                                     | ✅       |                          |
@@ -220,9 +286,9 @@ Flags:
 | --immediate-mode                                  | ✅       |                          |
 | -j *tstamp_type*, --time-stamp-type=*tstamp_type* | ✅       |                          |
 | -J, --list-time-stamp-types                       | ✅       |                          |
-| --time-stamp-precision=*tstamp_precision*         | ✅       |                          |
-| --micro                                           | ✅       |                          |
-| --nano                                            | ✅       |                          |
+| --time-stamp-precision=*tstamp_precision*         | ✅       | ✅                       |
+| --micro                                           | ✅       | ✅                       |
+| --nano                                            | ✅       | ✅                       |
 | -K, --dont-verify-checksums                       | ✅       |                          |
 | -l                                                | ✅       |                          |
 | -L, --list-data-link-types                        | ✅       |                          |
@@ -237,20 +303,13 @@ Flags:
 | -s *snaplen*, --snapshot-length=*snaplen*         | ✅       | ✅                       |
 | -T *type*                                         | ✅       |                          |
 | -t                                                | ✅       | ✅                       |
-| -tt                                               | ✅       |                          |
-| -ttt                                              | ✅       |                          |
-| -tttt                                             | ✅       |                          |
+| -tt                                               | ✅       | ⭕                        |
+| -ttt                                              | ✅       | ⭕                        |
+| -tttt                                             | ✅       | ⭕                        |
 | -u                                                | ✅       |                          |
 | -U, --packet-buffered                             | ✅       |                          |
-| -v                                                | ✅       | ✅                       |
-| -vv                                               | ✅       |                          |
-| -vvv                                              | ✅       |                          |
 | -V *file*                                         | ✅       |                          |
 | -W *filecont*                                     | ✅       |                          |
-| -x                                                | ✅       |                          |
-| -xx                                               | ✅       |                          |
-| -X                                                | ✅       |                          |
-| -XX                                               | ✅       |                          |
 | -y *datalinktype*, --linktype=*datalinktype*      | ✅       |                          |
 | -z *postrotate-command*                           | ✅       |                          |
 | -Z *user*, --relinquish-privileges=*user*         | ✅       |                          |
@@ -258,7 +317,22 @@ Flags:
 <p align="right"><a href="#top">🔝</a></p>
 
 
-## Build
+
+## Developing
+
+
+### Dependencies
+
+* Go >= 1.22
+* Clang/LLVM >= 14
+* Bison >= 3.8
+* Lex/Flex >= 2.6
+* GCC
+* GNU make
+* Kernel headers are expected to be installed in `/lib/modules/$(uname -r)`.
+
+
+### Building
 
 1. Build eBPF programs:
 
