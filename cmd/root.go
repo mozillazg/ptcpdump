@@ -21,7 +21,7 @@ Examples:
   sudo ptcpdump -i any tcp
   sudo ptcpdump -i eth0 -i lo
   sudo ptcpdump -i eth0 --pid 1234 port 80 and host 10.10.1.1
-  sudo ptcpdump -i any --pname curl
+  sudo ptcpdump -i any --pname curl -A
   sudo ptcpdump -i any --container-id 36f0310403b1
   sudo ptcpdump -i any --container-name test
   sudo ptcpdump -i any -- curl ubuntu.com

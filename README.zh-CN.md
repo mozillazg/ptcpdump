@@ -4,11 +4,13 @@
 
 [![amd64-e2e](https://img.shields.io/github/actions/workflow/status/mozillazg/ptcpdump/test.yml?label=x86_64%20(amd64)%20e2e)](https://github.com/mozillazg/ptcpdump/actions/workflows/test.yml)
 [![arm64-e2e](https://img.shields.io/circleci/build/gh/mozillazg/ptcpdump/master?label=aarch64%20(arm64)%20e2e)](https://app.circleci.com/pipelines/github/mozillazg/ptcpdump?branch=master)
-English | [中文](README.zh-CN.md)
+[English](README.md) | 中文
 
 
-ptcpdump is the tcpdump(8) implementation using eBPF, with an extra feature:
-it adds process info as packet comments for each Packet when possible.
+ptcpdump 是一个使用 eBPF 技术实现的、类 tcpdump 的网络流程抓包工具。
+它除了兼容 tcpdump 的包过滤语法和常用命令行参数外，
+还提供了一个额外的特性:
+在尽可能的情况下，以包注释的形式，为每个数据包流量关联发起方或接收方的进程信息。
 Inspired by [jschwinger233/skbdump](https://github.com/jschwinger233/skbdump).
 
 ![](./docs/wireshark.png)
@@ -31,26 +33,32 @@ Table of Contents
 
 ## Features
 
-* Process-aware
-  * Aware of the process information associated with the packets.
-  * Supports filtering packets by process ID and process name.
-* Container-aware and Kubernetes-aware
-  * Aware of the container and pod information associated with the packets.
-  * Supports multiple container runtimes: Docker Engine and containerd
-  * Supports filtering packets by container ID, container name and pod name.
-* Supports using pcap-filter(7) syntax for filtering packets.
-* Directly applies filters in the kernel space.
-* Supports saving captured packets in the PcapNG format for offline analysis with third-party tools such as Wireshark.
+* 进程感知
+  * 感知每个数据包流量对应的发起方或接收方的进程信息
+  * 支持按进程 ID 或进程名称过滤流量
+* 容器和 Kubernetes 感知
+  * 感知每个数据包流量对应的发起方或接收方的进程所属的容器和 Pod 信息
+  * 支持多种容器运行时: Docker Engine 和 containerd
+  * 支持按容器 ID、容器名称或 Pod 名称过滤流量
+* 支持使用 tcpdump 支持的 pcap-filter(7) 语法过滤流量
+* 直接在内核态应用过滤规则，避免在用户态应用过滤规则导致的性能问题
+* 支持以 pcap 或 PcapNG 保存捕获的流程, 可以使用 Wireshark、tcpdump、tshark 等第三方工具对保存的数据进行二次分析.
+* 以静态链接的方式编译程序，不依赖额外的系统链接库
 
 
 ## Installation
 
-You can download the statically linked executable for x86_64 and arm64 from the [releases page](https://github.com/mozillazg/ptcpdump/releases).
+你可以在 [releases page](https://github.com/mozillazg/ptcpdump/releases) 下载以静态链接方式编译的适用于 x86_64 和 arm64 架构的二进制文件。
 
 
 ### Requirements
 
-Linux kernel version >= 5.2.
+`ptcpdump` 只支持 Linux 系统，并且系统的内核版本最好 >= 5.2。
+
+对于内核版本介于 4.18 ~ 5.2 之间的系统，如果系统中未提供程序依赖的内核 BTF 文件的话，
+`ptcpdump` 将自动尝试从 [龙蜥 BTF 目录](https://mirrors.openanolis.cn/coolbpf/btf/) 和 [BTFhub](https://github.com/aquasecurity/btfhub-archive) 
+下载当前系统内核版本对应的 BTF 文件。
+
 
 <p align="right"><a href="#top">🔝</a></p>
 
@@ -59,46 +67,47 @@ Linux kernel version >= 5.2.
 
 ### Example commands
 
-Filter like tcpdump:
+支持 tcpdump 支持的包过滤语法以及常用命令行参数：
+
 ```
 sudo ptcpdump -i eth0 tcp
 sudo ptcpdump -i eth0 -A -v tcp and port 80 and host 10.10.1.1
 sudo ptcpdump -i eth0 'tcp[tcpflags] & (tcp-syn|tcp-fin) != 0'
 ```
 
-Multiple interfaces:
+过滤多个网络接口：
 
 ```
 sudo ptcpdump -i eth0 -i lo
 ```
 
-Filter by process:
+按进程过滤：
 
 ```
 sudo ptcpdump -i any --pid 1234 --pid 233 -f
 sudo ptcpdump -i any --pname curl
 ```
 
-Capture by process via run target program:
+通过执行目标程序的方式进行抓包：
 
 ```
 sudo ptcpdump -i any -- curl ubuntu.com
 ```
 
-Filter by container:
+按容器过滤：
 
 ```
 sudo ptcpdump -i any --container-id 36f0310403b1
 sudo ptcpdump -i any --container-name test
 ```
 
-Filter by Pod:
+按 Pod 过滤
 
 ```
 sudo ptcpdump -i any --pod-name test.default
 ```
 
-Save data in PcapNG format:
+以 PcapNG 格式保存捕获的流量:
 
 ```
 sudo ptcpdump -i any -w demo.pcapng
@@ -112,14 +121,14 @@ sudo ptcpdump -i any -w - port 80 | tshark -r -
 ### Example output
 
 
-Default:
+默认输出:
 
 ```
 09:32:09.718892 vethee2a302f wget.3553008 In IP 10.244.0.2.33426 > 139.178.84.217.80: Flags [S], seq 4113492822, win 64240, length 0, ParentProc [python3.834381], Container [test], Pod [test.default]
 09:32:09.718941 eth0 wget.3553008 Out IP 172.19.0.2.33426 > 139.178.84.217.80: Flags [S], seq 4113492822, win 64240, length 0, ParentProc [python3.834381], Container [test], Pod [test.default]
 ```
 
-With `-v`:
+通过 `-v` 参数以详细方式输出:
 
 ```
 13:44:41.529003 eth0 In IP (tos 0x4, ttl 45, id 45428, offset 0, flags [DF], proto TCP (6), length 52)
@@ -130,7 +139,7 @@ With `-v`:
     Pod (name test, namespace default, UID 9e4bc54b-de48-4b1c-8b9e-54709f67ed0c, labels {"run":"test"}, annotations {"kubernetes.io/config.seen":"2024-07-21T12:41:00.460249620Z","kubernetes.io/config.source":"api"})
 ```
 
-With `-A`:
+通过 `-A` 参数以 ASCII 格式输出:
 
 ```
 14:44:34.457504 ens33 curl.205562 Out IP 10.0.2.15.39984 > 139.178.84.217.80: Flags [P.], seq 2722472188:2722472262, ack 892036871, win 64240, length 74, ParentProc [bash.180205]
@@ -142,7 +151,7 @@ Accept: */*
 
 ```
 
-With `-x`:
+通过 `-x` 参数以 16 进制格式输出:
 
 ```
 14:44:34.457504 ens33 curl.205562 IP 10.0.2.15.39984 > 139.178.84.217.80: Flags [P.], seq 2722472188:2722472262, ack 892036871, win 64240, length 74, ParentProc [bash.180205]
@@ -156,7 +165,7 @@ With `-x`:
         0x0070:  0d0a
 ```
 
-With `-X`:
+通过 `-X` 参数以 16 进制和 ASCII 格式输出:
 
 ```
 14:44:34.457504 ens33 curl.205562 IP 10.0.2.15.39984 > 139.178.84.217.80: Flags [P.], seq 2722472188:2722472262, ack 892036871, win 64240, length 74, ParentProc [bash.180205]
@@ -240,6 +249,9 @@ Flags:
 
 ## Compare with tcpdump
 
+命令行参数跟 tcpdump 的区别（已实现大部分常用的 tcpdump 命令行参数，更多参数实现中）：
+
+
 | Options                                           | tcpdump | ptcpdump                 |
 |---------------------------------------------------|---------|--------------------------|
 | *expression*                                      | ✅       | ✅                        |
@@ -320,8 +332,13 @@ Flags:
 
 ## Developing
 
+如何进行本地开发。
+
 
 ### Dependencies
+
+开发环境需要安装的系统依赖：
+
 
 * Go >= 1.22
 * Clang/LLVM >= 14
@@ -333,6 +350,9 @@ Flags:
 
 
 ### Building
+
+如何编程项目源代码。
+
 
 1. Build eBPF programs:
 
