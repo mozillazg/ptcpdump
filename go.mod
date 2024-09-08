@@ -30,7 +30,7 @@ require (
 	github.com/docker/distribution v2.8.2+incompatible // indirect
 	github.com/gogo/googleapis v1.4.1 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
-	github.com/opencontainers/runc v1.1.12 // indirect
+	github.com/opencontainers/runc v1.1.14 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
