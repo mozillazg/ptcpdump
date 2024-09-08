@@ -329,7 +329,6 @@ Flags:
 * Lex/Flex >= 2.6
 * GCC
 * GNU make
-* Kernel headers are expected to be installed in `/lib/modules/$(uname -r)`.
 
 
 ### Building
@@ -340,10 +339,22 @@ Flags:
     make build-bpf
     ```
 
+    Or:
+
+    ```
+    docker run --rm -v `pwd`:/app quay.io/ptcpdump/develop:latest make build-bpf
+    ```
+
 2. Build ptcpdump:
 
     ```
     make build
+    ```
+
+    Or:
+
+    ```
+    docker run --rm -v `pwd`:/app quay.io/ptcpdump/develop:latest make build
     ```
 
 <p align="right"><a href="#top">🔝</a></p>
