@@ -33,14 +33,15 @@ IMAGE_BUILD ?= quay.io/ptcpdump/develop:latest
 .PHONY: libpcap
 libpcap: $(LIBPCAP_OBJ)
 
-$(LIBPCAP_OBJ): $(LIBPCAP_SRC)/configure $(wildcard $(LIBPCAP_SRC)/*.[ch]) | $(LIBPCAP_DIST_DIR)
+$(LIBPCAP_OBJ): $(LIBPCAP_SRC)/pcap.h $(wildcard $(LIBPCAP_SRC)/*.[ch]) | $(LIBPCAP_DIST_DIR)
 	cd $(LIBPCAP_SRC) && \
+	  sh autogen.sh && \
 	  CC=$(LIBPCAP_CC) ./configure --disable-shared --disable-usb --disable-netmap --disable-bluetooth --disable-dbus --without-libnl \
 	  	--host=$(LIBPCAP_ARCH) && \
 	  $(MAKE) && \
 	  $(MAKE) install prefix=$(LIBPCAP_DIST_DIR)
 
-$(LIBPCAP_SRC)/configure:
+$(LIBPCAP_SRC)/pcap.h:
 ifeq ($(wildcard $@), )
 	echo "INFO: updating submodule 'libpcap'"
 	$(GIT) submodule update --init --recursive

@@ -329,6 +329,7 @@ Flags:
 * Lex/Flex >= 2.6
 * GCC
 * GNU make
+* autoconf
 
 
 ### Building
