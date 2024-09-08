@@ -28,6 +28,8 @@ CARCH ?= $(shell uname -m)
 LIBPCAP_ARCH = $(CARCH)-unknown-linux-gnu
 LIBPCAP_CC ?= gcc
 
+IMAGE_BUILD ?= quay.io/ptcpdump/develop:latest
+
 .PHONY: libpcap
 libpcap: $(LIBPCAP_OBJ)
 
@@ -69,6 +71,17 @@ generate: build-bpf
 build-bpf:
 	TARGET=amd64 go generate ./...
 	TARGET=arm64 go generate ./...
+
+
+.PHONY: build-bpf-via-docker
+build-bpf-via-docker:
+	docker run --rm -v `pwd`:/app quay.io/ptcpdump/develop:latest make build-bpf
+
+
+.PHONY: build-via-docker
+build-via-docker:
+	docker run --rm -v `pwd`:/app quay.io/ptcpdump/develop:latest make build
+
 
 .PHONY: lint
 lint: deps fmt
