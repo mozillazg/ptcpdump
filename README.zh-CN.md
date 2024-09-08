@@ -362,7 +362,7 @@ Flags:
     Or:
 
     ```
-    docker run --rm -v `pwd`:/app quay.io/ptcpdump/develop:latest make build-bpf
+    make build-bpf-via-docker
     ```
 
 
@@ -375,7 +375,7 @@ Flags:
     Or:
 
     ```
-    docker run --rm -v `pwd`:/app quay.io/ptcpdump/develop:latest make build
+    make build-via-docker
     ```
 
 <p align="right"><a href="#top">🔝</a></p>
