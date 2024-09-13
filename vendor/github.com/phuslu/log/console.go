@@ -128,7 +128,7 @@ func (w *ConsoleWriter) format(out io.Writer, args *FormatterArgs) (n int, err e
 			if w.QuoteString && kv.ValueType == 's' {
 				kv.Value = strconv.Quote(kv.Value)
 			}
-			if kv.Key == "error" {
+			if kv.Key == "error" && kv.Value != "null" {
 				fmt.Fprintf(b, " %s%s=%s%s", Red, kv.Key, kv.Value, Reset)
 			} else {
 				fmt.Fprintf(b, " %s%s=%s%s%s", Cyan, kv.Key, Gray, kv.Value, Reset)

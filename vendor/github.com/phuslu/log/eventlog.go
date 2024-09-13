@@ -1,16 +1,16 @@
 //go:build windows
-// +build windows
 
 package log
 
 import (
 	"errors"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"unsafe"
 )
 
-// EventlogWriter is an Writer that writes logs to windows event log.
+// EventlogWriter is a Writer that writes logs to windows event log.
 type EventlogWriter struct {
 	// Event Source, must not be empty
 	Source string
@@ -21,54 +21,79 @@ type EventlogWriter struct {
 	// Event Host, optional
 	Host string
 
-	once       sync.Once
-	register   *syscall.LazyProc
-	deregister *syscall.LazyProc
-	report     *syscall.LazyProc
-	handle     uintptr
+	mu     sync.Mutex
+	handle uintptr
 }
+
+var (
+	advapi32                  = syscall.NewLazyDLL("advapi32.dll")
+	procRegisterEventSourceW  = advapi32.NewProc("RegisterEventSourceW")
+	procDeregisterEventSource = advapi32.NewProc("DeregisterEventSource")
+	procReportEventW          = advapi32.NewProc("ReportEventW")
+)
 
 // Write implements io.Closer.
 func (w *EventlogWriter) Close() (err error) {
 	var ret uintptr
-	ret, _, err = syscall.Syscall(w.deregister.Addr(), 1, w.handle, 0, 0)
+	ret, _, err = syscall.Syscall(procDeregisterEventSource.Addr(), 1, w.handle, 0, 0)
 	if ret > 0 {
 		err = nil
 	}
 	return
 }
 
-// WriteEntry implements Writer.
-func (w *EventlogWriter) WriteEntry(e *Entry) (n int, err error) {
-	w.once.Do(func() {
-		if w.ID == 0 {
-			err = errors.New("Specify eventlog default id")
+func (w *EventlogWriter) connect() (err error) {
+	if w.handle != 0 {
+		w.Close()
+		w.handle = 0
+	}
+
+	if w.ID == 0 {
+		err = errors.New("Specify eventlog default id")
+		return
+	}
+
+	if w.Source == "" {
+		err = errors.New("Specify eventlog source")
+		return
+	}
+
+	var host *uint16
+	if w.Host != "" {
+		host, err = syscall.UTF16PtrFromString(w.Host)
+		if err != nil {
 			return
 		}
+	}
 
-		if w.Source == "" {
-			err = errors.New("Specify eventlog source")
-			return
-		}
-
-		var s *uint16
-		if w.Host != "" {
-			s = syscall.StringToUTF16Ptr(w.Host)
-		}
-
-		advapi32 := syscall.NewLazyDLL("advapi32.dll")
-		w.register = advapi32.NewProc("RegisterEventSourceW")
-		w.deregister = advapi32.NewProc("DeregisterEventSource")
-		w.report = advapi32.NewProc("ReportEventW")
-
-		w.handle, _, err = syscall.Syscall(w.register.Addr(), 2, uintptr(unsafe.Pointer(s)), uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(w.Source))), 0)
-		if w.handle != 0 {
-			err = nil
-		}
-	})
-
+	var source *uint16
+	source, err = syscall.UTF16PtrFromString(w.Source)
 	if err != nil {
 		return
+	}
+
+	var handle uintptr
+	handle, _, err = syscall.Syscall(procRegisterEventSourceW.Addr(), 2, uintptr(unsafe.Pointer(host)), uintptr(unsafe.Pointer(source)), 0)
+	if handle != 0 {
+		atomic.StoreUintptr(&w.handle, handle)
+		err = nil
+	}
+
+	return
+}
+
+// WriteEntry implements Writer.
+func (w *EventlogWriter) WriteEntry(e *Entry) (n int, err error) {
+	if atomic.LoadUintptr(&w.handle) != 0 {
+		w.mu.Lock()
+		if w.handle == 0 {
+			err = w.connect()
+			if err != nil {
+				w.mu.Unlock()
+				return
+			}
+		}
+		w.mu.Unlock()
 	}
 
 	const (
@@ -102,10 +127,15 @@ func (w *EventlogWriter) WriteEntry(e *Entry) (n int, err error) {
 
 	var ecat uintptr = 0
 	var eid = w.ID
-	var ss = []*uint16{syscall.StringToUTF16Ptr(b2s(e.buf))}
+	var ss = []*uint16{nil}
+
+	ss[0], err = syscall.UTF16PtrFromString(b2s(e.buf))
+	if err != nil {
+		return
+	}
 
 	var ret uintptr
-	ret, _, err = syscall.Syscall9(w.report.Addr(), 9, w.handle, uintptr(etype), ecat, eid, 0, 1, 0, uintptr(unsafe.Pointer(&ss[0])), 0)
+	ret, _, err = syscall.Syscall9(procReportEventW.Addr(), 9, w.handle, uintptr(etype), ecat, eid, 0, 1, 0, uintptr(unsafe.Pointer(&ss[0])), 0)
 	if ret > 0 {
 		err = nil
 	}

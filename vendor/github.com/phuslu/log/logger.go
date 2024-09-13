@@ -93,6 +93,7 @@ type Logger struct {
 	TimeField string
 
 	// TimeFormat specifies the time format in output. It uses time.RFC3339 with milliseconds if empty.
+	// Strongly recommended to leave TimeFormat empty for optimal built-in log formatting performance.
 	// If set with `TimeFormatUnix`, `TimeFormatUnixMs`, times are formated as UNIX timestamp.
 	TimeFormat string
 
@@ -2128,8 +2129,10 @@ func (e *Entry) Objects(key string, objects any) *Entry {
 }
 
 // Func allows an anonymous func to run only if the entry is enabled.
+//
+//go:nonline
 func (e *Entry) Func(f func(e *Entry)) *Entry {
-	if e != nil {
+	if e != nil && f != nil {
 		f(e)
 	}
 	return e

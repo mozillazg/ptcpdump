@@ -8,47 +8,33 @@
 ## Features
 
 * Dependency Free
-* Simple and Clean API
-* Consistent Writer
+* Clean API
+* Comprehensive Writers
     - `IOWriter`, *io.Writer wrapper*
     - `ConsoleWriter`, *colorful & formatting*
     - `FileWriter`, *rotating & effective*
     - `AsyncWriter`, *asynchronously & performant*
     - `MultiLevelWriter`, *multiple level dispatch*
     - `SyslogWriter`, *memory efficient syslog*
-* Stdlib Log Adapter
+    - `JournalWriter`, *linux journal logging*
+    - `EventlogWriter`, *windows eventlog logging*
+* Stdlib Interoperability
     - `Logger.Std`, *transform to std log instances*
-    - `Logger.Slog`, *transform to log/slog instances*
-* Third-party Logger Interceptor
-    - `logr`, *logr interceptor*
-    - `gin`, *gin logging middleware*
-    - `gorm`, *gorm logger interface*
-    - `fiber`, *fiber logging handler*
-    - `grpc`, *grpc logger interceptor*
-    - `grpcgateway`, *grpcgateway logger interceptor*
-* Useful utility function
+    - `Logger.Slog`, *transform to slog instances*
+    - `SlogNewJSONHandler`, *drop-in replacement of slog.NewJSONHandler*
+* Utility Functions
     - `Goid()`, *the goroutine id matches stack trace*
     - `NewXID()`, *create a tracing id*
     - `Fastrandn(n uint32)`, *fast pseudorandom uint32 in [0,n)*
     - `IsTerminal(fd uintptr)`, *isatty for golang*
     - `Printf(fmt string, a ...any)`, *printf logging*
-    - `SlogNewJSONHandler(io.Writer, *slog.HandlerOptions)`, *drop-in replacement of slog.JSONHandler*
-* High Performance
+* Extreme Performance
     - [Significantly faster][high-performance] than all other json loggers.
 
 ## Interfaces
 
 ### Logger
 ```go
-// DefaultLogger is the global logger.
-var DefaultLogger = Logger{
-	Level:      DebugLevel,
-	Caller:     0,
-	TimeField:  "",
-	TimeFormat: "",
-	Writer:     &IOWriter{os.Stderr},
-}
-
 // Logger represents an active logging object that generates lines of JSON output to an io.Writer.
 type Logger struct {
 	// Level defines log levels.
@@ -62,6 +48,7 @@ type Logger struct {
 	TimeField string
 
 	// TimeFormat specifies the time format in output. Uses RFC3339 with millisecond if empty.
+	// Strongly recommended to leave TimeFormat empty for optimal built-in log formatting performance.
 	// If set to `TimeFormatUnix/TimeFormatUnixMs`, timestamps will be formatted.
 	TimeFormat string
 
@@ -69,7 +56,16 @@ type Logger struct {
 	TimeLocation *time.Location
 
 	// Writer specifies the writer of output. It uses a wrapped os.Stderr Writer in if empty.
-	Writer Writer
+	Writer log.Writer
+}
+
+// DefaultLogger is the global logger.
+var DefaultLogger = Logger{
+	Level:      DebugLevel,
+	Caller:     0,
+	TimeField:  "",
+	TimeFormat: "",
+	Writer:     &log.IOWriter{os.Stderr},
 }
 ```
 
@@ -158,9 +154,9 @@ type FileWriter struct {
 }
 ```
 *Highlights*:
-- FileWriter implements log.Writer and io.Writer interfaces both, it is a recommended alternative to [lumberjack][lumberjack].
-- FileWriter creates a symlink to the current logging file, it requires administrator privileges on Windows.
-- FileWriter does not rotate if you define a broad TimeFormat value(daily or monthly) until reach its MaxSize.
+- FileWriter uses a symlink to point to the current log file with a timestamp, instead of renaming for rotation. On Windows, this may require administrator privileges.
+- FileWriter `.Rotate()` method does not rotate logs based on broad TimeFormat values (e.g., daily or monthly) until the file reaches its `MaxSize`.
+- FileWriter combined with `AsyncWriter` can maximize performance and throughput on Linux, see [AsyncWriter](https://github.com/phuslu/log?tab=readme-ov-file#async-file-writer) section.
 
 ## Getting Started
 
@@ -499,8 +495,8 @@ logger.Warn().Int("number", 42).Str("foo", "bar").Msg("a async warn log")
 logger.Writer.(io.Closer).Close()
 ```
 *Highlights*:
-- To flush data and quit safely, call `.Close()` method explicitly.
-- Write performance improves up to 10x under high load with automatic `writev` enabling.
+- To flush data and shut down safely, explicitly call the .Close() method.
+- The automatic `writev` enabling can boost write performance by up to 10x under high load.
 
 ### Random Sample Logger:
 
@@ -739,16 +735,26 @@ func main() {
 }
 ```
 
-### Third-party Logger Interceptor
+### slog.JSONHandler replacement
 
-| Logger | Interceptor |
-|---|---|
-| logr |  https://github.com/phuslu/log-contrib/tree/master/logr |
-| gin |  https://github.com/phuslu/log-contrib/tree/master/gin |
-| fiber |  https://github.com/phuslu/log-contrib/tree/master/fiber |
-| gorm |  https://github.com/phuslu/log-contrib/tree/master/gorm |
-| grpc |  https://github.com/phuslu/log-contrib/tree/master/grpc |
-| grpcgateway |  https://github.com/phuslu/log-contrib/tree/master/grpcgateway |
+Using as a high performance version of slog.JSONHandler. [![playground][play-phusluslog-img]][play-phusluslog]
+
+```go
+package main
+
+import (
+	"log/slog"
+	"os"
+
+	phuslog "github.com/phuslu/log"
+)
+
+func main() {
+	slog.SetDefault(slog.New(phuslog.SlogNewJSONHandler(os.Stderr, &slog.HandlerOptions{AddSource: true})))
+
+	slog.Info("hello from phuslog", "a", 1, "b", 2)
+}
+```
 
 ### User-defined Data Structure
 
@@ -825,6 +831,17 @@ func main() {
 //   {"time":"2021-06-14T06:36:42.905+02:00","level":"info","ctx":"some_ctx","no2":2,"message":"second"}
 //   {"time":"2021-06-14T06:36:42.906+02:00","level":"debug","no3":3,"message":"no context"}
 ```
+
+### Third-party Logger Interceptor
+
+| Logger | Interceptor |
+|---|---|
+| logr |  https://github.com/phuslu/log-contrib/tree/master/logr |
+| gin |  https://github.com/phuslu/log-contrib/tree/master/gin |
+| fiber |  https://github.com/phuslu/log-contrib/tree/master/fiber |
+| gorm |  https://github.com/phuslu/log-contrib/tree/master/gorm |
+| grpc |  https://github.com/phuslu/log-contrib/tree/master/grpc |
+| grpcgateway |  https://github.com/phuslu/log-contrib/tree/master/grpcgateway |
 
 ### High Performance
 
@@ -1228,124 +1245,107 @@ PASS
 ok  	bench	84.415s
 ```
 
-In summary, phuslog offers a blend of low latency, minimal memory usage, and efficient logging across various scenarios, making it an excellent option for high-performance logging in Go applications.
+<details>
+  <summary>As a drop-in replacement for slog.JSONHandler, it provides 50% to 100% speedup and full compatibility.</summary>
 
-## A Real World Example
-
-The example starts a geoip http server which supports change log level dynamically
 ```go
-package main
+// go test -v -args -useWarnings && go test -v -run=none -bench=. -args -useWarnings
+// a special thanks to @madkins23 for the help, with reference to https://github.com/phuslu/log/pull/70
+package bench
 
 import (
-	"encoding/json"
-	"fmt"
-	"net"
-	"net/http"
-	"os"
+	"io"
+	"log/slog"
+	"testing"
 
-	"github.com/phuslu/iploc"
+	benchtests "github.com/madkins23/go-slog/bench/tests"
+	"github.com/madkins23/go-slog/infra"
+	"github.com/madkins23/go-slog/infra/warning"
+	verifytests "github.com/madkins23/go-slog/verify/tests"
 	"github.com/phuslu/log"
+	"github.com/stretchr/testify/suite"
 )
 
-type Config struct {
-	Listen struct {
-		Tcp string
+func BenchmarkSlogJSON(b *testing.B) {
+	slogNewJSONHandler := func(w io.Writer, options *slog.HandlerOptions) slog.Handler {
+		return slog.NewJSONHandler(w, options)
 	}
-	Log struct {
-		Level   string
-		Maxsize int64
-		Backups int
-	}
+	creator := infra.NewCreator("slog/JSONHandler", slogNewJSONHandler, nil,
+		`^slog/JSONHandler^ is the JSON handler provided with the ^slog^ library.
+		It is fast and as a part of the Go distribution it is used
+		along with published documentation as a model for ^slog.Handler^ behavior.`,
+		map[string]string{
+			"slog/JSONHandler": "https://pkg.go.dev/log/slog#JSONHandler",
+		})
+	slogSuite := benchtests.NewSlogBenchmarkSuite(creator)
+	benchtests.Run(b, slogSuite)
 }
 
-type Handler struct {
-	Config       *Config
-	AccessLogger log.Logger
+func BenchmarkPhusluSlog(b *testing.B) {
+	creator := infra.NewCreator("phuslu/slog", log.SlogNewJSONHandler, nil,
+		`^phuslu/slog^ is a wrapper around the pre-existing ^phuslu/log^ logging library.`,
+		map[string]string{
+			"phuslu/log": "https://github.com/phuslu/log",
+		})
+	slogSuite := benchtests.NewSlogBenchmarkSuite(creator)
+	benchtests.Run(b, slogSuite)
 }
 
-func (h *Handler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	reqID := log.NewXID()
-	remoteIP, _, _ := net.SplitHostPort(req.RemoteAddr)
-	geo := iploc.Country(net.ParseIP(remoteIP))
-
-	h.AccessLogger.Log().
-		Xid("req_id", reqID).
-		Str("host", req.Host).
-		Bytes("geo", geo).
-		Str("remote_ip", remoteIP).
-		Str("request_uri", req.RequestURI).
-		Str("user_agent", req.UserAgent()).
-		Str("referer", req.Referer()).
-		Msg("access log")
-
-	switch req.RequestURI {
-	case "/debug", "/info", "/warn", "/error":
-		log.DefaultLogger.SetLevel(log.ParseLevel(req.RequestURI[1:]))
-	default:
-		fmt.Fprintf(rw, `{"req_id":"%s","ip":"%s","geo":"%s"}`, reqID, remoteIP, geo)
-	}
+func TestVerifyPhusluSlog(t *testing.T) {
+	creator := infra.NewCreator("phuslu/slog", log.SlogNewJSONHandler, nil,
+		`^phuslu/slog^ is a wrapper around the pre-existing ^phuslu/log^ logging library.`,
+		map[string]string{
+			"phuslu/log": "https://github.com/phuslu/log",
+		})
+	slogSuite := verifytests.NewSlogTestSuite(creator)
+	slogSuite.WarnOnly(warning.Duplicates)
+	suite.Run(t, slogSuite)
 }
 
-func main() {
-	config := new(Config)
-	err := json.Unmarshal([]byte(`{
-		"listen": {
-			"tcp": ":8080"
-		},
-		"log": {
-			"level": "debug",
-			"maxsize": 1073741824,
-			"backups": 5
-		}
-	}`), config)
-	if err != nil {
-		log.Fatal().Msgf("json.Unmarshal error: %+v", err)
-	}
-
-	handler := &Handler{
-		Config: config,
-		AccessLogger: log.Logger{
-			Writer: &log.FileWriter{
-				Filename:   "access.log",
-				MaxSize:    config.Log.Maxsize,
-				MaxBackups: config.Log.Backups,
-				LocalTime:  true,
-			},
-		},
-	}
-
-	if log.IsTerminal(os.Stderr.Fd()) {
-		log.DefaultLogger = log.Logger{
-			Level:      log.ParseLevel(config.Log.Level),
-			Caller:     1,
-			TimeFormat: "15:04:05",
-			Writer: &log.ConsoleWriter{
-				ColorOutput:    true,
-				EndWithMessage: true,
-			},
-		}
-		handler.AccessLogger = log.DefaultLogger
-	} else {
-		log.DefaultLogger = log.Logger{
-			Level: log.ParseLevel(config.Log.Level),
-			Writer: &log.FileWriter{
-				Filename:   "main.log",
-				MaxSize:    config.Log.Maxsize,
-				MaxBackups: config.Log.Backups,
-				LocalTime:  true,
-			},
-		}
-	}
-
-	server := &http.Server{
-		Addr:     config.Listen.Tcp,
-		ErrorLog: log.DefaultLogger.Std(log.ErrorLevel, nil, "", 0),
-		Handler:  handler,
-	}
-
-	log.Fatal().Err(server.ListenAndServe()).Msg("listen failed")
+func TestMain(m *testing.M) {
+	warning.WithWarnings(m)
 }
 ```
+
+</details>
+
+A Performance result as below, for daily go-slog results see [github actions][go-slog]
+```
+goos: linux
+goarch: amd64
+cpu: AMD EPYC 7763 64-Core Processor                
+
+BenchmarkSlogJSON/BenchmarkAttributes-4         	  870120	      1441 ns/op	 290.15 MB/s	     472 B/op	       6 allocs/op
+BenchmarkSlogJSON/BenchmarkBigGroup-4           	   10000	    102796 ns/op	 225.45 MB/s	  112990 B/op	      14 allocs/op
+BenchmarkSlogJSON/BenchmarkDisabled-4           	309658138	         3.876 ns/op	       0 B/op	       0 allocs/op
+BenchmarkSlogJSON/BenchmarkKeyValues-4          	  793542	      1509 ns/op	 277.01 MB/s	     472 B/op	       6 allocs/op
+BenchmarkSlogJSON/BenchmarkLogging-4            	   42348	     27256 ns/op	 322.61 MB/s	       0 B/op	       0 allocs/op
+BenchmarkSlogJSON/BenchmarkSimple-4             	 4208820	       286.2 ns/op	 289.98 MB/s	       0 B/op	       0 allocs/op
+BenchmarkSlogJSON/BenchmarkSimpleSource-4       	 1388956	       867.6 ns/op	 359.61 MB/s	     568 B/op	       6 allocs/op
+BenchmarkSlogJSON/BenchmarkWithAttrsAttributes-4         	  789448	      1468 ns/op	 534.76 MB/s	     472 B/op	       6 allocs/op
+BenchmarkSlogJSON/BenchmarkWithAttrsKeyValues-4          	  746674	      1603 ns/op	 489.56 MB/s	     472 B/op	       6 allocs/op
+BenchmarkSlogJSON/BenchmarkWithAttrsSimple-4             	 3369094	       315.5 ns/op	1426.53 MB/s	       0 B/op	       0 allocs/op
+BenchmarkSlogJSON/BenchmarkWithGroupAttributes-4         	  653076	      1536 ns/op	 281.32 MB/s	     472 B/op	       6 allocs/op
+BenchmarkSlogJSON/BenchmarkWithGroupKeyValues-4          	  806590	      1529 ns/op	 282.48 MB/s	     472 B/op	       6 allocs/op
+
+BenchmarkPhusluSlog/BenchmarkAttributes-4                	 1358455	       901.1 ns/op	 480.53 MB/s	     240 B/op	       1 allocs/op
+BenchmarkPhusluSlog/BenchmarkBigGroup-4                  	   50872	     23419 ns/op	 989.60 MB/s	      48 B/op	       1 allocs/op
+BenchmarkPhusluSlog/BenchmarkDisabled-4                  	406019344	         2.947 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPhusluSlog/BenchmarkKeyValues-4                 	 1292756	       960.2 ns/op	 450.93 MB/s	     240 B/op	       1 allocs/op
+BenchmarkPhusluSlog/BenchmarkLogging-4                   	   84048	     14283 ns/op	 616.25 MB/s	       0 B/op	       0 allocs/op
+BenchmarkPhusluSlog/BenchmarkSimple-4                    	 7523289	       159.0 ns/op	 521.87 MB/s	       0 B/op	       0 allocs/op
+BenchmarkPhusluSlog/BenchmarkSimpleSource-4              	 5962424	       201.8 ns/op	1546.16 MB/s	       0 B/op	       0 allocs/op
+BenchmarkPhusluSlog/BenchmarkWithAttrsAttributes-4       	 1300897	       910.9 ns/op	 894.68 MB/s	     240 B/op	       1 allocs/op
+BenchmarkPhusluSlog/BenchmarkWithAttrsKeyValues-4        	 1269901	       948.3 ns/op	 859.42 MB/s	     240 B/op	       1 allocs/op
+BenchmarkPhusluSlog/BenchmarkWithAttrsSimple-4           	 7303563	       166.9 ns/op	2786.27 MB/s	       0 B/op	       0 allocs/op
+BenchmarkPhusluSlog/BenchmarkWithGroupAttributes-4       	 1328126	       896.8 ns/op	 498.45 MB/s	     240 B/op	       1 allocs/op
+BenchmarkPhusluSlog/BenchmarkWithGroupKeyValues-4        	 1294560	       951.7 ns/op	 469.70 MB/s	     240 B/op	       1 allocs/op
+
+PASS
+ok  	bench	37.548s
+```
+
+In summary, phuslog offers a blend of low latency, minimal memory usage, and efficient logging across various scenarios, making it an excellent option for high-performance logging in Go applications.
 
 ## Acknowledgment
 This log is heavily inspired by [zerolog][zerolog], [glog][glog], [gjson][gjson] and [lumberjack][lumberjack].
@@ -1385,7 +1385,10 @@ This log is heavily inspired by [zerolog][zerolog], [glog][glog], [gjson][gjson]
 [play-stdlog-img]: https://img.shields.io/badge/playground-LU8vQruS7--S-29BEB0?style=flat&logo=go
 [play-slog]: https://go.dev/play/p/JW3Ts6FcB40
 [play-slog-img]: https://img.shields.io/badge/playground-JW3Ts6FcB40-29BEB0?style=flat&logo=go
+[play-phusluslog]: https://go.dev/play/p/KzGInrdzByD
+[play-phusluslog-img]: https://img.shields.io/badge/playground-KzGInrdzByD-29BEB0?style=flat&logo=go
 [benchmark]: https://github.com/phuslu/log/actions?query=workflow%3Abenchmark
+[go-slog]: https://github.com/phuslu/log/actions?query=workflow%3Ago-slog
 [zerolog]: https://github.com/rs/zerolog
 [glog]: https://github.com/golang/glog
 [gjson]: https://github.com/tidwall/gjson

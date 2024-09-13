@@ -1,5 +1,4 @@
-//go:build go1.20 && !go1.21
-// +build go1.20,!go1.21
+//go:build go1.22 && !go1.23
 
 // MIT license, copy and modify from https://github.com/tlog-dev/loc
 
@@ -13,7 +12,7 @@ import (
 // Fastrandn returns a pseudorandom uint32 in [0,n).
 //
 //go:noescape
-//go:linkname Fastrandn runtime.fastrandn
+//go:linkname Fastrandn runtime.cheaprandn
 func Fastrandn(n uint32) uint32
 
 func pcFileLine(pc uintptr) (file string, line int32) {
@@ -53,21 +52,18 @@ func pcFileLineName(pc uintptr) (file string, line int32, name string) {
 
 	file, line = funcline1(funcInfo, pc, false)
 
-	name = funcname(funcInfo)
-	const _PCDATA_InlTreeIndex = 2
-	const _FUNCDATA_InlTree = 3
-	if inldata := funcdata(funcInfo, _FUNCDATA_InlTree); inldata != nil {
-		inltree := (*[1 << 20]inlinedCall)(inldata)
-		// Non-strict as cgoTraceback may have added bogus PCs
-		// with a valid funcInfo but invalid PCDATA.
-		ix := pcdatavalue1(funcInfo, _PCDATA_InlTreeIndex, pc, nil, false)
-		if ix >= 0 {
-			// Note: entry is not modified. It always refers to a real frame, not an inlined one.
-			ic := inltree[ix]
-			name = funcnameFromNameOff(funcInfo, ic.nameOff)
-			// File/line from funcline1 below are already correct.
-		}
+	// It's important that interpret pc non-strictly as cgoTraceback may
+	// have added bogus PCs with a valid funcInfo but invalid PCDATA.
+	u, uf := newInlineUnwinder(funcInfo, pc)
+	var sf srcFunc
+	if uf.index < 0 {
+		f := (*_func)(funcInfo._func)
+		sf = srcFunc{funcInfo.datap, f.nameOff, f.startLine, f.funcID}
+	} else {
+		t := &u.inlTree[uf.index]
+		sf = srcFunc{u.f.datap, t.nameOff, t.startLine, t.funcID}
 	}
+	name = srcFunc_name(sf)
 
 	return
 }
@@ -86,6 +82,42 @@ type inlinedCall struct {
 	startLine int32 // line number of start of function (func keyword/TEXT directive)
 }
 
+type inlineUnwinder struct {
+	f       funcInfo
+	inlTree *[1 << 20]inlinedCall
+}
+
+type inlineFrame struct {
+	pc    uintptr
+	index int32
+}
+
+type srcFunc struct {
+	datap     unsafe.Pointer
+	nameOff   int32
+	startLine int32
+	funcID    uint8
+}
+
+type _func struct {
+	entryOff uint32 // start pc, as offset from moduledata.text/pcHeader.textStart
+	nameOff  int32  // function name, as index into moduledata.funcnametab.
+
+	args        int32  // in/out args size
+	deferreturn uint32 // offset of start of a deferreturn call instruction from entry, if any.
+
+	pcsp      uint32
+	pcfile    uint32
+	pcln      uint32
+	npcdata   uint32
+	cuOffset  uint32 // runtime.cutab offset of this function's CU
+	startLine int32  // line number of start of function (func keyword/TEXT directive)
+	funcID    uint8  // set for certain special runtime functions
+	flag      uint8
+	_         [1]byte // pad
+	nfuncdata uint8   // must be last, must end on a uint32-aligned boundary
+}
+
 //go:linkname findfunc runtime.findfunc
 func findfunc(pc uintptr) funcInfo
 
@@ -95,14 +127,8 @@ func funcInfoEntry(f funcInfo) uintptr
 //go:linkname funcline1 runtime.funcline1
 func funcline1(f funcInfo, targetpc uintptr, strict bool) (file string, line int32)
 
-//go:linkname funcname runtime.funcname
-func funcname(f funcInfo) string
+//go:linkname newInlineUnwinder runtime.newInlineUnwinder
+func newInlineUnwinder(f funcInfo, pc uintptr) (inlineUnwinder, inlineFrame)
 
-//go:linkname funcdata runtime.funcdata
-func funcdata(f funcInfo, i uint8) unsafe.Pointer
-
-//go:linkname pcdatavalue1 runtime.pcdatavalue1
-func pcdatavalue1(f funcInfo, table int32, targetpc uintptr, cache unsafe.Pointer, strict bool) int32
-
-//go:linkname funcnameFromNameOff runtime.funcnameFromNameOff
-func funcnameFromNameOff(f funcInfo, nameoff int32) string
+//go:linkname srcFunc_name runtime.srcFunc.name
+func srcFunc_name(srcFunc) string
