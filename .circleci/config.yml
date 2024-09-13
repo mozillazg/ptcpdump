@@ -32,7 +32,7 @@ jobs:
       - run:
           name: install deps
           command: |
-            sudo apt-get update && sudo apt-get install -y gcc flex bison make libelf-dev
+            sudo apt-get update && sudo apt-get install -y gcc flex bison make libelf-dev autoconf
             make libpcap
 
       - run:
@@ -113,7 +113,7 @@ jobs:
       - run:
           name: install deps
           command: |
-            sudo apt-get update && sudo apt-get install -y gcc flex bison make libelf-dev
+            sudo apt-get update && sudo apt-get install -y gcc flex bison make libelf-dev autoconf
             make libpcap
       - run:
           name: build
@@ -167,7 +167,7 @@ jobs:
       - run:
           name: install deps
           command: |
-            sudo apt-get update && sudo apt-get install -y gcc flex bison make libelf-dev
+            sudo apt-get update && sudo apt-get install -y gcc flex bison make libelf-dev autoconf
             make libpcap
       - run:
           name: build
@@ -228,7 +228,7 @@ jobs:
       - run:
           name: install deps
           command: |
-            sudo apt-get update && sudo apt-get install -y gcc flex bison make libelf-dev
+            sudo apt-get update && sudo apt-get install -y gcc flex bison make libelf-dev autoconf
             make libpcap
       - run:
           name: build
