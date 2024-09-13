@@ -1,5 +1,4 @@
-//go:build go1.22 && !go1.23
-// +build go1.22,!go1.23
+//go:build go1.21 && !go1.22
 
 // MIT license, copy and modify from https://github.com/tlog-dev/loc
 
@@ -13,7 +12,7 @@ import (
 // Fastrandn returns a pseudorandom uint32 in [0,n).
 //
 //go:noescape
-//go:linkname Fastrandn runtime.cheaprandn
+//go:linkname Fastrandn runtime.fastrandn
 func Fastrandn(n uint32) uint32
 
 func pcFileLine(pc uintptr) (file string, line int32) {
@@ -55,7 +54,7 @@ func pcFileLineName(pc uintptr) (file string, line int32, name string) {
 
 	// It's important that interpret pc non-strictly as cgoTraceback may
 	// have added bogus PCs with a valid funcInfo but invalid PCDATA.
-	u, uf := newInlineUnwinder(funcInfo, pc)
+	u, uf := newInlineUnwinder(funcInfo, pc, nil)
 	var sf srcFunc
 	if uf.index < 0 {
 		f := (*_func)(funcInfo._func)
@@ -85,6 +84,7 @@ type inlinedCall struct {
 
 type inlineUnwinder struct {
 	f       funcInfo
+	cache   unsafe.Pointer
 	inlTree *[1 << 20]inlinedCall
 }
 
@@ -129,7 +129,7 @@ func funcInfoEntry(f funcInfo) uintptr
 func funcline1(f funcInfo, targetpc uintptr, strict bool) (file string, line int32)
 
 //go:linkname newInlineUnwinder runtime.newInlineUnwinder
-func newInlineUnwinder(f funcInfo, pc uintptr) (inlineUnwinder, inlineFrame)
+func newInlineUnwinder(f funcInfo, pc uintptr, cache unsafe.Pointer) (inlineUnwinder, inlineFrame)
 
 //go:linkname srcFunc_name runtime.srcFunc.name
 func srcFunc_name(srcFunc) string

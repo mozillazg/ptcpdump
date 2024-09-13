@@ -1,5 +1,6 @@
 //go:build go1.23
-// +build go1.23
+
+// MIT license, copy and modify from https://github.com/tlog-dev/loc
 
 //nolint:unused
 package log
@@ -12,20 +13,24 @@ import (
 
 // Fastrandn returns a pseudorandom uint32 in [0,n).
 //
-//go:nosplit
-func Fastrandn(n uint32) uint32 {
-	// See https://lemire.me/blog/2016/06/27/a-fast-alternative-to-the-modulo-reduction/
-	return uint32((uint64(cheaprand()) * uint64(n)) >> 32)
-}
-
 //go:noescape
-//go:linkname cheaprand runtime.cheaprand
-func cheaprand() uint32
+//go:linkname Fastrandn runtime.cheaprandn
+func Fastrandn(n uint32) uint32
 
 func pcFileLine(pc uintptr) (file string, line int) {
 	f := findfunc(pc)
 	if f._func == nil {
 		return
+	}
+
+	entry := funcInfoEntry(f)
+
+	if pc > entry {
+		// We store the pc of the start of the instruction following
+		// the instruction in question (the call or the inline mark).
+		// This is done for historical reasons, and to make FuncForPC
+		// work correctly for entries in the result of runtime.Callers.
+		pc--
 	}
 
 	return (*runtime.Func)(unsafe.Pointer(f._func)).FileLine(pc)
@@ -35,6 +40,16 @@ func pcFileLineName(pc uintptr) (file string, line int, name string) {
 	f := findfunc(pc)
 	if f._func == nil {
 		return
+	}
+
+	entry := funcInfoEntry(f)
+
+	if pc > entry {
+		// We store the pc of the start of the instruction following
+		// the instruction in question (the call or the inline mark).
+		// This is done for historical reasons, and to make FuncForPC
+		// work correctly for entries in the result of runtime.Callers.
+		pc--
 	}
 
 	file, line = (*runtime.Func)(unsafe.Pointer(f._func)).FileLine(pc)
@@ -126,3 +141,6 @@ type moduledata struct {
 
 //go:linkname findfunc runtime.findfunc
 func findfunc(pc uintptr) funcInfo
+
+//go:linkname funcInfoEntry runtime.funcInfo.entry
+func funcInfoEntry(f funcInfo) uintptr

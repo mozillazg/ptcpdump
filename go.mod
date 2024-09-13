@@ -10,11 +10,11 @@ require (
 	github.com/florianl/go-tc v0.4.4
 	github.com/gopacket/gopacket v1.2.0
 	github.com/jschwinger233/elibpcap v0.0.0-20231010035657-e99300096f5e
-	github.com/phuslu/log v1.0.107
-	github.com/shirou/gopsutil/v4 v4.24.7
+	github.com/phuslu/log v1.0.111
+	github.com/shirou/gopsutil/v4 v4.24.8
 	github.com/spf13/cobra v1.8.1
 	github.com/x-way/pktdump v0.0.5
-	golang.org/x/sys v0.22.0
+	golang.org/x/sys v0.24.0
 )
 
 require (

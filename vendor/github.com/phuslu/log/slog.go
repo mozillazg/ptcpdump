@@ -1,5 +1,4 @@
 //go:build go1.21
-// +build go1.21
 
 package log
 
@@ -8,6 +7,7 @@ import (
 	"io"
 	"log/slog"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -221,6 +221,9 @@ func (h *slogJSONHandler) Handle(_ context.Context, r slog.Record) error {
 		e.buf = append(e.buf, ',', '"')
 		e.buf = append(e.buf, slog.SourceKey...)
 		e.buf = append(e.buf, `":{"function":"`...)
+		if i := strings.LastIndexByte(name, '/'); i > 0 {
+			name = name[i+1:]
+		}
 		e.buf = append(e.buf, name...)
 		e.buf = append(e.buf, `","file":"`...)
 		e.buf = append(e.buf, file...)

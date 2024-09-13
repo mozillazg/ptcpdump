@@ -19,8 +19,8 @@ type AsyncWriter struct {
 	// DiscardOnFull determines whether to discard new entry when the channel is full.
 	DiscardOnFull bool
 
-	// WritevDisabled disables the writev syscall if the Writer is a FileWriter.
-	WritevDisabled bool
+	// DisableWritev disables the writev syscall if the Writer is a FileWriter.
+	DisableWritev bool
 
 	once    sync.Once
 	ch      chan *Entry
@@ -67,7 +67,7 @@ func (w *AsyncWriter) WriteEntry(e *Entry) (int, error) {
 		w.ch = make(chan *Entry, w.ChannelSize)
 		w.chClose = make(chan error)
 		w.file, _ = w.Writer.(*FileWriter)
-		if w.file != nil && runtime.GOOS == "linux" && unsafe.Sizeof(uintptr(0)) == 8 && !w.WritevDisabled {
+		if w.file != nil && runtime.GOOS == "linux" && unsafe.Sizeof(uintptr(0)) == 8 && !w.DisableWritev {
 			go w.writever()
 		} else {
 			go w.writer()
