@@ -142,6 +142,70 @@ func (b *BPF) handleExecEvents(ctx context.Context, reader *perf.Reader, ch chan
 	}
 }
 
+func (b *BPF) PullGoKeyLogEvents(ctx context.Context, chanSize int) (<-chan BpfGoKeylogEventT, error) {
+	pageSize := os.Getpagesize()
+	log.Infof("pagesize is %d", pageSize)
+	perCPUBuffer := pageSize * 4
+	eventSize := int(unsafe.Sizeof(BpfExecEventT{}))
+	if eventSize >= perCPUBuffer {
+		perCPUBuffer = perCPUBuffer * (1 + (eventSize / perCPUBuffer))
+	}
+	log.Infof("use %d as perCPUBuffer", perCPUBuffer)
+
+	reader, err := perf.NewReader(b.objs.GoKeylogEvents, perCPUBuffer)
+	if err != nil {
+		return nil, fmt.Errorf(": %w", err)
+	}
+	ch := make(chan BpfGoKeylogEventT, chanSize)
+	go func() {
+		defer close(ch)
+		defer reader.Close()
+		b.handleGoKeyLogEvents(ctx, reader, ch)
+	}()
+
+	return ch, nil
+}
+
+func (b *BPF) handleGoKeyLogEvents(ctx context.Context, reader *perf.Reader, ch chan<- BpfGoKeylogEventT) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
+
+		record, err := reader.Read()
+		if err != nil {
+			if errors.Is(err, perf.ErrClosed) {
+				return
+			}
+			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+				log.Infof("got EOF error: %s", err)
+				continue
+			}
+			log.Errorf("read go tls keylog event failed: %s", err)
+			continue
+		}
+		event, err := parseGoKeyLogEvent(record.RawSample)
+		if err != nil {
+			log.Errorf("parse go tls keylog event failed: %s", err)
+		} else {
+			ch <- *event
+		}
+		if record.LostSamples > 0 {
+			// TODO: XXX
+		}
+	}
+}
+
+func parseGoKeyLogEvent(rawSample []byte) (*BpfGoKeylogEventT, error) {
+	event := BpfGoKeylogEventT{}
+	if err := binary.Read(bytes.NewBuffer(rawSample), binary.LittleEndian, &event); err != nil {
+		return nil, fmt.Errorf("parse event: %w", err)
+	}
+	return &event, nil
+}
+
 func parseExecEvent(rawSample []byte) (*BpfExecEventT, error) {
 	event := BpfExecEventT{}
 	if err := binary.Read(bytes.NewBuffer(rawSample), binary.LittleEndian, &event); err != nil {

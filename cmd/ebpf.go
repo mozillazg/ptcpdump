@@ -58,6 +58,9 @@ func attachHooks(btfSpec *btftype.Spec, currentConns []metadata.Connection, opts
 		}
 	}
 
+	if err := attachGoTLSHooks(opts, bf); err != nil {
+		return bf, err
+	}
 	if err := bf.AttachKprobes(); err != nil {
 		return bf, err
 	}

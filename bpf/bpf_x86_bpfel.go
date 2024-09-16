@@ -39,6 +39,15 @@ type BpfGconfigT struct {
 	MaxPayloadSize    uint32
 }
 
+type BpfGoKeylogEventT struct {
+	Label           [32]int8
+	ClientRandom    [33]int8
+	Secret          [49]int8
+	LabelLen        uint8
+	ClientRandomLen uint8
+	SecretLen       uint8
+}
+
 type BpfNatFlowT struct {
 	Saddr [2]uint64
 	Daddr [2]uint64
@@ -123,6 +132,7 @@ type BpfProgramSpecs struct {
 	RawTracepointSchedProcessFork *ebpf.ProgramSpec `ebpf:"raw_tracepoint__sched_process_fork"`
 	TcEgress                      *ebpf.ProgramSpec `ebpf:"tc_egress"`
 	TcIngress                     *ebpf.ProgramSpec `ebpf:"tc_ingress"`
+	UprobeGoBuiltinTlsWriteKeyLog *ebpf.ProgramSpec `ebpf:"uprobe__go_builtin__tls__write_key_log"`
 }
 
 // BpfMapSpecs contains maps before they are loaded into the kernel.
@@ -139,6 +149,7 @@ type BpfMapSpecs struct {
 	FilterPidMap        *ebpf.MapSpec `ebpf:"filter_pid_map"`
 	FilterPidnsMap      *ebpf.MapSpec `ebpf:"filter_pidns_map"`
 	FlowPidMap          *ebpf.MapSpec `ebpf:"flow_pid_map"`
+	GoKeylogEvents      *ebpf.MapSpec `ebpf:"go_keylog_events"`
 	NatFlowMap          *ebpf.MapSpec `ebpf:"nat_flow_map"`
 	PacketEventStack    *ebpf.MapSpec `ebpf:"packet_event_stack"`
 	PacketEvents        *ebpf.MapSpec `ebpf:"packet_events"`
@@ -174,6 +185,7 @@ type BpfMaps struct {
 	FilterPidMap        *ebpf.Map `ebpf:"filter_pid_map"`
 	FilterPidnsMap      *ebpf.Map `ebpf:"filter_pidns_map"`
 	FlowPidMap          *ebpf.Map `ebpf:"flow_pid_map"`
+	GoKeylogEvents      *ebpf.Map `ebpf:"go_keylog_events"`
 	NatFlowMap          *ebpf.Map `ebpf:"nat_flow_map"`
 	PacketEventStack    *ebpf.Map `ebpf:"packet_event_stack"`
 	PacketEvents        *ebpf.Map `ebpf:"packet_events"`
@@ -192,6 +204,7 @@ func (m *BpfMaps) Close() error {
 		m.FilterPidMap,
 		m.FilterPidnsMap,
 		m.FlowPidMap,
+		m.GoKeylogEvents,
 		m.NatFlowMap,
 		m.PacketEventStack,
 		m.PacketEvents,
@@ -216,6 +229,7 @@ type BpfPrograms struct {
 	RawTracepointSchedProcessFork *ebpf.Program `ebpf:"raw_tracepoint__sched_process_fork"`
 	TcEgress                      *ebpf.Program `ebpf:"tc_egress"`
 	TcIngress                     *ebpf.Program `ebpf:"tc_ingress"`
+	UprobeGoBuiltinTlsWriteKeyLog *ebpf.Program `ebpf:"uprobe__go_builtin__tls__write_key_log"`
 }
 
 func (p *BpfPrograms) Close() error {
@@ -233,6 +247,7 @@ func (p *BpfPrograms) Close() error {
 		p.RawTracepointSchedProcessFork,
 		p.TcEgress,
 		p.TcIngress,
+		p.UprobeGoBuiltinTlsWriteKeyLog,
 	)
 }
 

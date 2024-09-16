@@ -91,6 +91,8 @@ lint: deps fmt
 fmt:
 	go fmt ./...
 	clang-format -i bpf/ptcpdump.c
+	clang-format -i bpf/headers/custom.h
+	clang-format -i bpf/headers/gotls.h
 
 .PHONY: vet
 vet:
