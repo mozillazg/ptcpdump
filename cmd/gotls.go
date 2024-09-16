@@ -48,7 +48,7 @@ func attachGoTLSHooks(opts Options, bf *bpf.BPF) error {
 		return nil
 	}
 	if err := bf.AttachUprobeHook(exc, goTLSSymbolWriteKeyLog, 0, 0); err != nil {
-		log.Warnf("skip go TLS related logics due to could not attach go TLS hooks base on %s: %w", path, err)
+		log.Warnf("skip go TLS related logics due to could not attach go TLS hooks base on %s: %s", path, err)
 	}
 	return nil
 }
