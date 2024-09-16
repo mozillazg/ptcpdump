@@ -21,7 +21,7 @@ type KeyLogPcapNGWriter struct {
 }
 
 func NewKeyLogFileWriter(fpath string) (*KeyLogFileWriter, error) {
-	f, err := os.OpenFile(fpath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	f, err := os.OpenFile(fpath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
 	if err != nil {
 		return nil, fmt.Errorf("error opening file %s: %v", fpath, err)
 	}

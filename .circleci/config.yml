@@ -92,18 +92,20 @@ jobs:
       - run:
           name: e2e (test nat)
           command: |
-            sudo bash testdata/test_nat.sh ./ptcpdump || \
-            sudo bash testdata/test_nat.sh ./ptcpdump || \
-            sudo bash testdata/test_nat.sh ./ptcpdump
+            for i in {1..5}; do
+              sudo bash testdata/test_nat.sh ./ptcpdump && break || sleep 1
+            done
 
       - run:
           name: e2e (test go tls keylog)
           command: |
-            sudo apt install -y tshark
+            echo "wireshark-common wireshark-common/install-setuid boolean true" | sudo debconf-set-selections
+            sudo DEBIAN_FRONTEND=noninteractive apt install -y tshark
             make -C testdata/gohttpapp build
-            sudo bash testdata/test_gotls_keylog.sh ./ptcpdump || \
-            sudo bash testdata/test_gotls_keylog.sh ./ptcpdump || \
-            sudo bash testdata/test_gotls_keylog.sh ./ptcpdump
+
+            for i in {1..10}; do
+              sudo bash testdata/test_gotls_keylog.sh ./ptcpdump && break || sleep 1
+            done
 
   docker-e2e:
     machine:

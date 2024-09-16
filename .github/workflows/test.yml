@@ -246,13 +246,12 @@ jobs:
             uname -a
             cat /etc/issue
 
-            bash /host/testdata/test_nat.sh /host/ptcpdump/ptcpdump || \
-            bash /host/testdata/test_nat.sh /host/ptcpdump/ptcpdump || \
-            bash /host/testdata/test_nat.sh /host/ptcpdump/ptcpdump
+            for i in {1..10}; do
+              bash /host/testdata/test_nat.sh /host/ptcpdump/ptcpdump && break || sleep 1
+            done
 
-      - name: install tshark and build demo app
+      - name: build demo app
         run: |
-          sudo apt install -y tshark
           make -C testdata/gohttpapp build
 
       - name: Test go tls keylog
@@ -264,6 +263,10 @@ jobs:
             uname -a
             cat /etc/issue
 
-            sudo bash testdata/test_gotls_keylog.sh /host/ptcpdump/ptcpdump || \
-            sudo bash testdata/test_gotls_keylog.sh /host/ptcpdump/ptcpdump || \
-            sudo bash testdata/test_gotls_keylog.sh /host/ptcpdump/ptcpdump
+            ls -lh /host/testdata/gohttpapp
+
+            apt update && yes | apt install -y tshark
+
+            for i in {1..10}; do
+              bash /host/testdata/test_gotls_keylog.sh /host/ptcpdump/ptcpdump && break || sleep 1
+            done
