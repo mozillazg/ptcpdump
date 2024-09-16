@@ -7,12 +7,15 @@ import (
 	"github.com/mozillazg/ptcpdump/internal/event"
 	"github.com/mozillazg/ptcpdump/internal/log"
 	"github.com/mozillazg/ptcpdump/internal/writer"
+	"time"
 )
 
 type PacketEventConsumer struct {
 	writers        []writer.PacketWriter
 	devices        map[int]dev.Device
 	processedCount int
+
+	delay time.Duration
 }
 
 func NewPacketEventConsumer(writers []writer.PacketWriter) *PacketEventConsumer {
@@ -23,7 +26,15 @@ func NewPacketEventConsumer(writers []writer.PacketWriter) *PacketEventConsumer 
 	}
 }
 
+func (c *PacketEventConsumer) WithDelay(delay time.Duration) *PacketEventConsumer {
+	c.delay = delay
+	return c
+}
+
 func (c *PacketEventConsumer) Start(ctx context.Context, ch <-chan bpf.BpfPacketEventWithPayloadT, maxPacketCount uint) {
+	if c.delay > 0 {
+		time.Sleep(c.delay)
+	}
 	for {
 		select {
 		case <-ctx.Done():

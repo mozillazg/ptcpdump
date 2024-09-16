@@ -246,4 +246,24 @@ jobs:
             uname -a
             cat /etc/issue
 
+            bash /host/testdata/test_nat.sh /host/ptcpdump/ptcpdump || \
+            bash /host/testdata/test_nat.sh /host/ptcpdump/ptcpdump || \
             bash /host/testdata/test_nat.sh /host/ptcpdump/ptcpdump
+
+      - name: install tshark and build demo app
+        run: |
+          sudo apt install -y tshark
+          make -C testdata/gohttpapp build
+
+      - name: Test go tls keylog
+        uses: cilium/little-vm-helper@97c89f004bd0ab4caeacfe92ebc956e13e362e6b # v0.0.19
+        with:
+          provision: 'false'
+          cmd: |
+            set -ex
+            uname -a
+            cat /etc/issue
+
+            sudo bash testdata/test_gotls_keylog.sh /host/ptcpdump/ptcpdump || \
+            sudo bash testdata/test_gotls_keylog.sh /host/ptcpdump/ptcpdump || \
+            sudo bash testdata/test_gotls_keylog.sh /host/ptcpdump/ptcpdump

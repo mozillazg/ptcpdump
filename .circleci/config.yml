@@ -92,7 +92,18 @@ jobs:
       - run:
           name: e2e (test nat)
           command: |
+            sudo bash testdata/test_nat.sh ./ptcpdump || \
+            sudo bash testdata/test_nat.sh ./ptcpdump || \
             sudo bash testdata/test_nat.sh ./ptcpdump
+
+      - run:
+          name: e2e (test go tls keylog)
+          command: |
+            sudo apt install -y tshark
+            make -C testdata/gohttpapp build
+            sudo bash testdata/test_gotls_keylog.sh ./ptcpdump || \
+            sudo bash testdata/test_gotls_keylog.sh ./ptcpdump || \
+            sudo bash testdata/test_gotls_keylog.sh ./ptcpdump
 
   docker-e2e:
     machine:

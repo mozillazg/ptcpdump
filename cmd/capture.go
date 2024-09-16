@@ -18,14 +18,9 @@ import (
 )
 
 func capture(ctx context.Context, stop context.CancelFunc, opts Options) error {
-	gcr, err := getGoKeyLogEventConsumer(opts)
-	if err != nil {
-		logFatal(err)
-	}
-
 	btfSpec, btfPath, err := btf.LoadBTFSpec(opts.btfPath)
 	if err != nil {
-		logFatal(err)
+		return err
 	}
 	if btfPath != btf.DefaultPath {
 		log.Warnf("use BTF specs from %s", btfPath)
@@ -36,18 +31,6 @@ func capture(ctx context.Context, stop context.CancelFunc, opts Options) error {
 	cc, _ := applyContainerFilter(ctx, &opts)
 	if cc != nil {
 		pcache.WithContainerCache(cc)
-	}
-
-	var subProcessFinished <-chan struct{}
-	var subProcessLoaderPid int
-	if len(opts.subProgArgs) > 0 {
-		log.Info("start sub process loader")
-		subProcessLoaderPid, subProcessFinished, err = utils.StartSubProcessLoader(ctx, os.Args[0], opts.subProgArgs)
-		if err != nil {
-			return err
-		}
-		opts.pids = []uint{uint(subProcessLoaderPid)}
-		opts.followForks = true
 	}
 
 	writers, fcloser, err := getWriters(opts, pcache)
@@ -62,6 +45,23 @@ func capture(ctx context.Context, stop context.CancelFunc, opts Options) error {
 			fcloser()
 		}
 	}()
+	gcr, err := getGoKeyLogEventConsumer(&opts, writers)
+	if err != nil {
+		return err
+	}
+
+	var subProcessFinished <-chan struct{}
+	var subProcessLoaderPid int
+	if len(opts.subProgArgs) > 0 {
+		log.Info("start sub process loader")
+		subProcessLoaderPid, subProcessFinished, err = utils.StartSubProcessLoader(ctx, os.Args[0], opts.subProgArgs)
+		if err != nil {
+			return err
+		}
+		opts.pids = []uint{uint(subProcessLoaderPid)}
+		opts.followForks = true
+	}
+
 	pcache.Start(ctx)
 
 	log.Info("start get current connections")
@@ -104,10 +104,7 @@ func capture(ctx context.Context, stop context.CancelFunc, opts Options) error {
 	go gcr.Start(ctx, goTlsKeyLogEventsCh)
 
 	var stopByInternal bool
-	packetConsumer := consumer.NewPacketEventConsumer(writers)
-	if opts.delayBeforeHandlePacketEvents > 0 {
-		time.Sleep(opts.delayBeforeHandlePacketEvents)
-	}
+	packetConsumer := consumer.NewPacketEventConsumer(writers).WithDelay(opts.delayBeforeHandlePacketEvents)
 	if subProcessLoaderPid > 0 {
 		go func() {
 			log.Infof("notify loader %d to start sub process", subProcessLoaderPid)
@@ -116,6 +113,7 @@ func capture(ctx context.Context, stop context.CancelFunc, opts Options) error {
 			log.Info("sub process exited")
 			time.Sleep(time.Second * 3)
 			stopByInternal = true
+			time.Sleep(opts.delayBeforeHandlePacketEvents)
 			stop()
 		}()
 	}

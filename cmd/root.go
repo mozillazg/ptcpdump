@@ -120,6 +120,8 @@ func init() {
 
 	rootCmd.Flags().StringVar(&opts.writeTLSKeyLogPath, "write-keylog-file", "",
 		"Write TLS Key Log file to this path (experimental: only support unstripped Go binary and must combined with `-- CMD [ARGS]`)")
+	rootCmd.Flags().BoolVar(&opts.embedTLSKeyLogToPcapng, "embed-keylog-to-pcapng", false,
+		"Write TLS Key Log file to this path (experimental: only support unstripped Go binary and must combined with `-- CMD [ARGS]`)")
 
 	silenceKlog()
 }

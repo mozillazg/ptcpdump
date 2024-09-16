@@ -1,7 +1,9 @@
 package writer
 
 import (
+	"bytes"
 	"fmt"
+	"sync"
 
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/pcapgo"
@@ -15,10 +17,12 @@ type PcapNGWriter struct {
 	pcache *metadata.ProcessCache
 
 	noBuffer bool
+	lock     sync.Mutex
+	keylogs  bytes.Buffer
 }
 
 func NewPcapNGWriter(pw *pcapgo.NgWriter, pcache *metadata.ProcessCache) *PcapNGWriter {
-	return &PcapNGWriter{pw: pw, pcache: pcache}
+	return &PcapNGWriter{pw: pw, pcache: pcache, lock: sync.Mutex{}}
 }
 
 func (w *PcapNGWriter) Write(e *event.Packet) error {
@@ -56,12 +60,43 @@ func (w *PcapNGWriter) Write(e *event.Packet) error {
 		)
 	}
 
+	if err := w.writeTLSKeyLog(); err != nil {
+		return err
+	}
+
 	if err := w.pw.WritePacketWithOptions(info, e.Data, opts); err != nil {
 		return fmt.Errorf("writing packet: %w", err)
 	}
 	if w.noBuffer {
 		w.pw.Flush()
 	}
+
+	return nil
+}
+
+func (w *PcapNGWriter) WriteTLSKeyLog(line string) error {
+	w.lock.Lock()
+	defer w.lock.Unlock()
+
+	w.keylogs.WriteString(line)
+
+	return nil
+}
+
+func (w *PcapNGWriter) writeTLSKeyLog() error {
+	w.lock.Lock()
+	defer w.lock.Unlock()
+
+	lines := w.keylogs.Bytes()
+	if len(lines) == 0 {
+		return nil
+	}
+
+	if err := w.pw.WriteDecryptionSecretsBlock(pcapgo.DSB_SECRETS_TYPE_TLS, lines); err != nil {
+		return fmt.Errorf("writing tls key log: %w", err)
+	}
+
+	w.keylogs.Reset()
 
 	return nil
 }

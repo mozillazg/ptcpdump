@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os/exec"
+	"time"
 
 	"debug/buildinfo"
 	"github.com/cilium/ebpf/link"
@@ -14,18 +15,29 @@ import (
 
 const goTLSSymbolWriteKeyLog = "crypto/tls.(*Config).writeKeyLog"
 
-func getGoKeyLogEventConsumer(opts Options) (*consumer.GoKeyLogEventConsumer, error) {
-	var writers []writer.KeyLogWriter
+func getGoKeyLogEventConsumer(opts *Options, packetWriters []writer.PacketWriter) (*consumer.GoKeyLogEventConsumer, error) {
+	var keylogWs []writer.KeyLogWriter
 
+	if opts.embedTLSKeyLogToPcapng {
+		for _, pw := range packetWriters {
+			if pngw, ok := pw.(*writer.PcapNGWriter); ok {
+				keylogWs = append(keylogWs, writer.NewKeyLogPcapNGWriter(pngw))
+				if opts.delayBeforeHandlePacketEvents == 0 {
+					opts.delayBeforeHandlePacketEvents = time.Second * 3
+				}
+				break
+			}
+		}
+	}
 	if opts.writeTLSKeyLogPath != "" {
 		w, err := writer.NewKeyLogFileWriter(opts.writeTLSKeyLogPath)
 		if err != nil {
 			return nil, err
 		}
-		writers = append(writers, w)
+		keylogWs = append(keylogWs, w)
 	}
 
-	cr := consumer.NewGoKeyLogEventConsumer(2, writers...)
+	cr := consumer.NewGoKeyLogEventConsumer(10, keylogWs...)
 	return cr, nil
 }
 
