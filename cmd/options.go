@@ -60,6 +60,8 @@ type Options struct {
 	criRuntimeEndpoint string
 	btfPath            string
 
+	writeTLSKeyLogPath string
+
 	subProgArgs []string
 
 	mntnsIds []uint32

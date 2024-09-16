@@ -1,6 +1,9 @@
 package utils
 
-import "strings"
+import (
+	"bytes"
+	"strings"
+)
 
 func GoString(cstring []int8) string {
 	var bs strings.Builder
@@ -14,4 +17,14 @@ func GoString(cstring []int8) string {
 	}
 
 	return bs.String()
+}
+
+func GoBytes(cchars []int8) []byte {
+	var bs bytes.Buffer
+
+	for _, i := range cchars {
+		bs.WriteByte(byte(i))
+	}
+
+	return bs.Bytes()
 }

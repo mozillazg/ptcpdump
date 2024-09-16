@@ -18,6 +18,11 @@ import (
 )
 
 func capture(ctx context.Context, stop context.CancelFunc, opts Options) error {
+	gcr, err := getGoKeyLogEventConsumer(opts)
+	if err != nil {
+		logFatal(err)
+	}
+
 	btfSpec, btfPath, err := btf.LoadBTFSpec(opts.btfPath)
 	if err != nil {
 		logFatal(err)
@@ -84,6 +89,10 @@ func capture(ctx context.Context, stop context.CancelFunc, opts Options) error {
 	if err != nil {
 		return err
 	}
+	goTlsKeyLogEventsCh, err := bf.PullGoKeyLogEvents(ctx, int(opts.eventChanSize))
+	if err != nil {
+		return err
+	}
 
 	headerTips(opts)
 	log.Info("capturing...")
@@ -92,6 +101,7 @@ func capture(ctx context.Context, stop context.CancelFunc, opts Options) error {
 	go execConsumer.Start(ctx, execEvensCh)
 	exitConsumer := consumer.NewExitEventConsumer(pcache, 10)
 	go exitConsumer.Start(ctx, exitEvensCh)
+	go gcr.Start(ctx, goTlsKeyLogEventsCh)
 
 	var stopByInternal bool
 	packetConsumer := consumer.NewPacketEventConsumer(writers)
@@ -112,6 +122,12 @@ func capture(ctx context.Context, stop context.CancelFunc, opts Options) error {
 
 	go printCaptureCountBySignal(ctx, bf, packetConsumer)
 	packetConsumer.Start(ctx, packetEvensCh, opts.maxPacketCount)
+	defer func() {
+		packetConsumer.Stop()
+		execConsumer.Stop()
+		exitConsumer.Stop()
+		gcr.Stop()
+	}()
 
 	if !stopByInternal && ctx.Err() != nil {
 		fmt.Fprint(os.Stderr, "\n")

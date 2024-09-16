@@ -25,6 +25,7 @@ type BpfObjectsForLegacyKernel struct {
 	RawTracepointSchedProcessFork *ebpf.Program `ebpf:"raw_tracepoint__sched_process_fork"`
 	TcEgress                      *ebpf.Program `ebpf:"tc_egress"`
 	TcIngress                     *ebpf.Program `ebpf:"tc_ingress"`
+	UprobeGoBuiltinTlsWriteKeyLog *ebpf.Program `ebpf:"uprobe__go_builtin__tls__write_key_log"`
 
 	BpfMaps
 }
@@ -41,6 +42,7 @@ func (b *BpfObjects) FromLegacy(o *BpfObjectsForLegacyKernel) {
 	b.RawTracepointSchedProcessFork = o.RawTracepointSchedProcessFork
 	b.TcEgress = o.TcEgress
 	b.TcIngress = o.TcIngress
+	b.UprobeGoBuiltinTlsWriteKeyLog = o.UprobeGoBuiltinTlsWriteKeyLog
 
 	b.BpfMaps = o.BpfMaps
 }

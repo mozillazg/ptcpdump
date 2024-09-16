@@ -118,6 +118,9 @@ func init() {
 	rootCmd.Flags().BoolVarP(&opts.printDataAsASCII, "print-data-in-ascii", "A", false,
 		"Print each packet (minus its link level header) in ASCII")
 
+	rootCmd.Flags().StringVar(&opts.writeTLSKeyLogPath, "write-keylog-file", "",
+		"Write TLS Key Log file to this path (experimental: only support unstripped Go binary and must combined with `-- CMD [ARGS]`)")
+
 	silenceKlog()
 }
 
