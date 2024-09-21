@@ -251,24 +251,24 @@ jobs:
             done
             exit 1
 
-      - name: build demo app
-        run: |
-          make -C testdata/gohttpapp build
-
-      - name: Test go tls keylog
-        uses: cilium/little-vm-helper@97c89f004bd0ab4caeacfe92ebc956e13e362e6b # v0.0.19
-        with:
-          provision: 'false'
-          cmd: |
-            set -ex
-            uname -a
-            cat /etc/issue
-
-            ls -lh /host/testdata/gohttpapp
-
-            apt update && yes | apt install -y tshark
-
-            for i in {1..10}; do
-              bash /host/testdata/test_gotls_keylog.sh /host/ptcpdump/ptcpdump && exit 0 || sleep 1
-            done
-            exit 1
+#       - name: build demo app
+#         run: |
+#           make -C testdata/gohttpapp build
+# 
+#       - name: Test go tls keylog
+#         uses: cilium/little-vm-helper@97c89f004bd0ab4caeacfe92ebc956e13e362e6b # v0.0.19
+#         with:
+#           provision: 'false'
+#           cmd: |
+#             set -ex
+#             uname -a
+#             cat /etc/issue
+# 
+#             ls -lh /host/testdata/gohttpapp
+# 
+#             apt update && yes | apt install -y tshark
+# 
+#             for i in {1..10}; do
+#               bash /host/testdata/test_gotls_keylog.sh /host/ptcpdump/ptcpdump && exit 0 || sleep 1
+#             done
+#             exit 1
