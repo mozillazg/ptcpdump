@@ -93,8 +93,9 @@ jobs:
           name: e2e (test nat)
           command: |
             for i in {1..5}; do
-              sudo bash testdata/test_nat.sh ./ptcpdump && break || sleep 1
+              sudo bash testdata/test_nat.sh ./ptcpdump && exit 0 || sleep 1
             done
+            exit 1
 
       - run:
           name: e2e (test go tls keylog)
@@ -104,8 +105,9 @@ jobs:
             make -C testdata/gohttpapp build
 
             for i in {1..10}; do
-              sudo bash testdata/test_gotls_keylog.sh ./ptcpdump && break || sleep 1
+              sudo bash testdata/test_gotls_keylog.sh ./ptcpdump && exit 0 || sleep 1
             done
+            exit 1
 
   docker-e2e:
     machine:
