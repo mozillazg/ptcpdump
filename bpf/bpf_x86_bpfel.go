@@ -41,8 +41,8 @@ type BpfGconfigT struct {
 
 type BpfGoKeylogEventT struct {
 	Label           [32]int8
-	ClientRandom    [33]int8
-	Secret          [49]int8
+	ClientRandom    [32]int8
+	Secret          [64]int8
 	LabelLen        uint8
 	ClientRandomLen uint8
 	SecretLen       uint8
