@@ -43,6 +43,22 @@ struct go_keylog_event_t {
     u8 secret_len;
 };
 
+struct go_keylog_buf_t {
+    u64 label_ptr;
+    u64 label_len_ptr;
+    u64 random_ptr;
+    u64 random_len_ptr;
+    u64 secret_ptr;
+    u64 secret_len_ptr;
+};
+
+struct {
+    __uint(type, BPF_MAP_TYPE_LRU_HASH);
+    __uint(max_entries, 10);
+    __type(key, u32);
+    __type(value, struct go_keylog_buf_t);
+} go_keylog_buf_storage SEC(".maps");
+
 struct {
     __uint(type, BPF_MAP_TYPE_PERF_EVENT_ARRAY);
     __uint(key_size, sizeof(u32));
