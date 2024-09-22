@@ -314,6 +314,10 @@ go.opencensus.io/internal
 go.opencensus.io/trace
 go.opencensus.io/trace/internal
 go.opencensus.io/trace/tracestate
+# golang.org/x/arch v0.10.0
+## explicit; go 1.18
+golang.org/x/arch/arm64/arm64asm
+golang.org/x/arch/x86/x86asm
 # golang.org/x/exp v0.0.0-20230224173230-c95f2b4c22f2
 ## explicit; go 1.18
 golang.org/x/exp/constraints

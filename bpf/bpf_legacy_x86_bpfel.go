@@ -53,18 +53,19 @@ type bpf_legacySpecs struct {
 //
 // It can be passed ebpf.CollectionSpec.Assign.
 type bpf_legacyProgramSpecs struct {
-	KprobeNfNatManipPkt           *ebpf.ProgramSpec `ebpf:"kprobe__nf_nat_manip_pkt"`
-	KprobeNfNatPacket             *ebpf.ProgramSpec `ebpf:"kprobe__nf_nat_packet"`
-	KprobeSecuritySkClassifyFlow  *ebpf.ProgramSpec `ebpf:"kprobe__security_sk_classify_flow"`
-	KprobeTcpSendmsg              *ebpf.ProgramSpec `ebpf:"kprobe__tcp_sendmsg"`
-	KprobeUdpSendSkb              *ebpf.ProgramSpec `ebpf:"kprobe__udp_send_skb"`
-	KprobeUdpSendmsg              *ebpf.ProgramSpec `ebpf:"kprobe__udp_sendmsg"`
-	RawTracepointSchedProcessExec *ebpf.ProgramSpec `ebpf:"raw_tracepoint__sched_process_exec"`
-	RawTracepointSchedProcessExit *ebpf.ProgramSpec `ebpf:"raw_tracepoint__sched_process_exit"`
-	RawTracepointSchedProcessFork *ebpf.ProgramSpec `ebpf:"raw_tracepoint__sched_process_fork"`
-	TcEgress                      *ebpf.ProgramSpec `ebpf:"tc_egress"`
-	TcIngress                     *ebpf.ProgramSpec `ebpf:"tc_ingress"`
-	UprobeGoBuiltinTlsWriteKeyLog *ebpf.ProgramSpec `ebpf:"uprobe__go_builtin__tls__write_key_log"`
+	KprobeNfNatManipPkt              *ebpf.ProgramSpec `ebpf:"kprobe__nf_nat_manip_pkt"`
+	KprobeNfNatPacket                *ebpf.ProgramSpec `ebpf:"kprobe__nf_nat_packet"`
+	KprobeSecuritySkClassifyFlow     *ebpf.ProgramSpec `ebpf:"kprobe__security_sk_classify_flow"`
+	KprobeTcpSendmsg                 *ebpf.ProgramSpec `ebpf:"kprobe__tcp_sendmsg"`
+	KprobeUdpSendSkb                 *ebpf.ProgramSpec `ebpf:"kprobe__udp_send_skb"`
+	KprobeUdpSendmsg                 *ebpf.ProgramSpec `ebpf:"kprobe__udp_sendmsg"`
+	RawTracepointSchedProcessExec    *ebpf.ProgramSpec `ebpf:"raw_tracepoint__sched_process_exec"`
+	RawTracepointSchedProcessExit    *ebpf.ProgramSpec `ebpf:"raw_tracepoint__sched_process_exit"`
+	RawTracepointSchedProcessFork    *ebpf.ProgramSpec `ebpf:"raw_tracepoint__sched_process_fork"`
+	TcEgress                         *ebpf.ProgramSpec `ebpf:"tc_egress"`
+	TcIngress                        *ebpf.ProgramSpec `ebpf:"tc_ingress"`
+	UprobeGoBuiltinTlsWriteKeyLog    *ebpf.ProgramSpec `ebpf:"uprobe__go_builtin__tls__write_key_log"`
+	UprobeGoBuiltinTlsWriteKeyLogRet *ebpf.ProgramSpec `ebpf:"uprobe__go_builtin__tls__write_key_log__ret"`
 }
 
 // bpf_legacyMapSpecs contains maps before they are loaded into the kernel.
@@ -81,6 +82,7 @@ type bpf_legacyMapSpecs struct {
 	FilterPidMap        *ebpf.MapSpec `ebpf:"filter_pid_map"`
 	FilterPidnsMap      *ebpf.MapSpec `ebpf:"filter_pidns_map"`
 	FlowPidMap          *ebpf.MapSpec `ebpf:"flow_pid_map"`
+	GoKeylogBufStorage  *ebpf.MapSpec `ebpf:"go_keylog_buf_storage"`
 	GoKeylogEvents      *ebpf.MapSpec `ebpf:"go_keylog_events"`
 	NatFlowMap          *ebpf.MapSpec `ebpf:"nat_flow_map"`
 	PacketEventStack    *ebpf.MapSpec `ebpf:"packet_event_stack"`
@@ -117,6 +119,7 @@ type bpf_legacyMaps struct {
 	FilterPidMap        *ebpf.Map `ebpf:"filter_pid_map"`
 	FilterPidnsMap      *ebpf.Map `ebpf:"filter_pidns_map"`
 	FlowPidMap          *ebpf.Map `ebpf:"flow_pid_map"`
+	GoKeylogBufStorage  *ebpf.Map `ebpf:"go_keylog_buf_storage"`
 	GoKeylogEvents      *ebpf.Map `ebpf:"go_keylog_events"`
 	NatFlowMap          *ebpf.Map `ebpf:"nat_flow_map"`
 	PacketEventStack    *ebpf.Map `ebpf:"packet_event_stack"`
@@ -136,6 +139,7 @@ func (m *bpf_legacyMaps) Close() error {
 		m.FilterPidMap,
 		m.FilterPidnsMap,
 		m.FlowPidMap,
+		m.GoKeylogBufStorage,
 		m.GoKeylogEvents,
 		m.NatFlowMap,
 		m.PacketEventStack,
@@ -148,18 +152,19 @@ func (m *bpf_legacyMaps) Close() error {
 //
 // It can be passed to loadBpf_legacyObjects or ebpf.CollectionSpec.LoadAndAssign.
 type bpf_legacyPrograms struct {
-	KprobeNfNatManipPkt           *ebpf.Program `ebpf:"kprobe__nf_nat_manip_pkt"`
-	KprobeNfNatPacket             *ebpf.Program `ebpf:"kprobe__nf_nat_packet"`
-	KprobeSecuritySkClassifyFlow  *ebpf.Program `ebpf:"kprobe__security_sk_classify_flow"`
-	KprobeTcpSendmsg              *ebpf.Program `ebpf:"kprobe__tcp_sendmsg"`
-	KprobeUdpSendSkb              *ebpf.Program `ebpf:"kprobe__udp_send_skb"`
-	KprobeUdpSendmsg              *ebpf.Program `ebpf:"kprobe__udp_sendmsg"`
-	RawTracepointSchedProcessExec *ebpf.Program `ebpf:"raw_tracepoint__sched_process_exec"`
-	RawTracepointSchedProcessExit *ebpf.Program `ebpf:"raw_tracepoint__sched_process_exit"`
-	RawTracepointSchedProcessFork *ebpf.Program `ebpf:"raw_tracepoint__sched_process_fork"`
-	TcEgress                      *ebpf.Program `ebpf:"tc_egress"`
-	TcIngress                     *ebpf.Program `ebpf:"tc_ingress"`
-	UprobeGoBuiltinTlsWriteKeyLog *ebpf.Program `ebpf:"uprobe__go_builtin__tls__write_key_log"`
+	KprobeNfNatManipPkt              *ebpf.Program `ebpf:"kprobe__nf_nat_manip_pkt"`
+	KprobeNfNatPacket                *ebpf.Program `ebpf:"kprobe__nf_nat_packet"`
+	KprobeSecuritySkClassifyFlow     *ebpf.Program `ebpf:"kprobe__security_sk_classify_flow"`
+	KprobeTcpSendmsg                 *ebpf.Program `ebpf:"kprobe__tcp_sendmsg"`
+	KprobeUdpSendSkb                 *ebpf.Program `ebpf:"kprobe__udp_send_skb"`
+	KprobeUdpSendmsg                 *ebpf.Program `ebpf:"kprobe__udp_sendmsg"`
+	RawTracepointSchedProcessExec    *ebpf.Program `ebpf:"raw_tracepoint__sched_process_exec"`
+	RawTracepointSchedProcessExit    *ebpf.Program `ebpf:"raw_tracepoint__sched_process_exit"`
+	RawTracepointSchedProcessFork    *ebpf.Program `ebpf:"raw_tracepoint__sched_process_fork"`
+	TcEgress                         *ebpf.Program `ebpf:"tc_egress"`
+	TcIngress                        *ebpf.Program `ebpf:"tc_ingress"`
+	UprobeGoBuiltinTlsWriteKeyLog    *ebpf.Program `ebpf:"uprobe__go_builtin__tls__write_key_log"`
+	UprobeGoBuiltinTlsWriteKeyLogRet *ebpf.Program `ebpf:"uprobe__go_builtin__tls__write_key_log__ret"`
 }
 
 func (p *bpf_legacyPrograms) Close() error {
@@ -176,6 +181,7 @@ func (p *bpf_legacyPrograms) Close() error {
 		p.TcEgress,
 		p.TcIngress,
 		p.UprobeGoBuiltinTlsWriteKeyLog,
+		p.UprobeGoBuiltinTlsWriteKeyLogRet,
 	)
 }
 

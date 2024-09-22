@@ -14,18 +14,19 @@ import (
 //go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc clang -no-strip -no-global-types -target $TARGET bpf_legacy ./ptcpdump.c -- -I./headers -I./headers/$TARGET -I. -Wall -DLEGACY_KERNEL
 
 type BpfObjectsForLegacyKernel struct {
-	KprobeTcpSendmsg              *ebpf.Program `ebpf:"kprobe__tcp_sendmsg"`
-	KprobeUdpSendmsg              *ebpf.Program `ebpf:"kprobe__udp_sendmsg"`
-	KprobeUdpSendSkb              *ebpf.Program `ebpf:"kprobe__udp_send_skb"`
-	KprobeNfNatManipPkt           *ebpf.Program `ebpf:"kprobe__nf_nat_manip_pkt"`
-	KprobeNfNatPacket             *ebpf.Program `ebpf:"kprobe__nf_nat_packet"`
-	KprobeSecuritySkClassifyFlow  *ebpf.Program `ebpf:"kprobe__security_sk_classify_flow"`
-	RawTracepointSchedProcessExec *ebpf.Program `ebpf:"raw_tracepoint__sched_process_exec"`
-	RawTracepointSchedProcessExit *ebpf.Program `ebpf:"raw_tracepoint__sched_process_exit"`
-	RawTracepointSchedProcessFork *ebpf.Program `ebpf:"raw_tracepoint__sched_process_fork"`
-	TcEgress                      *ebpf.Program `ebpf:"tc_egress"`
-	TcIngress                     *ebpf.Program `ebpf:"tc_ingress"`
-	UprobeGoBuiltinTlsWriteKeyLog *ebpf.Program `ebpf:"uprobe__go_builtin__tls__write_key_log"`
+	KprobeTcpSendmsg                 *ebpf.Program `ebpf:"kprobe__tcp_sendmsg"`
+	KprobeUdpSendmsg                 *ebpf.Program `ebpf:"kprobe__udp_sendmsg"`
+	KprobeUdpSendSkb                 *ebpf.Program `ebpf:"kprobe__udp_send_skb"`
+	KprobeNfNatManipPkt              *ebpf.Program `ebpf:"kprobe__nf_nat_manip_pkt"`
+	KprobeNfNatPacket                *ebpf.Program `ebpf:"kprobe__nf_nat_packet"`
+	KprobeSecuritySkClassifyFlow     *ebpf.Program `ebpf:"kprobe__security_sk_classify_flow"`
+	RawTracepointSchedProcessExec    *ebpf.Program `ebpf:"raw_tracepoint__sched_process_exec"`
+	RawTracepointSchedProcessExit    *ebpf.Program `ebpf:"raw_tracepoint__sched_process_exit"`
+	RawTracepointSchedProcessFork    *ebpf.Program `ebpf:"raw_tracepoint__sched_process_fork"`
+	TcEgress                         *ebpf.Program `ebpf:"tc_egress"`
+	TcIngress                        *ebpf.Program `ebpf:"tc_ingress"`
+	UprobeGoBuiltinTlsWriteKeyLog    *ebpf.Program `ebpf:"uprobe__go_builtin__tls__write_key_log"`
+	UprobeGoBuiltinTlsWriteKeyLogRet *ebpf.Program `ebpf:"uprobe__go_builtin__tls__write_key_log__ret"`
 
 	BpfMaps
 }
@@ -43,6 +44,7 @@ func (b *BpfObjects) FromLegacy(o *BpfObjectsForLegacyKernel) {
 	b.TcEgress = o.TcEgress
 	b.TcIngress = o.TcIngress
 	b.UprobeGoBuiltinTlsWriteKeyLog = o.UprobeGoBuiltinTlsWriteKeyLog
+	b.UprobeGoBuiltinTlsWriteKeyLogRet = o.UprobeGoBuiltinTlsWriteKeyLogRet
 
 	b.BpfMaps = o.BpfMaps
 }
