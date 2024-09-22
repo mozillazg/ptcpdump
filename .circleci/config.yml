@@ -97,17 +97,19 @@ jobs:
             done
             exit 1
 
-#       - run:
-#           name: e2e (test go tls keylog)
-#           command: |
-#             echo "wireshark-common wireshark-common/install-setuid boolean true" | sudo debconf-set-selections
-#             sudo DEBIAN_FRONTEND=noninteractive apt install -y tshark
-#             make -C testdata/gohttpapp build
-# 
-#             for i in {1..10}; do
-#               sudo bash testdata/test_gotls_keylog.sh ./ptcpdump && exit 0 || sleep 1
-#             done
-#             exit 1
+      - run:
+          name: e2e (test go tls keylog)
+          command: |
+            echo "wireshark-common wireshark-common/install-setuid boolean true" | sudo debconf-set-selections
+            sudo add-apt-repository -y ppa:wireshark-dev/stable
+            sudo apt update
+            sudo DEBIAN_FRONTEND=noninteractive apt install -y tshark
+            make -C testdata/gohttpapp build
+
+            for i in {1..10}; do
+              sudo bash testdata/test_gotls_keylog.sh ./ptcpdump && exit 0 || sleep 1
+            done
+            exit 1
 
   docker-e2e:
     machine:
