@@ -22,12 +22,8 @@ jobs:
       with:
         go-version: '1.22.4'
 
-    - name: Set up deps
-      run: |
-        sudo apt-get install -y gcc flex bison make libelf-dev autoconf
-
     - name: Build
-      run: make build
+      run: make build-via-docker
 
     - name: Test
       run: make test
@@ -255,7 +251,7 @@ jobs:
         run: |
           make -C testdata/gohttpapp build
 
-      - name: Test go tls keylog
+      - name: Test go tls keylog (unstripped)
         uses: cilium/little-vm-helper@97c89f004bd0ab4caeacfe92ebc956e13e362e6b # v0.0.19
         with:
           provision: 'false'
@@ -270,5 +266,59 @@ jobs:
 
             for i in {1..10}; do
               bash /host/testdata/test_gotls_keylog.sh /host/ptcpdump/ptcpdump && exit 0 || sleep 1
+            done
+            exit 1
+
+      - name: Test go tls keylog (PIE)
+        uses: cilium/little-vm-helper@97c89f004bd0ab4caeacfe92ebc956e13e362e6b # v0.0.19
+        with:
+          provision: 'false'
+          cmd: |
+            set -ex
+            uname -a
+            cat /etc/issue
+
+            ls -lh /host/testdata/gohttpapp
+
+            apt update && yes | apt install -y tshark
+
+            for i in {1..10}; do
+              bash /host/testdata/test_gotls_keylog_pie.sh /host/ptcpdump/ptcpdump && exit 0 || sleep 1
+            done
+            exit 1
+
+      - name: Test go tls keylog (stripped)
+        uses: cilium/little-vm-helper@97c89f004bd0ab4caeacfe92ebc956e13e362e6b # v0.0.19
+        with:
+          provision: 'false'
+          cmd: |
+            set -ex
+            uname -a
+            cat /etc/issue
+
+            ls -lh /host/testdata/gohttpapp
+
+            apt update && yes | apt install -y tshark
+
+            for i in {1..10}; do
+              bash /host/testdata/test_gotls_keylog_stripped.sh /host/ptcpdump/ptcpdump && exit 0 || sleep 1
+            done
+            exit 1
+
+      - name: Test go tls keylog (stripped + PIE)
+        uses: cilium/little-vm-helper@97c89f004bd0ab4caeacfe92ebc956e13e362e6b # v0.0.19
+        with:
+          provision: 'false'
+          cmd: |
+            set -ex
+            uname -a
+            cat /etc/issue
+
+            ls -lh /host/testdata/gohttpapp
+
+            apt update && yes | apt install -y tshark
+
+            for i in {1..10}; do
+              bash /host/testdata/test_gotls_keylog_stripped_pie.sh /host/ptcpdump/ptcpdump && exit 0 || sleep 1
             done
             exit 1

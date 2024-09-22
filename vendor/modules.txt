@@ -171,6 +171,9 @@ github.com/docker/go-events
 # github.com/docker/go-units v0.5.0
 ## explicit
 github.com/docker/go-units
+# github.com/elliotchance/orderedmap v1.4.0
+## explicit; go 1.12
+github.com/elliotchance/orderedmap
 # github.com/florianl/go-tc v0.4.4
 ## explicit; go 1.13
 github.com/florianl/go-tc
@@ -224,6 +227,22 @@ github.com/jschwinger233/elibpcap
 # github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0
 ## explicit; go 1.16
 github.com/lufia/plan9stats
+# github.com/mandiant/GoReSym v1.7.2-0.20240819162932-534ca84b42d5
+## explicit; go 1.21
+github.com/mandiant/GoReSym/archive
+github.com/mandiant/GoReSym/bio
+github.com/mandiant/GoReSym/cmd/src
+github.com/mandiant/GoReSym/debug/dwarf
+github.com/mandiant/GoReSym/debug/elf
+github.com/mandiant/GoReSym/debug/gosym
+github.com/mandiant/GoReSym/debug/macho
+github.com/mandiant/GoReSym/debug/pe
+github.com/mandiant/GoReSym/goobj
+github.com/mandiant/GoReSym/objabi
+github.com/mandiant/GoReSym/objfile
+github.com/mandiant/GoReSym/saferio
+github.com/mandiant/GoReSym/sys
+github.com/mandiant/GoReSym/unsafeheader
 # github.com/mdlayher/netlink v1.6.0
 ## explicit; go 1.13
 github.com/mdlayher/netlink
@@ -316,11 +335,14 @@ go.opencensus.io/trace/internal
 go.opencensus.io/trace/tracestate
 # golang.org/x/arch v0.10.0
 ## explicit; go 1.18
+golang.org/x/arch/arm/armasm
 golang.org/x/arch/arm64/arm64asm
+golang.org/x/arch/ppc64/ppc64asm
 golang.org/x/arch/x86/x86asm
-# golang.org/x/exp v0.0.0-20230224173230-c95f2b4c22f2
-## explicit; go 1.18
+# golang.org/x/exp v0.0.0-20230811145659-89c5cff77bcb
+## explicit; go 1.20
 golang.org/x/exp/constraints
+golang.org/x/exp/slices
 # golang.org/x/net v0.26.0
 ## explicit; go 1.18
 golang.org/x/net/bpf
@@ -480,6 +502,10 @@ k8s.io/kubernetes/pkg/probe/exec
 # k8s.io/utils v0.0.0-20230726121419-3b25d923346b
 ## explicit; go 1.18
 k8s.io/utils/exec
+# rsc.io/binaryregexp v0.2.0
+## explicit; go 1.12
+rsc.io/binaryregexp
+rsc.io/binaryregexp/syntax
 # github.com/Microsoft/hcsshim => github.com/Microsoft/hcsshim v0.8.26
 # github.com/Microsoft/hcsshim/test => github.com/Microsoft/hcsshim/test v0.0.0-20210514012740-eba372547321
 # github.com/containerd/containerd => github.com/containerd/containerd v1.4.13

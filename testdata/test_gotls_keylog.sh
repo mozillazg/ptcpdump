@@ -22,6 +22,7 @@ function test_keylog_to_pcapng() {
 }
 
 function main() {
+  file ${APP}
   test_keylog_to_file
   test_keylog_to_pcapng
 }

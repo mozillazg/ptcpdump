@@ -18,27 +18,11 @@ jobs:
 
     steps:
       - checkout
-      - restore_cache:
-          keys:
-            - go-mod-v4-{{ checksum "go.sum" }}
-      - run:
-          name: Install Dependencies
-          command: go mod download
-      - save_cache:
-          key: go-mod-v4-{{ checksum "go.sum" }}
-          paths:
-            - "/go/pkg/mod"
-
-      - run:
-          name: install deps
-          command: |
-            sudo apt-get update && sudo apt-get install -y gcc flex bison make libelf-dev autoconf
-            make libpcap
 
       - run:
           name: build
           command: |
-            make build
+            make build-via-docker
 
             echo '========== info =========='
             uname -a
@@ -98,7 +82,7 @@ jobs:
             exit 1
 
       - run:
-          name: e2e (test go tls keylog)
+          name: e2e (test go tls keylog, unstripped)
           command: |
             echo "wireshark-common wireshark-common/install-setuid boolean true" | sudo debconf-set-selections
             sudo add-apt-repository -y ppa:wireshark-dev/stable
@@ -111,31 +95,60 @@ jobs:
             done
             exit 1
 
+      - run:
+          name: e2e (test go tls keylog, PIE)
+          command: |
+            echo "wireshark-common wireshark-common/install-setuid boolean true" | sudo debconf-set-selections
+            sudo add-apt-repository -y ppa:wireshark-dev/stable
+            sudo apt update
+            sudo DEBIAN_FRONTEND=noninteractive apt install -y tshark
+            make -C testdata/gohttpapp build
+
+            for i in {1..10}; do
+              sudo bash testdata/test_gotls_keylog_pie.sh ./ptcpdump && exit 0 || sleep 1
+            done
+            exit 1
+
+      - run:
+          name: e2e (test go tls keylog, stripped)
+          command: |
+            echo "wireshark-common wireshark-common/install-setuid boolean true" | sudo debconf-set-selections
+            sudo add-apt-repository -y ppa:wireshark-dev/stable
+            sudo apt update
+            sudo DEBIAN_FRONTEND=noninteractive apt install -y tshark
+            make -C testdata/gohttpapp build
+
+            for i in {1..10}; do
+              sudo bash testdata/test_gotls_keylog_stripped.sh ./ptcpdump && exit 0 || sleep 1
+            done
+            exit 1
+
+      - run:
+          name: e2e (test go tls keylog, stripped + PIE)
+          command: |
+            echo "wireshark-common wireshark-common/install-setuid boolean true" | sudo debconf-set-selections
+            sudo add-apt-repository -y ppa:wireshark-dev/stable
+            sudo apt update
+            sudo DEBIAN_FRONTEND=noninteractive apt install -y tshark
+            make -C testdata/gohttpapp build
+
+            for i in {1..10}; do
+              sudo bash testdata/test_gotls_keylog_stripped_pie.sh ./ptcpdump && exit 0 || sleep 1
+            done
+            exit 1
+
+
   docker-e2e:
     machine:
       image: ubuntu-2204:2024.04.4
     resource_class: medium
     steps:
       - checkout
-      - restore_cache:
-          keys:
-            - go-mod-v4-{{ checksum "go.sum" }}
-      - run:
-          name: Install Dependencies
-          command: go mod download
-      - save_cache:
-          key: go-mod-v4-{{ checksum "go.sum" }}
-          paths:
-            - "/go/pkg/mod"
-      - run:
-          name: install deps
-          command: |
-            sudo apt-get update && sudo apt-get install -y gcc flex bison make libelf-dev autoconf
-            make libpcap
+
       - run:
           name: build
           command: |
-            make build
+            make build-via-docker
 
             echo '========== info =========='
             uname -a
@@ -171,25 +184,11 @@ jobs:
             wget https://github.com/containernetworking/plugins/releases/download/v1.5.0/cni-plugins-linux-amd64-v1.5.0.tgz
             sudo mkdir -p /opt/cni/bin
             sudo tar Cxzvvf /opt/cni/bin cni-plugins-linux-amd64-v1.5.0.tgz
-      - restore_cache:
-          keys:
-            - go-mod-v4-{{ checksum "go.sum" }}
-      - run:
-          name: Install Dependencies
-          command: go mod download
-      - save_cache:
-          key: go-mod-v4-{{ checksum "go.sum" }}
-          paths:
-            - "/go/pkg/mod"
-      - run:
-          name: install deps
-          command: |
-            sudo apt-get update && sudo apt-get install -y gcc flex bison make libelf-dev autoconf
-            make libpcap
+
       - run:
           name: build
           command: |
-            make build
+            make build-via-docker
 
             echo '========== info =========='
             uname -a
@@ -232,25 +231,10 @@ jobs:
             sudo kind load docker-image busybox:1
             sudo kind export kubeconfig
 
-      - restore_cache:
-          keys:
-            - go-mod-v4-{{ checksum "go.sum" }}
-      - run:
-          name: Install Dependencies
-          command: go mod download
-      - save_cache:
-          key: go-mod-v4-{{ checksum "go.sum" }}
-          paths:
-            - "/go/pkg/mod"
-      - run:
-          name: install deps
-          command: |
-            sudo apt-get update && sudo apt-get install -y gcc flex bison make libelf-dev autoconf
-            make libpcap
       - run:
           name: build
           command: |
-            make build
+            make build-via-docker
 
             echo '========== info =========='
             uname -a
