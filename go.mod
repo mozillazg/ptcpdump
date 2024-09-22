@@ -20,6 +20,7 @@ require (
 require (
 	github.com/smira/go-xz v0.1.0
 	github.com/stretchr/testify v1.9.0
+	golang.org/x/arch v0.10.0
 	k8s.io/klog/v2 v2.130.1
 )
 

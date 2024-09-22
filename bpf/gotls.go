@@ -5,11 +5,12 @@ import (
 	"github.com/cilium/ebpf/link"
 )
 
-func (b *BPF) AttachUprobeHook(exec *link.Executable, symbol string, offset uint64, pid int) error {
+func (b *BPF) AttachGoTLSUprobeHooks(exec *link.Executable, symbol string,
+	funcAddr uint64, retOffset uint64, pid int) error {
 	lk, err := exec.Uprobe(symbol, b.objs.UprobeGoBuiltinTlsWriteKeyLog,
 		&link.UprobeOptions{
-			PID:    pid,
-			Offset: offset,
+			PID:     pid,
+			Address: funcAddr,
 		})
 	if err != nil {
 		return fmt.Errorf("attach uprobe for %s: %w", symbol, err)
@@ -17,10 +18,9 @@ func (b *BPF) AttachUprobeHook(exec *link.Executable, symbol string, offset uint
 	b.links = append(b.links, lk)
 
 	lk, err = exec.Uprobe(symbol, b.objs.UprobeGoBuiltinTlsWriteKeyLogRet,
-		// TODO: get offset by parse binary
 		&link.UprobeOptions{
 			PID:    pid,
-			Offset: 508, // if c.KeyLogWriter == nil { return nil }
+			Offset: retOffset, // if c.KeyLogWriter == nil { return nil }
 		})
 	if err != nil {
 		return fmt.Errorf("attach uprobe for %s: %w", symbol, err)

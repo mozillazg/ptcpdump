@@ -1,7 +1,10 @@
 package cmd
 
 import (
+	"debug/elf"
+	"errors"
 	"fmt"
+	"github.com/mozillazg/ptcpdump/internal/gosym"
 	"os/exec"
 	"time"
 
@@ -53,13 +56,30 @@ func attachGoTLSHooks(opts Options, bf *bpf.BPF) error {
 		log.Debugf("skip go TLS related logics due to %s", err)
 		return nil
 	}
+	elff, err := elf.Open(path)
+	if err != nil {
+		log.Debugf("skip go TLS related logics due to %s", err)
+		return nil
+	}
 
 	exc, err := link.OpenExecutable(path)
 	if err != nil {
 		log.Warnf("skip go TLS related logics due to %s", err)
 		return nil
 	}
-	if err := bf.AttachUprobeHook(exc, goTLSSymbolWriteKeyLog, 0, 0); err != nil {
+	retOffsets, err := gosym.GetGoFuncRetOffsetsFromELF(elff, goTLSSymbolWriteKeyLog)
+	if err == nil && len(retOffsets) == 0 {
+		err = errors.New("not found any RET instruction")
+	}
+	if err != nil {
+		log.Warnf("skip go TLS related logics due to %s", err)
+		return nil
+	}
+	retOffset := retOffsets[len(retOffsets)-1]
+	log.Infof("got retOffsets: %v, will attach at ret offset: %d", retOffsets, retOffset)
+
+	if err := bf.AttachGoTLSUprobeHooks(exc, goTLSSymbolWriteKeyLog,
+		0, retOffset, 0); err != nil {
 		log.Warnf("skip go TLS related logics due to could not attach go TLS hooks base on %s: %s", path, err)
 	}
 	return nil
