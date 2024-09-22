@@ -67,8 +67,8 @@ jobs:
         with:
           context: .
           file: .github/build.Dockerfile
-          # platforms: linux/amd64,linux/arm64
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64
+          # platforms: linux/amd64
           push: ${{ github.event_name != 'pull_request' }}
           tags: '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG_NAME }}'
           labels: ${{ steps.meta.outputs.labels }}
@@ -97,8 +97,8 @@ jobs:
         with:
           context: .
           file: .github/build.Dockerfile
-          # platforms: linux/amd64,linux/arm64
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64
+          # platforms: linux/amd64
           push: ${{ github.event_name != 'pull_request' }}
           tags: '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest'
           labels: ${{ steps.meta.outputs.labels }}
