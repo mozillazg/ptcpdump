@@ -18,3 +18,5 @@
 /*.pcapng
 /*.pcap
 /dist/
+keylog.txt
+/testdata/gohttpapp/gohttpapp*

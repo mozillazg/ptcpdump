@@ -8,9 +8,9 @@
 #include <bpf/bpf_tracing.h>
 
 // https://tlswg.org/sslkeylogfile/draft-ietf-tls-keylogfile.html#name-the-sslkeylogfile-format
-#define KEYLOG_LABEL_LEN (31 + 1) // sizeof("CLIENT_HANDSHAKE_TRAFFIC_SECRET") + 1
-#define KEYLOG_CLIENT_RANDOM_LEN (32 + 1)
-#define KEYLOG_SECRET_LEN (48 + 1)
+#define KEYLOG_LABEL_LEN 32
+#define KEYLOG_CLIENT_RANDOM_LEN 32
+#define KEYLOG_SECRET_LEN 64
 
 #if defined(bpf_target_x86)
 #define GO_PARAM1(dst, x) BPF_CORE_READ_INTO(dst, (x), ax)

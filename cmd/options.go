@@ -60,7 +60,8 @@ type Options struct {
 	criRuntimeEndpoint string
 	btfPath            string
 
-	writeTLSKeyLogPath string
+	writeTLSKeyLogPath     string
+	embedTLSKeyLogToPcapng bool
 
 	subProgArgs []string
 

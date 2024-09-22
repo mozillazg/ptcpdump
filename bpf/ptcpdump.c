@@ -1053,8 +1053,7 @@ int tc_egress(struct __sk_buff *skb) {
     return TC_ACT_UNSPEC;
 }
 
-// crypto/tls.(*Config).writeKeyLog
-SEC("uprobe/go/crypto/tls/writeKeyLog")
+SEC("uprobe/go:crypto/tls.(*Config).writeKeyLog")
 int uprobe__go_builtin__tls__write_key_log(struct pt_regs *ctx) {
     struct go_keylog_event_t event = {0};
     u64 label_ptr = 0;
@@ -1072,7 +1071,7 @@ int uprobe__go_builtin__tls__write_key_log(struct pt_regs *ctx) {
     bpf_probe_read_kernel(&event.label_len, sizeof(event.label_len), &label_len_ptr);
     bpf_probe_read_kernel(&event.client_random_len, sizeof(event.client_random_len), &random_len_ptr);
     bpf_probe_read_kernel(&event.secret_len, sizeof(event.secret_len), &secret_len_ptr);
-    if (event.label_len == 0 || event.client_random_len == 0 || event.secret_len == 0) {
+    if (event.label_len == 0 && event.client_random_len == 0 && event.secret_len == 0) {
         //        debug_log("go tls read filed, label_len: %d, client_random_len: %d, secret_len: %d",
         //                    event.label_len, event.client_random_len, event.secret_len );
         return 0;
@@ -1082,15 +1081,15 @@ int uprobe__go_builtin__tls__write_key_log(struct pt_regs *ctx) {
     read_go_arg_into(&random_ptr, ctx, 4);
     read_go_arg_into(&secret_ptr, ctx, 7);
 
-    ret = bpf_probe_read_user_str(&event.label, sizeof(event.label), (void *)label_ptr);
+    ret = bpf_probe_read_user(&event.label, sizeof(event.label), (void *)label_ptr);
     if (ret < 0) {
         //        debug_log("go labels, ret: %d", ret);
     }
-    ret = bpf_probe_read_user_str(&event.client_random, sizeof(event.client_random), (void *)random_ptr);
+    ret = bpf_probe_read_user(&event.client_random, sizeof(event.client_random), (void *)random_ptr);
     if (ret < 0) {
         //        debug_log("go random, ret: %d", ret);
     }
-    ret = bpf_probe_read_user_str(&event.secret, sizeof(event.secret), (void *)secret_ptr);
+    ret = bpf_probe_read_user(&event.secret, sizeof(event.secret), (void *)secret_ptr);
     if (ret < 0) {
         //        debug_log("go secret, ret: %d", ret);
     }
