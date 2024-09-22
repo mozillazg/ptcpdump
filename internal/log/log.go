@@ -50,11 +50,11 @@ func Debugf(format string, v ...any) {
 }
 
 func Info(msg string) {
-	defaultLogger.Info().Msg(msg)
+	debugLogger.Info().Msg(msg)
 }
 
 func Infof(format string, v ...any) {
-	defaultLogger.Info().Msgf(format, v...)
+	debugLogger.Info().Msgf(format, v...)
 }
 
 func Warn(msg string) {
@@ -63,6 +63,14 @@ func Warn(msg string) {
 
 func Warnf(format string, v ...any) {
 	defaultLogger.Warn().Msgf(format, v...)
+}
+
+func DWarnf(format string, v ...any) {
+	debugLogger.Warn().Msgf(format, v...)
+}
+
+func DWarn(format string) {
+	debugLogger.Warn().Msg(format)
 }
 
 func Error(msg string) {

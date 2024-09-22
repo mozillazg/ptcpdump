@@ -4,6 +4,7 @@ import (
 	"debug/elf"
 	"errors"
 	"fmt"
+
 	"github.com/mozillazg/ptcpdump/internal/log"
 	"golang.org/x/arch/arm64/arm64asm"
 	"golang.org/x/arch/x86/x86asm"
@@ -11,7 +12,8 @@ import (
 
 const arm64InstructionLen = 4
 
-func GetGoFuncRetOffsetsFromELF(f *elf.File, symbolName string) ([]uint64, error) {
+func GetFuncRetOffsetsViaSymbolTable(f *elf.File, symbolName string) ([]uint64, error) {
+	log.Info("start to get ret offsets via symbol table")
 	syms, err := f.Symbols()
 	if err != nil && !errors.Is(err, elf.ErrNoSymbols) {
 		return nil, err
@@ -43,11 +45,12 @@ func GetGoFuncRetOffsetsFromELF(f *elf.File, symbolName string) ([]uint64, error
 		symbol = s
 		break
 	}
+	log.Infof("textSec.Addr: %d, %#v", textSec.Addr, textSec)
 
 	start := symbolAddr - textSec.Addr
 	symbolData := make([]byte, symbol.Size)
 	if _, err := textSec.ReadAt(symbolData, int64(start)); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("read text section: %w", err)
 	}
 	switch f.FileHeader.Machine {
 	case elf.EM_X86_64:
@@ -57,6 +60,42 @@ func GetGoFuncRetOffsetsFromELF(f *elf.File, symbolName string) ([]uint64, error
 	}
 
 	return nil, fmt.Errorf("symbol %q not found", symbolName)
+}
+
+func GetFuncRetOffsetsViaPclntab(fpath string, f *elf.File, symbolName string) (
+	symbolOffset uint64, retOffsets []uint64, err error) {
+	log.Info("start to get ret offsets via pclntab")
+	textSec := f.Section(".text")
+	if textSec == nil {
+		return 0, nil, errors.New("no .text section")
+	}
+	log.Infof("textSec.Addr: %d, %#v", textSec.Addr, textSec)
+
+	meta, err := getFuncMetadataViaPclntab(fpath, symbolName)
+	if err != nil {
+		return 0, nil,
+			fmt.Errorf("could not get metadata for %q via pclntab: %v", symbolName, err)
+	}
+
+	symbolAddr := meta.Start
+	symbolSize := meta.End - symbolAddr
+	start := symbolAddr - textSec.Addr
+	symbolData := make([]byte, symbolSize)
+	if _, err := textSec.ReadAt(symbolData, int64(start)); err != nil {
+		return 0, nil, fmt.Errorf("read text section: %w", err)
+	}
+	symbolOffset = symbolAddr - textSec.Addr + textSec.Offset
+
+	switch f.FileHeader.Machine {
+	case elf.EM_X86_64:
+		retOffsets, err = findAMD64RetInstructions(symbolData)
+		return
+	case elf.EM_AARCH64:
+		retOffsets, err = findARM64RetInstructions(symbolData)
+		return
+	}
+
+	return 0, nil, fmt.Errorf("symbol %q not found", symbolName)
 }
 
 func findAMD64RetInstructions(data []byte) ([]uint64, error) {

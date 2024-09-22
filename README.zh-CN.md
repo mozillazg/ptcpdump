@@ -353,7 +353,7 @@ Flags:
 如何编程项目源代码。
 
 
-1. Build eBPF programs:
+1. Build eBPF programs (optional):
 
     ```
     make build-bpf

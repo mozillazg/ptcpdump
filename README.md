@@ -334,7 +334,7 @@ Flags:
 
 ### Building
 
-1. Build eBPF programs:
+1. Build eBPF programs (optional):
 
     ```
     make build-bpf
