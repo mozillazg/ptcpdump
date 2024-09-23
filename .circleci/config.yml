@@ -91,7 +91,7 @@ jobs:
             make -C testdata/gohttpapp build
 
             for i in {1..10}; do
-              sudo bash testdata/test_gotls_keylog.sh ./ptcpdump && exit 0 || sleep 1
+              sudo bash testdata/test_gotls_keylog.sh ./ptcpdump gohttpapp && exit 0 || sleep 1
             done
             exit 1
 
@@ -105,7 +105,7 @@ jobs:
             make -C testdata/gohttpapp build
 
             for i in {1..10}; do
-              sudo bash testdata/test_gotls_keylog_pie.sh ./ptcpdump && exit 0 || sleep 1
+              sudo bash testdata/test_gotls_keylog.sh ./ptcpdump gohttpapp_pie && exit 0 || sleep 1
             done
             exit 1
 
@@ -119,7 +119,7 @@ jobs:
             make -C testdata/gohttpapp build
 
             for i in {1..10}; do
-              sudo bash testdata/test_gotls_keylog_stripped.sh ./ptcpdump && exit 0 || sleep 1
+              sudo bash testdata/test_gotls_keylog.sh ./ptcpdump gohttpapp_stripped && exit 0 || sleep 1
             done
             exit 1
 
@@ -133,7 +133,7 @@ jobs:
             make -C testdata/gohttpapp build
 
             for i in {1..10}; do
-              sudo bash testdata/test_gotls_keylog_stripped_pie.sh ./ptcpdump && exit 0 || sleep 1
+              sudo bash testdata/test_gotls_keylog.sh ./ptcpdump gohttpapp_stripped_pie && exit 0 || sleep 1
             done
             exit 1
 

@@ -32,8 +32,8 @@ func getGoKeyLogEventConsumer(opts *Options, packetWriters []writer.PacketWriter
 			}
 		}
 	}
-	if opts.writeTLSKeyLogPath != "" {
-		w, err := writer.NewKeyLogFileWriter(opts.writeTLSKeyLogPath)
+	if opts.getWriteTLSKeyLogPath() != "" {
+		w, err := writer.NewKeyLogFileWriter(opts.getWriteTLSKeyLogPath())
 		if err != nil {
 			return nil, err
 		}
@@ -45,20 +45,22 @@ func getGoKeyLogEventConsumer(opts *Options, packetWriters []writer.PacketWriter
 }
 
 func attachGoTLSHooks(opts Options, bf *bpf.BPF) error {
-	if len(opts.subProgArgs) == 0 {
+	if !opts.shouldEnableGoTLSHooks() {
+		log.Info("skip go tls hooks")
 		return nil
 	}
+
 	path, err := exec.LookPath(opts.subProgArgs[0])
 	if err != nil {
 		return fmt.Errorf("could not find %s in PATH", opts.subProgArgs[0])
 	}
 	if _, err := buildinfo.ReadFile(path); err != nil {
-		log.Debugf("skip go TLS related logics due to %+v", err)
+		log.Infof("skip go TLS related logics due to %+v", err)
 		return nil
 	}
 	elff, err := elf.Open(path)
 	if err != nil {
-		log.Debugf("skip go TLS related logics due to %+v", err)
+		log.Infof("skip go TLS related logics due to %+v", err)
 		return nil
 	}
 
