@@ -61,7 +61,7 @@ func formatPacketTCP(tcp *layers.TCP, src, dst string, length int, style FormatS
 	if tcp.URG {
 		out += fmt.Sprintf(", urg %d", tcp.Urgent)
 	}
-	if len(tcp.Options) > 0 && style >= FormatStyleVerbose {
+	if len(tcp.Options) > 0 {
 		out += ", options ["
 		for i, opt := range tcp.Options {
 			if i > 0 {
