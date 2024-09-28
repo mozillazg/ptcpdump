@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/mozillazg/ptcpdump/internal/writer"
 	"github.com/x-way/pktdump"
+	"os"
 	"strings"
 	"time"
 
@@ -175,4 +176,21 @@ func (o Options) applyToStdoutWriter(w *writer.StdoutWriter) {
 		w.DataStyle = pktdump.ContentStyleASCII
 		break
 	}
+}
+
+func (o Options) shouldEnableGoTLSHooks() bool {
+	if len(o.subProgArgs) == 0 {
+		return false
+	}
+	if o.getWriteTLSKeyLogPath() != "" || o.embedTLSKeyLogToPcapng {
+		return true
+	}
+	return false
+}
+
+func (o Options) getWriteTLSKeyLogPath() string {
+	if o.writeTLSKeyLogPath != "" {
+		return o.writeTLSKeyLogPath
+	}
+	return os.Getenv("SSLKEYLOGFILE")
 }
