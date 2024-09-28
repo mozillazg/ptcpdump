@@ -209,7 +209,7 @@ github.com/google/go-cmp/cmp/internal/value
 # github.com/google/uuid v1.6.0
 ## explicit
 github.com/google/uuid
-# github.com/gopacket/gopacket v1.2.0 => github.com/mozillazg/gopacket v0.0.0-20240602032747-2b08f0c63614
+# github.com/gopacket/gopacket v1.2.0 => github.com/mozillazg/gopacket v0.0.0-20240928025743-af4d18b65a70
 ## explicit; go 1.20
 github.com/gopacket/gopacket
 github.com/gopacket/gopacket/layers
@@ -320,7 +320,7 @@ github.com/tklauser/go-sysconf
 # github.com/tklauser/numcpus v0.6.1
 ## explicit; go 1.13
 github.com/tklauser/numcpus
-# github.com/x-way/pktdump v0.0.5 => github.com/mozillazg/pktdump v0.0.9-0.20240926140652-120bcf8d8890
+# github.com/x-way/pktdump v0.0.5 => github.com/mozillazg/pktdump v0.0.9-0.20240928035206-3598f58e5bfd
 ## explicit; go 1.19
 github.com/x-way/pktdump
 # github.com/yusufpapurcu/wmi v1.2.4
@@ -510,8 +510,8 @@ rsc.io/binaryregexp/syntax
 # github.com/Microsoft/hcsshim/test => github.com/Microsoft/hcsshim/test v0.0.0-20210514012740-eba372547321
 # github.com/containerd/containerd => github.com/containerd/containerd v1.4.13
 # github.com/docker/docker => github.com/docker/docker v24.0.9+incompatible
-# github.com/gopacket/gopacket => github.com/mozillazg/gopacket v0.0.0-20240602032747-2b08f0c63614
-# github.com/x-way/pktdump => github.com/mozillazg/pktdump v0.0.9-0.20240926140652-120bcf8d8890
+# github.com/gopacket/gopacket => github.com/mozillazg/gopacket v0.0.0-20240928025743-af4d18b65a70
+# github.com/x-way/pktdump => github.com/mozillazg/pktdump v0.0.9-0.20240928035206-3598f58e5bfd
 # go.opencensus.io => go.opencensus.io v0.23.0
 # go.opentelemetry.io/contrib => go.opentelemetry.io/contrib v0.20.0
 # go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc => go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.20.0

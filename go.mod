@@ -102,10 +102,9 @@ replace (
 	github.com/Microsoft/hcsshim => github.com/Microsoft/hcsshim v0.8.26
 	github.com/Microsoft/hcsshim/test => github.com/Microsoft/hcsshim/test v0.0.0-20210514012740-eba372547321
 	github.com/containerd/containerd => github.com/containerd/containerd v1.4.13
-	// github.com/docker/docker => github.com/docker/docker v20.10.12+incompatible
 	github.com/docker/docker => github.com/docker/docker v24.0.9+incompatible
-	github.com/gopacket/gopacket => github.com/mozillazg/gopacket v0.0.0-20240602032747-2b08f0c63614
-	github.com/x-way/pktdump => github.com/mozillazg/pktdump v0.0.9-0.20240926140652-120bcf8d8890
+	github.com/gopacket/gopacket => github.com/mozillazg/gopacket v0.0.0-20240928025743-af4d18b65a70
+	github.com/x-way/pktdump => github.com/mozillazg/pktdump v0.0.9-0.20240928035206-3598f58e5bfd
 
 	// https://github.com/kubernetes/kubernetes/blob/release-1.24/go.mod
 	go.opencensus.io => go.opencensus.io v0.23.0
