@@ -355,7 +355,6 @@ OPTIONS:
 				}
 				opt.OptionMPTCPMpCapable = &MPCapable{
 					Version: data[2] & 0x0F,
-					Flags: data[3],
 					A:       data[3]&0x80 != 0,
 					B:       data[3]&0x40 != 0,
 					C:       data[3]&0x20 != 0,
@@ -366,10 +365,10 @@ OPTIONS:
 					H:       data[3]&0x01 != 0,
 				}
 				if opt.OptionLength >= OptionLenMpCapableSynAck {
-					opt.OptionMPTCPMpCapable.SendKey = binary.BigEndian.Uint64(data[4:12])
+					opt.OptionMPTCPMpCapable.SendKey = data[4:12]
 				}
 				if opt.OptionLength >= OptionLenMpCapableAck {
-					opt.OptionMPTCPMpCapable.ReceivKey = binary.BigEndian.Uint64(data[12:20])
+					opt.OptionMPTCPMpCapable.ReceivKey = data[12:20]
 				}
 				if opt.OptionLength >= OptionLenMpCapableAckData {
 					opt.OptionMPTCPMpCapable.DataLength = binary.BigEndian.Uint16(data[20:22])
@@ -384,7 +383,6 @@ OPTIONS:
 				switch opt.OptionLength {
 				case OptionLenMpJoinSyn:
 					opt.OptionMPTCPMpJoin = &MPJoin{
-						SubB: data[2],
 						Backup:      data[2]&0x01 != 0,
 						AddrID:      data[3],
 						ReceivToken: binary.BigEndian.Uint32(data[4:8]),
@@ -392,7 +390,6 @@ OPTIONS:
 					}
 				case OptionLenMpJoinSynAck:
 					opt.OptionMPTCPMpJoin = &MPJoin{
-						SubB: data[2],
 						Backup:      data[2]&0x01 != 0,
 						AddrID:      data[3],
 						SendHMAC:    data[4:12],
@@ -400,16 +397,11 @@ OPTIONS:
 					}
 				case OptionLenMpJoinAck:
 					opt.OptionMPTCPMpJoin = &MPJoin{
-						SubB: data[2],
-						Backup:      data[2]&0x01 != 0,
-						AddrID:      data[3],
 						SendHMAC: data[4:24],
 					}
 				}
 			case MPTCPSubtypeDSS:
 				opt.OptionMPTCPDss = &Dss{
-					SubB: data[2],
-					Flags: data[3],
 					F: data[3]&0x20 != 0,
 					m: data[3]&0x10 != 0,
 					M: data[3]&0x04 != 0,
@@ -462,7 +454,6 @@ OPTIONS:
 				switch mptcpVer {
 				case MptcpVersion0:
 					opt.OptionMPTCPAddAddr = &AddAddr{
-						SubEcho: data[2],
 						IPVer:  data[2] & 0x0F,
 						AddrID: data[3],
 					}
@@ -498,7 +489,6 @@ OPTIONS:
 					addrIds = append(addrIds, data[3+n])
 				}
 				opt.OptionMTCPRemAddr = &RemAddr{
-					Sub: data[2],
 					AddrIDs: addrIds,
 				}
 			case MPTCPSubtypeMPPRIO:
@@ -506,7 +496,6 @@ OPTIONS:
 					return fmt.Errorf("MP_PRIO bad option length %d", opt.OptionLength)
 				}
 				opt.OptionMPTCPMpPrio = &MPPrio{
-					SubB: data[2],
 					Backup: data[2]&0x01 != 0,
 				}
 				if opt.OptionLength == OptionLenMpPrioAddr {
@@ -532,7 +521,6 @@ OPTIONS:
 					return fmt.Errorf("MP_TCPRST bad option length %d", opt.OptionLength)
 				}
 				opt.OptionMPTCPMPTcpRst = &MPTcpRst{
-					SubB: data[2],
 					U:      data[2]&0x10 != 0,
 					V:      data[2]&0x04 != 0,
 					W:      data[2]&0x02 != 0,

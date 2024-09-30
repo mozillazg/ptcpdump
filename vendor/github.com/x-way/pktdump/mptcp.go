@@ -45,47 +45,21 @@ type MPTCPOption struct {
 	SubEtc uint8 // subtype upper 4 bits, other stuff lower 4 bits
 }
 
-// MPTCPSubKind returns the subtype of the MPTCP option.
-func (o *MPTCPOption) MPTCPSubKind() MPTCPSub {
-	return MPTCPSub((o.SubEtc >> 4) & 0xF)
-}
-
-// MP_CAPABLE_A is a flag for the "capable" option.
-const MP_CAPABLE_A = 0x80
-
-// MPCapableFlags represents the flags for the "capable" option.
-var MPCapableFlags = []Token{
-	{MP_CAPABLE_A, "A"},
-	{0x40, "B"},
-	{0x20, "C"},
-	{0x10, "D"},
-	{0x08, "E"},
-	{0x04, "F"},
-	{0x02, "G"},
-	{0x01, "H"},
-}
-
 // MPCapable represents the "capable" option data.
 type MPCapable struct {
 	Kind        uint8
 	Len         uint8
 	SubVer      uint8
-	Flags       uint8
 	SenderKey   uint64
 	ReceiverKey uint64
 	DataLen     uint16
-}
-
-// MP_CAPABLE_OPT_VERSION returns the version from the "capable" option subtype.
-func MP_CAPABLE_OPT_VERSION(subVer uint8) uint8 {
-	return (subVer >> 0) & 0xF
 }
 
 // MPJoin represents the "join" option data.
 type MPJoin struct {
 	Kind   uint8
 	Len    uint8
-	SubB   uint8
+	Backup bool
 	AddrID uint8
 	U      struct {
 		Syn struct {
@@ -109,7 +83,6 @@ const MP_JOIN_B = 0x01
 type MPDSS struct {
 	Kind  uint8
 	Len   uint8
-	Sub   uint8
 	Flags uint8
 }
 
@@ -194,19 +167,7 @@ type MPClose struct {
 type MPPrio struct {
 	Kind   uint8
 	Len    uint8
-	SubB   uint8
 	AddrID uint8
-}
-
-// MP_PRIO_B is a flag for the "prio" option.
-const MP_PRIO_B = 0x01
-
-// MPTCPFlags represents the flags for the "tcprst" option.
-var MPTCPFlags = []Token{
-	{0x08, "U"},
-	{0x04, "V"},
-	{0x02, "W"},
-	{0x01, "T"},
 }
 
 // MPTCPRSTReasons represents the reasons for the "tcprst" option.
@@ -229,34 +190,52 @@ type MPTCPRST struct {
 }
 
 // dummyPrint is a placeholder print function for unknown options.
-func dummyPrint(options *mptcpPrintOptions, opt layers.TCPOption, buf *strings.Builder) error {
-	return nil
-}
+func dummyPrint(options *mptcpPrintOptions, opt layers.TCPOption, buf *strings.Builder) {}
 
 // mpCapablePrint prints the "capable" option.
-func mpCapablePrint(options *mptcpPrintOptions, opt layers.TCPOption, buf *strings.Builder) error {
+func mpCapablePrint(options *mptcpPrintOptions, opt layers.TCPOption, buf *strings.Builder) {
 	mpc := MPCapable{}
 	mpc.Kind = uint8(opt.OptionType)
 	mpc.Len = opt.OptionLength
 	mpc.SubVer = opt.OptionMPTCPMpCapable.Version
-	mpc.Flags = opt.OptionMPTCPMpCapable.Flags
-	mpc.SenderKey = opt.OptionMPTCPMpCapable.SendKey
-	mpc.ReceiverKey = opt.OptionMPTCPMpCapable.ReceivKey
+	mpc.SenderKey = bytesToUint64(opt.OptionMPTCPMpCapable.SendKey)
+	mpc.ReceiverKey = bytesToUint64(opt.OptionMPTCPMpCapable.ReceivKey)
 	mpc.DataLen = opt.OptionMPTCPMpCapable.DataLength
 	optLen := opt.OptionLength
 
-	version := MP_CAPABLE_OPT_VERSION(mpc.SubVer)
+	version := mpc.SubVer
 	switch version {
 	case 0, 1:
 		buf.WriteString(fmt.Sprintf(" v%d", version))
 	default:
-		return fmt.Errorf("unknown version: %d", version)
 	}
 
-	flagsStr := bittok2str(MPCapableFlags, "none", uint32(mpc.Flags))
+	var flags []string
+	switch {
+	case opt.OptionMPTCPMpCapable.A:
+		flags = append(flags, "A")
+	case opt.OptionMPTCPMpCapable.B:
+		flags = append(flags, "B")
+	case opt.OptionMPTCPMpCapable.C:
+		flags = append(flags, "C")
+	case opt.OptionMPTCPMpCapable.D:
+		flags = append(flags, "D")
+	case opt.OptionMPTCPMpCapable.E:
+		flags = append(flags, "E")
+	case opt.OptionMPTCPMpCapable.F:
+		flags = append(flags, "F")
+	case opt.OptionMPTCPMpCapable.G:
+		flags = append(flags, "G")
+	case opt.OptionMPTCPMpCapable.H:
+		flags = append(flags, "H")
+	}
+	flagsStr := strings.Join(flags, " ")
+	if flagsStr == "" {
+		flagsStr = "none"
+	}
 	buf.WriteString(fmt.Sprintf(" flags [%s]", flagsStr))
 
-	csumEnabled := mpc.Flags&MP_CAPABLE_A != 0
+	csumEnabled := opt.OptionMPTCPMpCapable.A
 	if csumEnabled {
 		buf.WriteString(fmt.Sprintf(" csum"))
 	}
@@ -272,20 +251,20 @@ func mpCapablePrint(options *mptcpPrintOptions, opt layers.TCPOption, buf *strin
 		buf.WriteString(fmt.Sprintf("}"))
 	}
 
-	return nil
+	return
 }
 
 // mpJoinPrint prints the "join" option.
-func mpJoinPrint(options *mptcpPrintOptions, opt layers.TCPOption, buf *strings.Builder) error {
+func mpJoinPrint(options *mptcpPrintOptions, opt layers.TCPOption, buf *strings.Builder) {
 	mpj := MPJoin{}
 	mpj.Kind = uint8(opt.OptionType)
 	mpj.Len = opt.OptionLength
-	mpj.SubB = opt.OptionMPTCPMpJoin.SubB
+	mpj.Backup = opt.OptionMPTCPMpJoin.Backup
 	mpj.AddrID = opt.OptionMPTCPMpJoin.AddrID
 	optLen := opt.OptionLength
 
 	if optLen != 24 {
-		if mpj.SubB&MP_JOIN_B != 0 {
+		if mpj.Backup {
 			buf.WriteString(fmt.Sprintf(" backup"))
 		}
 		buf.WriteString(fmt.Sprintf(" id %d", mpj.AddrID))
@@ -297,111 +276,73 @@ func mpJoinPrint(options *mptcpPrintOptions, opt layers.TCPOption, buf *strings.
 		mpj.U.Syn.Nonce = opt.OptionMPTCPMpJoin.SendRandNum
 		buf.WriteString(fmt.Sprintf(" token 0x%x nonce 0x%x", mpj.U.Syn.Token, mpj.U.Syn.Nonce))
 	case 16: // SYN/ACK
-		mpj.U.SynAck.Mac = binary.BigEndian.Uint64(opt.OptionMPTCPMpJoin.SendHMAC)
+		mpj.U.SynAck.Mac = bytesToUint64(opt.OptionMPTCPMpJoin.SendHMAC)
 		mpj.U.Syn.Nonce = opt.OptionMPTCPMpJoin.SendRandNum
 		buf.WriteString(fmt.Sprintf(" hmac 0x%x nonce 0x%x", mpj.U.SynAck.Mac, mpj.U.SynAck.Nonce))
 	case 24: // ACK
-		copy(mpj.U.Ack.Mac[:], opt.OptionMPTCPMpJoin.SendHMAC)
 		buf.WriteString(fmt.Sprintf(" hmac 0x"))
-		for i := 0; i < len(mpj.U.Ack.Mac); i++ {
-			buf.WriteString(fmt.Sprintf("%02x", mpj.U.Ack.Mac[i]))
+		for _, v := range opt.OptionMPTCPMpJoin.SendHMAC {
+			buf.WriteString(fmt.Sprintf("%02x", v))
 		}
 	default:
-		return fmt.Errorf("invalid length for join option: %d", optLen)
 	}
-
-	return nil
 }
 
-var TH_SYN uint8 = (0x02)
-
 // mpDSSPrint prints the "dss" option.
-func mpDSSPrint(options *mptcpPrintOptions, opt layers.TCPOption, buf *strings.Builder) error {
+func mpDSSPrint(options *mptcpPrintOptions, opt layers.TCPOption, buf *strings.Builder) {
 	mdss := MPDSS{}
 	mdss.Kind = uint8(opt.OptionType)
 	mdss.Len = opt.OptionLength
-	mdss.Sub = opt.OptionMPTCPDss.SubB
-	mdss.Flags = opt.OptionMPTCPDss.Flags
 	optLen := opt.OptionLength
 
-	if optLen < 4 {
-		return fmt.Errorf("invalid length for dss option: %d", optLen)
-	}
-
-	//if flags&TH_SYN != 0 {
-	//	return fmt.Errorf("dss option not allowed with SYN flag")
-	//}
-
-	if mdss.Flags&MP_DSS_F != 0 {
+	if opt.OptionMPTCPDss.F {
 		buf.WriteString(fmt.Sprintf(" fin"))
 	}
 
 	optLen -= 4
 
-	if mdss.Flags&MP_DSS_A != 0 {
+	if opt.OptionMPTCPDss.A {
 		// Ack present
 		buf.WriteString(fmt.Sprintf(" ack "))
 
 		// If the 'a' flag is set, we have an 8-byte ack; if it's clear, we have a 4-byte ack.
-		if mdss.Flags&MP_DSS_a != 0 {
-			if optLen < 8 {
-				return fmt.Errorf("invalid length for dss ack: %d", optLen)
-			}
-			ack := binary.BigEndian.Uint64(opt.OptionMPTCPDss.DataAck)
-			buf.WriteString(fmt.Sprintf("%d", ack))
+		var ack uint64
+		switch len(opt.OptionMPTCPDss.DataAck) {
+		case 8:
+			ack = bytesToUint64(opt.OptionMPTCPDss.DataAck)
 			optLen -= 8
-		} else {
-			if optLen < 4 {
-				return fmt.Errorf("invalid length for dss ack: %d", optLen)
-			}
-			var ack uint64
-			switch len(opt.OptionMPTCPDss.DataAck) {
-			case 8:
-				ack = binary.BigEndian.Uint64(opt.OptionMPTCPDss.DataAck)
-			case 4:
-				ack = uint64(binary.BigEndian.Uint32(opt.OptionMPTCPDss.DataAck))
-			}
-			buf.WriteString(fmt.Sprintf("%d", ack))
+		case 4:
+			ack = bytesToUint64(opt.OptionMPTCPDss.DataAck)
 			optLen -= 4
 		}
+		buf.WriteString(fmt.Sprintf("%d", ack))
 	}
 
-	if mdss.Flags&MP_DSS_M != 0 {
+	if opt.OptionMPTCPDss.M {
 		// Data Sequence Number (DSN), Subflow Sequence Number (SSN), Data-Level Length present, and Checksum possibly present.
 		buf.WriteString(fmt.Sprintf(" seq "))
 
 		// If the 'm' flag is set, we have an 8-byte NDS; if it's clear, we have a 4-byte DSN.
-		if mdss.Flags&MP_DSS_m != 0 {
-			if optLen < 8 {
-				return fmt.Errorf("invalid length for dss seq: %d", optLen)
-			}
-			var seq uint64
-			switch len(opt.OptionMPTCPDss.DataAck) {
-			case 8:
-				seq = binary.BigEndian.Uint64(opt.OptionMPTCPDss.DSN)
-			case 4:
-				seq = uint64(binary.BigEndian.Uint32(opt.OptionMPTCPDss.DSN))
-			}
-			buf.WriteString(fmt.Sprintf("%d", seq))
+		var seq uint64
+		switch len(opt.OptionMPTCPDss.DSN) {
+		case 8:
+			seq = bytesToUint64(opt.OptionMPTCPDss.DSN)
 			optLen -= 8
-		} else {
-			if optLen < 4 {
-				return fmt.Errorf("invalid length for dss seq: %d", optLen)
-			}
-			seq := binary.BigEndian.Uint64(opt.OptionMPTCPDss.DSN)
-			buf.WriteString(fmt.Sprintf("%d", seq))
+		case 4:
+			seq = bytesToUint64(opt.OptionMPTCPDss.DSN)
 			optLen -= 4
 		}
+		buf.WriteString(fmt.Sprintf("%d", seq))
 
 		if optLen < 4 {
-			return fmt.Errorf("invalid length for dss subseq: %d", optLen)
+			return
 		}
 		subSeq := opt.OptionMPTCPDss.SSN
 		buf.WriteString(fmt.Sprintf(" subseq %d", subSeq))
 		optLen -= 4
 
 		if optLen < 2 {
-			return fmt.Errorf("invalid length for dss len: %d", optLen)
+			return
 		}
 		var length = opt.OptionMPTCPDss.DataLength
 		buf.WriteString(fmt.Sprintf(" len %d", length))
@@ -415,118 +356,44 @@ func mpDSSPrint(options *mptcpPrintOptions, opt layers.TCPOption, buf *strings.B
 			optLen -= 2
 		}
 	}
-
-	if optLen != 0 {
-		return fmt.Errorf("invalid length for dss option: %d", optLen)
-	}
-
-	return nil
 }
 
 // addAddrPrint prints the "add-addr" option.
-func addAddrPrint(options *mptcpPrintOptions, opt layers.TCPOption, buf *strings.Builder) error {
+func addAddrPrint(options *mptcpPrintOptions, opt layers.TCPOption, buf *strings.Builder) {
 	addAddr := MPAddAddr{}
 	addAddr.Kind = uint8(opt.OptionType)
 	addAddr.Len = opt.OptionLength
-	addAddr.SubEcho = opt.OptionMPTCPAddAddr.SubEcho
-	addAddr.AddrID = opt.OptionMPTCPAddAddr.SubEcho
-	optLen := opt.OptionLength
+	addAddr.AddrID = opt.OptionMPTCPAddAddr.AddrID
 
-	if !(optLen == 8 || optLen == 10 || optLen == 16 || optLen == 18 || optLen == 20 || optLen == 22 || optLen == 28 || optLen == 30) {
-		return fmt.Errorf("invalid length for add-addr option: %d", optLen)
-	}
-
-	subEchoStr := tok2str(MPTCPAddrSubEchoBits, "[bad version/echo]", uint32(addAddr.SubEcho&0xF))
+	subEchoStr := tok2str(MPTCPAddrSubEchoBits, "[bad version/echo]", uint32(opt.OptionMPTCPAddAddr.IPVer))
 	buf.WriteString(fmt.Sprintf(" %s", subEchoStr))
 	buf.WriteString(fmt.Sprintf(" id %d", addAddr.AddrID))
 
-	if optLen == 8 || optLen == 10 || optLen == 16 || optLen == 18 {
-		addAddr.U.V4.Addr = binary.BigEndian.Uint32(opt.OptionMPTCPAddAddr.Address)
-		if optLen == 10 || optLen == 18 {
-			addAddr.U.V4.Port = opt.OptionMPTCPAddAddr.Port
-		}
-		if optLen == 16 {
-			addAddr.U.V4NP.Mac = binary.BigEndian.Uint64(opt.OptionMPTCPAddAddr.SendHMAC)
-		}
-		if optLen == 18 {
-			addAddr.U.V4NP.Mac = binary.BigEndian.Uint64(opt.OptionMPTCPAddAddr.SendHMAC)
-		}
-
-		buf.WriteString(fmt.Sprintf(" %d", addAddr.U.V4.Addr))
-		if optLen == 10 || optLen == 18 {
-			buf.WriteString(fmt.Sprintf(":%d", addAddr.U.V4.Port))
-		}
-		if optLen == 16 {
-			buf.WriteString(fmt.Sprintf(" hmac 0x%x", addAddr.U.V4NP.Mac))
-		}
-		if optLen == 18 {
-			buf.WriteString(fmt.Sprintf(" hmac 0x%x", addAddr.U.V4.Mac))
-		}
-	}
-
-	if optLen == 20 || optLen == 22 || optLen == 28 || optLen == 30 {
-		copy(addAddr.U.V6.Addr[:], opt.OptionMPTCPAddAddr.Address)
-		if optLen == 22 || optLen == 30 {
-			addAddr.U.V6.Port = opt.OptionMPTCPAddAddr.Port
-		}
-		if optLen == 28 {
-			addAddr.U.V6NP.Mac = binary.BigEndian.Uint64(opt.OptionMPTCPAddAddr.SendHMAC)
-		}
-		if optLen == 30 {
-			addAddr.U.V6NP.Mac = binary.BigEndian.Uint64(opt.OptionMPTCPAddAddr.SendHMAC)
-		}
-
-		buf.WriteString(fmt.Sprintf(" %v", addAddr.U.V6.Addr))
-		if optLen == 22 || optLen == 30 {
-			buf.WriteString(fmt.Sprintf(":%d", addAddr.U.V6.Port))
-		}
-		if optLen == 28 {
-			buf.WriteString(fmt.Sprintf(" hmac 0x%x", addAddr.U.V6NP.Mac))
-		}
-		if optLen == 30 {
-			buf.WriteString(fmt.Sprintf(" hmac 0x%x", addAddr.U.V6.Mac))
-		}
-	}
-
-	return nil
+	buf.WriteString(fmt.Sprintf(" %s", opt.OptionMPTCPAddAddr.Address))
+	buf.WriteString(fmt.Sprintf(":%d", opt.OptionMPTCPAddAddr.Port))
+	buf.WriteString(fmt.Sprintf(" hmac 0x%x", bytesToUint64(opt.OptionMPTCPAddAddr.SendHMAC)))
 }
 
 // removeAddrPrint prints the "rem-addr" option.
-func removeAddrPrint(options *mptcpPrintOptions, opt layers.TCPOption, buf *strings.Builder) error {
+func removeAddrPrint(options *mptcpPrintOptions, opt layers.TCPOption, buf *strings.Builder) {
 	removeAddr := MPRemoveAddr{}
 	removeAddr.Kind = uint8(opt.OptionType)
 	removeAddr.Len = opt.OptionLength
-	removeAddr.Sub = opt.OptionMTCPRemAddr.Sub
-	optLen := int(opt.OptionLength)
-
-	if optLen < 4 {
-		return fmt.Errorf("invalid length for rem-addr option: %d", optLen)
-	}
-
-	optLen -= 3
-	removeAddr.AddrsID = make([]uint8, optLen)
-	removeAddr.AddrsID = opt.OptionMTCPRemAddr.AddrIDs
 
 	buf.WriteString(fmt.Sprintf(" id"))
-	for i := 0; i < optLen; i++ {
-		buf.WriteString(fmt.Sprintf(" %d", removeAddr.AddrsID[i]))
+	for _, id := range opt.OptionMTCPRemAddr.AddrIDs {
+		buf.WriteString(fmt.Sprintf(" %d", id))
 	}
-	return nil
 }
 
 // mpPrioPrint prints the "prio" option.
-func mpPrioPrint(options *mptcpPrintOptions, opt layers.TCPOption, buf *strings.Builder) error {
+func mpPrioPrint(options *mptcpPrintOptions, opt layers.TCPOption, buf *strings.Builder) {
 	mpPrio := MPPrio{}
 	mpPrio.Kind = uint8(opt.OptionType)
 	mpPrio.Len = opt.OptionLength
-	mpPrio.SubB = opt.OptionMPTCPMpPrio.SubB
 	optLen := opt.OptionLength
 
-	if optLen != 3 && optLen != 4 {
-		return fmt.Errorf("invalid length for prio option: %d", optLen)
-	}
-
-	if mpPrio.SubB&MP_PRIO_B != 0 {
+	if opt.OptionMPTCPMpPrio.Backup {
 		buf.WriteString(fmt.Sprintf(" backup"))
 	} else {
 		buf.WriteString(fmt.Sprintf(" non-backup"))
@@ -536,54 +403,46 @@ func mpPrioPrint(options *mptcpPrintOptions, opt layers.TCPOption, buf *strings.
 		mpPrio.AddrID = opt.OptionMPTCPMpPrio.AddrID
 		buf.WriteString(fmt.Sprintf(" id %d", mpPrio.AddrID))
 	}
-
-	return nil
 }
 
 // mpFailPrint prints the "fail" option.
-func mpFailPrint(options *mptcpPrintOptions, opt layers.TCPOption, buf *strings.Builder) error {
-	optLen := opt.OptionLength
-	if optLen != 12 {
-		return fmt.Errorf("invalid length for fail option: %d", optLen)
-	}
+func mpFailPrint(options *mptcpPrintOptions, opt layers.TCPOption, buf *strings.Builder) {
 	var dataSeq uint64 = opt.OptionMTCPMPFail.DSN
 	buf.WriteString(fmt.Sprintf(" seq %d", dataSeq))
-
-	return nil
 }
 
 // mpFastClosePrint prints the "fast-close" option.
-func mpFastClosePrint(options *mptcpPrintOptions, opt layers.TCPOption, buf *strings.Builder) error {
-	optLen := opt.OptionLength
-	if optLen != 12 {
-		return fmt.Errorf("invalid length for fast-close option: %d", optLen)
-	}
-	var key = binary.BigEndian.Uint64(opt.OptionMTCPMPFastClose.ReceivKey)
+func mpFastClosePrint(options *mptcpPrintOptions, opt layers.TCPOption, buf *strings.Builder) {
+	var key = bytesToUint64(opt.OptionMTCPMPFastClose.ReceivKey)
 	buf.WriteString(fmt.Sprintf(" key 0x%x", key))
-
-	return nil
 }
 
 // mpTCPRSTPrint prints the "tcprst" option.
-func mpTCPRSTPrint(options *mptcpPrintOptions, opt layers.TCPOption, buf *strings.Builder) error {
+func mpTCPRSTPrint(options *mptcpPrintOptions, opt layers.TCPOption, buf *strings.Builder) {
 	mpr := MPTCPRST{}
 	mpr.Kind = uint8(opt.OptionType)
 	mpr.Len = opt.OptionLength
-	mpr.SubB = opt.OptionMPTCPMPTcpRst.SubB
 	mpr.Reason = opt.OptionMPTCPMPTcpRst.Reason
-	optLen := opt.OptionLength
 
-	if optLen != 4 {
-		return fmt.Errorf("invalid length for tcprst option: %d", optLen)
+	var flags []string
+	switch {
+	case opt.OptionMPTCPMPTcpRst.T:
+		flags = append(flags, "T")
+	case opt.OptionMPTCPMPTcpRst.U:
+		flags = append(flags, "U")
+	case opt.OptionMPTCPMPTcpRst.V:
+		flags = append(flags, "V")
+	case opt.OptionMPTCPMPTcpRst.W:
+		flags = append(flags, "W")
 	}
-
-	flagsStr := bittok2str(MPTCPFlags, "none", uint32(mpr.SubB))
+	flagsStr := strings.Join(flags, " ")
+	if flagsStr == "" {
+		flagsStr = "none"
+	}
 	buf.WriteString(fmt.Sprintf(" flags [%s]", flagsStr))
 
 	reasonStr := tok2str(MPTCPRSTReasons, "unknown (0x%02x)", uint32(mpr.Reason))
 	buf.WriteString(fmt.Sprintf(" reason %s", reasonStr))
-
-	return nil
 }
 
 // mptcpPrintOptions represents the options for MPTCP printing.
@@ -594,7 +453,7 @@ type mptcpPrintOptions struct {
 // MPTCPPrintOptions defines the print functions for each MPTCP option.
 var MPTCPPrintOptions = []struct {
 	Name  string
-	Print func(*mptcpPrintOptions, layers.TCPOption, *strings.Builder) error
+	Print func(*mptcpPrintOptions, layers.TCPOption, *strings.Builder)
 }{
 	{"capable", mpCapablePrint},
 	{"join", mpJoinPrint},
@@ -609,21 +468,12 @@ var MPTCPPrintOptions = []struct {
 }
 
 // mptcpPrint prints an MPTCP option.
-func mptcpPrint(options *mptcpPrintOptions, opt layers.TCPOption) (string, error) {
+func mptcpPrint(options *mptcpPrintOptions, opt layers.TCPOption) string {
 	buf := strings.Builder{}
 	// Ensure the length is valid.
 	length := opt.OptionLength
-	if length < 3 {
-		return "", fmt.Errorf("invalid length for MPTCP option: %d", length)
-	}
-	buf.WriteString("mptcp")
 
-	// Parse the MPTCP option.
-	//mptcpOpt := MPTCPOption{
-	//	Kind:   0,
-	//	Len:    opt.OptionLength,
-	//	SubEtc: uint8(opt.OptionMultipath),
-	//}
+	buf.WriteString("mptcp")
 
 	// Determine the subtype.
 	subtype := MPTCPSub(opt.OptionMultipath)
@@ -636,11 +486,9 @@ func mptcpPrint(options *mptcpPrintOptions, opt layers.TCPOption) (string, error
 	buf.WriteString(fmt.Sprintf(" %s", MPTCPPrintOptions[subtype].Name))
 
 	// Call the corresponding print function for the subtype.
-	err := MPTCPPrintOptions[subtype].Print(options, opt, &buf)
-	if err != nil {
-		return "", err
-	}
-	return buf.String(), nil
+	MPTCPPrintOptions[subtype].Print(options, opt, &buf)
+
+	return buf.String()
 }
 
 // bittok2str converts a set of flags to a string representation.
@@ -657,7 +505,18 @@ func bittok2str(tokens []Token, defaultStr string, value uint32) string {
 	return fmt.Sprintf("%s", strings.Join(strs, " "))
 }
 
+func bytesToUint64(b []byte) uint64 {
+	switch len(b) {
+	case 8:
+		return binary.BigEndian.Uint64(b)
+	case 4:
+		return uint64(binary.BigEndian.Uint32(b))
+	case 2:
+		return uint64(binary.BigEndian.Uint16(b))
+	}
+	return 0
+}
+
 func formatMPTCP(opt layers.TCPOption) string {
-	s, _ := mptcpPrint(&mptcpPrintOptions{}, opt)
-	return s
+	return mptcpPrint(&mptcpPrintOptions{}, opt)
 }
