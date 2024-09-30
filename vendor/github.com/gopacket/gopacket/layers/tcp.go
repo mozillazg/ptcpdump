@@ -402,8 +402,8 @@ OPTIONS:
 				}
 			case MPTCPSubtypeDSS:
 				opt.OptionMPTCPDss = &Dss{
-					F: data[3]&0x20 != 0,
-					m: data[3]&0x10 != 0,
+					F: data[3]&0x10 != 0,
+					m: data[3]&0x08 != 0,
 					M: data[3]&0x04 != 0,
 					a: data[3]&0x02 != 0,
 					A: data[3]&0x01 != 0,
@@ -422,7 +422,7 @@ OPTIONS:
 					}
 				}
 				if opt.OptionMPTCPDss.M { // Data Sequence Number (DSN), Subflow Sequence Number (SSN), Data-Level Length, and Checksum (if negotiated) present
-					if opt.OptionMPTCPDss.a { // Data Sequence Number is 8 octets
+					if opt.OptionMPTCPDss.m { // Data Sequence Number is 8 octets
 						opt.OptionMPTCPDss.DSN = data[lenOpt : lenOpt+OptionLenDssDSN64]
 						lenOpt += OptionLenDssDSN64
 					} else {

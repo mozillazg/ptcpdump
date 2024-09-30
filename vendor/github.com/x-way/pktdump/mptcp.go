@@ -229,11 +229,14 @@ func mpCapablePrint(options *mptcpPrintOptions, opt layers.TCPOption, buf *strin
 	case opt.OptionMPTCPMpCapable.H:
 		flags = append(flags, "H")
 	}
+
 	flagsStr := strings.Join(flags, " ")
 	if flagsStr == "" {
 		flagsStr = "none"
 	}
-	buf.WriteString(fmt.Sprintf(" flags [%s]", flagsStr))
+	if flagsStr != "A" {
+		buf.WriteString(fmt.Sprintf(" flags [%s]", flagsStr))
+	}
 
 	csumEnabled := opt.OptionMPTCPMpCapable.A
 	if csumEnabled {
@@ -277,7 +280,7 @@ func mpJoinPrint(options *mptcpPrintOptions, opt layers.TCPOption, buf *strings.
 		buf.WriteString(fmt.Sprintf(" token 0x%x nonce 0x%x", mpj.U.Syn.Token, mpj.U.Syn.Nonce))
 	case 16: // SYN/ACK
 		mpj.U.SynAck.Mac = bytesToUint64(opt.OptionMPTCPMpJoin.SendHMAC)
-		mpj.U.Syn.Nonce = opt.OptionMPTCPMpJoin.SendRandNum
+		mpj.U.SynAck.Nonce = opt.OptionMPTCPMpJoin.SendRandNum
 		buf.WriteString(fmt.Sprintf(" hmac 0x%x nonce 0x%x", mpj.U.SynAck.Mac, mpj.U.SynAck.Nonce))
 	case 24: // ACK
 		buf.WriteString(fmt.Sprintf(" hmac 0x"))
@@ -364,14 +367,22 @@ func addAddrPrint(options *mptcpPrintOptions, opt layers.TCPOption, buf *strings
 	addAddr.Kind = uint8(opt.OptionType)
 	addAddr.Len = opt.OptionLength
 	addAddr.AddrID = opt.OptionMPTCPAddAddr.AddrID
+	addAddr.SubEcho = opt.OptionMPTCPAddAddr.IPVer
+	if opt.OptionMPTCPAddAddr.E {
+		addAddr.SubEcho = 0x01
+	}
 
-	subEchoStr := tok2str(MPTCPAddrSubEchoBits, "[bad version/echo]", uint32(opt.OptionMPTCPAddAddr.IPVer))
+	subEchoStr := tok2str(MPTCPAddrSubEchoBits, "[bad version/echo]", uint32(addAddr.SubEcho))
 	buf.WriteString(fmt.Sprintf(" %s", subEchoStr))
 	buf.WriteString(fmt.Sprintf(" id %d", addAddr.AddrID))
 
 	buf.WriteString(fmt.Sprintf(" %s", opt.OptionMPTCPAddAddr.Address))
-	buf.WriteString(fmt.Sprintf(":%d", opt.OptionMPTCPAddAddr.Port))
-	buf.WriteString(fmt.Sprintf(" hmac 0x%x", bytesToUint64(opt.OptionMPTCPAddAddr.SendHMAC)))
+	if opt.OptionMPTCPAddAddr.Port > 0 {
+		buf.WriteString(fmt.Sprintf(":%d", opt.OptionMPTCPAddAddr.Port))
+	}
+	if len(opt.OptionMPTCPAddAddr.SendHMAC) > 0 {
+		buf.WriteString(fmt.Sprintf(" hmac 0x%x", bytesToUint64(opt.OptionMPTCPAddAddr.SendHMAC)))
+	}
 }
 
 // removeAddrPrint prints the "rem-addr" option.
