@@ -350,8 +350,6 @@ OPTIONS:
 			opt.OptionMultipath = MPTCPSubtype(data[2] >> 4)
 			switch opt.OptionMultipath {
 			case MPTCPSubtypeMPCAPABLE:
-				fmt.Println(opt.OptionMultipath)
-				fmt.Println(opt.OptionLength)
 				if opt.OptionLength != OptionLenMpCapableSyn && opt.OptionLength != OptionLenMpCapableSynAck && opt.OptionLength != OptionLenMpCapableAck && opt.OptionLength != OptionLenMpCapableAckData && opt.OptionLength != OptionLenMpCapableAckDataCSum {
 					return fmt.Errorf("MP_CAPABLE bad option length %d", opt.OptionLength)
 				}
