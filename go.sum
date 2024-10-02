@@ -240,10 +240,10 @@ github.com/moby/term v0.0.0-20210619224110-3f7ff695adc6 h1:dcztxKSvZ4Id8iPpHERQB
 github.com/moby/term v0.0.0-20210619224110-3f7ff695adc6/go.mod h1:E2VnQOmVuvZB6UYnnDB0qG5Nq/1tD9acaOpo6xmt0Kw=
 github.com/morikuni/aec v1.0.0 h1:nP9CBfwrvYnBRgY6qfDQkygYDmYwOilePFkwzv4dU8A=
 github.com/morikuni/aec v1.0.0/go.mod h1:BbKIizmSmc5MMPqRYbxO4ZU0S0+P200+tUnFx7PXmsc=
-github.com/mozillazg/gopacket v0.0.0-20240930124105-2e5a32c1b751 h1:6KWcGaIf4JbSD6tXkpl/SHvsgVdEWt4ohIWt95n+96M=
-github.com/mozillazg/gopacket v0.0.0-20240930124105-2e5a32c1b751/go.mod h1:lnXM4VDqJTe4d2NoZr8DZMtidkhss2Y82QFlamXWfXo=
-github.com/mozillazg/pktdump v0.0.9-0.20240930140149-682051b53f64 h1:E2mNHiALtXBwqI7+tPiljE0+zdSEmWtz7O9dn2hzOPY=
-github.com/mozillazg/pktdump v0.0.9-0.20240930140149-682051b53f64/go.mod h1:Vh2MvrLyL23PaYh0Dp2Ihg6qTmNydO2su6ngpJEp/hM=
+github.com/mozillazg/gopacket v0.0.0-20241002124513-c32042430295 h1:r0k+asViiEfXIKWqMbxHNJyZnC+wiaY0gBKGLO9/+38=
+github.com/mozillazg/gopacket v0.0.0-20241002124513-c32042430295/go.mod h1:lnXM4VDqJTe4d2NoZr8DZMtidkhss2Y82QFlamXWfXo=
+github.com/mozillazg/pktdump v0.0.9-0.20241002124615-e03da3440378 h1:gySTfYsqs25cWiem+E4S51TCRSoF3bzhydPzRq1MHZ8=
+github.com/mozillazg/pktdump v0.0.9-0.20241002124615-e03da3440378/go.mod h1:Vh2MvrLyL23PaYh0Dp2Ihg6qTmNydO2su6ngpJEp/hM=
 github.com/mwitkow/go-conntrack v0.0.0-20161129095857-cc309e4a2223/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e h1:fD57ERR4JtEqsWbfPhv4DMiApHyliiK5xCTNVSPiaAs=
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=

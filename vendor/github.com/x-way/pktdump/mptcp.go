@@ -211,32 +211,36 @@ func mpCapablePrint(options *mptcpPrintOptions, opt layers.TCPOption, buf *strin
 	}
 
 	var flags []string
-	switch {
-	case opt.OptionMPTCPMpCapable.A:
+	if opt.OptionMPTCPMpCapable.A {
 		flags = append(flags, "A")
-	case opt.OptionMPTCPMpCapable.B:
+	}
+	if opt.OptionMPTCPMpCapable.B {
 		flags = append(flags, "B")
-	case opt.OptionMPTCPMpCapable.C:
+	}
+	if opt.OptionMPTCPMpCapable.C {
 		flags = append(flags, "C")
-	case opt.OptionMPTCPMpCapable.D:
+	}
+	if opt.OptionMPTCPMpCapable.D {
 		flags = append(flags, "D")
-	case opt.OptionMPTCPMpCapable.E:
+	}
+	if opt.OptionMPTCPMpCapable.E {
 		flags = append(flags, "E")
-	case opt.OptionMPTCPMpCapable.F:
+	}
+	if opt.OptionMPTCPMpCapable.F {
 		flags = append(flags, "F")
-	case opt.OptionMPTCPMpCapable.G:
+	}
+	if opt.OptionMPTCPMpCapable.G {
 		flags = append(flags, "G")
-	case opt.OptionMPTCPMpCapable.H:
+	}
+	if opt.OptionMPTCPMpCapable.H {
 		flags = append(flags, "H")
 	}
 
-	flagsStr := strings.Join(flags, " ")
+	flagsStr := strings.Join(flags, "")
 	if flagsStr == "" {
 		flagsStr = "none"
 	}
-	if flagsStr != "A" {
-		buf.WriteString(fmt.Sprintf(" flags [%s]", flagsStr))
-	}
+	buf.WriteString(fmt.Sprintf(" flags [%s]", flagsStr))
 
 	csumEnabled := opt.OptionMPTCPMpCapable.A
 	if csumEnabled {
@@ -436,17 +440,19 @@ func mpTCPRSTPrint(options *mptcpPrintOptions, opt layers.TCPOption, buf *string
 	mpr.Reason = opt.OptionMPTCPMPTcpRst.Reason
 
 	var flags []string
-	switch {
-	case opt.OptionMPTCPMPTcpRst.T:
+	if opt.OptionMPTCPMPTcpRst.T {
 		flags = append(flags, "T")
-	case opt.OptionMPTCPMPTcpRst.U:
+	}
+	if opt.OptionMPTCPMPTcpRst.U {
 		flags = append(flags, "U")
-	case opt.OptionMPTCPMPTcpRst.V:
+	}
+	if opt.OptionMPTCPMPTcpRst.V {
 		flags = append(flags, "V")
-	case opt.OptionMPTCPMPTcpRst.W:
+	}
+	if opt.OptionMPTCPMPTcpRst.W {
 		flags = append(flags, "W")
 	}
-	flagsStr := strings.Join(flags, " ")
+	flagsStr := strings.Join(flags, "")
 	if flagsStr == "" {
 		flagsStr = "none"
 	}
@@ -517,12 +523,14 @@ func bittok2str(tokens []Token, defaultStr string, value uint32) string {
 }
 
 func bytesToUint64(b []byte) uint64 {
-	switch len(b) {
-	case 8:
+	length := len(b)
+	if length >= 8 {
 		return binary.BigEndian.Uint64(b)
-	case 4:
+	}
+	if length == 4 {
 		return uint64(binary.BigEndian.Uint32(b))
-	case 2:
+	}
+	if length == 2 {
 		return uint64(binary.BigEndian.Uint16(b))
 	}
 	return 0
