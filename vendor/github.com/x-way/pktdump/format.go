@@ -76,12 +76,16 @@ func formatPacketTCP(tcp *layers.TCP, src, dst string, length int, style FormatS
 				out += "eol"
 			case layers.TCPOptionKindWindowScale:
 				out += fmt.Sprintf("wscale %d", opt.OptionData[0])
+			case layers.TCPOptionKindSACK:
+				out += formatSack(tcp, opt)
 			case layers.TCPOptionKindSACKPermitted:
 				out += "sackOK"
 			case layers.TCPOptionKindTimestamps:
 				out += fmt.Sprintf("TS val %d ecr %d", binary.BigEndian.Uint32(opt.OptionData[:4]), binary.BigEndian.Uint32(opt.OptionData[4:8]))
 			case layers.TCPOptionKindMultipathTCP:
 				out += formatMPTCP(opt)
+			case TCPOptionKindFastopen:
+				out += formatFastOpen(tcp, opt)
 			default:
 				out += fmt.Sprintf("unknown-%d", opt.OptionType)
 				if len(opt.OptionData) > 0 {
