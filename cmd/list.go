@@ -2,24 +2,16 @@ package cmd
 
 import (
 	"fmt"
-	"sort"
 	"strings"
-
-	"github.com/mozillazg/ptcpdump/internal/dev"
 )
 
-func listInterfaces() error {
-	devices, err := dev.GetDevices(nil)
+func listInterfaces(opts Options) error {
+	opts.ifaces = nil
+	devices, err := opts.GetDevices()
 	if err != nil {
 		return err
 	}
-	var interfaces []dev.Device
-	for _, d := range devices {
-		interfaces = append(interfaces, d)
-	}
-	sort.Slice(interfaces, func(i, j int) bool {
-		return interfaces[i].Ifindex < interfaces[j].Ifindex
-	})
+	interfaces := devices.Devs()
 
 	outputs := []string{}
 	for _, d := range interfaces {

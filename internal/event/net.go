@@ -33,7 +33,7 @@ type Packet struct {
 	CgroupName string
 }
 
-func ParsePacketEvent(devices map[int]dev.Device, event bpf.BpfPacketEventWithPayloadT) (*Packet, error) {
+func ParsePacketEvent(devices *dev.Interfaces, event bpf.BpfPacketEventWithPayloadT) (*Packet, error) {
 	var p Packet
 	if t, err := convertBpfKTimeNs(event.Meta.Timestamp); err != nil {
 		log.Errorf("convert bpf time failed: %s", err)
@@ -45,7 +45,7 @@ func ParsePacketEvent(devices map[int]dev.Device, event bpf.BpfPacketEventWithPa
 	p.MntNs = int(event.Meta.Process.MntnsId)
 	p.NetNs = int(event.Meta.Process.NetnsId)
 	p.CgroupName = utils.GoString(event.Meta.Process.CgroupName[:])
-	p.Device = devices[int(event.Meta.Ifindex)]
+	p.Device = devices.GetByIfindex(int(event.Meta.Ifindex))
 
 	log.Infof("new packet event, pid: %d mntns: %d, netns: %d, cgroupName: %s",
 		p.Pid, p.MntNs, p.NetNs, p.CgroupName)

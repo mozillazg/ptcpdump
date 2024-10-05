@@ -44,7 +44,7 @@ func getGoKeyLogEventConsumer(opts *Options, packetWriters []writer.PacketWriter
 	return cr, nil
 }
 
-func attachGoTLSHooks(opts Options, bf *bpf.BPF) error {
+func attachGoTLSHooks(opts *Options, bf *bpf.BPF) error {
 	if !opts.shouldEnableGoTLSHooks() {
 		log.Info("skip go tls hooks")
 		return nil

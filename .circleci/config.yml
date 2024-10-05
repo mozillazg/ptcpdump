@@ -74,6 +74,11 @@ jobs:
             sudo bash testdata/test_write_stdout.sh ./ptcpdump
 
       - run:
+          name: e2e (test netns)
+          command: |
+            sudo bash testdata/test_netns.sh ./ptcpdump
+
+      - run:
           name: e2e (test nat)
           command: |
             for i in {1..5}; do

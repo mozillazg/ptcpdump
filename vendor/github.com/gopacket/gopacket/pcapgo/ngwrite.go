@@ -45,7 +45,7 @@ var DefaultNgInterface = NgInterface{
 type NgWriter struct {
 	w       *bufio.Writer
 	options NgWriterOptions
-	intf    uint32
+	intfs   map[int]struct{}
 	buf     [28]byte
 }
 
@@ -67,6 +67,7 @@ func NewNgWriterInterface(w io.Writer, intf NgInterface, options NgWriterOptions
 	ret := &NgWriter{
 		w:       bufio.NewWriter(w),
 		options: options,
+		intfs:   make(map[int]struct{}),
 	}
 	if err := ret.writeSectionHeader(); err != nil {
 		return nil, err
@@ -235,11 +236,8 @@ func (w *NgWriter) writeSectionHeader() error {
 
 // AddInterface adds the specified interface to the file, excluding statistics. Interface timestamp resolution is fixed to 9 (to match time.Time). Empty values are not written.
 func (w *NgWriter) AddInterface(intf NgInterface) (id int, err error) {
-	id = int(w.intf)
-	if intf.Index > 0 {
-		id = intf.Index
-	}
-	w.intf = uint32(id + 1)
+	id = intf.Index
+	w.intfs[id] = struct{}{}
 
 	var scratch [7]ngOption
 	i := 0
@@ -302,8 +300,8 @@ func (w *NgWriter) AddInterface(intf NgInterface) (id int, err error) {
 
 // WriteInterfaceStats writes the given interface statistics for the given interface id to the file. Empty values are not written.
 func (w *NgWriter) WriteInterfaceStats(intf int, stats NgInterfaceStatistics) error {
-	if intf >= int(w.intf) || intf < 0 {
-		return fmt.Errorf("Can't send statistics for non existent interface %d; have only %d interfaces", intf, w.intf)
+	if _, ok := w.intfs[intf]; !ok {
+		return fmt.Errorf("Can't send statistics for non existent interface %d", intf)
 	}
 
 	var scratch [4]ngOption
@@ -362,8 +360,8 @@ func (w *NgWriter) WritePacket(ci gopacket.CaptureInfo, data []byte) error {
 
 // WritePacketWithOptions writes out packet with the given data, capture info and options. The given InterfaceIndex must already be added to the file. InterfaceIndex 0 is automatically added by the NewWriter* methods.
 func (w *NgWriter) WritePacketWithOptions(ci gopacket.CaptureInfo, data []byte, opts NgPacketOptions) error {
-	if ci.InterfaceIndex >= int(w.intf) || ci.InterfaceIndex < 0 {
-		return fmt.Errorf("Can't send statistics for non existent interface %d; have only %d interfaces", ci.InterfaceIndex, w.intf)
+	if _, ok := w.intfs[ci.InterfaceIndex]; !ok {
+		return fmt.Errorf("Can't write packet for non existent interface %d", ci.InterfaceIndex)
 	}
 	if ci.CaptureLength != len(data) {
 		return fmt.Errorf("capture length %d does not match data length %d", ci.CaptureLength, len(data))
