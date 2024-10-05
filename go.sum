@@ -240,8 +240,8 @@ github.com/moby/term v0.0.0-20210619224110-3f7ff695adc6 h1:dcztxKSvZ4Id8iPpHERQB
 github.com/moby/term v0.0.0-20210619224110-3f7ff695adc6/go.mod h1:E2VnQOmVuvZB6UYnnDB0qG5Nq/1tD9acaOpo6xmt0Kw=
 github.com/morikuni/aec v1.0.0 h1:nP9CBfwrvYnBRgY6qfDQkygYDmYwOilePFkwzv4dU8A=
 github.com/morikuni/aec v1.0.0/go.mod h1:BbKIizmSmc5MMPqRYbxO4ZU0S0+P200+tUnFx7PXmsc=
-github.com/mozillazg/gopacket v0.0.0-20241005023048-170ae1245249 h1:RxUjjztmgi560FJcYErnjn2kogLrplZ5kK1XxmtZW/c=
-github.com/mozillazg/gopacket v0.0.0-20241005023048-170ae1245249/go.mod h1:lnXM4VDqJTe4d2NoZr8DZMtidkhss2Y82QFlamXWfXo=
+github.com/mozillazg/gopacket v0.0.0-20241005073024-5750600e7922 h1:bZVEO1gdL8XNhxbtpSd3HhCVUdvVk+g1GF7AkVkp2Ds=
+github.com/mozillazg/gopacket v0.0.0-20241005073024-5750600e7922/go.mod h1:lnXM4VDqJTe4d2NoZr8DZMtidkhss2Y82QFlamXWfXo=
 github.com/mozillazg/pktdump v0.0.9-0.20241003022253-cbafa8b6312d h1:3K1bsX3osp69xQnbvrXHokKRebpiENUUgGLA6OC5Jd8=
 github.com/mozillazg/pktdump v0.0.9-0.20241003022253-cbafa8b6312d/go.mod h1:Vh2MvrLyL23PaYh0Dp2Ihg6qTmNydO2su6ngpJEp/hM=
 github.com/mwitkow/go-conntrack v0.0.0-20161129095857-cc309e4a2223/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=

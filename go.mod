@@ -104,7 +104,7 @@ replace (
 	github.com/Microsoft/hcsshim/test => github.com/Microsoft/hcsshim/test v0.0.0-20210514012740-eba372547321
 	github.com/containerd/containerd => github.com/containerd/containerd v1.4.13
 	github.com/docker/docker => github.com/docker/docker v24.0.9+incompatible
-	github.com/gopacket/gopacket => github.com/mozillazg/gopacket v0.0.0-20241005023048-170ae1245249
+	github.com/gopacket/gopacket => github.com/mozillazg/gopacket v0.0.0-20241005073024-5750600e7922
 	// github.com/gopacket/gopacket => ../../gopacket/gopacket
 	github.com/x-way/pktdump => github.com/mozillazg/pktdump v0.0.9-0.20241003022253-cbafa8b6312d
 	// github.com/x-way/pktdump => ../../x-way/pktdump
