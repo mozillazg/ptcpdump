@@ -240,8 +240,8 @@ github.com/moby/term v0.0.0-20210619224110-3f7ff695adc6 h1:dcztxKSvZ4Id8iPpHERQB
 github.com/moby/term v0.0.0-20210619224110-3f7ff695adc6/go.mod h1:E2VnQOmVuvZB6UYnnDB0qG5Nq/1tD9acaOpo6xmt0Kw=
 github.com/morikuni/aec v1.0.0 h1:nP9CBfwrvYnBRgY6qfDQkygYDmYwOilePFkwzv4dU8A=
 github.com/morikuni/aec v1.0.0/go.mod h1:BbKIizmSmc5MMPqRYbxO4ZU0S0+P200+tUnFx7PXmsc=
-github.com/mozillazg/gopacket v0.0.0-20241002125412-112c3fb39360 h1:2PG5+BKZ2bqfILNlqA8fahl6lvo/18+Q3mBJBEeLmxI=
-github.com/mozillazg/gopacket v0.0.0-20241002125412-112c3fb39360/go.mod h1:lnXM4VDqJTe4d2NoZr8DZMtidkhss2Y82QFlamXWfXo=
+github.com/mozillazg/gopacket v0.0.0-20241005073024-5750600e7922 h1:bZVEO1gdL8XNhxbtpSd3HhCVUdvVk+g1GF7AkVkp2Ds=
+github.com/mozillazg/gopacket v0.0.0-20241005073024-5750600e7922/go.mod h1:lnXM4VDqJTe4d2NoZr8DZMtidkhss2Y82QFlamXWfXo=
 github.com/mozillazg/pktdump v0.0.9-0.20241003022253-cbafa8b6312d h1:3K1bsX3osp69xQnbvrXHokKRebpiENUUgGLA6OC5Jd8=
 github.com/mozillazg/pktdump v0.0.9-0.20241003022253-cbafa8b6312d/go.mod h1:Vh2MvrLyL23PaYh0Dp2Ihg6qTmNydO2su6ngpJEp/hM=
 github.com/mwitkow/go-conntrack v0.0.0-20161129095857-cc309e4a2223/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=
@@ -437,6 +437,7 @@ golang.org/x/sys v0.0.0-20191008105621-543471e840be/go.mod h1:h1NjWce9XRLGQEsW7w
 golang.org/x/sys v0.0.0-20191026070338-33540a1f6037/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20200120151820-655fe14d7479/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20200202164722-d101bd2416d5/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
+golang.org/x/sys v0.0.0-20200217220822-9197077df867/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20200323222414-85ca7c5b95cd/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20200916030750-2334cc1a136f/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20200930185726-fdedc70b468f/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=

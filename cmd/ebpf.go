@@ -9,23 +9,22 @@ import (
 	btftype "github.com/cilium/ebpf/btf"
 	"github.com/cilium/ebpf/rlimit"
 	"github.com/mozillazg/ptcpdump/bpf"
-	"github.com/mozillazg/ptcpdump/internal/dev"
 	"github.com/mozillazg/ptcpdump/internal/log"
 	"github.com/mozillazg/ptcpdump/internal/metadata"
 	"github.com/mozillazg/ptcpdump/internal/utils"
 )
 
-func attachHooks(btfSpec *btftype.Spec, currentConns []metadata.Connection, opts Options) (*bpf.BPF, error) {
-	devices, err := dev.GetDevices(opts.ifaces)
+func attachHooks(btfSpec *btftype.Spec, currentConns []metadata.Connection, opts *Options) (*bpf.BPF, []func(), error) {
+	devices, err := opts.GetDevices()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if err := rlimit.RemoveMemlock(); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	bf, err := bpf.NewBPF()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	bpfopts := &bpf.Options{}
 	bpfopts = bpfopts.WithPids(opts.pids).
@@ -39,12 +38,14 @@ func attachHooks(btfSpec *btftype.Spec, currentConns []metadata.Connection, opts
 		WithKernelTypes(btfSpec)
 
 	if err := bf.Load(*bpfopts); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
+	var finalCloseFuncs []func()
+	finalCloseFuncs = append(finalCloseFuncs, bf.Close)
 
 	if len(currentConns) > 0 {
 		if err := updateFlowPidMapValues(bf, currentConns); err != nil {
-			return nil, err
+			return bf, finalCloseFuncs, err
 		}
 	}
 
@@ -54,32 +55,62 @@ func attachHooks(btfSpec *btftype.Spec, currentConns []metadata.Connection, opts
 	}
 	if cgroupPath != "" {
 		if err := bf.AttachCgroups(cgroupPath); err != nil {
-			return bf, err
+			return bf, finalCloseFuncs, err
 		}
 	}
 
 	if err := attachGoTLSHooks(opts, bf); err != nil {
-		return bf, err
+		return bf, finalCloseFuncs, err
 	}
 	if err := bf.AttachKprobes(); err != nil {
-		return bf, err
+		return bf, finalCloseFuncs, err
 	}
 	if err := bf.AttachTracepoints(); err != nil {
-		return bf, err
-	}
-	for _, iface := range devices {
-		if err := bf.AttachTcHooks(iface.Ifindex, opts.DirectionOut(), opts.DirectionIn()); err != nil {
-			// TODO: use errors.Is(xxx) or ==
-			if strings.Contains(err.Error(), "netlink receive: no such file or directory") ||
-				strings.Contains(err.Error(), "netlink receive: no such device") {
-				log.Warnf("skip interface %s due to %s", iface.Name, err)
-				continue
-			}
-			return bf, fmt.Errorf("attach tc hooks for interface %d.%s: %w", iface.Ifindex, iface.Name, err)
-		}
+		return bf, finalCloseFuncs, err
 	}
 
-	return bf, nil
+	for _, iface := range devices.Devs() {
+		var finalErr error
+		log.Infof("start to attach tc hook to %s in netns %s", iface.Name, iface.NetNs)
+		err := iface.NetNs.Do(func() {
+			closeFuncs, err := bf.AttachTcHooks(iface.Ifindex, opts.DirectionOut(), opts.DirectionIn())
+			if err != nil {
+				runClosers(closeFuncs)
+				// TODO: use errors.Is(xxx) or ==
+				if strings.Contains(err.Error(), "netlink receive: no such file or directory") ||
+					strings.Contains(err.Error(), "netlink receive: no such device") {
+					log.Warnf("skip interface %s due to %s", iface.Name, err)
+					return
+				}
+				finalErr = err
+			} else {
+				finalCloseFuncs = append(finalCloseFuncs, func() {
+					iface.NetNs.Do(func() {
+						runClosers(closeFuncs)
+					})
+				})
+			}
+		})
+		if finalErr == nil {
+			finalErr = err
+		}
+		if finalErr != nil {
+			return bf, finalCloseFuncs, fmt.Errorf("attach tc hooks for interface %d.%s: %w",
+				iface.Ifindex, iface.Name, finalErr)
+		}
+
+	}
+
+	return bf, finalCloseFuncs, nil
+}
+
+func runClosers(funcs []func()) {
+	for i := len(funcs) - 1; i >= 0; i-- {
+		f := funcs[i]
+		if f != nil {
+			f()
+		}
+	}
 }
 
 func updateFlowPidMapValues(bf *bpf.BPF, conns []metadata.Connection) error {

@@ -123,6 +123,9 @@ func init() {
 	rootCmd.Flags().BoolVar(&opts.embedTLSKeyLogToPcapng, "embed-keylog-to-pcapng", false,
 		"Write TLS Key Log file to this path (experimental: only support unstripped Go binary and must combined with `-- CMD [ARGS]`)")
 
+	rootCmd.Flags().StringSliceVar(&opts.netNsPaths, "netns", []string{},
+		"Path to an network namespace file or name")
+
 	silenceKlog()
 }
 
@@ -140,13 +143,13 @@ func run(opts Options) error {
 	case os.Getenv(utils.EnvIsSubProgramLoader) == "true" && len(opts.subProgArgs) > 0:
 		return utils.StartSubProcess(ctx, opts.subProgArgs)
 	case opts.listInterfaces:
-		return listInterfaces()
+		return listInterfaces(opts)
 	case opts.version:
 		return printVersion()
 	case opts.ReadPath() != "":
 		return read(ctx, opts)
 	default:
-		return capture(ctx, stop, opts)
+		return capture(ctx, stop, &opts)
 	}
 
 	return nil

@@ -11,12 +11,11 @@ import (
 	"github.com/gopacket/gopacket/layers"
 	"github.com/gopacket/gopacket/pcapgo"
 	"github.com/mozillazg/ptcpdump/internal"
-	"github.com/mozillazg/ptcpdump/internal/dev"
 	"github.com/mozillazg/ptcpdump/internal/metadata"
 	"github.com/mozillazg/ptcpdump/internal/writer"
 )
 
-func getWriters(opts Options, pcache *metadata.ProcessCache) ([]writer.PacketWriter, func() error, error) {
+func getWriters(opts *Options, pcache *metadata.ProcessCache) ([]writer.PacketWriter, func() error, error) {
 	var writers []writer.PacketWriter
 	var pcapFile *os.File
 	var err error
@@ -25,7 +24,7 @@ func getWriters(opts Options, pcache *metadata.ProcessCache) ([]writer.PacketWri
 		ext := filepath.Ext(opts.WritePath())
 		switch {
 		case opts.WritePath() == "-":
-			w, err := newPcapNgWriter(os.Stdout, pcache)
+			w, err := newPcapNgWriter(os.Stdout, pcache, opts)
 			if err != nil {
 				return nil, nil, fmt.Errorf(": %w", err)
 			}
@@ -48,7 +47,7 @@ func getWriters(opts Options, pcache *metadata.ProcessCache) ([]writer.PacketWri
 			if err != nil {
 				return nil, nil, fmt.Errorf(": %w", err)
 			}
-			w, err := newPcapNgWriter(pcapFile, pcache)
+			w, err := newPcapNgWriter(pcapFile, pcache, opts)
 			if err != nil {
 				return nil, pcapFile.Close, fmt.Errorf(": %w", err)
 			}
@@ -72,23 +71,29 @@ func getWriters(opts Options, pcache *metadata.ProcessCache) ([]writer.PacketWri
 	return writers, closer, nil
 }
 
-func newPcapNgWriter(w io.Writer, pcache *metadata.ProcessCache) (*writer.PcapNGWriter, error) {
-	devices, err := dev.GetDevices(nil)
+func newPcapNgWriter(w io.Writer, pcache *metadata.ProcessCache, opts *Options) (*writer.PcapNGWriter, error) {
+	devices, err := opts.GetDevices()
 	if err != nil {
 		return nil, fmt.Errorf(": %w", err)
 	}
+
 	// to avoid "Interface id 9 not present in section (have only 7 interfaces)"
 	var maxIndex int
-	for _, dev := range devices {
+	for _, dev := range devices.Devs() {
 		if dev.Ifindex > maxIndex {
 			maxIndex = dev.Ifindex
 		}
 	}
 	interfaces := make([]pcapgo.NgInterface, maxIndex+1)
-	for _, dev := range devices {
+	for _, dev := range devices.Devs() {
+		comment := ""
+		if dev.NetNs != nil {
+			comment = fmt.Sprintf("netNsInode: %d, netNsPath: %s", dev.NetNs.Inode(), dev.NetNs.Path())
+		}
 		interfaces[dev.Ifindex] = pcapgo.NgInterface{
 			Index:      dev.Ifindex,
 			Name:       dev.Name,
+			Comment:    comment,
 			Filter:     opts.pcapFilter,
 			OS:         runtime.GOOS,
 			LinkType:   layers.LinkTypeEthernet,

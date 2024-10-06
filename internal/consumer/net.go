@@ -12,14 +12,13 @@ import (
 
 type PacketEventConsumer struct {
 	writers        []writer.PacketWriter
-	devices        map[int]dev.Device
+	devices        *dev.Interfaces
 	processedCount int
 
 	delay time.Duration
 }
 
-func NewPacketEventConsumer(writers []writer.PacketWriter) *PacketEventConsumer {
-	devices, _ := dev.GetDevices([]string{})
+func NewPacketEventConsumer(writers []writer.PacketWriter, devices *dev.Interfaces) *PacketEventConsumer {
 	return &PacketEventConsumer{
 		writers: writers,
 		devices: devices,
