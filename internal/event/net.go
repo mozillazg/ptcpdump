@@ -1,11 +1,12 @@
 package event
 
 import (
+	"github.com/mozillazg/ptcpdump/internal/metadata"
+	"github.com/mozillazg/ptcpdump/internal/types"
 	"time"
 
 	"github.com/gopacket/gopacket"
 	"github.com/mozillazg/ptcpdump/bpf"
-	"github.com/mozillazg/ptcpdump/internal/dev"
 	"github.com/mozillazg/ptcpdump/internal/host"
 	"github.com/mozillazg/ptcpdump/internal/log"
 	"github.com/mozillazg/ptcpdump/internal/utils"
@@ -21,7 +22,7 @@ const (
 type Packet struct {
 	Time      time.Time
 	Type      packetType
-	Device    dev.Device
+	Device    types.Device
 	Pid       int
 	MntNs     int
 	NetNs     int
@@ -33,7 +34,7 @@ type Packet struct {
 	CgroupName string
 }
 
-func ParsePacketEvent(devices *dev.Interfaces, event bpf.BpfPacketEventWithPayloadT) (*Packet, error) {
+func ParsePacketEvent(deviceCache *metadata.DeviceCache, event bpf.BpfPacketEventWithPayloadT) (*Packet, error) {
 	var p Packet
 	if t, err := convertBpfKTimeNs(event.Meta.Timestamp); err != nil {
 		log.Errorf("convert bpf time failed: %s", err)
@@ -45,7 +46,7 @@ func ParsePacketEvent(devices *dev.Interfaces, event bpf.BpfPacketEventWithPaylo
 	p.MntNs = int(event.Meta.Process.MntnsId)
 	p.NetNs = int(event.Meta.Process.NetnsId)
 	p.CgroupName = utils.GoString(event.Meta.Process.CgroupName[:])
-	p.Device = devices.GetByIfindex(int(event.Meta.Ifindex))
+	p.Device, _ = deviceCache.GetByIfindex(int(event.Meta.Ifindex), event.Meta.Process.NetnsId)
 
 	log.Infof("new packet event, pid: %d mntns: %d, netns: %d, cgroupName: %s",
 		p.Pid, p.MntNs, p.NetNs, p.CgroupName)
@@ -67,7 +68,7 @@ func FromPacket(ci gopacket.CaptureInfo, data []byte) (*Packet, error) {
 	p := Packet{
 		Time:      ci.Timestamp,
 		Type:      -1,
-		Device:    dev.Device{},
+		Device:    types.Device{},
 		Pid:       0,
 		Truncated: false,
 		Len:       ci.Length,

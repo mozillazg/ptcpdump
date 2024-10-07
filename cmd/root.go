@@ -123,7 +123,7 @@ func init() {
 	rootCmd.Flags().BoolVar(&opts.embedTLSKeyLogToPcapng, "embed-keylog-to-pcapng", false,
 		"Write TLS Key Log file to this path (experimental: only support unstripped Go binary and must combined with `-- CMD [ARGS]`)")
 
-	rootCmd.Flags().StringSliceVar(&opts.netNsPaths, "netns", []string{},
+	rootCmd.Flags().StringSliceVar(&opts.netNsPaths, "netns", []string{"/proc/self/ns/net"},
 		"Path to an network namespace file or name")
 
 	silenceKlog()

@@ -15,7 +15,7 @@ func listInterfaces(opts Options) error {
 
 	outputs := []string{}
 	for _, d := range interfaces {
-		outputs = append(outputs, fmt.Sprintf("%d.%s", d.Ifindex, d.Name))
+		outputs = append(outputs, fmt.Sprintf("%d.%s, netns %d", d.Ifindex, d.Name, d.NetNs.Inode()))
 	}
 
 	fmt.Printf("%s\n", strings.Join(outputs, "\n"))

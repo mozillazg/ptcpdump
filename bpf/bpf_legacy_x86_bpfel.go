@@ -53,17 +53,24 @@ type bpf_legacySpecs struct {
 //
 // It can be passed ebpf.CollectionSpec.Assign.
 type bpf_legacyProgramSpecs struct {
+	KprobeDevChangeNetNamespace      *ebpf.ProgramSpec `ebpf:"kprobe__dev_change_net_namespace"`
 	KprobeNfNatManipPkt              *ebpf.ProgramSpec `ebpf:"kprobe__nf_nat_manip_pkt"`
 	KprobeNfNatPacket                *ebpf.ProgramSpec `ebpf:"kprobe__nf_nat_packet"`
+	KprobeRegisterNetdevice          *ebpf.ProgramSpec `ebpf:"kprobe__register_netdevice"`
 	KprobeSecuritySkClassifyFlow     *ebpf.ProgramSpec `ebpf:"kprobe__security_sk_classify_flow"`
 	KprobeTcpSendmsg                 *ebpf.ProgramSpec `ebpf:"kprobe__tcp_sendmsg"`
 	KprobeUdpSendSkb                 *ebpf.ProgramSpec `ebpf:"kprobe__udp_send_skb"`
 	KprobeUdpSendmsg                 *ebpf.ProgramSpec `ebpf:"kprobe__udp_sendmsg"`
+	KretprobeDevChangeNetNamespace   *ebpf.ProgramSpec `ebpf:"kretprobe__dev_change_net_namespace"`
+	KretprobeDevGetByIndex           *ebpf.ProgramSpec `ebpf:"kretprobe__dev_get_by_index"`
+	KretprobeRegisterNetdevice       *ebpf.ProgramSpec `ebpf:"kretprobe__register_netdevice"`
 	RawTracepointSchedProcessExec    *ebpf.ProgramSpec `ebpf:"raw_tracepoint__sched_process_exec"`
 	RawTracepointSchedProcessExit    *ebpf.ProgramSpec `ebpf:"raw_tracepoint__sched_process_exit"`
 	RawTracepointSchedProcessFork    *ebpf.ProgramSpec `ebpf:"raw_tracepoint__sched_process_fork"`
 	TcEgress                         *ebpf.ProgramSpec `ebpf:"tc_egress"`
 	TcIngress                        *ebpf.ProgramSpec `ebpf:"tc_ingress"`
+	TracepointSyscallsSysEnterMount  *ebpf.ProgramSpec `ebpf:"tracepoint__syscalls__sys_enter_mount"`
+	TracepointSyscallsSysExitMount   *ebpf.ProgramSpec `ebpf:"tracepoint__syscalls__sys_exit_mount"`
 	UprobeGoBuiltinTlsWriteKeyLog    *ebpf.ProgramSpec `ebpf:"uprobe__go_builtin__tls__write_key_log"`
 	UprobeGoBuiltinTlsWriteKeyLogRet *ebpf.ProgramSpec `ebpf:"uprobe__go_builtin__tls__write_key_log__ret"`
 }
@@ -72,22 +79,29 @@ type bpf_legacyProgramSpecs struct {
 //
 // It can be passed ebpf.CollectionSpec.Assign.
 type bpf_legacyMapSpecs struct {
-	ConfigMap           *ebpf.MapSpec `ebpf:"config_map"`
-	ExecEventStack      *ebpf.MapSpec `ebpf:"exec_event_stack"`
-	ExecEvents          *ebpf.MapSpec `ebpf:"exec_events"`
-	ExitEvents          *ebpf.MapSpec `ebpf:"exit_events"`
-	FilterByKernelCount *ebpf.MapSpec `ebpf:"filter_by_kernel_count"`
-	FilterMntnsMap      *ebpf.MapSpec `ebpf:"filter_mntns_map"`
-	FilterNetnsMap      *ebpf.MapSpec `ebpf:"filter_netns_map"`
-	FilterPidMap        *ebpf.MapSpec `ebpf:"filter_pid_map"`
-	FilterPidnsMap      *ebpf.MapSpec `ebpf:"filter_pidns_map"`
-	FlowPidMap          *ebpf.MapSpec `ebpf:"flow_pid_map"`
-	GoKeylogBufStorage  *ebpf.MapSpec `ebpf:"go_keylog_buf_storage"`
-	GoKeylogEvents      *ebpf.MapSpec `ebpf:"go_keylog_events"`
-	NatFlowMap          *ebpf.MapSpec `ebpf:"nat_flow_map"`
-	PacketEventStack    *ebpf.MapSpec `ebpf:"packet_event_stack"`
-	PacketEvents        *ebpf.MapSpec `ebpf:"packet_events"`
-	SockCookiePidMap    *ebpf.MapSpec `ebpf:"sock_cookie_pid_map"`
+	ConfigMap             *ebpf.MapSpec `ebpf:"config_map"`
+	EnterMountBufs        *ebpf.MapSpec `ebpf:"enter_mount_bufs"`
+	ExecEventStack        *ebpf.MapSpec `ebpf:"exec_event_stack"`
+	ExecEvents            *ebpf.MapSpec `ebpf:"exec_events"`
+	ExitEvents            *ebpf.MapSpec `ebpf:"exit_events"`
+	FilterByKernelCount   *ebpf.MapSpec `ebpf:"filter_by_kernel_count"`
+	FilterMntnsMap        *ebpf.MapSpec `ebpf:"filter_mntns_map"`
+	FilterNetnsMap        *ebpf.MapSpec `ebpf:"filter_netns_map"`
+	FilterPidMap          *ebpf.MapSpec `ebpf:"filter_pid_map"`
+	FilterPidnsMap        *ebpf.MapSpec `ebpf:"filter_pidns_map"`
+	FlowPidMap            *ebpf.MapSpec `ebpf:"flow_pid_map"`
+	GoKeylogBufStorage    *ebpf.MapSpec `ebpf:"go_keylog_buf_storage"`
+	GoKeylogEvents        *ebpf.MapSpec `ebpf:"go_keylog_events"`
+	MountEventStack       *ebpf.MapSpec `ebpf:"mount_event_stack"`
+	MountEvents           *ebpf.MapSpec `ebpf:"mount_events"`
+	NatFlowMap            *ebpf.MapSpec `ebpf:"nat_flow_map"`
+	NetdeviceBufs         *ebpf.MapSpec `ebpf:"netdevice_bufs"`
+	NetdeviceChangeEvents *ebpf.MapSpec `ebpf:"netdevice_change_events"`
+	NewNetdeviceEvents    *ebpf.MapSpec `ebpf:"new_netdevice_events"`
+	PacketEventStack      *ebpf.MapSpec `ebpf:"packet_event_stack"`
+	PacketEvents          *ebpf.MapSpec `ebpf:"packet_events"`
+	SockCookiePidMap      *ebpf.MapSpec `ebpf:"sock_cookie_pid_map"`
+	TidNetdeviceMap       *ebpf.MapSpec `ebpf:"tid_netdevice_map"`
 }
 
 // bpf_legacyObjects contains all objects after they have been loaded into the kernel.
@@ -109,27 +123,35 @@ func (o *bpf_legacyObjects) Close() error {
 //
 // It can be passed to loadBpf_legacyObjects or ebpf.CollectionSpec.LoadAndAssign.
 type bpf_legacyMaps struct {
-	ConfigMap           *ebpf.Map `ebpf:"config_map"`
-	ExecEventStack      *ebpf.Map `ebpf:"exec_event_stack"`
-	ExecEvents          *ebpf.Map `ebpf:"exec_events"`
-	ExitEvents          *ebpf.Map `ebpf:"exit_events"`
-	FilterByKernelCount *ebpf.Map `ebpf:"filter_by_kernel_count"`
-	FilterMntnsMap      *ebpf.Map `ebpf:"filter_mntns_map"`
-	FilterNetnsMap      *ebpf.Map `ebpf:"filter_netns_map"`
-	FilterPidMap        *ebpf.Map `ebpf:"filter_pid_map"`
-	FilterPidnsMap      *ebpf.Map `ebpf:"filter_pidns_map"`
-	FlowPidMap          *ebpf.Map `ebpf:"flow_pid_map"`
-	GoKeylogBufStorage  *ebpf.Map `ebpf:"go_keylog_buf_storage"`
-	GoKeylogEvents      *ebpf.Map `ebpf:"go_keylog_events"`
-	NatFlowMap          *ebpf.Map `ebpf:"nat_flow_map"`
-	PacketEventStack    *ebpf.Map `ebpf:"packet_event_stack"`
-	PacketEvents        *ebpf.Map `ebpf:"packet_events"`
-	SockCookiePidMap    *ebpf.Map `ebpf:"sock_cookie_pid_map"`
+	ConfigMap             *ebpf.Map `ebpf:"config_map"`
+	EnterMountBufs        *ebpf.Map `ebpf:"enter_mount_bufs"`
+	ExecEventStack        *ebpf.Map `ebpf:"exec_event_stack"`
+	ExecEvents            *ebpf.Map `ebpf:"exec_events"`
+	ExitEvents            *ebpf.Map `ebpf:"exit_events"`
+	FilterByKernelCount   *ebpf.Map `ebpf:"filter_by_kernel_count"`
+	FilterMntnsMap        *ebpf.Map `ebpf:"filter_mntns_map"`
+	FilterNetnsMap        *ebpf.Map `ebpf:"filter_netns_map"`
+	FilterPidMap          *ebpf.Map `ebpf:"filter_pid_map"`
+	FilterPidnsMap        *ebpf.Map `ebpf:"filter_pidns_map"`
+	FlowPidMap            *ebpf.Map `ebpf:"flow_pid_map"`
+	GoKeylogBufStorage    *ebpf.Map `ebpf:"go_keylog_buf_storage"`
+	GoKeylogEvents        *ebpf.Map `ebpf:"go_keylog_events"`
+	MountEventStack       *ebpf.Map `ebpf:"mount_event_stack"`
+	MountEvents           *ebpf.Map `ebpf:"mount_events"`
+	NatFlowMap            *ebpf.Map `ebpf:"nat_flow_map"`
+	NetdeviceBufs         *ebpf.Map `ebpf:"netdevice_bufs"`
+	NetdeviceChangeEvents *ebpf.Map `ebpf:"netdevice_change_events"`
+	NewNetdeviceEvents    *ebpf.Map `ebpf:"new_netdevice_events"`
+	PacketEventStack      *ebpf.Map `ebpf:"packet_event_stack"`
+	PacketEvents          *ebpf.Map `ebpf:"packet_events"`
+	SockCookiePidMap      *ebpf.Map `ebpf:"sock_cookie_pid_map"`
+	TidNetdeviceMap       *ebpf.Map `ebpf:"tid_netdevice_map"`
 }
 
 func (m *bpf_legacyMaps) Close() error {
 	return _Bpf_legacyClose(
 		m.ConfigMap,
+		m.EnterMountBufs,
 		m.ExecEventStack,
 		m.ExecEvents,
 		m.ExitEvents,
@@ -141,10 +163,16 @@ func (m *bpf_legacyMaps) Close() error {
 		m.FlowPidMap,
 		m.GoKeylogBufStorage,
 		m.GoKeylogEvents,
+		m.MountEventStack,
+		m.MountEvents,
 		m.NatFlowMap,
+		m.NetdeviceBufs,
+		m.NetdeviceChangeEvents,
+		m.NewNetdeviceEvents,
 		m.PacketEventStack,
 		m.PacketEvents,
 		m.SockCookiePidMap,
+		m.TidNetdeviceMap,
 	)
 }
 
@@ -152,34 +180,48 @@ func (m *bpf_legacyMaps) Close() error {
 //
 // It can be passed to loadBpf_legacyObjects or ebpf.CollectionSpec.LoadAndAssign.
 type bpf_legacyPrograms struct {
+	KprobeDevChangeNetNamespace      *ebpf.Program `ebpf:"kprobe__dev_change_net_namespace"`
 	KprobeNfNatManipPkt              *ebpf.Program `ebpf:"kprobe__nf_nat_manip_pkt"`
 	KprobeNfNatPacket                *ebpf.Program `ebpf:"kprobe__nf_nat_packet"`
+	KprobeRegisterNetdevice          *ebpf.Program `ebpf:"kprobe__register_netdevice"`
 	KprobeSecuritySkClassifyFlow     *ebpf.Program `ebpf:"kprobe__security_sk_classify_flow"`
 	KprobeTcpSendmsg                 *ebpf.Program `ebpf:"kprobe__tcp_sendmsg"`
 	KprobeUdpSendSkb                 *ebpf.Program `ebpf:"kprobe__udp_send_skb"`
 	KprobeUdpSendmsg                 *ebpf.Program `ebpf:"kprobe__udp_sendmsg"`
+	KretprobeDevChangeNetNamespace   *ebpf.Program `ebpf:"kretprobe__dev_change_net_namespace"`
+	KretprobeDevGetByIndex           *ebpf.Program `ebpf:"kretprobe__dev_get_by_index"`
+	KretprobeRegisterNetdevice       *ebpf.Program `ebpf:"kretprobe__register_netdevice"`
 	RawTracepointSchedProcessExec    *ebpf.Program `ebpf:"raw_tracepoint__sched_process_exec"`
 	RawTracepointSchedProcessExit    *ebpf.Program `ebpf:"raw_tracepoint__sched_process_exit"`
 	RawTracepointSchedProcessFork    *ebpf.Program `ebpf:"raw_tracepoint__sched_process_fork"`
 	TcEgress                         *ebpf.Program `ebpf:"tc_egress"`
 	TcIngress                        *ebpf.Program `ebpf:"tc_ingress"`
+	TracepointSyscallsSysEnterMount  *ebpf.Program `ebpf:"tracepoint__syscalls__sys_enter_mount"`
+	TracepointSyscallsSysExitMount   *ebpf.Program `ebpf:"tracepoint__syscalls__sys_exit_mount"`
 	UprobeGoBuiltinTlsWriteKeyLog    *ebpf.Program `ebpf:"uprobe__go_builtin__tls__write_key_log"`
 	UprobeGoBuiltinTlsWriteKeyLogRet *ebpf.Program `ebpf:"uprobe__go_builtin__tls__write_key_log__ret"`
 }
 
 func (p *bpf_legacyPrograms) Close() error {
 	return _Bpf_legacyClose(
+		p.KprobeDevChangeNetNamespace,
 		p.KprobeNfNatManipPkt,
 		p.KprobeNfNatPacket,
+		p.KprobeRegisterNetdevice,
 		p.KprobeSecuritySkClassifyFlow,
 		p.KprobeTcpSendmsg,
 		p.KprobeUdpSendSkb,
 		p.KprobeUdpSendmsg,
+		p.KretprobeDevChangeNetNamespace,
+		p.KretprobeDevGetByIndex,
+		p.KretprobeRegisterNetdevice,
 		p.RawTracepointSchedProcessExec,
 		p.RawTracepointSchedProcessExit,
 		p.RawTracepointSchedProcessFork,
 		p.TcEgress,
 		p.TcIngress,
+		p.TracepointSyscallsSysEnterMount,
+		p.TracepointSyscallsSysExitMount,
 		p.UprobeGoBuiltinTlsWriteKeyLog,
 		p.UprobeGoBuiltinTlsWriteKeyLogRet,
 	)

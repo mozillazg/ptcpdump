@@ -3,31 +3,23 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os"
-	"os/signal"
-	"strings"
-	"syscall"
-	"time"
-
 	"github.com/mozillazg/ptcpdump/bpf"
-	"github.com/mozillazg/ptcpdump/internal/btf"
+	"github.com/mozillazg/ptcpdump/internal/capturer"
 	"github.com/mozillazg/ptcpdump/internal/consumer"
 	"github.com/mozillazg/ptcpdump/internal/log"
 	"github.com/mozillazg/ptcpdump/internal/metadata"
 	"github.com/mozillazg/ptcpdump/internal/utils"
+	"os"
+	"os/signal"
+	"strings"
+	"syscall"
 )
 
 func capture(ctx context.Context, stop context.CancelFunc, opts *Options) error {
+	log.Info("start get all devices")
 	devices, err := opts.GetDevices()
 	if err != nil {
 		return err
-	}
-	btfSpec, btfPath, err := btf.LoadBTFSpec(opts.btfPath)
-	if err != nil {
-		return err
-	}
-	if btfPath != btf.DefaultPath {
-		log.Warnf("use BTF specs from %s", btfPath)
 	}
 
 	log.Info("start process and container cache")
@@ -36,116 +28,93 @@ func capture(ctx context.Context, stop context.CancelFunc, opts *Options) error 
 	if cc != nil {
 		pcache.WithContainerCache(cc)
 	}
+	pcache.Start(ctx)
 
+	log.Info("start init writers")
 	writers, fcloser, err := getWriters(opts, pcache)
 	if err != nil {
 		return err
 	}
 	defer func() {
-		for _, w := range writers {
-			w.Flush()
-		}
 		if fcloser != nil {
 			fcloser()
 		}
 	}()
+
+	log.Info("start init gotls event consumer")
 	gcr, err := getGoKeyLogEventConsumer(opts, writers)
 	if err != nil {
 		return err
 	}
-
-	var subProcessFinished <-chan struct{}
-	var subProcessLoaderPid int
-	if len(opts.subProgArgs) > 0 {
-		log.Info("start sub process loader")
-		subProcessLoaderPid, subProcessFinished, err = utils.StartSubProcessLoader(ctx, os.Args[0], opts.subProgArgs)
-		if err != nil {
-			return err
-		}
-		opts.pids = []uint{uint(subProcessLoaderPid)}
-		opts.followForks = true
-	}
-
-	pcache.Start(ctx)
+	execConsumer := consumer.NewExecEventConsumer(pcache, int(opts.execEventsWorkerNumber))
+	exitConsumer := consumer.NewExitEventConsumer(pcache, 10)
+	packetConsumer := consumer.NewPacketEventConsumer(writers, opts.deviceCache).
+		WithDelay(opts.delayBeforeHandlePacketEvents)
 
 	log.Info("start get current connections")
 	conns := getCurrentConnects(ctx, pcache, opts)
 
-	log.Info("start attach hooks")
-	bf, closers, err := attachHooks(btfSpec, conns, opts)
-	if err != nil {
-		runClosers(closers)
-		return err
-	}
-	defer runClosers(closers)
+	copts := opts.ToCapturerOptions()
+	copts.Connections = conns
+	copts.ProcessCache = pcache
+	copts.DeviceCache = opts.deviceCache
+	copts.NetNSCache = opts.netNSCache
+	copts.ExecConsumer = execConsumer
+	copts.ExitConsumer = exitConsumer
+	copts.PacketConsumer = packetConsumer
+	copts.Gcr = gcr
+	copts.Writers = writers
+	caper := capturer.NewCapturer(copts)
+	defer caper.Stop()
 
-	packetEvensCh, err := bf.PullPacketEvents(ctx, int(opts.eventChanSize), int(opts.snapshotLength))
-	if err != nil {
+	if err := caper.StartSubProcessLoader(ctx, os.Args[0], opts.subProgArgs); err != nil {
 		return err
 	}
-	execEvensCh, err := bf.PullExecEvents(ctx, int(opts.eventChanSize))
-	if err != nil {
+
+	log.Info("start prepare capturer")
+	if err := caper.Prepare(); err != nil {
 		return err
 	}
-	exitEvensCh, err := bf.PullExitEvents(ctx, int(opts.eventChanSize))
-	if err != nil {
+
+	log.Info("start attach hooks")
+	if err := caper.AttachTracingHooks(); err != nil {
 		return err
 	}
-	goTlsKeyLogEventsCh, err := bf.PullGoKeyLogEvents(ctx, int(opts.eventChanSize))
-	if err != nil {
+	if err := attachGoTLSHooks(opts, caper.BPF()); err != nil {
+		return err
+	}
+	if err := caper.AttachTcHooksToDevs(devices.Devs()); err != nil {
+		return err
+	}
+	if err := caper.Start(ctx, stop); err != nil {
 		return err
 	}
 
 	headerTips(opts)
 	log.Info("capturing...")
 
-	execConsumer := consumer.NewExecEventConsumer(pcache, int(opts.execEventsWorkerNumber))
-	go execConsumer.Start(ctx, execEvensCh)
-	exitConsumer := consumer.NewExitEventConsumer(pcache, 10)
-	go exitConsumer.Start(ctx, exitEvensCh)
-	go gcr.Start(ctx, goTlsKeyLogEventsCh)
+	go printCaptureCountBySignal(ctx, caper.BPF(), packetConsumer)
 
-	var stopByInternal bool
-	packetConsumer := consumer.NewPacketEventConsumer(writers, devices).
-		WithDelay(opts.delayBeforeHandlePacketEvents)
-	if subProcessLoaderPid > 0 {
-		go func() {
-			log.Infof("notify loader %d to start sub process", subProcessLoaderPid)
-			syscall.Kill(subProcessLoaderPid, syscall.SIGHUP)
-			<-subProcessFinished
-			log.Info("sub process exited")
-			time.Sleep(time.Second * 3)
-			stopByInternal = true
-			time.Sleep(opts.delayBeforeHandlePacketEvents)
-			stop()
-		}()
+	<-ctx.Done()
+
+	if !caper.StopByInternal() && ctx.Err() != nil {
+		utils.OutStderr("%s", "\n")
 	}
-
-	go printCaptureCountBySignal(ctx, bf, packetConsumer)
-	packetConsumer.Start(ctx, packetEvensCh, opts.maxPacketCount)
-	defer func() {
-		packetConsumer.Stop()
-		execConsumer.Stop()
-		exitConsumer.Stop()
-		gcr.Stop()
-	}()
-
-	if !stopByInternal && ctx.Err() != nil {
-		fmt.Fprint(os.Stderr, "\n")
-	}
-	counts := getCaptureCounts(bf, packetConsumer)
-	fmt.Fprintf(os.Stderr, "%s\n", strings.Join(counts, "\n"))
+	counts := getCaptureCounts(caper.BPF(), packetConsumer)
+	utils.OutStderr("%s\n", strings.Join(counts, "\n"))
 
 	return nil
 }
 
 func headerTips(opts *Options) {
-	interfaces := opts.ifaces[0]
-	if len(opts.ifaces) > 1 {
+	interfaces := "any"
+	if len(opts.ifaces) > 0 {
 		interfaces = fmt.Sprintf("[%s]", strings.Join(opts.ifaces, ", "))
 	}
+
 	msg := fmt.Sprintf("capturing on %s, link-type EN10MB (Ethernet), snapshot length %d bytes",
 		interfaces, opts.snapshotLength)
+
 	if opts.verbose < 1 {
 		log.Warn("ptcpdump: verbose output suppressed, use -v[v]... for verbose output")
 		log.Warn(msg)
@@ -163,7 +132,7 @@ func printCaptureCountBySignal(ctx context.Context, bf *bpf.BPF, c *consumer.Pac
 			return
 		case <-ch:
 			counts := getCaptureCounts(bf, c)
-			fmt.Fprintf(os.Stderr, fmt.Sprintf("ptcpdump: %s\n", strings.Join(counts, ", ")))
+			utils.OutStderr("ptcpdump: %s\n", strings.Join(counts, ", "))
 		}
 	}
 }

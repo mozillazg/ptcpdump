@@ -1,7 +1,6 @@
 package event
 
 import (
-	"path/filepath"
 	"strings"
 
 	"github.com/gopacket/gopacket/pcapgo"
@@ -11,24 +10,8 @@ import (
 	"github.com/mozillazg/ptcpdump/internal/utils"
 )
 
-type ProcessExec struct {
-	PPid int
-	Pid  int
-
-	Filename          string
-	FilenameTruncated bool
-
-	Args          []string
-	ArgsTruncated bool
-
-	PidNs      int64
-	MntNs      int64
-	Netns      int64
-	CgroupName string
-}
-
-func ParseProcessExecEvent(event bpf.BpfExecEventT) (*ProcessExec, error) {
-	var p ProcessExec
+func ParseProcessExecEvent(event bpf.BpfExecEventT) (*types.ProcessExec, error) {
+	var p types.ProcessExec
 	if event.ArgsTruncated == 1 {
 		p.ArgsTruncated = true
 	}
@@ -59,8 +42,8 @@ func ParseProcessExecEvent(event bpf.BpfExecEventT) (*ProcessExec, error) {
 	return &p, nil
 }
 
-func FromPacketOptions(opts pcapgo.NgPacketOptions) (ProcessExec, types.PacketContext) {
-	p := &ProcessExec{}
+func FromPacketOptions(opts pcapgo.NgPacketOptions) (types.ProcessExec, types.PacketContext) {
+	p := &types.ProcessExec{}
 	pctx := &types.PacketContext{}
 
 	pctx.FromPacketComments(opts.Comments)
@@ -74,28 +57,4 @@ func FromPacketOptions(opts pcapgo.NgPacketOptions) (ProcessExec, types.PacketCo
 	log.Debugf("new packet: %#v, %#v", *p, *pctx)
 
 	return *p, *pctx
-}
-
-func (p ProcessExec) FilenameStr() string {
-	s := string(p.Filename)
-	if p.FilenameTruncated {
-		s += "..."
-	}
-	return s
-}
-
-func (p ProcessExec) ArgsStr() string {
-	s := strings.Join(p.Args, " ")
-	if p.ArgsTruncated {
-		s += "..."
-	}
-	return s
-}
-
-func (p ProcessExec) MatchComm(name string) bool {
-	filename := filepath.Base(p.Filename)
-	if len(filename) > 15 {
-		filename = filename[:15]
-	}
-	return name == filename
 }

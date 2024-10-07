@@ -23,6 +23,13 @@ type BpfObjectsForLegacyKernel struct {
 	RawTracepointSchedProcessExec    *ebpf.Program `ebpf:"raw_tracepoint__sched_process_exec"`
 	RawTracepointSchedProcessExit    *ebpf.Program `ebpf:"raw_tracepoint__sched_process_exit"`
 	RawTracepointSchedProcessFork    *ebpf.Program `ebpf:"raw_tracepoint__sched_process_fork"`
+	KprobeRegisterNetdevice          *ebpf.Program `ebpf:"kprobe__register_netdevice"`
+	KretprobeRegisterNetdevice       *ebpf.Program `ebpf:"kretprobe__register_netdevice"`
+	KprobeDevChangeNetNamespace      *ebpf.Program `ebpf:"kprobe__dev_change_net_namespace"`
+	KretprobeDevChangeNetNamespace   *ebpf.Program `ebpf:"kretprobe__dev_change_net_namespace"`
+	KretprobeDevGetByIndex           *ebpf.Program `ebpf:"kretprobe__dev_get_by_index"`
+	TracepointSyscallsSysEnterMount  *ebpf.Program `ebpf:"tracepoint__syscalls__sys_enter_mount"`
+	TracepointSyscallsSysExitMount   *ebpf.Program `ebpf:"tracepoint__syscalls__sys_exit_mount"`
 	TcEgress                         *ebpf.Program `ebpf:"tc_egress"`
 	TcIngress                        *ebpf.Program `ebpf:"tc_ingress"`
 	UprobeGoBuiltinTlsWriteKeyLog    *ebpf.Program `ebpf:"uprobe__go_builtin__tls__write_key_log"`
@@ -41,6 +48,13 @@ func (b *BpfObjects) FromLegacy(o *BpfObjectsForLegacyKernel) {
 	b.RawTracepointSchedProcessExec = o.RawTracepointSchedProcessExec
 	b.RawTracepointSchedProcessExit = o.RawTracepointSchedProcessExit
 	b.RawTracepointSchedProcessFork = o.RawTracepointSchedProcessFork
+	b.KprobeRegisterNetdevice = o.KprobeRegisterNetdevice
+	b.KretprobeRegisterNetdevice = o.KretprobeRegisterNetdevice
+	b.KprobeDevChangeNetNamespace = o.KprobeDevChangeNetNamespace
+	b.KretprobeDevChangeNetNamespace = o.KretprobeDevChangeNetNamespace
+	b.KretprobeDevGetByIndex = o.KretprobeDevGetByIndex
+	b.TracepointSyscallsSysEnterMount = o.TracepointSyscallsSysEnterMount
+	b.TracepointSyscallsSysExitMount = o.TracepointSyscallsSysExitMount
 	b.TcEgress = o.TcEgress
 	b.TcIngress = o.TcIngress
 	b.UprobeGoBuiltinTlsWriteKeyLog = o.UprobeGoBuiltinTlsWriteKeyLog

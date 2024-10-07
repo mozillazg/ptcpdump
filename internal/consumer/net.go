@@ -3,25 +3,25 @@ package consumer
 import (
 	"context"
 	"github.com/mozillazg/ptcpdump/bpf"
-	"github.com/mozillazg/ptcpdump/internal/dev"
 	"github.com/mozillazg/ptcpdump/internal/event"
 	"github.com/mozillazg/ptcpdump/internal/log"
+	"github.com/mozillazg/ptcpdump/internal/metadata"
 	"github.com/mozillazg/ptcpdump/internal/writer"
 	"time"
 )
 
 type PacketEventConsumer struct {
 	writers        []writer.PacketWriter
-	devices        *dev.Interfaces
+	deviceCache    *metadata.DeviceCache
 	processedCount int
 
 	delay time.Duration
 }
 
-func NewPacketEventConsumer(writers []writer.PacketWriter, devices *dev.Interfaces) *PacketEventConsumer {
+func NewPacketEventConsumer(writers []writer.PacketWriter, deviceCache *metadata.DeviceCache) *PacketEventConsumer {
 	return &PacketEventConsumer{
-		writers: writers,
-		devices: devices,
+		writers:     writers,
+		deviceCache: deviceCache,
 	}
 }
 
@@ -49,7 +49,7 @@ func (c *PacketEventConsumer) Start(ctx context.Context, ch <-chan bpf.BpfPacket
 }
 
 func (c *PacketEventConsumer) handlePacketEvent(pt bpf.BpfPacketEventWithPayloadT) {
-	pevent, err := event.ParsePacketEvent(c.devices, pt)
+	pevent, err := event.ParsePacketEvent(c.deviceCache, pt)
 	if err != nil {
 		log.Errorf("[PacketEventConsumer] parse event failed: %s", err)
 		return

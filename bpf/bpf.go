@@ -19,7 +19,7 @@ import (
 )
 
 // $TARGET is set by the Makefile
-//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc clang -no-strip -target $TARGET -type gconfig_t -type packet_event_t -type exec_event_t -type exit_event_t -type flow_pid_key_t -type process_meta_t -type packet_event_meta_t -type go_keylog_event_t Bpf ./ptcpdump.c -- -I./headers -I./headers/$TARGET -I. -Wall
+//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc clang -no-strip -target $TARGET -type gconfig_t -type packet_event_t -type exec_event_t -type exit_event_t -type flow_pid_key_t -type process_meta_t -type packet_event_meta_t -type go_keylog_event_t -type new_netdevice_event_t -type netdevice_change_event_t -type mount_event_t Bpf ./ptcpdump.c -- -I./headers -I./headers/$TARGET -I. -Wall
 
 const tcFilterName = "ptcpdump"
 const logSzie = ebpf.DefaultVerifierLogSize * 64
@@ -47,6 +47,8 @@ type Options struct {
 	pidnsIds       []uint32
 	netnsIds       []uint32
 	maxPayloadSize uint32
+	hookMount      bool
+	hookNetDev     bool
 	kernelTypes    *btf.Spec
 }
 
@@ -276,6 +278,39 @@ func (b *BPF) AttachKprobes() error {
 		b.links = append(b.links, lk)
 	}
 
+	if b.opts.hookNetDev {
+		lk, err = link.Kprobe("register_netdevice",
+			b.objs.KprobeRegisterNetdevice, &link.KprobeOptions{})
+		if err != nil {
+			return fmt.Errorf("attach kprobe/register_netdevice: %w", err)
+		}
+		b.links = append(b.links, lk)
+		lk, err = link.Kretprobe("register_netdevice",
+			b.objs.KretprobeRegisterNetdevice, &link.KprobeOptions{})
+		if err != nil {
+			return fmt.Errorf("attach kretprobe/register_netdevice: %w", err)
+		}
+		b.links = append(b.links, lk)
+		lk, err = link.Kretprobe("__dev_get_by_index",
+			b.objs.KretprobeDevGetByIndex, &link.KprobeOptions{})
+		if err != nil {
+			return fmt.Errorf("attach kretprobe/__dev_get_by_index: %w", err)
+		}
+		b.links = append(b.links, lk)
+		lk, err = link.Kprobe("__dev_change_net_namespace",
+			b.objs.KprobeDevChangeNetNamespace, &link.KprobeOptions{})
+		if err != nil {
+			return fmt.Errorf("attach kprobe/__dev_change_net_namespace: %w", err)
+		}
+		b.links = append(b.links, lk)
+		lk, err = link.Kretprobe("__dev_change_net_namespace",
+			b.objs.KretprobeDevChangeNetNamespace, &link.KprobeOptions{})
+		if err != nil {
+			return fmt.Errorf("attach kretprobe/__dev_change_net_namespace: %w", err)
+		}
+		b.links = append(b.links, lk)
+	}
+
 	return nil
 }
 
@@ -305,6 +340,19 @@ func (b *BPF) AttachTracepoints() error {
 		})
 		if err != nil {
 			return fmt.Errorf("attach raw_tracepoint/sched_process_fork: %w", err)
+		}
+		b.links = append(b.links, lk)
+	}
+
+	if b.opts.hookMount {
+		lk, err = link.Tracepoint("syscalls", "sys_enter_mount", b.objs.TracepointSyscallsSysEnterMount, &link.TracepointOptions{})
+		if err != nil {
+			return fmt.Errorf("attach tracepoint/syscalls/sys_enter_mount: %w", err)
+		}
+		b.links = append(b.links, lk)
+		lk, err = link.Tracepoint("syscalls", "sys_exit_mount", b.objs.TracepointSyscallsSysExitMount, &link.TracepointOptions{})
+		if err != nil {
+			return fmt.Errorf("attach tracepoint/syscalls/sys_exit_mount: %w", err)
 		}
 		b.links = append(b.links, lk)
 	}
@@ -386,9 +434,9 @@ func attachTcHook(ifindex int, prog *ebpf.Program, ingress bool) (func(), error)
 				},
 			},
 		}
-		log.Infof("try to add tc filter with handle %d", hid)
+		log.Infof("try to add tc filter with handle %d to %d", hid, ifindex)
 		if err = tcnl.Filter().Add(filter); err != nil {
-			log.Infof("add tc filter: %s", err)
+			log.Infof("add tc filter: %+v", err)
 			if !errors.Is(err, unix.EEXIST) {
 				return closeFunc, fmt.Errorf("add tc filter: %w", err)
 			} else {
@@ -577,6 +625,16 @@ func (opts *Options) WithPcapFilter(pcapFilter string) *Options {
 
 func (opts *Options) WithMaxPayloadSize(n uint32) *Options {
 	opts.maxPayloadSize = n
+	return opts
+}
+
+func (opts *Options) WithHookMount(v bool) *Options {
+	opts.hookMount = v
+	return opts
+}
+
+func (opts *Options) WithHookNetDev(v bool) *Options {
+	opts.hookNetDev = v
 	return opts
 }
 

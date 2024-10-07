@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/mozillazg/ptcpdump/internal/utils"
 	"io"
 	"os"
 	"unsafe"
@@ -146,7 +147,7 @@ func (b *BPF) PullGoKeyLogEvents(ctx context.Context, chanSize int) (<-chan BpfG
 	pageSize := os.Getpagesize()
 	log.Infof("pagesize is %d", pageSize)
 	perCPUBuffer := pageSize * 4
-	eventSize := int(unsafe.Sizeof(BpfExecEventT{}))
+	eventSize := int(unsafe.Sizeof(BpfGoKeylogEventT{}))
 	if eventSize >= perCPUBuffer {
 		perCPUBuffer = perCPUBuffer * (1 + (eventSize / perCPUBuffer))
 	}
@@ -196,6 +197,208 @@ func (b *BPF) handleGoKeyLogEvents(ctx context.Context, reader *perf.Reader, ch 
 			// TODO: XXX
 		}
 	}
+}
+
+func (b *BPF) PullNewNetDeviceEvents(ctx context.Context, chanSize int) (<-chan BpfNewNetdeviceEventT, error) {
+	pageSize := os.Getpagesize()
+	log.Infof("pagesize is %d", pageSize)
+	perCPUBuffer := pageSize * 1
+	eventSize := int(unsafe.Sizeof(BpfNewNetdeviceEventT{}))
+	if eventSize >= perCPUBuffer {
+		perCPUBuffer = perCPUBuffer * (1 + (eventSize / perCPUBuffer))
+	}
+	log.Infof("use %d as perCPUBuffer", perCPUBuffer)
+
+	reader, err := perf.NewReader(b.objs.NewNetdeviceEvents, perCPUBuffer)
+	if err != nil {
+		return nil, fmt.Errorf(": %w", err)
+	}
+	ch := make(chan BpfNewNetdeviceEventT, chanSize)
+	go func() {
+		defer close(ch)
+		defer reader.Close()
+		b.handleNetNetDeviceEvents(ctx, reader, ch)
+	}()
+
+	return ch, nil
+}
+
+func (b *BPF) handleNetNetDeviceEvents(ctx context.Context, reader *perf.Reader, ch chan<- BpfNewNetdeviceEventT) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
+
+		record, err := reader.Read()
+		if err != nil {
+			if errors.Is(err, perf.ErrClosed) {
+				return
+			}
+			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+				log.Infof("got EOF error: %s", err)
+				continue
+			}
+			log.Errorf("read go tls keylog event failed: %s", err)
+			continue
+		}
+		event, err := parseNewNetDeviceEvent(record.RawSample)
+		if err != nil {
+			log.Errorf("parse go tls keylog event failed: %s", err)
+		} else {
+			ch <- *event
+			dev := event.Dev
+			log.Infof("new BpfNewNetdeviceEventT: name %s, ifindex %d, netns, %d",
+				utils.GoString(dev.Name[:]), dev.Ifindex, dev.NetnsId)
+		}
+		if record.LostSamples > 0 {
+			// TODO: XXX
+		}
+	}
+}
+
+func parseNewNetDeviceEvent(rawSample []byte) (*BpfNewNetdeviceEventT, error) {
+	event := BpfNewNetdeviceEventT{}
+	if err := binary.Read(bytes.NewBuffer(rawSample), binary.LittleEndian, &event); err != nil {
+		return nil, fmt.Errorf("parse event: %w", err)
+	}
+	return &event, nil
+}
+
+func (b *BPF) PullNetDeviceChangeEvents(ctx context.Context, chanSize int) (<-chan BpfNetdeviceChangeEventT, error) {
+	pageSize := os.Getpagesize()
+	log.Infof("pagesize is %d", pageSize)
+	perCPUBuffer := pageSize * 1
+	eventSize := int(unsafe.Sizeof(BpfNetdeviceChangeEventT{}))
+	if eventSize >= perCPUBuffer {
+		perCPUBuffer = perCPUBuffer * (1 + (eventSize / perCPUBuffer))
+	}
+	log.Infof("use %d as perCPUBuffer", perCPUBuffer)
+
+	reader, err := perf.NewReader(b.objs.NetdeviceChangeEvents, perCPUBuffer)
+	if err != nil {
+		return nil, fmt.Errorf(": %w", err)
+	}
+	ch := make(chan BpfNetdeviceChangeEventT, chanSize)
+	go func() {
+		defer close(ch)
+		defer reader.Close()
+		b.handleNetDeviceChangeEvents(ctx, reader, ch)
+	}()
+
+	return ch, nil
+}
+
+func (b *BPF) handleNetDeviceChangeEvents(ctx context.Context, reader *perf.Reader, ch chan<- BpfNetdeviceChangeEventT) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
+
+		record, err := reader.Read()
+		if err != nil {
+			if errors.Is(err, perf.ErrClosed) {
+				return
+			}
+			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+				log.Infof("got EOF error: %s", err)
+				continue
+			}
+			log.Errorf("read go tls keylog event failed: %s", err)
+			continue
+		}
+		event, err := parseNetDeviceChangeEvent(record.RawSample)
+		if err != nil {
+			log.Errorf("parse go tls keylog event failed: %s", err)
+		} else {
+			ch <- *event
+			oldDev := event.OldDevice
+			newDev := event.NewDevice
+			log.Infof("new BpfNetdeviceChangeEventT: (name %s, ifindex %d, netns, %d) -> (name %s, ifindex %d, netns, %d)",
+				utils.GoString(oldDev.Name[:]), oldDev.Ifindex, oldDev.NetnsId,
+				utils.GoString(newDev.Name[:]), newDev.Ifindex, newDev.NetnsId)
+		}
+		if record.LostSamples > 0 {
+			// TODO: XXX
+		}
+	}
+}
+
+func parseNetDeviceChangeEvent(rawSample []byte) (*BpfNetdeviceChangeEventT, error) {
+	event := BpfNetdeviceChangeEventT{}
+	if err := binary.Read(bytes.NewBuffer(rawSample), binary.LittleEndian, &event); err != nil {
+		return nil, fmt.Errorf("parse event: %w", err)
+	}
+	return &event, nil
+}
+
+func (b *BPF) PullMountEventEvents(ctx context.Context, chanSize int) (<-chan BpfMountEventT, error) {
+	pageSize := os.Getpagesize()
+	log.Infof("pagesize is %d", pageSize)
+	perCPUBuffer := pageSize * 1
+	eventSize := int(unsafe.Sizeof(BpfMountEventT{}))
+	if eventSize >= perCPUBuffer {
+		perCPUBuffer = perCPUBuffer * (1 + (eventSize / perCPUBuffer))
+	}
+	log.Infof("use %d as perCPUBuffer", perCPUBuffer)
+
+	reader, err := perf.NewReader(b.objs.MountEvents, perCPUBuffer)
+	if err != nil {
+		return nil, fmt.Errorf(": %w", err)
+	}
+	ch := make(chan BpfMountEventT, chanSize)
+	go func() {
+		defer close(ch)
+		defer reader.Close()
+		b.handleMountEvents(ctx, reader, ch)
+	}()
+
+	return ch, nil
+}
+
+func (b *BPF) handleMountEvents(ctx context.Context, reader *perf.Reader, ch chan<- BpfMountEventT) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
+
+		record, err := reader.Read()
+		if err != nil {
+			if errors.Is(err, perf.ErrClosed) {
+				return
+			}
+			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+				log.Infof("got EOF error: %s", err)
+				continue
+			}
+			log.Errorf("read go tls keylog event failed: %s", err)
+			continue
+		}
+		event, err := parseMountEvent(record.RawSample)
+		if err != nil {
+			log.Errorf("parse go tls keylog event failed: %s", err)
+		} else {
+			ch <- *event
+			log.Infof("new BpfMountEventT: (source %s, dest %s, fstype, %s)",
+				utils.GoString(event.Src[:]), utils.GoString(event.Dest[:]), utils.GoString(event.Fs[:]))
+		}
+		if record.LostSamples > 0 {
+			// TODO: XXX
+		}
+	}
+}
+
+func parseMountEvent(rawSample []byte) (*BpfMountEventT, error) {
+	event := BpfMountEventT{}
+	if err := binary.Read(bytes.NewBuffer(rawSample), binary.LittleEndian, &event); err != nil {
+		return nil, fmt.Errorf("parse event: %w", err)
+	}
+	return &event, nil
 }
 
 func parseGoKeyLogEvent(rawSample []byte) (*BpfGoKeylogEventT, error) {
