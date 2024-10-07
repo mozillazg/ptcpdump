@@ -158,28 +158,31 @@ type BpfSpecs struct {
 //
 // It can be passed ebpf.CollectionSpec.Assign.
 type BpfProgramSpecs struct {
-	CgroupSockCreate                 *ebpf.ProgramSpec `ebpf:"cgroup__sock_create"`
-	CgroupSockRelease                *ebpf.ProgramSpec `ebpf:"cgroup__sock_release"`
-	KprobeDevChangeNetNamespace      *ebpf.ProgramSpec `ebpf:"kprobe__dev_change_net_namespace"`
-	KprobeNfNatManipPkt              *ebpf.ProgramSpec `ebpf:"kprobe__nf_nat_manip_pkt"`
-	KprobeNfNatPacket                *ebpf.ProgramSpec `ebpf:"kprobe__nf_nat_packet"`
-	KprobeRegisterNetdevice          *ebpf.ProgramSpec `ebpf:"kprobe__register_netdevice"`
-	KprobeSecuritySkClassifyFlow     *ebpf.ProgramSpec `ebpf:"kprobe__security_sk_classify_flow"`
-	KprobeTcpSendmsg                 *ebpf.ProgramSpec `ebpf:"kprobe__tcp_sendmsg"`
-	KprobeUdpSendSkb                 *ebpf.ProgramSpec `ebpf:"kprobe__udp_send_skb"`
-	KprobeUdpSendmsg                 *ebpf.ProgramSpec `ebpf:"kprobe__udp_sendmsg"`
-	KretprobeDevChangeNetNamespace   *ebpf.ProgramSpec `ebpf:"kretprobe__dev_change_net_namespace"`
-	KretprobeDevGetByIndex           *ebpf.ProgramSpec `ebpf:"kretprobe__dev_get_by_index"`
-	KretprobeRegisterNetdevice       *ebpf.ProgramSpec `ebpf:"kretprobe__register_netdevice"`
-	RawTracepointSchedProcessExec    *ebpf.ProgramSpec `ebpf:"raw_tracepoint__sched_process_exec"`
-	RawTracepointSchedProcessExit    *ebpf.ProgramSpec `ebpf:"raw_tracepoint__sched_process_exit"`
-	RawTracepointSchedProcessFork    *ebpf.ProgramSpec `ebpf:"raw_tracepoint__sched_process_fork"`
-	TcEgress                         *ebpf.ProgramSpec `ebpf:"tc_egress"`
-	TcIngress                        *ebpf.ProgramSpec `ebpf:"tc_ingress"`
-	TracepointSyscallsSysEnterMount  *ebpf.ProgramSpec `ebpf:"tracepoint__syscalls__sys_enter_mount"`
-	TracepointSyscallsSysExitMount   *ebpf.ProgramSpec `ebpf:"tracepoint__syscalls__sys_exit_mount"`
-	UprobeGoBuiltinTlsWriteKeyLog    *ebpf.ProgramSpec `ebpf:"uprobe__go_builtin__tls__write_key_log"`
-	UprobeGoBuiltinTlsWriteKeyLogRet *ebpf.ProgramSpec `ebpf:"uprobe__go_builtin__tls__write_key_log__ret"`
+	CgroupSockCreate                     *ebpf.ProgramSpec `ebpf:"cgroup__sock_create"`
+	CgroupSockRelease                    *ebpf.ProgramSpec `ebpf:"cgroup__sock_release"`
+	KprobeDevChangeNetNamespace          *ebpf.ProgramSpec `ebpf:"kprobe__dev_change_net_namespace"`
+	KprobeDevChangeNetNamespaceLegacy    *ebpf.ProgramSpec `ebpf:"kprobe__dev_change_net_namespace_legacy"`
+	KprobeNfNatManipPkt                  *ebpf.ProgramSpec `ebpf:"kprobe__nf_nat_manip_pkt"`
+	KprobeNfNatPacket                    *ebpf.ProgramSpec `ebpf:"kprobe__nf_nat_packet"`
+	KprobeRegisterNetdevice              *ebpf.ProgramSpec `ebpf:"kprobe__register_netdevice"`
+	KprobeSecuritySkClassifyFlow         *ebpf.ProgramSpec `ebpf:"kprobe__security_sk_classify_flow"`
+	KprobeTcpSendmsg                     *ebpf.ProgramSpec `ebpf:"kprobe__tcp_sendmsg"`
+	KprobeUdpSendSkb                     *ebpf.ProgramSpec `ebpf:"kprobe__udp_send_skb"`
+	KprobeUdpSendmsg                     *ebpf.ProgramSpec `ebpf:"kprobe__udp_sendmsg"`
+	KretprobeDevChangeNetNamespace       *ebpf.ProgramSpec `ebpf:"kretprobe__dev_change_net_namespace"`
+	KretprobeDevChangeNetNamespaceLegacy *ebpf.ProgramSpec `ebpf:"kretprobe__dev_change_net_namespace_legacy"`
+	KretprobeDevGetByIndex               *ebpf.ProgramSpec `ebpf:"kretprobe__dev_get_by_index"`
+	KretprobeDevGetByIndexLegacy         *ebpf.ProgramSpec `ebpf:"kretprobe__dev_get_by_index_legacy"`
+	KretprobeRegisterNetdevice           *ebpf.ProgramSpec `ebpf:"kretprobe__register_netdevice"`
+	RawTracepointSchedProcessExec        *ebpf.ProgramSpec `ebpf:"raw_tracepoint__sched_process_exec"`
+	RawTracepointSchedProcessExit        *ebpf.ProgramSpec `ebpf:"raw_tracepoint__sched_process_exit"`
+	RawTracepointSchedProcessFork        *ebpf.ProgramSpec `ebpf:"raw_tracepoint__sched_process_fork"`
+	TcEgress                             *ebpf.ProgramSpec `ebpf:"tc_egress"`
+	TcIngress                            *ebpf.ProgramSpec `ebpf:"tc_ingress"`
+	TracepointSyscallsSysEnterMount      *ebpf.ProgramSpec `ebpf:"tracepoint__syscalls__sys_enter_mount"`
+	TracepointSyscallsSysExitMount       *ebpf.ProgramSpec `ebpf:"tracepoint__syscalls__sys_exit_mount"`
+	UprobeGoBuiltinTlsWriteKeyLog        *ebpf.ProgramSpec `ebpf:"uprobe__go_builtin__tls__write_key_log"`
+	UprobeGoBuiltinTlsWriteKeyLogRet     *ebpf.ProgramSpec `ebpf:"uprobe__go_builtin__tls__write_key_log__ret"`
 }
 
 // BpfMapSpecs contains maps before they are loaded into the kernel.
@@ -287,28 +290,31 @@ func (m *BpfMaps) Close() error {
 //
 // It can be passed to LoadBpfObjects or ebpf.CollectionSpec.LoadAndAssign.
 type BpfPrograms struct {
-	CgroupSockCreate                 *ebpf.Program `ebpf:"cgroup__sock_create"`
-	CgroupSockRelease                *ebpf.Program `ebpf:"cgroup__sock_release"`
-	KprobeDevChangeNetNamespace      *ebpf.Program `ebpf:"kprobe__dev_change_net_namespace"`
-	KprobeNfNatManipPkt              *ebpf.Program `ebpf:"kprobe__nf_nat_manip_pkt"`
-	KprobeNfNatPacket                *ebpf.Program `ebpf:"kprobe__nf_nat_packet"`
-	KprobeRegisterNetdevice          *ebpf.Program `ebpf:"kprobe__register_netdevice"`
-	KprobeSecuritySkClassifyFlow     *ebpf.Program `ebpf:"kprobe__security_sk_classify_flow"`
-	KprobeTcpSendmsg                 *ebpf.Program `ebpf:"kprobe__tcp_sendmsg"`
-	KprobeUdpSendSkb                 *ebpf.Program `ebpf:"kprobe__udp_send_skb"`
-	KprobeUdpSendmsg                 *ebpf.Program `ebpf:"kprobe__udp_sendmsg"`
-	KretprobeDevChangeNetNamespace   *ebpf.Program `ebpf:"kretprobe__dev_change_net_namespace"`
-	KretprobeDevGetByIndex           *ebpf.Program `ebpf:"kretprobe__dev_get_by_index"`
-	KretprobeRegisterNetdevice       *ebpf.Program `ebpf:"kretprobe__register_netdevice"`
-	RawTracepointSchedProcessExec    *ebpf.Program `ebpf:"raw_tracepoint__sched_process_exec"`
-	RawTracepointSchedProcessExit    *ebpf.Program `ebpf:"raw_tracepoint__sched_process_exit"`
-	RawTracepointSchedProcessFork    *ebpf.Program `ebpf:"raw_tracepoint__sched_process_fork"`
-	TcEgress                         *ebpf.Program `ebpf:"tc_egress"`
-	TcIngress                        *ebpf.Program `ebpf:"tc_ingress"`
-	TracepointSyscallsSysEnterMount  *ebpf.Program `ebpf:"tracepoint__syscalls__sys_enter_mount"`
-	TracepointSyscallsSysExitMount   *ebpf.Program `ebpf:"tracepoint__syscalls__sys_exit_mount"`
-	UprobeGoBuiltinTlsWriteKeyLog    *ebpf.Program `ebpf:"uprobe__go_builtin__tls__write_key_log"`
-	UprobeGoBuiltinTlsWriteKeyLogRet *ebpf.Program `ebpf:"uprobe__go_builtin__tls__write_key_log__ret"`
+	CgroupSockCreate                     *ebpf.Program `ebpf:"cgroup__sock_create"`
+	CgroupSockRelease                    *ebpf.Program `ebpf:"cgroup__sock_release"`
+	KprobeDevChangeNetNamespace          *ebpf.Program `ebpf:"kprobe__dev_change_net_namespace"`
+	KprobeDevChangeNetNamespaceLegacy    *ebpf.Program `ebpf:"kprobe__dev_change_net_namespace_legacy"`
+	KprobeNfNatManipPkt                  *ebpf.Program `ebpf:"kprobe__nf_nat_manip_pkt"`
+	KprobeNfNatPacket                    *ebpf.Program `ebpf:"kprobe__nf_nat_packet"`
+	KprobeRegisterNetdevice              *ebpf.Program `ebpf:"kprobe__register_netdevice"`
+	KprobeSecuritySkClassifyFlow         *ebpf.Program `ebpf:"kprobe__security_sk_classify_flow"`
+	KprobeTcpSendmsg                     *ebpf.Program `ebpf:"kprobe__tcp_sendmsg"`
+	KprobeUdpSendSkb                     *ebpf.Program `ebpf:"kprobe__udp_send_skb"`
+	KprobeUdpSendmsg                     *ebpf.Program `ebpf:"kprobe__udp_sendmsg"`
+	KretprobeDevChangeNetNamespace       *ebpf.Program `ebpf:"kretprobe__dev_change_net_namespace"`
+	KretprobeDevChangeNetNamespaceLegacy *ebpf.Program `ebpf:"kretprobe__dev_change_net_namespace_legacy"`
+	KretprobeDevGetByIndex               *ebpf.Program `ebpf:"kretprobe__dev_get_by_index"`
+	KretprobeDevGetByIndexLegacy         *ebpf.Program `ebpf:"kretprobe__dev_get_by_index_legacy"`
+	KretprobeRegisterNetdevice           *ebpf.Program `ebpf:"kretprobe__register_netdevice"`
+	RawTracepointSchedProcessExec        *ebpf.Program `ebpf:"raw_tracepoint__sched_process_exec"`
+	RawTracepointSchedProcessExit        *ebpf.Program `ebpf:"raw_tracepoint__sched_process_exit"`
+	RawTracepointSchedProcessFork        *ebpf.Program `ebpf:"raw_tracepoint__sched_process_fork"`
+	TcEgress                             *ebpf.Program `ebpf:"tc_egress"`
+	TcIngress                            *ebpf.Program `ebpf:"tc_ingress"`
+	TracepointSyscallsSysEnterMount      *ebpf.Program `ebpf:"tracepoint__syscalls__sys_enter_mount"`
+	TracepointSyscallsSysExitMount       *ebpf.Program `ebpf:"tracepoint__syscalls__sys_exit_mount"`
+	UprobeGoBuiltinTlsWriteKeyLog        *ebpf.Program `ebpf:"uprobe__go_builtin__tls__write_key_log"`
+	UprobeGoBuiltinTlsWriteKeyLogRet     *ebpf.Program `ebpf:"uprobe__go_builtin__tls__write_key_log__ret"`
 }
 
 func (p *BpfPrograms) Close() error {
@@ -316,6 +322,7 @@ func (p *BpfPrograms) Close() error {
 		p.CgroupSockCreate,
 		p.CgroupSockRelease,
 		p.KprobeDevChangeNetNamespace,
+		p.KprobeDevChangeNetNamespaceLegacy,
 		p.KprobeNfNatManipPkt,
 		p.KprobeNfNatPacket,
 		p.KprobeRegisterNetdevice,
@@ -324,7 +331,9 @@ func (p *BpfPrograms) Close() error {
 		p.KprobeUdpSendSkb,
 		p.KprobeUdpSendmsg,
 		p.KretprobeDevChangeNetNamespace,
+		p.KretprobeDevChangeNetNamespaceLegacy,
 		p.KretprobeDevGetByIndex,
+		p.KretprobeDevGetByIndexLegacy,
 		p.KretprobeRegisterNetdevice,
 		p.RawTracepointSchedProcessExec,
 		p.RawTracepointSchedProcessExit,

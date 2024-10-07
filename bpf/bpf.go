@@ -294,19 +294,49 @@ func (b *BPF) AttachKprobes() error {
 		lk, err = link.Kretprobe("__dev_get_by_index",
 			b.objs.KretprobeDevGetByIndex, &link.KprobeOptions{})
 		if err != nil {
-			return fmt.Errorf("attach kretprobe/__dev_get_by_index: %w", err)
+			log.Infof("%+v", err)
+			// TODO: use errors.Is(xxx) or ==
+			if strings.Contains(err.Error(), "no such file or directory") {
+				lk, err = link.Kretprobe("dev_get_by_index",
+					b.objs.KretprobeDevGetByIndexLegacy, &link.KprobeOptions{})
+				if err != nil {
+					return fmt.Errorf("attach kretprobe/dev_get_by_index: %w", err)
+				}
+			} else {
+				return fmt.Errorf("attach kretprobe/__dev_get_by_index: %w", err)
+			}
 		}
 		b.links = append(b.links, lk)
 		lk, err = link.Kprobe("__dev_change_net_namespace",
 			b.objs.KprobeDevChangeNetNamespace, &link.KprobeOptions{})
 		if err != nil {
-			return fmt.Errorf("attach kprobe/__dev_change_net_namespace: %w", err)
+			log.Infof("%+v", err)
+			// TODO: use errors.Is(xxx) or ==
+			if strings.Contains(err.Error(), "no such file or directory") {
+				lk, err = link.Kprobe("dev_change_net_namespace",
+					b.objs.KprobeDevChangeNetNamespaceLegacy, &link.KprobeOptions{})
+				if err != nil {
+					return fmt.Errorf("attach kprobe/dev_change_net_namespace: %w", err)
+				}
+			} else {
+				return fmt.Errorf("attach kprobe/__dev_change_net_namespace: %w", err)
+			}
 		}
 		b.links = append(b.links, lk)
 		lk, err = link.Kretprobe("__dev_change_net_namespace",
 			b.objs.KretprobeDevChangeNetNamespace, &link.KprobeOptions{})
 		if err != nil {
-			return fmt.Errorf("attach kretprobe/__dev_change_net_namespace: %w", err)
+			log.Infof("%+v", err)
+			// TODO: use errors.Is(xxx) or ==
+			if strings.Contains(err.Error(), "no such file or directory") {
+				lk, err = link.Kretprobe("dev_change_net_namespace",
+					b.objs.KretprobeDevChangeNetNamespaceLegacy, &link.KprobeOptions{})
+				if err != nil {
+					return fmt.Errorf("attach kretprobe/dev_change_net_namespace: %w", err)
+				}
+			} else {
+				return fmt.Errorf("attach kretprobe/__dev_change_net_namespace: %w", err)
+			}
 		}
 		b.links = append(b.links, lk)
 	}
