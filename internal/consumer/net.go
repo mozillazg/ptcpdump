@@ -41,7 +41,7 @@ func (c *PacketEventConsumer) Start(ctx context.Context, ch <-chan bpf.BpfPacket
 		case pt := <-ch:
 			c.handlePacketEvent(pt)
 			c.processedCount++
-			if maxPacketCount > 0 && c.processedCount == int(maxPacketCount) {
+			if maxPacketCount > 0 && c.processedCount >= int(maxPacketCount) {
 				return
 			}
 		}

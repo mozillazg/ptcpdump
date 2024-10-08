@@ -14,8 +14,6 @@ import (
 //go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc clang -no-strip -no-global-types -target $TARGET bpf_legacy ./ptcpdump.c -- -I./headers -I./headers/$TARGET -I. -Wall -DLEGACY_KERNEL
 
 type BpfObjectsForLegacyKernel struct {
-	CgroupSockCreate                     *ebpf.Program `ebpf:"cgroup__sock_create"`
-	CgroupSockRelease                    *ebpf.Program `ebpf:"cgroup__sock_release"`
 	KprobeDevChangeNetNamespace          *ebpf.Program `ebpf:"kprobe__dev_change_net_namespace"`
 	KprobeDevChangeNetNamespaceLegacy    *ebpf.Program `ebpf:"kprobe__dev_change_net_namespace_legacy"`
 	KprobeNfNatManipPkt                  *ebpf.Program `ebpf:"kprobe__nf_nat_manip_pkt"`

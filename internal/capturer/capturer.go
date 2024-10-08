@@ -37,6 +37,7 @@ type Capturer struct {
 
 	stopByInternal bool
 	closeFuncs     []func()
+	stopped        chan struct{}
 }
 
 type Options struct {
@@ -107,7 +108,7 @@ type Options struct {
 }
 
 func NewCapturer(opts *Options) *Capturer {
-	return &Capturer{opts: opts}
+	return &Capturer{opts: opts, stopped: make(chan struct{}, 10)}
 }
 
 func (c *Capturer) StartSubProcessLoader(ctx context.Context, program string, subProgramArgs []string) error {
@@ -204,7 +205,7 @@ func (c *Capturer) AttachTcHooksToDevs(devs []types.Device) error {
 	return nil
 }
 
-func (c *Capturer) Start(ctx context.Context, stop context.CancelFunc) error {
+func (c *Capturer) Start(ctx context.Context, stopFunc context.CancelFunc) error {
 	if err := c.pullEvents(ctx); err != nil {
 		return err
 	}
@@ -212,13 +213,17 @@ func (c *Capturer) Start(ctx context.Context, stop context.CancelFunc) error {
 	go c.opts.ExecConsumer.Start(ctx, c.execEvensCh)
 	go c.opts.ExitConsumer.Start(ctx, c.exitEvensCh)
 	go c.opts.Gcr.Start(ctx, c.goTlsKeyLogEventsCh)
-	go c.opts.PacketConsumer.Start(ctx, c.packetEvensCh, c.opts.MaxPacketCount)
+
+	go func() {
+		c.opts.PacketConsumer.Start(ctx, c.packetEvensCh, c.opts.MaxPacketCount)
+		c.stopped <- struct{}{}
+	}()
 
 	go c.handleMountEvents()
 	go c.handleNewDevEvents()
 	go c.handleDevChangeEvents()
 
-	go c.startSubProcess(stop)
+	go c.startSubProcess(stopFunc)
 
 	return nil
 }
@@ -234,6 +239,10 @@ func (c *Capturer) Stop() {
 	c.opts.Gcr.Stop()
 
 	runClosers(c.closeFuncs)
+}
+
+func (c *Capturer) Wait() {
+	<-c.stopped
 }
 
 func (c *Capturer) pullEvents(ctx context.Context) error {
@@ -298,6 +307,7 @@ func (c *Capturer) startSubProcess(stop context.CancelFunc) {
 	c.stopByInternal = true
 	time.Sleep(c.opts.DelayBeforeHandlePacketEvents)
 	stop()
+	c.stopped <- struct{}{}
 }
 
 func (c *Capturer) attachTcHooks(iface types.Device) error {
@@ -369,6 +379,7 @@ func (c *Capturer) handleNewDevEvents() {
 		c.opts.DeviceCache.Add(dev.NetnsId, dev.Ifindex, utils.GoString(dev.Name[:]))
 
 		device, _ := c.opts.DeviceCache.GetByIfindex(int(dev.Ifindex), dev.NetnsId)
+		log.Infof("start attach tc hooks to %s, triggered by events", device.String())
 		if err := c.attachTcHooks(device); err != nil {
 			log.Errorf("attach tc hooks failed: %s", err)
 		}

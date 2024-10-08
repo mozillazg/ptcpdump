@@ -57,3 +57,7 @@ func (i *Interfaces) GetByIfindex(index int) Device {
 	}
 	return Device{}
 }
+
+func (d *Device) String() string {
+	return fmt.Sprintf("{Device ifindex: %d, name: %s, ns: %s}", d.Ifindex, d.Name, d.NetNs)
+}

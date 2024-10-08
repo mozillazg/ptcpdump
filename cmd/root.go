@@ -134,10 +134,10 @@ func Execute() error {
 }
 
 func run(opts Options) error {
-	ctx, stop := signal.NotifyContext(
+	ctx, stopFunc := signal.NotifyContext(
 		context.Background(), syscall.SIGINT, syscall.SIGTERM,
 	)
-	defer stop()
+	defer stopFunc()
 
 	switch {
 	case os.Getenv(utils.EnvIsSubProgramLoader) == "true" && len(opts.subProgArgs) > 0:
@@ -149,7 +149,7 @@ func run(opts Options) error {
 	case opts.ReadPath() != "":
 		return read(ctx, opts)
 	default:
-		return capture(ctx, stop, &opts)
+		return capture(ctx, stopFunc, &opts)
 	}
 
 	return nil

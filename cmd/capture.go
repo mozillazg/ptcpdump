@@ -15,7 +15,7 @@ import (
 	"syscall"
 )
 
-func capture(ctx context.Context, stop context.CancelFunc, opts *Options) error {
+func capture(ctx context.Context, stopFunc context.CancelFunc, opts *Options) error {
 	log.Info("start get all devices")
 	devices, err := opts.GetDevices()
 	if err != nil {
@@ -83,10 +83,12 @@ func capture(ctx context.Context, stop context.CancelFunc, opts *Options) error 
 	if err := attachGoTLSHooks(opts, caper.BPF()); err != nil {
 		return err
 	}
+	log.Info("start to attach tc hooks when startup")
 	if err := caper.AttachTcHooksToDevs(devices.Devs()); err != nil {
 		return err
 	}
-	if err := caper.Start(ctx, stop); err != nil {
+	log.Info("start events monitor")
+	if err := caper.Start(ctx, stopFunc); err != nil {
 		return err
 	}
 
@@ -95,7 +97,7 @@ func capture(ctx context.Context, stop context.CancelFunc, opts *Options) error 
 
 	go printCaptureCountBySignal(ctx, caper.BPF(), packetConsumer)
 
-	<-ctx.Done()
+	caper.Wait()
 
 	if !caper.StopByInternal() && ctx.Err() != nil {
 		utils.OutStderr("%s", "\n")

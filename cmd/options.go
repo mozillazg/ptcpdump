@@ -214,13 +214,15 @@ func (o *Options) GetDevices() (*types.Interfaces, error) {
 		return o.devices, nil
 	}
 
+	log.Infof("before: o.netNsPaths=%v, o.ifaces=%v", o.netNsPaths, o.ifaces)
 	if len(o.netNsPaths) > 0 {
 		if o.netNsPaths[0] == "any" {
 			o.allNetNs = true
+			o.netNsPaths = []string{}
 		} else if o.netNsPaths[0] == "newly" {
 			o.allNewlyNetNs = true
+			o.netNsPaths = []string{}
 		}
-		o.netNsPaths = []string{}
 	}
 	for i, p := range o.netNsPaths {
 		if !strings.Contains(p, "/") {
@@ -232,7 +234,7 @@ func (o *Options) GetDevices() (*types.Interfaces, error) {
 		o.ifaces = []string{}
 	}
 
-	log.Infof("o.netNsPaths=%v, o.ifaces=%v", o.netNsPaths, o.ifaces)
+	log.Infof("after: o.netNsPaths=%v, o.ifaces=%v", o.netNsPaths, o.ifaces)
 
 	o.netNSCache = metadata.NewNetNsCache()
 	o.deviceCache = metadata.NewDeviceCache(o.netNSCache)
