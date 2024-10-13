@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"io"
-	"math"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -78,40 +77,19 @@ func newPcapNgWriter(w io.Writer, pcache *metadata.ProcessCache, opts *Options) 
 	}
 
 	// to avoid "Interface id 9 not present in section (have only 7 interfaces)"
-	var maxIndex int
+	maxIndex := 1
 	for _, dev := range devices.Devs() {
 		if dev.Ifindex > maxIndex {
 			maxIndex = dev.Ifindex
 		}
 	}
-	interfaces := make([]pcapgo.NgInterface, maxIndex+1)
+	interfaces := make([]pcapgo.NgInterface, maxIndex)
 	for _, dev := range devices.Devs() {
-		comment := ""
-		if dev.NetNs != nil {
-			comment = fmt.Sprintf("netNsInode: %d, netNsPath: %s", dev.NetNs.Inode(), dev.NetNs.Path())
-		}
-		interfaces[dev.Ifindex] = pcapgo.NgInterface{
-			Index:      dev.Ifindex,
-			Name:       dev.Name,
-			Comment:    comment,
-			Filter:     opts.pcapFilter,
-			OS:         runtime.GOOS,
-			LinkType:   layers.LinkTypeEthernet,
-			SnapLength: uint32(math.MaxUint16),
-			//TimestampResolution: 9,
-		}
+		interfaces[dev.Ifindex] = metadata.NewNgInterface(dev, opts.pcapFilter)
 	}
 	for i, iface := range interfaces {
 		if iface.Index == 0 {
-			interfaces[i] = pcapgo.NgInterface{
-				Index:      i,
-				Name:       fmt.Sprintf("dummy-%d", iface.Index),
-				Filter:     opts.pcapFilter,
-				OS:         runtime.GOOS,
-				LinkType:   layers.LinkTypeEthernet,
-				SnapLength: uint32(math.MaxUint16),
-				//TimestampResolution: 9,
-			}
+			interfaces[i] = metadata.NewDummyNgInterface(i)
 		}
 	}
 
@@ -137,7 +115,8 @@ func newPcapNgWriter(w io.Writer, pcache *metadata.ProcessCache, opts *Options) 
 		return nil, fmt.Errorf("writing pcapNg header: %w", err)
 	}
 
-	return writer.NewPcapNGWriter(pcapNgWriter, pcache), nil
+	wt := writer.NewPcapNGWriter(pcapNgWriter, pcache, interfaces).WithPcapFilter(opts.pcapFilter)
+	return wt, nil
 }
 
 func newPcapWriter(w io.Writer) (*writer.PcapWriter, error) {

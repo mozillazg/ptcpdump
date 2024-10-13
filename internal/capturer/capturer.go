@@ -379,9 +379,10 @@ func (c *Capturer) handleNewDevEvents() {
 		c.opts.DeviceCache.Add(dev.NetnsId, dev.Ifindex, utils.GoString(dev.Name[:]))
 
 		device, _ := c.opts.DeviceCache.GetByIfindex(int(dev.Ifindex), dev.NetnsId)
+		c.addNewDevToWriter(device)
 		log.Infof("start attach tc hooks to %s, triggered by events", device.String())
 		if err := c.attachTcHooks(device); err != nil {
-			log.Errorf("attach tc hooks failed: %s", err)
+			log.Infof("attach tc hooks failed: %s", err)
 		}
 	}
 }
@@ -395,8 +396,17 @@ func (c *Capturer) handleDevChangeEvents() {
 		c.opts.DeviceCache.Add(dev.NetnsId, dev.Ifindex, utils.GoString(dev.Name[:]))
 
 		device, _ := c.opts.DeviceCache.GetByIfindex(int(dev.Ifindex), dev.NetnsId)
+		c.addNewDevToWriter(device)
 		if err := c.attachTcHooks(device); err != nil {
-			log.Errorf("attach tc hooks failed: %s", err)
+			log.Infof("attach tc hooks failed: %s", err)
+		}
+	}
+}
+
+func (c *Capturer) addNewDevToWriter(dev types.Device) {
+	for _, w := range c.opts.Writers {
+		if pw, ok := w.(*writer.PcapNGWriter); ok {
+			pw.AddDev(dev)
 		}
 	}
 }

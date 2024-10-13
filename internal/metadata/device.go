@@ -4,9 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/gopacket/gopacket/layers"
+	"github.com/gopacket/gopacket/pcapgo"
 	"github.com/mozillazg/ptcpdump/internal/log"
 	"github.com/mozillazg/ptcpdump/internal/types"
+	"math"
 	"net"
+	"runtime"
 	"sync"
 )
 
@@ -187,4 +191,32 @@ func (d *DeviceCache) getAllLinks(inode uint32) ([]net.Interface, error) {
 	}
 
 	return d.allLinks[inode], nil
+}
+
+func NewNgInterface(dev types.Device, filter string) pcapgo.NgInterface {
+	comment := ""
+	if dev.NetNs != nil {
+		comment = fmt.Sprintf("netNsInode: %d, netNsPath: %s", dev.NetNs.Inode(), dev.NetNs.Path())
+	}
+	return pcapgo.NgInterface{
+		Index:      dev.Ifindex,
+		Name:       dev.Name,
+		Comment:    comment,
+		Filter:     filter,
+		OS:         runtime.GOOS,
+		LinkType:   layers.LinkTypeEthernet,
+		SnapLength: uint32(math.MaxUint16),
+		//TimestampResolution: 9,
+	}
+}
+
+func NewDummyNgInterface(index int) pcapgo.NgInterface {
+	return pcapgo.NgInterface{
+		Index:      index,
+		Name:       fmt.Sprintf("dummy-%d", index),
+		OS:         runtime.GOOS,
+		LinkType:   layers.LinkTypeEthernet,
+		SnapLength: uint32(math.MaxUint16),
+		//TimestampResolution: 9,
+	}
 }
