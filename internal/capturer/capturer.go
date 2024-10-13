@@ -102,6 +102,8 @@ type Options struct {
 	ExitConsumer   *consumer.ExitEventConsumer
 	PacketConsumer *consumer.PacketEventConsumer
 
+	NetNsPaths    []string
+	DevNames      []string
 	AllDev        bool
 	AllNetNs      bool
 	AllNewlyNetNs bool
@@ -265,7 +267,7 @@ func (c *Capturer) pullEvents(ctx context.Context) error {
 		return err
 	}
 
-	if c.opts.AllNetNs || c.opts.AllNewlyNetNs {
+	if c.opts.AllDev {
 		c.newDevCh, err = c.bpf.PullNewNetDeviceEvents(ctx, int(c.opts.EventChanSize))
 		if err != nil {
 			return err
@@ -274,6 +276,8 @@ func (c *Capturer) pullEvents(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
+	}
+	if c.opts.AllNetNs || c.opts.AllNewlyNetNs {
 		c.mountCh, err = c.bpf.PullMountEventEvents(ctx, int(c.opts.EventChanSize))
 		if err != nil {
 			return err
@@ -379,6 +383,10 @@ func (c *Capturer) handleNewDevEvents() {
 		c.opts.DeviceCache.Add(dev.NetnsId, dev.Ifindex, utils.GoString(dev.Name[:]))
 
 		device, _ := c.opts.DeviceCache.GetByIfindex(int(dev.Ifindex), dev.NetnsId)
+		if !c.shouldHandleThisNewDev(device) {
+			continue
+		}
+
 		c.addNewDevToWriter(device)
 		log.Infof("start attach tc hooks to %s, triggered by events", device.String())
 		if err := c.attachTcHooks(device); err != nil {
@@ -396,6 +404,10 @@ func (c *Capturer) handleDevChangeEvents() {
 		c.opts.DeviceCache.Add(dev.NetnsId, dev.Ifindex, utils.GoString(dev.Name[:]))
 
 		device, _ := c.opts.DeviceCache.GetByIfindex(int(dev.Ifindex), dev.NetnsId)
+		if !c.shouldHandleThisNewDev(device) {
+			continue
+		}
+
 		c.addNewDevToWriter(device)
 		if err := c.attachTcHooks(device); err != nil {
 			log.Infof("attach tc hooks failed: %s", err)
@@ -409,6 +421,54 @@ func (c *Capturer) addNewDevToWriter(dev types.Device) {
 			pw.AddDev(dev)
 		}
 	}
+}
+
+func (c *Capturer) shouldHandleThisNewDev(dev types.Device) bool {
+	currNs := c.opts.NetNSCache.GetCurrentNs()
+	filterNss := c.getFilterNetNs()
+	// check ns
+	if !c.opts.AllNetNs {
+		if c.opts.AllNewlyNetNs {
+			if dev.NetNs.Inode() == currNs.Inode() {
+				log.Infof("filter newly netns, ignore current netns dev: %+v", dev)
+				return false
+			}
+		} else {
+			var match bool
+			for _, ns := range filterNss {
+				if dev.NetNs.Inode() == ns.Inode() {
+					match = true
+					break
+				}
+			}
+			if !match {
+				log.Infof("filter some netns, ignore not filter dev: %+v", dev)
+			}
+		}
+	}
+	// check dev name
+	if !c.opts.AllDev {
+		var match bool
+		for _, name := range c.opts.DevNames {
+			if dev.Name == name {
+				match = true
+				break
+			}
+		}
+		if !match {
+			log.Infof("filter some dev names, ignore not filter dev: %+v", dev)
+		}
+	}
+	return true
+}
+
+func (c *Capturer) getFilterNetNs() []*types.NetNs {
+	var nss []*types.NetNs
+	for _, p := range c.opts.NetNsPaths {
+		ns, _ := c.opts.NetNSCache.GetOrFetchByPath(p)
+		nss = append(nss, ns)
+	}
+	return nss
 }
 
 func updateFlowPidMapValues(bf *bpf.BPF, conns []metadata.Connection) error {

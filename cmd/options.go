@@ -300,6 +300,8 @@ func (o *Options) ToCapturerOptions() *capturer.Options {
 		AllDev:                        o.allDev,
 		AllNetNs:                      o.allNetNs,
 		AllNewlyNetNs:                 o.allNewlyNetNs,
+		NetNsPaths:                    opts.netNsPaths,
+		DevNames:                      opts.ifaces,
 	}
 	return copts
 }

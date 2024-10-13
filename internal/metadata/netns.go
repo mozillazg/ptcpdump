@@ -96,6 +96,12 @@ func (n *NetNsCache) GetOrFetchByPath(p string) (*types.NetNs, error) {
 	return ns, nil
 }
 
+func (n *NetNsCache) GetCurrentNs() *types.NetNs {
+	p := "/proc/self/ns/net"
+	ns, _ := n.GetOrFetchByPath(p)
+	return ns
+}
+
 func getAllNamedNetNsPath() ([]string, error) {
 	ps := []string{"/proc/self/ns/net"}
 	dirEntry, err := os.ReadDir(netnsMountPath)
