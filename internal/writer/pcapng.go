@@ -14,19 +14,19 @@ import (
 )
 
 type PcapNGWriter struct {
-	pw         *pcapgo.NgWriter
-	pcache     *metadata.ProcessCache
-	interfaces []pcapgo.NgInterface
-	pcapFilter string
+	pw           *pcapgo.NgWriter
+	pcache       *metadata.ProcessCache
+	interfaceIds map[string]int
+	pcapFilter   string
 
 	noBuffer bool
-	lock     sync.Mutex
+	lock     sync.RWMutex
 	keylogs  bytes.Buffer
 }
 
 func NewPcapNGWriter(pw *pcapgo.NgWriter, pcache *metadata.ProcessCache,
-	interfaces []pcapgo.NgInterface) *PcapNGWriter {
-	return &PcapNGWriter{pw: pw, pcache: pcache, interfaces: interfaces, lock: sync.Mutex{}}
+	interfaceIds map[string]int) *PcapNGWriter {
+	return &PcapNGWriter{pw: pw, pcache: pcache, interfaceIds: interfaceIds, lock: sync.RWMutex{}}
 }
 
 func (w *PcapNGWriter) Write(e *event.Packet) error {
@@ -35,7 +35,7 @@ func (w *PcapNGWriter) Write(e *event.Packet) error {
 		Timestamp:      e.Time.Local(),
 		CaptureLength:  payloadLen,
 		Length:         e.Len,
-		InterfaceIndex: e.Device.Ifindex,
+		InterfaceIndex: w.getInterfaceIndex(e.Device),
 	}
 	p := w.pcache.Get(e.Pid, e.MntNs, e.NetNs, e.CgroupName)
 
@@ -109,24 +109,28 @@ func (w *PcapNGWriter) AddDev(dev types.Device) {
 	w.lock.Lock()
 	defer w.lock.Unlock()
 
-	log.Infof("new dev: %+v, currLen: %d", dev, len(w.interfaces))
-	if len(w.interfaces) > dev.Ifindex {
+	log.Infof("new dev: %+v, currLen: %d", dev, len(w.interfaceIds))
+	key := dev.Key()
+	if w.interfaceIds[key] > 0 {
 		return
 	}
 
-	for i := len(w.interfaces); i <= dev.Ifindex; i++ {
-		var intf pcapgo.NgInterface
-		if i == dev.Ifindex {
-			intf = metadata.NewNgInterface(dev, w.pcapFilter)
-		} else {
-			intf = metadata.NewDummyNgInterface(i)
-		}
-		log.Debugf("add interface: %+v", intf)
-		if _, err := w.pw.AddInterface(intf); err != nil {
-			log.Errorf("error adding interface %s: %+v", intf.Name, err)
-		}
-		w.interfaces = append(w.interfaces, intf)
+	index := len(w.interfaceIds) + 1
+	intf := metadata.NewNgInterface(dev, w.pcapFilter, index)
+	log.Debugf("add interface: %+v", intf)
+
+	if _, err := w.pw.AddInterface(intf); err != nil {
+		log.Errorf("error adding interface %s: %+v", intf.Name, err)
 	}
+
+	w.interfaceIds[key] = index
+}
+
+func (w *PcapNGWriter) getInterfaceIndex(dev types.Device) int {
+	w.lock.RLock()
+	defer w.lock.RUnlock()
+
+	return w.interfaceIds[dev.Key()]
 }
 
 func (w *PcapNGWriter) WithPcapFilter(filter string) *PcapNGWriter {

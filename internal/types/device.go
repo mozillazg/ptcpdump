@@ -20,7 +20,7 @@ func NewInterfaces() *Interfaces {
 }
 
 func (i *Interfaces) Add(dev Device) {
-	k := i.key(dev)
+	k := dev.Key()
 	i.devs[k] = dev
 }
 
@@ -45,10 +45,6 @@ func (i *Interfaces) Devs() []Device {
 	return devs
 }
 
-func (i *Interfaces) key(dev Device) string {
-	return fmt.Sprintf("%d.%d", dev.NetNs.Inode(), dev.Ifindex)
-}
-
 func (i *Interfaces) GetByIfindex(index int) Device {
 	for _, v := range i.devs {
 		if v.Ifindex == index {
@@ -56,6 +52,10 @@ func (i *Interfaces) GetByIfindex(index int) Device {
 		}
 	}
 	return Device{}
+}
+
+func (d *Device) Key() string {
+	return fmt.Sprintf("%d.%d", d.NetNs.Inode(), d.Ifindex)
 }
 
 func (d *Device) String() string {

@@ -193,13 +193,14 @@ func (d *DeviceCache) getAllLinks(inode uint32) ([]net.Interface, error) {
 	return d.allLinks[inode], nil
 }
 
-func NewNgInterface(dev types.Device, filter string) pcapgo.NgInterface {
-	comment := ""
+func NewNgInterface(dev types.Device, filter string, index int) pcapgo.NgInterface {
+	comment := fmt.Sprintf("ifIndex: %d", dev.Ifindex)
 	if dev.NetNs != nil {
-		comment = fmt.Sprintf("netNsInode: %d, netNsPath: %s", dev.NetNs.Inode(), dev.NetNs.Path())
+		comment = fmt.Sprintf("%s, netNsInode: %d, netNsPath: %s",
+			comment, dev.NetNs.Inode(), dev.NetNs.Path())
 	}
 	return pcapgo.NgInterface{
-		Index:      dev.Ifindex,
+		Index:      index,
 		Name:       dev.Name,
 		Comment:    comment,
 		Filter:     filter,
@@ -210,10 +211,11 @@ func NewNgInterface(dev types.Device, filter string) pcapgo.NgInterface {
 	}
 }
 
-func NewDummyNgInterface(index int) pcapgo.NgInterface {
+func NewDummyNgInterface(index int, filter string) pcapgo.NgInterface {
 	return pcapgo.NgInterface{
 		Index:      index,
 		Name:       fmt.Sprintf("dummy-%d", index),
+		Filter:     filter,
 		OS:         runtime.GOOS,
 		LinkType:   layers.LinkTypeEthernet,
 		SnapLength: uint32(math.MaxUint16),
