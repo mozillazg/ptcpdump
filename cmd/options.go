@@ -1,13 +1,16 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
-	"github.com/mozillazg/ptcpdump/internal/dev"
+	"github.com/mozillazg/ptcpdump/internal/capturer"
 	"github.com/mozillazg/ptcpdump/internal/log"
-	"github.com/mozillazg/ptcpdump/internal/utils"
+	"github.com/mozillazg/ptcpdump/internal/metadata"
+	"github.com/mozillazg/ptcpdump/internal/types"
 	"github.com/mozillazg/ptcpdump/internal/writer"
 	"github.com/x-way/pktdump"
 	"os"
+	"path"
 	"strings"
 	"time"
 
@@ -73,8 +76,13 @@ type Options struct {
 	netnsIds []uint32
 	pidnsIds []uint32
 
-	netNsPaths []string
-	devices    *dev.Interfaces
+	netNsPaths    []string
+	devices       *types.Interfaces
+	netNSCache    *metadata.NetNsCache
+	deviceCache   *metadata.DeviceCache
+	allDev        bool
+	allNetNs      bool
+	allNewlyNetNs bool
 }
 
 func (o Options) filterByContainer() bool {
@@ -201,38 +209,99 @@ func (o Options) getWriteTLSKeyLogPath() string {
 	return os.Getenv("SSLKEYLOGFILE")
 }
 
-func (o *Options) GetDevices() (*dev.Interfaces, error) {
+func (o *Options) GetDevices() (*types.Interfaces, error) {
 	if o.devices != nil {
 		return o.devices, nil
 	}
 
-	if len(o.netNsPaths) == 0 {
-		o.netNsPaths = append(o.netNsPaths, "")
-	}
-	if o.netNsPaths[0] == "any" {
-		o.netNsPaths = []string{""}
-		ps, err := utils.GetAllNamedNetNsName()
-		if err != nil {
-			return nil, err
+	log.Infof("before: o.netNsPaths=%v, o.ifaces=%v", o.netNsPaths, o.ifaces)
+	if len(o.netNsPaths) > 0 {
+		if o.netNsPaths[0] == "any" {
+			o.allNetNs = true
+			o.netNsPaths = []string{}
+		} else if o.netNsPaths[0] == "newly" {
+			o.allNewlyNetNs = true
+			o.netNsPaths = []string{}
 		}
-		o.netNsPaths = append(o.netNsPaths, ps...)
 	}
-	log.Infof("o.netNsPaths=%v", o.netNsPaths)
-
-	devices := dev.NewInterfaces()
-	ifaces := o.ifaces
-	if len(ifaces) > 0 && ifaces[0] == "any" {
-		ifaces = nil
-	}
-
-	for _, p := range o.netNsPaths {
-		devs, err := dev.GetDevices(ifaces, p)
-		if err != nil {
-			return nil, err
+	for i, p := range o.netNsPaths {
+		if !strings.Contains(p, "/") {
+			o.netNsPaths[i] = path.Join("/run/netns", p)
 		}
-		devices.Merge(devs)
+	}
+	if len(o.ifaces) > 0 && o.ifaces[0] == "any" {
+		o.allDev = true
+		o.ifaces = []string{}
 	}
 
-	o.devices = devices
+	log.Infof("after: o.netNsPaths=%v, o.ifaces=%v", o.netNsPaths, o.ifaces)
+
+	o.netNSCache = metadata.NewNetNsCache()
+	o.deviceCache = metadata.NewDeviceCache(o.netNSCache)
+	if err := o.netNSCache.Start(context.TODO()); err != nil {
+		return nil, err
+	}
+	if err := o.deviceCache.Start(context.TODO()); err != nil {
+		return nil, err
+	}
+
+	if o.allNewlyNetNs {
+		o.devices = types.NewInterfaces()
+		return o.devices, nil
+	}
+
+	var err error
+	o.devices, err = o.deviceCache.GetDevices(o.ifaces, o.netNsPaths)
+	if err != nil {
+		return nil, err
+	}
+
 	return o.devices, nil
+}
+
+func (o *Options) ToCapturerOptions() *capturer.Options {
+	copts := &capturer.Options{
+		Pids:                          o.pids,
+		Comm:                          o.comm,
+		FollowForks:                   o.followForks,
+		PcapFilter:                    o.pcapFilter,
+		MaxPacketCount:                o.maxPacketCount,
+		DirectionIn:                   o.DirectionIn(),
+		DirectionOut:                  o.DirectionOut(),
+		OneLine:                       o.oneLine,
+		PrintPacketNumber:             o.printPacketNumber,
+		DontPrintTimestamp:            o.dontPrintTimestamp,
+		OnlyPrintCount:                o.onlyPrintCount,
+		PrintDataAsHex:                o.printDataAsHex,
+		PrintDataAsHexASCII:           o.printDataAsHexASCII,
+		PrintDataAsASCII:              o.printDataAsASCII,
+		TimeStampPrecision:            o.timeStampPrecision,
+		TimeStampMicro:                o.timeStampMicro,
+		TimeStampNano:                 o.timeStampNano,
+		DontConvertAddr:               o.dontConvertAddr,
+		ContainerId:                   o.containerId,
+		ContainerName:                 o.containerName,
+		PodName:                       o.podName,
+		PodNamespace:                  o.podNamespace,
+		EventChanSize:                 o.eventChanSize,
+		DelayBeforeHandlePacketEvents: o.delayBeforeHandlePacketEvents,
+		ExecEventsWorkerNumber:        o.execEventsWorkerNumber,
+		SnapshotLength:                o.snapshotLength,
+		DockerEndpoint:                o.dockerEndpoint,
+		ContainerdEndpoint:            o.containerdEndpoint,
+		CriRuntimeEndpoint:            o.criRuntimeEndpoint,
+		WriteTLSKeyLogPath:            o.writeTLSKeyLogPath,
+		EmbedTLSKeyLogToPcapng:        o.embedTLSKeyLogToPcapng,
+		SubProgArgs:                   o.subProgArgs,
+		MntnsIds:                      o.mntnsIds,
+		NetnsIds:                      o.netnsIds,
+		PidnsIds:                      o.pidnsIds,
+		BTFPath:                       o.btfPath,
+		AllDev:                        o.allDev,
+		AllNetNs:                      o.allNetNs,
+		AllNewlyNetNs:                 o.allNewlyNetNs,
+		NetNsPaths:                    opts.netNsPaths,
+		DevNames:                      opts.ifaces,
+	}
+	return copts
 }

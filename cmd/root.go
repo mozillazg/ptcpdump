@@ -123,7 +123,7 @@ func init() {
 	rootCmd.Flags().BoolVar(&opts.embedTLSKeyLogToPcapng, "embed-keylog-to-pcapng", false,
 		"Write TLS Key Log file to this path (experimental: only support unstripped Go binary and must combined with `-- CMD [ARGS]`)")
 
-	rootCmd.Flags().StringSliceVar(&opts.netNsPaths, "netns", []string{},
+	rootCmd.Flags().StringSliceVar(&opts.netNsPaths, "netns", []string{"/proc/self/ns/net"},
 		"Path to an network namespace file or name")
 
 	silenceKlog()
@@ -134,10 +134,10 @@ func Execute() error {
 }
 
 func run(opts Options) error {
-	ctx, stop := signal.NotifyContext(
+	ctx, stopFunc := signal.NotifyContext(
 		context.Background(), syscall.SIGINT, syscall.SIGTERM,
 	)
-	defer stop()
+	defer stopFunc()
 
 	switch {
 	case os.Getenv(utils.EnvIsSubProgramLoader) == "true" && len(opts.subProgArgs) > 0:
@@ -149,7 +149,7 @@ func run(opts Options) error {
 	case opts.ReadPath() != "":
 		return read(ctx, opts)
 	default:
-		return capture(ctx, stop, &opts)
+		return capture(ctx, stopFunc, &opts)
 	}
 
 	return nil

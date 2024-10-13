@@ -230,6 +230,16 @@ jobs:
             set -ex
             bash /host/testdata/test_netns.sh /host/ptcpdump/ptcpdump
 
+      - name: Test netns newly
+        # if: ${{ (!startsWith(matrix.kernel, '5.4')) && (!startsWith(matrix.kernel, '4.')) }}
+        uses: cilium/little-vm-helper@97c89f004bd0ab4caeacfe92ebc956e13e362e6b # v0.0.19
+        with:
+          provision: 'false'
+          cmd: |
+            set -ex
+            bash /host/testdata/test_netns_newly_normal.sh /host/ptcpdump/ptcpdump
+            bash /host/testdata/test_netns_newly_exec.sh /host/ptcpdump/ptcpdump
+
       - name: Test run sub program
         uses: cilium/little-vm-helper@97c89f004bd0ab4caeacfe92ebc956e13e362e6b # v0.0.19
         with:

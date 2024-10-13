@@ -8,7 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mozillazg/ptcpdump/internal/event"
 	"github.com/mozillazg/ptcpdump/internal/log"
 	"github.com/mozillazg/ptcpdump/internal/types"
 	"github.com/mozillazg/ptcpdump/internal/utils"
@@ -92,7 +91,7 @@ func (c *ProcessCache) fillRunningProcesses(ctx context.Context) error {
 				filename, _ = p.Name()
 			}
 			args, _ := p.CmdlineSlice()
-			e := event.ProcessExec{
+			e := types.ProcessExec{
 				PPid:              ppid,
 				Pid:               int(p.Pid),
 				Filename:          filename,
@@ -111,7 +110,7 @@ func (c *ProcessCache) fillRunningProcesses(ctx context.Context) error {
 	return nil
 }
 
-func (c *ProcessCache) AddItem(exec event.ProcessExec) {
+func (c *ProcessCache) AddItem(exec types.ProcessExec) {
 	c.AddItemWithContext(exec, types.PacketContext{})
 }
 
@@ -159,7 +158,7 @@ func (c *ProcessCache) jobCleanDead() {
 	log.Debugf("cleaned %d dead pids", len(pids))
 }
 
-func (c *ProcessCache) AddItemWithContext(exec event.ProcessExec, rawCtx types.PacketContext) {
+func (c *ProcessCache) AddItemWithContext(exec types.ProcessExec, rawCtx types.PacketContext) {
 	pid := exec.Pid
 	if pid == 0 {
 		return

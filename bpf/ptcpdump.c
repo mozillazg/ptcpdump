@@ -1,8 +1,10 @@
 // go:build ignore
 //  +build ignore
 
+#include "compat.h"
 #include "custom.h"
 #include "gotls.h"
+#include "net_dev.h"
 #include "vmlinux.h"
 #include <bpf/bpf_core_read.h>
 #include <bpf/bpf_endian.h>
@@ -29,20 +31,6 @@
 #define EXEC_ARGS_LEN 4096
 
 char _license[] SEC("license") = "Dual MIT/GPL";
-
-struct gconfig_t {
-    u8 have_filter;
-    u8 filter_follow_forks;
-    char filter_comm[TASK_COMM_LEN];
-    u8 filter_comm_enable;
-    u32 max_payload_size;
-};
-
-#ifndef LEGACY_KERNEL
-static volatile const struct gconfig_t g = {0};
-static const u8 u8_zero = 0;
-static const u32 u32_zero = 0;
-#endif
 
 struct l2_t {
     u16 h_protocol;
@@ -222,25 +210,6 @@ const struct flow_pid_key_t *unused3 __attribute__((unused));
 const struct process_meta_t *unused4 __attribute__((unused));
 const struct exit_event_t *unused5 __attribute__((unused));
 const struct gconfig_t *unused6 __attribute__((unused));
-
-#ifdef LEGACY_KERNEL
-#define debug_log(fmt, ...)                                                                                            \
-    ({                                                                                                                 \
-        char ____fmt[] = fmt;                                                                                          \
-        bpf_trace_printk(____fmt, sizeof(____fmt), ##__VA_ARGS__);                                                     \
-    })
-#define GET_CONFIG()                                                                                                   \
-    struct gconfig_t g = {0};                                                                                          \
-    u32 configk = 0;                                                                                                   \
-    struct gconfig_t *configv = bpf_map_lookup_elem(&config_map, &configk);                                            \
-    if (configv) {                                                                                                     \
-        g = *configv;                                                                                                  \
-    }
-#else
-
-#define debug_log(fmt, ...) ({ bpf_printk(fmt, ##__VA_ARGS__); })
-#define GET_CONFIG()
-#endif
 
 static __always_inline int parse_skb_l2(struct __sk_buff *skb, struct l2_t *l2, u32 *offset) {
     if (bpf_skb_load_bytes(skb, *offset + offsetof(struct ethhdr, h_proto), &l2->h_protocol, sizeof(l2->h_protocol)) <

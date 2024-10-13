@@ -3,6 +3,7 @@ package writer
 import (
 	"bytes"
 	"fmt"
+	"github.com/mozillazg/ptcpdump/internal/types"
 	"sync"
 
 	"github.com/gopacket/gopacket"
@@ -13,16 +14,19 @@ import (
 )
 
 type PcapNGWriter struct {
-	pw     *pcapgo.NgWriter
-	pcache *metadata.ProcessCache
+	pw         *pcapgo.NgWriter
+	pcache     *metadata.ProcessCache
+	interfaces []pcapgo.NgInterface
+	pcapFilter string
 
 	noBuffer bool
 	lock     sync.Mutex
 	keylogs  bytes.Buffer
 }
 
-func NewPcapNGWriter(pw *pcapgo.NgWriter, pcache *metadata.ProcessCache) *PcapNGWriter {
-	return &PcapNGWriter{pw: pw, pcache: pcache, lock: sync.Mutex{}}
+func NewPcapNGWriter(pw *pcapgo.NgWriter, pcache *metadata.ProcessCache,
+	interfaces []pcapgo.NgInterface) *PcapNGWriter {
+	return &PcapNGWriter{pw: pw, pcache: pcache, interfaces: interfaces, lock: sync.Mutex{}}
 }
 
 func (w *PcapNGWriter) Write(e *event.Packet) error {
@@ -60,7 +64,7 @@ func (w *PcapNGWriter) Write(e *event.Packet) error {
 		)
 	}
 
-	if err := w.writeTLSKeyLog(); err != nil {
+	if err := w.writeTLSKeyLogs(); err != nil {
 		return err
 	}
 
@@ -83,7 +87,7 @@ func (w *PcapNGWriter) WriteTLSKeyLog(line string) error {
 	return nil
 }
 
-func (w *PcapNGWriter) writeTLSKeyLog() error {
+func (w *PcapNGWriter) writeTLSKeyLogs() error {
 	w.lock.Lock()
 	defer w.lock.Unlock()
 
@@ -99,6 +103,35 @@ func (w *PcapNGWriter) writeTLSKeyLog() error {
 	w.keylogs.Reset()
 
 	return nil
+}
+
+func (w *PcapNGWriter) AddDev(dev types.Device) {
+	w.lock.Lock()
+	defer w.lock.Unlock()
+
+	log.Infof("new dev: %+v, currLen: %d", dev, len(w.interfaces))
+	if len(w.interfaces) > dev.Ifindex {
+		return
+	}
+
+	for i := len(w.interfaces); i <= dev.Ifindex; i++ {
+		var intf pcapgo.NgInterface
+		if i == dev.Ifindex {
+			intf = metadata.NewNgInterface(dev, w.pcapFilter)
+		} else {
+			intf = metadata.NewDummyNgInterface(i)
+		}
+		log.Debugf("add interface: %+v", intf)
+		if _, err := w.pw.AddInterface(intf); err != nil {
+			log.Errorf("error adding interface %s: %+v", intf.Name, err)
+		}
+		w.interfaces = append(w.interfaces, intf)
+	}
+}
+
+func (w *PcapNGWriter) WithPcapFilter(filter string) *PcapNGWriter {
+	w.pcapFilter = filter
+	return w
 }
 
 func (w *PcapNGWriter) Flush() error {
