@@ -77,13 +77,13 @@ func newPcapNgWriter(w io.Writer, pcache *metadata.ProcessCache, opts *Options) 
 	}
 
 	// to avoid "Interface id 9 not present in section (have only 7 interfaces)"
-	maxIndex := 1
+	maxIndex := 0
 	for _, dev := range devices.Devs() {
 		if dev.Ifindex > maxIndex {
 			maxIndex = dev.Ifindex
 		}
 	}
-	interfaces := make([]pcapgo.NgInterface, maxIndex)
+	interfaces := make([]pcapgo.NgInterface, maxIndex+1)
 	for _, dev := range devices.Devs() {
 		interfaces[dev.Ifindex] = metadata.NewNgInterface(dev, opts.pcapFilter)
 	}
