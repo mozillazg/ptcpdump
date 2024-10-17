@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/mozillazg/ptcpdump/internal/types"
+	"strings"
 	"sync"
 
 	"github.com/gopacket/gopacket"
@@ -117,7 +118,7 @@ func (w *PcapNGWriter) AddDev(dev types.Device) {
 
 	index := len(w.interfaceIds) + 1
 	intf := metadata.NewNgInterface(dev, w.pcapFilter, index)
-	log.Debugf("add interface: %+v", intf)
+	log.Infof("add interface: %+v", intf)
 
 	if _, err := w.pw.AddInterface(intf); err != nil {
 		log.Errorf("error adding interface %s: %+v", intf.Name, err)
@@ -130,7 +131,19 @@ func (w *PcapNGWriter) getInterfaceIndex(dev types.Device) int {
 	w.lock.RLock()
 	defer w.lock.RUnlock()
 
-	return w.interfaceIds[dev.Key()]
+	log.Infof("interfaceIds: %+v, dev: %+v", w.interfaceIds, dev)
+
+	index := w.interfaceIds[dev.Key()]
+	if index > 0 {
+		return index
+	}
+	suffix := fmt.Sprintf(".%d", dev.Ifindex)
+	for k, index := range w.interfaceIds {
+		if strings.HasSuffix(k, suffix) {
+			return index
+		}
+	}
+	return 0
 }
 
 func (w *PcapNGWriter) WithPcapFilter(filter string) *PcapNGWriter {

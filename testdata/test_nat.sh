@@ -21,6 +21,8 @@ function test_ptcpdump() {
   cat "${LNAME}" | grep 'docker0'
   cat "${LNAME}" | grep -F ' > 1.1.1.1.80: Flags [S],'   # SYN
   cat "${LNAME}" | grep 'docker0.* > 1.1.1.1.80: Flags .*, args wget --timeout=10 1.1.1.1'
+
+  ${CMD} -r ${FNAME}
 }
 
 function main() {
