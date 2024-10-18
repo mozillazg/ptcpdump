@@ -217,13 +217,13 @@ func (b *BPF) PullNewNetDeviceEvents(ctx context.Context, chanSize int) (<-chan 
 	go func() {
 		defer close(ch)
 		defer reader.Close()
-		b.handleNetNetDeviceEvents(ctx, reader, ch)
+		b.handleNewNetDeviceEvents(ctx, reader, ch)
 	}()
 
 	return ch, nil
 }
 
-func (b *BPF) handleNetNetDeviceEvents(ctx context.Context, reader *perf.Reader, ch chan<- BpfNewNetdeviceEventT) {
+func (b *BPF) handleNewNetDeviceEvents(ctx context.Context, reader *perf.Reader, ch chan<- BpfNewNetdeviceEventT) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -240,12 +240,12 @@ func (b *BPF) handleNetNetDeviceEvents(ctx context.Context, reader *perf.Reader,
 				log.Infof("got EOF error: %s", err)
 				continue
 			}
-			log.Errorf("read go tls keylog event failed: %s", err)
+			log.Errorf("read new net device event failed: %s", err)
 			continue
 		}
 		event, err := parseNewNetDeviceEvent(record.RawSample)
 		if err != nil {
-			log.Errorf("parse go tls keylog event failed: %s", err)
+			log.Errorf("parse new net device event failed: %s", err)
 		} else {
 			ch <- *event
 			dev := event.Dev
@@ -307,12 +307,12 @@ func (b *BPF) handleNetDeviceChangeEvents(ctx context.Context, reader *perf.Read
 				log.Infof("got EOF error: %s", err)
 				continue
 			}
-			log.Errorf("read go tls keylog event failed: %s", err)
+			log.Errorf("read net device change event failed: %s", err)
 			continue
 		}
 		event, err := parseNetDeviceChangeEvent(record.RawSample)
 		if err != nil {
-			log.Errorf("parse go tls keylog event failed: %s", err)
+			log.Errorf("parse net device change event failed: %s", err)
 		} else {
 			ch <- *event
 			oldDev := event.OldDevice
@@ -376,12 +376,12 @@ func (b *BPF) handleMountEvents(ctx context.Context, reader *perf.Reader, ch cha
 				log.Infof("got EOF error: %s", err)
 				continue
 			}
-			log.Errorf("read go tls keylog event failed: %s", err)
+			log.Errorf("read mount event failed: %s", err)
 			continue
 		}
 		event, err := parseMountEvent(record.RawSample)
 		if err != nil {
-			log.Errorf("parse go tls keylog event failed: %s", err)
+			log.Errorf("parse mount event failed: %s", err)
 		} else {
 			ch <- *event
 			log.Infof("new BpfMountEventT: (source %s, dest %s, fstype, %s)",

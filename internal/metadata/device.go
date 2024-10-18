@@ -112,21 +112,29 @@ func (d *DeviceCache) GetByIfindex(ifindex int, netNsInode uint32) (types.Device
 		ns = types.NewNetNsWithInode(netNsInode)
 	}
 
-	devs, ok := d.allLinks[netNsInode]
-	if !ok {
-		for _, links := range d.allLinks {
-			for _, dev := range links {
-				devs = append(devs, dev)
+	for inode, links := range d.allLinks {
+		if netNsInode != inode {
+			continue
+		}
+		for _, dev := range links {
+			if dev.Index == ifindex {
+				return types.Device{
+					Name:    dev.Name,
+					Ifindex: ifindex,
+					NetNs:   ns,
+				}, true
 			}
 		}
 	}
-	for _, dev := range devs {
-		if dev.Index == ifindex {
-			return types.Device{
-				Name:    dev.Name,
-				Ifindex: ifindex,
-				NetNs:   ns,
-			}, true
+	for _, links := range d.allLinks {
+		for _, dev := range links {
+			if dev.Index == ifindex {
+				return types.Device{
+					Name:    dev.Name,
+					Ifindex: ifindex,
+					NetNs:   ns,
+				}, true
+			}
 		}
 	}
 
@@ -193,13 +201,14 @@ func (d *DeviceCache) getAllLinks(inode uint32) ([]net.Interface, error) {
 	return d.allLinks[inode], nil
 }
 
-func NewNgInterface(dev types.Device, filter string) pcapgo.NgInterface {
-	comment := ""
+func NewNgInterface(dev types.Device, filter string, index int) pcapgo.NgInterface {
+	comment := fmt.Sprintf("ifIndex: %d", dev.Ifindex)
 	if dev.NetNs != nil {
-		comment = fmt.Sprintf("netNsInode: %d, netNsPath: %s", dev.NetNs.Inode(), dev.NetNs.Path())
+		comment = fmt.Sprintf("%s, netNsInode: %d, netNsPath: %s",
+			comment, dev.NetNs.Inode(), dev.NetNs.Path())
 	}
 	return pcapgo.NgInterface{
-		Index:      dev.Ifindex,
+		Index:      index,
 		Name:       dev.Name,
 		Comment:    comment,
 		Filter:     filter,
@@ -210,10 +219,11 @@ func NewNgInterface(dev types.Device, filter string) pcapgo.NgInterface {
 	}
 }
 
-func NewDummyNgInterface(index int) pcapgo.NgInterface {
+func NewDummyNgInterface(index int, filter string) pcapgo.NgInterface {
 	return pcapgo.NgInterface{
 		Index:      index,
 		Name:       fmt.Sprintf("dummy-%d", index),
+		Filter:     filter,
 		OS:         runtime.GOOS,
 		LinkType:   layers.LinkTypeEthernet,
 		SnapLength: uint32(math.MaxUint16),

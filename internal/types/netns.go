@@ -66,5 +66,8 @@ func (n *NetNs) Path() string {
 }
 
 func (n *NetNs) Inode() uint32 {
+	if n == nil {
+		return 0
+	}
 	return n.inode
 }

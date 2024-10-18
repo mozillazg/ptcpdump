@@ -76,21 +76,13 @@ func newPcapNgWriter(w io.Writer, pcache *metadata.ProcessCache, opts *Options) 
 		return nil, fmt.Errorf(": %w", err)
 	}
 
-	// to avoid "Interface id 9 not present in section (have only 7 interfaces)"
-	maxIndex := 0
-	for _, dev := range devices.Devs() {
-		if dev.Ifindex > maxIndex {
-			maxIndex = dev.Ifindex
-		}
-	}
-	interfaces := make([]pcapgo.NgInterface, maxIndex+1)
-	for _, dev := range devices.Devs() {
-		interfaces[dev.Ifindex] = metadata.NewNgInterface(dev, opts.pcapFilter)
-	}
-	for i, iface := range interfaces {
-		if iface.Index == 0 {
-			interfaces[i] = metadata.NewDummyNgInterface(i)
-		}
+	interfaceIds := map[string]int{}
+	interfaces := []pcapgo.NgInterface{metadata.NewDummyNgInterface(0, opts.pcapFilter)}
+	for i, dev := range devices.Devs() {
+		index := i + 1
+		intf := metadata.NewNgInterface(dev, opts.pcapFilter, index)
+		interfaces = append(interfaces, intf)
+		interfaceIds[dev.Key()] = index
 	}
 
 	pcapNgWriter, err := pcapgo.NewNgWriterInterface(w, interfaces[0], pcapgo.NgWriterOptions{
@@ -115,7 +107,7 @@ func newPcapNgWriter(w io.Writer, pcache *metadata.ProcessCache, opts *Options) 
 		return nil, fmt.Errorf("writing pcapNg header: %w", err)
 	}
 
-	wt := writer.NewPcapNGWriter(pcapNgWriter, pcache, interfaces).WithPcapFilter(opts.pcapFilter)
+	wt := writer.NewPcapNGWriter(pcapNgWriter, pcache, interfaceIds).WithPcapFilter(opts.pcapFilter)
 	return wt, nil
 }
 
