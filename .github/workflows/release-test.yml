@@ -20,13 +20,16 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5
         with:
-          go-version: '1.22.4'
+          go-version: '1.23.2'
+
+      - name: Install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@latest
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@286f3b13b1b49da4ac219696163fb8c1c93e1200 # v6
         with:
           distribution: goreleaser
-          version: latest
+          version: '~> v2'
           args: release --snapshot --clean --skip=publish -p 1
 
       - name: Test binary
@@ -37,6 +40,12 @@ jobs:
 
           file ./amd64/ptcpdump |grep x86-64 |grep 'statically linked'
           file ./arm64/ptcpdump |grep aarch64 |grep 'statically linked'
+
+      - name: Run govulncheck for binary
+        run: |
+          set -xe
+          govulncheck -mode=binary -show verbose -scan module ./amd64/ptcpdump
+          govulncheck -mode=binary -show verbose -scan module ./arm64/ptcpdump
 
       - name: Store Releases
         uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4
