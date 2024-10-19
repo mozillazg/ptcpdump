@@ -10,7 +10,7 @@ RNAME="${FILE_PREFIX}_sub_program_curl.read.txt"
 
 
 function test_ptcpdump() {
-  timeout 30s ${CMD} -i any -v --print -w "${FNAME}"  \
+  timeout 60s ${CMD} -i any -v --print -w "${FNAME}"  \
 	  -- curl -m 10 ubuntu.com | tee "${LNAME}"
 
   cat "${LNAME}"
@@ -26,7 +26,7 @@ function test_tcpdump_read() {
 
 function test_ptcpdump_read() {
     EXPECT_NAME="${LNAME}.read.expect"
-    sed 's/ [a-zA-Z0-9_-]\+ \(In\|Out\) / /g' "${LNAME}" > "${EXPECT_NAME}"
+    sed 's/ \(In\|Out\) / /g' "${LNAME}" > "${EXPECT_NAME}"
     timeout 30s ${CMD} -v -r "${FNAME}" > "${RNAME}"
     diff "${EXPECT_NAME}" "${RNAME}"
 }
