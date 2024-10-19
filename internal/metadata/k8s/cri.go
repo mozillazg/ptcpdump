@@ -12,7 +12,7 @@ import (
 	"github.com/mozillazg/ptcpdump/internal/log"
 	"github.com/mozillazg/ptcpdump/internal/types"
 	cri "k8s.io/cri-api/pkg/apis"
-	"k8s.io/kubernetes/pkg/kubelet/cri/remote"
+	remote "k8s.io/cri-client/pkg"
 )
 
 var DefaultRuntimeEndpoints = []string{

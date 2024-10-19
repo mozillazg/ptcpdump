@@ -10,6 +10,7 @@ import (
 	"time"
 
 	dockertypes "github.com/docker/docker/api/types"
+	containertypes "github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/events"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
@@ -206,7 +207,7 @@ func (d *MetaData) init(ctx context.Context) error {
 	d.hostNetNs = utils.GetNetworkNamespaceFromPid(1)
 
 	c := d.client
-	containers, err := c.ContainerList(ctx, dockertypes.ContainerListOptions{
+	containers, err := c.ContainerList(ctx, containertypes.ListOptions{
 		Filters: filters.NewArgs(filters.Arg("status", "running")),
 	})
 	if err != nil {
