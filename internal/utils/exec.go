@@ -57,6 +57,7 @@ func StartSubProcess(ctx context.Context, Args []string) error {
 	if err := cmd.Start(); err != nil {
 		return err
 	}
+	log.Infof("started sub program, his pid is %d", cmd.Process.Pid)
 
 	if err := cmd.Wait(); err != nil {
 		return err
