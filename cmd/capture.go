@@ -53,6 +53,7 @@ func capture(ctx context.Context, stopFunc context.CancelFunc, opts *Options) er
 
 	log.Info("start get current connections")
 	conns := getCurrentConnects(ctx, pcache, opts)
+	log.Infof("got %d connections", len(conns))
 
 	copts := opts.ToCapturerOptions()
 	copts.Connections = conns
@@ -154,6 +155,10 @@ func getCaptureCounts(bf *bpf.BPF, c *consumer.PacketEventConsumer) []string {
 func getCurrentConnects(ctx context.Context, pcache *metadata.ProcessCache, opts *Options) []metadata.Connection {
 	var pids []int
 	var filterPid bool
+
+	if len(opts.subProgArgs) > 0 {
+		return nil
+	}
 
 	if len(opts.pids) > 0 {
 		filterPid = true
