@@ -124,6 +124,7 @@ func (c *Capturer) StartSubProcessLoader(ctx context.Context, program string, su
 	if err != nil {
 		return err
 	}
+	log.Infof("will filter by pid: %d", c.subProcessLoaderPid)
 	c.opts.Pids = []uint{uint(c.subProcessLoaderPid)}
 	c.opts.FollowForks = true
 
