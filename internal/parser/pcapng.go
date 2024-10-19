@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"github.com/mozillazg/ptcpdump/internal/types"
 	"io"
 
 	"github.com/gopacket/gopacket/pcapgo"
@@ -29,12 +30,24 @@ func (p *PcapNGParser) Parse() (*event.Packet, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	e, err := event.FromPacket(ci, data)
 	if err != nil {
 		return nil, err
 	}
+
+	interf, err := p.r.Interface(ci.InterfaceIndex)
+	if err == nil {
+		e.Device = types.Device{
+			Name:    interf.Name,
+			Ifindex: 0,
+			NetNs:   nil,
+		}
+	}
+
 	exec, ctx := event.FromPacketOptions(opts)
 	e.Pid = exec.Pid
 	p.pcache.AddItemWithContext(exec, ctx)
+
 	return e, nil
 }

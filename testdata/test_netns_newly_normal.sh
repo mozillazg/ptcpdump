@@ -51,6 +51,8 @@ function test_ptcpdump_normal() {
   cat "${LNAME}"
   cat "${LNAME}" | grep -F '192.168.64.1 > 192.168.64.2: ICMP'
   cat "${LNAME}" | grep -F '192.168.64.2 > 192.168.64.1: ICMP'
+
+  ${CMD} -r ${FNAME}
 }
 
 function main() {
