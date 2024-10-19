@@ -7,6 +7,9 @@ executors:
   ubuntu-22-04:
     machine:
       image: ubuntu-2204:2024.04.4
+  ubuntu-24-04:
+    machine:
+      image: ubuntu-2404:2024.05.1
 
 jobs:
   arm64-e2e:
@@ -280,6 +283,7 @@ workflows:
               os:
                 - ubuntu-20-04
                 - ubuntu-22-04
+                - ubuntu-24-04
       - docker-e2e
       - containerd-e2e
       - k8s-1-30-e2e

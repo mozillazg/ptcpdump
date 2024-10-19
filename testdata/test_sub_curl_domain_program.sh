@@ -15,13 +15,13 @@ function test_ptcpdump() {
 
   cat "${LNAME}"
   cat "${LNAME}" | grep '/usr/bin/curl'
-  cat "${LNAME}" | grep -F '.80: Flags [.],'
+  cat "${LNAME}" | grep -F '.80: Flags [S],'
 }
 
 function test_tcpdump_read() {
   which tcpdump || (apt update || true && apt install -y tcpdump)
   tcpdump -nr "${FNAME}"
-  tcpdump -nr "${FNAME}" | grep -F '.80: Flags [.],'       # ACK
+  tcpdump -nr "${FNAME}" | grep -F '.80: Flags [S],'       # ACK
 }
 
 function test_ptcpdump_read() {
