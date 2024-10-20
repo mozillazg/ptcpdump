@@ -340,12 +340,13 @@ Flags:
 开发环境需要安装的系统依赖：
 
 
-* Go >= 1.22
+* Go >= 1.23
 * Clang/LLVM >= 14
 * Bison >= 3.8
 * Lex/Flex >= 2.6
 * GCC
 * GNU make
+* autoconf
 
 
 ### Building
