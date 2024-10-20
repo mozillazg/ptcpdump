@@ -21,7 +21,7 @@ function test_ptcpdump() {
 function test_tcpdump_read() {
   which tcpdump || (apt update || true && apt install -y tcpdump)
   tcpdump -nr "${FNAME}"
-  tcpdump -nr "${FNAME}" | grep -F '.80: Flags [S],'       # ACK
+  tcpdump -nr "${FNAME}" | grep -F '.80: Flags [S],'       # SYN
 }
 
 function test_ptcpdump_read() {
