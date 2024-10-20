@@ -323,7 +323,7 @@ Flags:
 
 ### Dependencies
 
-* Go >= 1.22
+* Go >= 1.23
 * Clang/LLVM >= 14
 * Bison >= 3.8
 * Lex/Flex >= 2.6
