@@ -15,8 +15,8 @@ import (
 type packetType int
 
 const (
-	packetTypeIngress packetType = 0
-	packetTypeEgress  packetType = 1
+	packetTypeIngress packetType = 1
+	packetTypeEgress  packetType = 2
 )
 
 type Packet struct {
@@ -51,9 +51,7 @@ func ParsePacketEvent(deviceCache *metadata.DeviceCache, event bpf.BpfPacketEven
 	log.Infof("new packet event, pid: %d mntns: %d, netns: %d, cgroupName: %s",
 		p.Pid, p.MntNs, p.NetNs, p.CgroupName)
 
-	if event.Meta.PacketType == 1 {
-		p.Type = packetTypeEgress
-	}
+	p.Type = packetType(event.Meta.PacketType)
 	if event.Meta.PacketSize > event.Meta.PayloadLen {
 		p.Truncated = true
 	}
@@ -77,12 +75,20 @@ func FromPacket(ci gopacket.CaptureInfo, data []byte) (*Packet, error) {
 	return &p, nil
 }
 
-func (p Packet) Ingress() bool {
+func (p *Packet) Ingress() bool {
 	return p.Type == packetTypeIngress
 }
 
-func (p Packet) Egress() bool {
+func (p *Packet) Egress() bool {
 	return p.Type == packetTypeEgress
+}
+
+func (p *Packet) MarkIngress() {
+	p.Type = packetTypeIngress
+}
+
+func (p *Packet) MarkEgress() {
+	p.Type = packetTypeEgress
 }
 
 func strComm(comm [16]int8) string {

@@ -104,7 +104,7 @@ require (
 )
 
 replace (
-	github.com/gopacket/gopacket => github.com/mozillazg/gopacket v0.0.0-20241005073024-5750600e7922
+	github.com/gopacket/gopacket => github.com/mozillazg/gopacket v0.0.0-20241026043817-048341de5231
 	// github.com/gopacket/gopacket => ../../gopacket/gopacket
 	github.com/x-way/pktdump => github.com/mozillazg/pktdump v0.0.9-0.20241003022253-cbafa8b6312d
 	// github.com/x-way/pktdump => ../../x-way/pktdump

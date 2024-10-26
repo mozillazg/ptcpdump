@@ -57,15 +57,17 @@ type NgReader struct {
 	activeSection     bool
 	bigEndian         bool
 	decryptionSecrets []decryptionSecret
+	nameRecords       []NgNameRecord
 }
 
-// NewNgReader initializes a new writer, reads the first section header, and if necessary according to the options the first interface.
+// NewNgReader initializes a new reader, reads the first section header, and if necessary according to the options the first interface.
 func NewNgReader(r io.Reader, options NgReaderOptions) (*NgReader, error) {
 	reader := &NgReader{
 		currentOption: ngOption{
 			value: make([]byte, 1024),
 		},
 		decryptionSecrets: make([]decryptionSecret, 0),
+		nameRecords:       make([]NgNameRecord, 0),
 		options:           options,
 		r:                 bufio.NewReader(r),
 	}
@@ -220,8 +222,10 @@ func (r *NgReader) readSectionHeader() error {
 		}
 		r.options.SectionEndCallback(interfaces, r.sectionInfo)
 	}
-	// clear the interfaces
+	// clear interfaces, decryption secrets and name records
 	r.ifaces = r.ifaces[:0]
+	r.decryptionSecrets = r.decryptionSecrets[:0]
+	r.nameRecords = r.nameRecords[:0]
 	r.activeSection = false
 
 RESTART:
@@ -334,6 +338,10 @@ func (r *NgReader) firstInterface() error {
 			return errors.New("A section must have an interface before a packet block")
 		case ngBlockTypeDecryptionSecrets:
 			if err := r.readDecryptionSecretsBlock(); err != nil {
+				return err
+			}
+		case ngBlockTypeNameResolution:
+			if err := r.readNameResolutionBlock(); err != nil {
 				return err
 			}
 		}
@@ -524,6 +532,10 @@ FIND_PACKET:
 			r.ci.CaptureLength = int(r.getUint32(r.buf[12:16]))
 			r.ci.Length = int(r.getUint32(r.buf[16:20]))
 			break FIND_PACKET
+		case ngBlockTypeNameResolution:
+			if err := r.readNameResolutionBlock(); err != nil {
+				return err
+			}
 		default:
 			if _, err := r.r.Discard(int(r.currentBlock.length)); err != nil {
 				return err
@@ -559,6 +571,29 @@ OPTIONS:
 			break OPTIONS
 		case ngOptionCodeComment:
 			opts.Comments = append(opts.Comments, string(r.currentOption.value))
+		case ngOptionCodeEpbFlags:
+			flags := NgEpbFlags{}
+			flags.FromUint32(binary.LittleEndian.Uint32(r.currentOption.value))
+			opts.Flags = &flags
+		case ngOptionCodeEpbHash:
+			opts.Hashes = append(opts.Hashes, NgEpbHash{
+				Algorithm: NgEpbHashAlgorithm(r.currentOption.value[0]),
+				Hash:      r.currentOption.value[1:],
+			})
+		case ngOptionCodeEpbDropCount:
+			v := binary.LittleEndian.Uint64(r.currentOption.value)
+			opts.DropCount = &v
+		case ngOptionCodeEpbPacketID:
+			v := binary.LittleEndian.Uint64(r.currentOption.value)
+			opts.PacketID = &v
+		case ngOptionCodeEpbQueue:
+			v := binary.LittleEndian.Uint32(r.currentOption.value)
+			opts.Queue = &v
+		case ngOptionCodeEpbVerdict:
+			opts.Verdicts = append(opts.Verdicts, NgEpbVerdict{
+				Type: NgEpbVerdictType(r.currentOption.value[0]),
+				Data: r.currentOption.value[1:],
+			})
 		}
 	}
 	return opts, nil
@@ -687,4 +722,17 @@ func (r *NgReader) Resolution() gopacket.TimestampResolution {
 		return gopacket.TimestampResolution{}
 	}
 	return r.ifaces[0].Resolution()
+}
+
+// Interface returns interface information and statistics of interface with the given id.
+func (r *NgReader) Name(i int) (NgNameRecord, error) {
+	if i >= len(r.nameRecords) || i < 0 {
+		return NgNameRecord{}, fmt.Errorf("Interface %d invalid. There are only %d interfaces", i, len(r.nameRecords))
+	}
+	return r.nameRecords[i], nil
+}
+
+// NInterfaces returns the current number of interfaces.
+func (r *NgReader) NNames() int {
+	return len(r.nameRecords)
 }
