@@ -44,6 +44,14 @@ func (p *PcapNGParser) Parse() (*event.Packet, error) {
 			NetNs:   nil,
 		}
 	}
+	if opts.Flags != nil {
+		switch {
+		case opts.Flags.Direction == pcapgo.NgEpbFlagDirectionInbound:
+			e.MarkIngress()
+		case opts.Flags.Direction == pcapgo.NgEpbFlagDirectionOutbound:
+			e.MarkEgress()
+		}
+	}
 
 	exec, ctx := event.FromPacketOptions(opts)
 	e.Pid = exec.Pid

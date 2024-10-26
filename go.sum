@@ -186,8 +186,8 @@ github.com/mozillazg/cri-api v0.32.0-alpha.1.0.20241019013855-3dc36f8743df h1:90
 github.com/mozillazg/cri-api v0.32.0-alpha.1.0.20241019013855-3dc36f8743df/go.mod h1:ca9lKDUa9PmUGVDSSetDQqgf0dyk/NW8u+MpJo7JaYA=
 github.com/mozillazg/cri-client v0.31.0-alpha.0.0.20241019023238-87687176fd67 h1:M4+V89TNUGmRgSJZcH2nvotyqnFkmDl+MGApFoZbJY0=
 github.com/mozillazg/cri-client v0.31.0-alpha.0.0.20241019023238-87687176fd67/go.mod h1:pFm23AAi/gIlW9FGrWPTPnGe1xsyGHPFFO/zezc4w90=
-github.com/mozillazg/gopacket v0.0.0-20241005073024-5750600e7922 h1:bZVEO1gdL8XNhxbtpSd3HhCVUdvVk+g1GF7AkVkp2Ds=
-github.com/mozillazg/gopacket v0.0.0-20241005073024-5750600e7922/go.mod h1:lnXM4VDqJTe4d2NoZr8DZMtidkhss2Y82QFlamXWfXo=
+github.com/mozillazg/gopacket v0.0.0-20241026043817-048341de5231 h1:uvhf0oGPfJ24Lc5/N2ysh9sQc71Pog67zxKiLVS4/Qg=
+github.com/mozillazg/gopacket v0.0.0-20241026043817-048341de5231/go.mod h1:WnFrU1Xkf5lWKV38uKNR9+yYtppn+ZYzOyNqMeH4oNE=
 github.com/mozillazg/pktdump v0.0.9-0.20241003022253-cbafa8b6312d h1:3K1bsX3osp69xQnbvrXHokKRebpiENUUgGLA6OC5Jd8=
 github.com/mozillazg/pktdump v0.0.9-0.20241003022253-cbafa8b6312d/go.mod h1:Vh2MvrLyL23PaYh0Dp2Ihg6qTmNydO2su6ngpJEp/hM=
 github.com/opencontainers/go-digest v1.0.0 h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8Oi/yOhh5U=

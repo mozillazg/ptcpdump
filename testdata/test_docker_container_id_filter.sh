@@ -25,7 +25,7 @@ function test_ptcpdump() {
 
 function test_ptcpdump_read() {
     EXPECT_NAME="${LNAME}.read.expect"
-    sed 's/ \(In\|Out\) / /g' "${LNAME}" > "${EXPECT_NAME}"
+    cat "${LNAME}" > "${EXPECT_NAME}"
     timeout 30s ${CMD} --oneline -v -r "${FNAME}" > "${RNAME}"
     cat "${RNAME}" | grep "> 1.1.1.1.80: Flags .*, args wget -T 10 1.1.1.1.* $cid1"
 }

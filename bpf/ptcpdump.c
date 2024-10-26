@@ -25,8 +25,8 @@
 #define TC_ACT_UNSPEC (-1)
 #define AF_INET 2
 #define AF_INET6 10
-#define INGRESS_PACKET 0
-#define EGRESS_PACKET 1
+#define INGRESS_PACKET 1
+#define EGRESS_PACKET 2
 #define EXEC_FILENAME_LEN 512
 #define EXEC_ARGS_LEN 4096
 

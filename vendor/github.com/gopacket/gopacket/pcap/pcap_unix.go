@@ -107,28 +107,38 @@ int pcap_tstamp_type_name_to_val(const char* t) {
 
 // Windows, Macs, and Linux all use different time types.  Joy.
 #ifdef __APPLE__
-#define gopacket_time_secs_t __darwin_time_t
-#define gopacket_time_usecs_t __darwin_suseconds_t
+	#define gopacket_time_secs_t __darwin_time_t
+	#define gopacket_time_usecs_t __darwin_suseconds_t
 #elif __ANDROID__
-#define gopacket_time_secs_t __kernel_time_t
-#define gopacket_time_usecs_t __kernel_suseconds_t
+	#define gopacket_time_secs_t __kernel_time_t
+	#define gopacket_time_usecs_t __kernel_suseconds_t
 #elif __GLIBC__
-#ifndef __USE_TIME_BITS64
-#define gopacket_time_secs_t __time_t
-#define gopacket_time_usecs_t __suseconds_t
-#else
-#define gopacket_time_secs_t __time64_t
-#define gopacket_time_usecs_t __suseconds64_t
-#endif
+	#ifndef __USE_TIME_BITS64
+		#define gopacket_time_secs_t __time_t
+		#define gopacket_time_usecs_t __suseconds_t
+	#else
+		#ifdef __time64_t
+			#define gopacket_time_secs_t __time64_t
+			#define gopacket_time_usecs_t __suseconds64_t
+		#else
+			#define gopacket_time_secs_t __time_t
+			#define gopacket_time_usecs_t __suseconds_t
+		#endif
+	#endif
 #else  // Some form of linux/bsd/etc...
-#include <sys/param.h>
-#ifdef __OpenBSD__
-#define gopacket_time_secs_t u_int32_t
-#define gopacket_time_usecs_t u_int32_t
-#else
-#define gopacket_time_secs_t time_t
-#define gopacket_time_usecs_t suseconds_t
-#endif
+	#include <sys/param.h>
+	#ifdef __OpenBSD__
+		#define gopacket_time_secs_t u_int32_t
+		#define gopacket_time_usecs_t u_int32_t
+	#else
+		#ifdef __time64_t
+			#define gopacket_time_secs_t __time64_t
+			#define gopacket_time_usecs_t __suseconds64_t
+		#else
+			#define gopacket_time_secs_t time_t
+			#define gopacket_time_usecs_t suseconds_t
+		#endif
+	#endif
 #endif
 
 // The things we do to avoid pointers escaping to the heap...

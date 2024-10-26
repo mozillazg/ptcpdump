@@ -64,6 +64,13 @@ func (w *PcapNGWriter) Write(e *event.Packet) error {
 				p.Pod.Name, p.Pod.Namespace, p.Pod.Uid, p.Pod.FormatLabels(), p.Pod.FormatAnnotations()),
 		)
 	}
+	opts.Flags = &pcapgo.NgEpbFlags{}
+	switch {
+	case e.Ingress():
+		opts.Flags.Direction = pcapgo.NgEpbFlagDirectionInbound
+	case e.Egress():
+		opts.Flags.Direction = pcapgo.NgEpbFlagDirectionOutbound
+	}
 
 	if err := w.writeTLSKeyLogs(); err != nil {
 		return err

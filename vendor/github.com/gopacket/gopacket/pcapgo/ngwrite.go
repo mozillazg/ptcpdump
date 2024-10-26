@@ -372,15 +372,7 @@ func (w *NgWriter) WritePacketWithOptions(ci gopacket.CaptureInfo, data []byte, 
 		return fmt.Errorf("invalid capture info %+v:  capture length > length", ci)
 	}
 
-	var scratch [4]ngOption
-	i := 0
-	for _, comment := range opts.Comments {
-		scratch[i].code = ngOptionCodeComment
-		scratch[i].raw = comment
-		i++
-	}
-	options := scratch[:i]
-
+	options := opts.toNgOptions()
 	length := prepareNgOptions(options) +
 		28 + // metadata
 		uint32(len(data)) +
