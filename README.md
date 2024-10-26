@@ -18,15 +18,16 @@ Table of Contents
 
 * [Features](#features)
 * [Installation](#installation)
-   * [Requirements](#requirements)
+    * [Requirements](#requirements)
 * [Usage](#usage)
-   * [Example commands](#example-commands)
-   * [Example output](#example-output)
-   * [Flags](#flags)
+    * [Example commands](#example-commands)
+    * [Example output](#example-output)
+    * [Running with Docker](#running-with-docker)
+    * [Flags](#flags)
 * [Compare with tcpdump](#compare-with-tcpdump)
 * [Developing](#developing)
-   * [Dependencies](#dependencies)
-   * [Building](#building)
+    * [Dependencies](#dependencies)
+    * [Building](#building)
 
 
 ## Features
@@ -60,9 +61,10 @@ Linux kernel version >= 5.2.
 ### Example commands
 
 Filter like tcpdump:
+
 ```
 sudo ptcpdump -i eth0 tcp
-sudo ptcpdump -i eth0 -A -v tcp and port 80 and host 10.10.1.1
+sudo ptcpdump -i eth0 -A -s 0 -n -v tcp and port 80 and host 10.10.1.1
 sudo ptcpdump -i eth0 'tcp[tcpflags] & (tcp-syn|tcp-fin) != 0'
 ```
 
@@ -145,7 +147,7 @@ Accept: */*
 With `-x`:
 
 ```
-14:44:34.457504 ens33 curl.205562 IP 10.0.2.15.39984 > 139.178.84.217.80: Flags [P.], seq 2722472188:2722472262, ack 892036871, win 64240, length 74, ParentProc [bash.180205]
+14:44:34.457504 ens33 curl.205562 Out IP 10.0.2.15.39984 > 139.178.84.217.80: Flags [P.], seq 2722472188:2722472262, ack 892036871, win 64240, length 74, ParentProc [bash.180205]
         0x0000:  4500 0072 de2c 4000 4006 6fbf 0a00 020f
         0x0010:  8bb2 54d9 9c30 0050 a245 a0fc 352b 6707
         0x0020:  5018 faf0 ecfe 0000 4745 5420 2f20 4854
@@ -159,7 +161,7 @@ With `-x`:
 With `-X`:
 
 ```
-14:44:34.457504 ens33 curl.205562 IP 10.0.2.15.39984 > 139.178.84.217.80: Flags [P.], seq 2722472188:2722472262, ack 892036871, win 64240, length 74, ParentProc [bash.180205]
+14:44:34.457504 ens33 curl.205562 Out IP 10.0.2.15.39984 > 139.178.84.217.80: Flags [P.], seq 2722472188:2722472262, ack 892036871, win 64240, length 74, ParentProc [bash.180205]
         0x0000:  4500 0072 de2c 4000 4006 6fbf 0a00 020f  E..r.,@.@.o.....
         0x0010:  8bb2 54d9 9c30 0050 a245 a0fc 352b 6707  ..T..0.P.E..5+g.
         0x0020:  5018 faf0 ecfe 0000 4745 5420 2f20 4854  P.......GET / HT
@@ -170,6 +172,18 @@ With `-X`:
         0x0070:  0d0a                                     ..
 ```
 
+
+<p align="right"><a href="#top">🔝</a></p>
+
+
+### Running with Docker
+
+Docker images for `ptcpdump` are published at https://quay.io/repository/ptcpdump/ptcpdump.
+
+```
+docker run --privileged --rm -t --net=host --pid=host \
+  quay.io/ptcpdump/ptcpdump:latest ptcpdump -i any -c 2 tcp
+```
 
 <p align="right"><a href="#top">🔝</a></p>
 
