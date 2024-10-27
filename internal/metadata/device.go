@@ -67,8 +67,11 @@ func (d *DeviceCache) GetDevices(devNames []string, netNsPaths []string) (*types
 		for _, ns := range nsList {
 			for _, name := range devNames {
 				dev, err := d.getDeviceFromNetNs(name, ns)
-				if err != nil && !errors.Is(err, types.ErrDeviceNotFound) {
-					return nil, err
+				if err != nil {
+					if !errors.Is(err, types.ErrDeviceNotFound) {
+						return nil, err
+					}
+					return nil, fmt.Errorf("%s: No such device exists", name)
 				}
 				interfaces.Add(*dev)
 			}
