@@ -29,9 +29,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
-        with:
-          fetch-depth: '100'
-          fetch-tags: 'true'
 
       # Set up BuildKit Docker container builder to be able to build
       # multi-platform images and export cache
