@@ -7,11 +7,22 @@ import (
 	"regexp"
 )
 
-var PathProcMounts = "/proc/mounts"
+const (
+	pathProcMounts         = "/proc/mounts"
+	defaultCgroupV2RootDir = "/sys/fs/cgroup"
+)
+
 var reCgroup2Mount = regexp.MustCompile(`(?m)^cgroup2\s(/\S+)\scgroup2\s`)
 
 func GetCgroupV2RootDir() (string, error) {
-	return getCgroupV2RootDir(PathProcMounts)
+	p, err := getCgroupV2RootDir(pathProcMounts)
+	if err != nil {
+		st, errv2 := os.Stat(defaultCgroupV2RootDir)
+		if errv2 == nil && st.IsDir() {
+			return defaultCgroupV2RootDir, nil
+		}
+	}
+	return p, err
 }
 
 func getCgroupV2RootDir(pathProcMounts string) (string, error) {

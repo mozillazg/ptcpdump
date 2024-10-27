@@ -28,7 +28,8 @@ CARCH ?= $(shell uname -m)
 LIBPCAP_ARCH = $(CARCH)-unknown-linux-gnu
 LIBPCAP_CC ?= gcc
 
-IMAGE_BUILD ?= quay.io/ptcpdump/develop:latest
+IMAGE_DEV ?= quay.io/ptcpdump/develop:latest
+IMAGE_BIN ?= quay.io/ptcpdump/ptcpdump:latest
 
 .PHONY: libpcap
 libpcap: $(LIBPCAP_OBJ)
@@ -76,12 +77,12 @@ build-bpf:
 
 .PHONY: build-bpf-via-docker
 build-bpf-via-docker:
-	docker run --rm -v `pwd`:/app quay.io/ptcpdump/develop:latest make build-bpf
+	docker run --rm -v `pwd`:/app $(IMAGE_DEV) make build-bpf
 
 
 .PHONY: build-via-docker
 build-via-docker:
-	docker run --rm -v `pwd`:/app quay.io/ptcpdump/develop:latest make build
+	docker run --rm -v `pwd`:/app $(IMAGE_DEV) make build
 
 
 .PHONY: lint
