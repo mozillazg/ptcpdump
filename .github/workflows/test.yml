@@ -34,6 +34,12 @@ jobs:
         name: ptcpdump
         path: ptcpdump
 
+  run-with-docker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: test running with docker
+        run: |
+            bash testdata/test_run_with_docker.sh "quay.io/ptcpdump/ptcpdump:latest"
 
   e2e-test:
     name: e2e-test
