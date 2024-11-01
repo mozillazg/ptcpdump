@@ -156,7 +156,7 @@ github.com/containerd/containerd/api/types/transfer
 ## explicit; go 1.19
 github.com/containerd/continuity/fs
 github.com/containerd/continuity/sysx
-# github.com/containerd/errdefs v0.3.0
+# github.com/containerd/errdefs v0.1.0
 ## explicit; go 1.20
 github.com/containerd/errdefs
 # github.com/containerd/fifo v1.1.0
