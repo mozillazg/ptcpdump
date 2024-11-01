@@ -51,21 +51,21 @@ jobs:
       matrix:
         kernel:
           # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
-          - '4.19-20240912.022020'
+          - '4.19-20241031.113911'
           # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
-          - '5.4-20240912.022020'
+          - '5.4-20241031.113911'
           # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
-          - '5.10-20240912.022020'
+          - '5.10-20241031.113911'
           # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
-          - '5.15-20240912.022020'
+          - '5.15-20241031.113911'
           # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
-          - '6.1-20240912.022020'
+          - '6.1-20241031.113911'
           # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
-          - '6.6-20240912.022020'
+          - '6.6-20241031.113911'
           # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
-          - 'bpf-20240912.022020'
+          - 'bpf-20241101.013334'
           # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
-          - 'bpf-next-20240912.022020'
+          - 'bpf-next-20241101.013334'
     timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
