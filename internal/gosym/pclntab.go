@@ -47,8 +47,8 @@ restartParseWithRealTextBase:
 	}
 
 	var moduleData *objfile.ModuleData = nil
-	var finalTab *objfile.PclntabCandidate
-	for tab := range tabs {
+	var finalTab *objfile.PclntabCandidate = &tabs[0]
+	for _, tab := range tabs {
 		metadata.TabMeta.VA = tab.PclntabVA
 		metadata.TabMeta.Version = tab.ParsedPclntab.Go12line.Version.String()
 		metadata.TabMeta.Endianess = tab.ParsedPclntab.Go12line.Binary.String()
@@ -81,7 +81,7 @@ restartParseWithRealTextBase:
 	}
 
 	// to be sure we got the right pclntab we had to have found a moduledat as well. If we didn't, then we failed to find the pclntab (correctly) as well
-	if moduleData == nil || finalTab == nil {
+	if moduleData == nil {
 		return nil, fmt.Errorf("no valid pclntab or moduledata found")
 	}
 

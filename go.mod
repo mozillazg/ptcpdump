@@ -21,7 +21,7 @@ require (
 	github.com/containerd/containerd/api v1.7.19
 	github.com/containerd/errdefs v0.1.0
 	github.com/go-logr/logr v1.4.2
-	github.com/mandiant/GoReSym v1.7.2-0.20241019185929-45d5c9d6063f
+	github.com/mandiant/GoReSym v1.7.2-0.20240819162932-534ca84b42d5
 	github.com/smira/go-xz v0.1.0
 	github.com/stretchr/testify v1.9.0
 	github.com/vishvananda/netns v0.0.0-20211101163701-50045581ed74

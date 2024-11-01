@@ -47,8 +47,8 @@ type ModuleDataCandidate struct {
 
 type rawFile interface {
 	symbols() (syms []Sym, err error)
-	pcln() (candidates <-chan PclntabCandidate, err error)
-	pcln_scan() (candidates <-chan PclntabCandidate, err error)
+	pcln() (candidates []PclntabCandidate, err error)
+	pcln_scan() (candidates []PclntabCandidate, err error)
 	moduledata_scan(pclntabVA uint64, is64bit bool, littleendian bool, ignorelist []uint64) (candidate *ModuleDataCandidate, err error)
 	read_memory(VA uint64, size uint64) (data []byte, err error)
 	text() (textStart uint64, text []byte, err error)
@@ -64,8 +64,9 @@ type File struct {
 }
 
 type Entry struct {
-	name string
-	raw  rawFile
+	name           string
+	raw            rawFile
+	pclnCandidates []PclntabCandidate
 }
 
 // A Sym is a symbol defined in an executable file.
@@ -128,7 +129,7 @@ func (f *File) Symbols() ([]Sym, error) {
 }
 
 // previously : func (f *File) PCLineTable() (Liner, error) {
-func (f *File) PCLineTable(versionOverride string, knownPclntabVA uint64, knownGoTextBase uint64) (<-chan PclntabCandidate, error) {
+func (f *File) PCLineTable(versionOverride string, knownPclntabVA uint64, knownGoTextBase uint64) ([]PclntabCandidate, error) {
 	return f.entries[0].PCLineTable(versionOverride, knownPclntabVA, knownGoTextBase)
 }
 
@@ -210,7 +211,7 @@ func findAllOccurrences(data []byte, searches [][]byte) []int {
 }
 
 // previously: func (e *Entry) PCLineTable() (Liner, error)
-func (e *Entry) PCLineTable(versionOverride string, knownPclntabVA uint64, knownGoTextBase uint64) (<-chan PclntabCandidate, error) {
+func (e *Entry) PCLineTable(versionOverride string, knownPclntabVA uint64, knownGoTextBase uint64) ([]PclntabCandidate, error) {
 	// If the raw file implements Liner directly, use that.
 	// Currently, only Go intermediate objects and archives (goobj) use this path.
 
@@ -222,43 +223,50 @@ func (e *Entry) PCLineTable(versionOverride string, knownPclntabVA uint64, known
 	// Otherwise, read the pcln tables and build a Liner out of that.
 	// https://github.com/golang/go/blob/89f687d6dbc11613f715d1644b4983905293dd33/src/debug/gosym/pclntab.go#L169
 	// https://github.com/golang/go/issues/42954
-	ch_tab, err := e.raw.pcln()
-	if err != nil {
-		return nil, err
+	if e.pclnCandidates == nil {
+		candidates, err := e.raw.pcln()
+		if err != nil {
+			return nil, err
+		}
+		e.pclnCandidates = candidates
+	}
+	candidates := e.pclnCandidates
+
+	var finalCandidates []PclntabCandidate
+	var atLeastOneGood bool = false
+	for _, candidate := range candidates {
+		/* See https://github.com/mandiant/GoReSym/pull/11
+		Locating the .text base is not safe by name due to packers which mangle names. We also have to consider CGO
+		which appears to update the base with an 'adjusted' one to add some shim code. So, PCLineTable
+		get called first with the candidate.SecStart just to find symbols, just so we can find the moduledata.
+		Then, we invoke it again with a 'known' text base, which is found by reading data held in the moduledata.
+		That is, we do all this parsing twice, on purpose, to be resiliant, we have better info on round 2.
+		*/
+		if knownGoTextBase != 0 {
+			candidate.SecStart = knownGoTextBase
+		}
+
+		// using this VA a moduledata was successfully found, this time around we can avoid re-parsing known bad pclntab candidates
+		if knownPclntabVA != 0 && candidate.PclntabVA != knownPclntabVA {
+			continue
+		}
+
+		parsedTable, err := gosym.NewTable(candidate.Symtab, gosym.NewLineTable(candidate.Pclntab, candidate.SecStart), versionOverride)
+		if err != nil || parsedTable.Go12line == nil {
+			continue
+		}
+
+		// the first good one happens to be correct more often than the last
+		candidate.ParsedPclntab = parsedTable
+		finalCandidates = append(finalCandidates, candidate)
+		atLeastOneGood = true
 	}
 
-	ch := make(chan PclntabCandidate)
+	if atLeastOneGood {
+		return finalCandidates, nil
+	}
 
-	go func() {
-		defer close(ch)
-		for candidate := range ch_tab {
-			/* See https://github.com/mandiant/GoReSym/pull/11
-			Locating the .text base is not safe by name due to packers which mangle names. We also have to consider CGO
-			which appears to update the base with an 'adjusted' one to add some shim code. So, PCLineTable
-			get called first with the candidate.SecStart just to find symbols, just so we can find the moduledata.
-			Then, we invoke it again with a 'known' text base, which is found by reading data held in the moduledata.
-			That is, we do all this parsing twice, on purpose, to be resiliant, we have better info on round 2.
-			*/
-			if knownGoTextBase != 0 {
-				candidate.SecStart = knownGoTextBase
-			}
-
-			// using this VA a moduledata was successfully found, this time around we can avoid re-parsing known bad pclntab candidates
-			if knownPclntabVA != 0 && candidate.PclntabVA != knownPclntabVA {
-				continue
-			}
-
-			parsedTable, err := gosym.NewTable(candidate.Symtab, gosym.NewLineTable(candidate.Pclntab, candidate.SecStart), versionOverride)
-			if err != nil || parsedTable.Go12line == nil {
-				continue
-			}
-
-			// the first good one happens to be correct more often than the last
-			candidate.ParsedPclntab = parsedTable
-			ch <- candidate
-		}
-	}()
-	return ch, nil
+	return finalCandidates, fmt.Errorf("failed to locate pclntab")
 }
 
 func (e *Entry) ModuleDataTable(pclntabVA uint64, runtimeVersion string, version string, is64bit bool, littleendian bool) (secStart uint64, moduleData *ModuleData, err error) {
