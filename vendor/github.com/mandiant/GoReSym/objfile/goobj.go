@@ -227,11 +227,11 @@ func (f *goobjFile) symbols() ([]Sym, error) {
 	return syms, nil
 }
 
-func (f *goobjFile) pcln_scan() (candidates []PclntabCandidate, err error) {
+func (f *goobjFile) pcln_scan() (candidates <-chan PclntabCandidate, err error) {
 	return nil, fmt.Errorf("pcln not available in go object file")
 }
 
-func (f *goobjFile) pcln() (candidates []PclntabCandidate, err error) {
+func (f *goobjFile) pcln() (candidates <-chan PclntabCandidate, err error) {
 	// Should never be called. We implement Liner below, callers
 	// should use that instead.
 	return nil, fmt.Errorf("pcln not available in go object file")

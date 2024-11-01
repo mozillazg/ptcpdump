@@ -44,6 +44,10 @@ type Conn struct {
 
 // A Socket is an operating-system specific implementation of netlink
 // sockets used by Conn.
+//
+// Deprecated: the intent of Socket was to provide an abstraction layer for
+// testing, but this abstraction is awkward to use properly and disables much of
+// the functionality of the Conn type. Do not use.
 type Socket interface {
 	Close() error
 	Send(m Message) error

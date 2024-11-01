@@ -86,7 +86,7 @@ func (f *elfFile) symbols() ([]Sym, error) {
 	return syms, nil
 }
 
-func (f *elfFile) pcln_scan() (candidates []PclntabCandidate, err error) {
+func (f *elfFile) pcln_scan() (candidates <-chan PclntabCandidate, err error) {
 	// 1) Locate pclntab via symbols (standard way)
 	foundpcln := false
 	var pclntab []byte
@@ -110,99 +110,27 @@ func (f *elfFile) pcln_scan() (candidates []PclntabCandidate, err error) {
 		[]byte("\xFF\xFF\xFF\xFB\x00\x00"),
 	}
 
+	var symtab []byte
+	var symtab_err error
+	if sect := f.elf.Section(".gosymtab"); sect != nil {
+		symtab, symtab_err = sect.Data()
+	}
+
 	// 2) if not found, byte scan for it
 	pclntab_sigs := append(pclntab_sigs_le, pclntab_sigs_be...)
 
-	// candidate array for method 4 of scanning
-	var stompedmagic_candidates []StompMagicCandidate = make([]StompMagicCandidate, 0)
-	for _, sec := range f.elf.Sections {
-		// first section is all zeros, skip
-		if sec.Type == elf.SHT_NULL {
-			continue
+	ch_tab := make(chan PclntabCandidate)
+
+	send_tab := func(candidate *PclntabCandidate) {
+		if symtab_err != nil {
+			candidate.Symtab = symtab
+			ch_tab <- *candidate
 		}
-
-		data := f.elf.DataAfterSection(sec)
-		if !foundpcln {
-			// malware can split the pclntab across multiple sections, re-merge
-			// https://github.com/golang/go/blob/2cb9042dc2d5fdf6013305a077d013dbbfbaac06/src/debug/gosym/pclntab.go#L172
-			matches := findAllOccurrences(data, pclntab_sigs)
-			for _, pclntab_idx := range matches {
-				if pclntab_idx != -1 && pclntab_idx < int(sec.Size) {
-					pclntab = data[pclntab_idx:]
-
-					var candidate PclntabCandidate
-					candidate.Pclntab = pclntab
-
-					candidate.SecStart = uint64(sec.Addr)
-					candidate.PclntabVA = candidate.SecStart + uint64(pclntab_idx)
-
-					candidates = append(candidates, candidate)
-					// we must scan all signature for all sections. DO NOT BREAK
-				}
-			}
-		} else {
-			// 3) if we found it earlier, figure out which section base to return (might be wrong for packed things)
-			pclntab_idx := bytes.Index(data, pclntab)
-			if pclntab_idx != -1 && pclntab_idx < int(sec.Size) {
-				var candidate PclntabCandidate
-				candidate.Pclntab = pclntab
-				candidate.SecStart = uint64(sec.Addr)
-				candidate.PclntabVA = candidate.SecStart + uint64(pclntab_idx)
-
-				candidates = append(candidates, candidate)
-			}
-		}
-
-		// TODO this scan needs to occur in both big and little endian mode
-		// 4) Always try this other way! Sometimes the pclntab magic is stomped as well so our byte OR symbol location fail. Byte scan for the moduledata, use that to find the pclntab instead, fix up magic with all combinations.
-		// See the obfuscator 'garble' for an example of randomizing the pclntab magic
-		sigResults := findModuleInitPCHeader(data, sec.Addr)
-		for _, sigResult := range sigResults {
-			// example: off_69D0C0 is the moduleData we found via our scan, the first ptr unk_5DF6E0, is the pclntab!
-			// 0x000000000069D0C0 E0 F6 5D 00 00 00 00 00 off_69D0C0      dq offset unk_5DF6E0    ; DATA XREF: runtime_SetFinalizer+119↑o
-			// 0x000000000069D0C0                                                                 ; runtime_scanstack+40B↑o ...
-			// 0x000000000069D0C8 40 F7 5D 00 00 00 00 00                 dq offset aInternalCpuIni ; "internal/cpu.Initialize"
-			// 0x000000000069D0D0 F0                                      db 0F0h
-			// 0x000000000069D0D1 BB                                      db 0BBh
-
-			// we don't know the endianess or arch, so we submit all combinations as candidates and sort them out later
-			// example: reads out ptr unk_5DF6E0
-			pclntabVARaw64, err := f.read_memory(sigResult.moduleDataVA, 8) // assume 64bit
-			if err == nil {
-				stompedMagicCandidateLE := StompMagicCandidate{
-					binary.LittleEndian.Uint64(pclntabVARaw64),
-					sigResult.moduleDataVA,
-					true,
-				}
-				stompedMagicCandidateBE := StompMagicCandidate{
-					binary.BigEndian.Uint64(pclntabVARaw64),
-					sigResult.moduleDataVA,
-					false,
-				}
-				stompedmagic_candidates = append(stompedmagic_candidates, stompedMagicCandidateLE, stompedMagicCandidateBE)
-			}
-
-			pclntabVARaw32, err := f.read_memory(sigResult.moduleDataVA, 4) // assume 32bit
-			if err == nil {
-				stompedMagicCandidateLE := StompMagicCandidate{
-					uint64(binary.LittleEndian.Uint32(pclntabVARaw32)),
-					sigResult.moduleDataVA,
-					true,
-				}
-				stompedMagicCandidateBE := StompMagicCandidate{
-					uint64(binary.BigEndian.Uint32(pclntabVARaw32)),
-					sigResult.moduleDataVA,
-					false,
-				}
-				stompedmagic_candidates = append(stompedmagic_candidates, stompedMagicCandidateLE, stompedMagicCandidateBE)
-			}
-		}
+		ch_tab <- *candidate
 	}
 
-	// even if we found the pclntab without signature scanning it may have a stomped magic. That would break parsing later! So, let's submit new candidates
-	// with all the possible magics to get at least one that hopefully parses correctly.
-	patched_magic_candidates := make([]PclntabCandidate, 0)
-	for _, candidate := range candidates {
+	// for any candidate, patch out the magic, and send all possible magics to parse too
+	send_patched_magic_candidates := func(candidate *PclntabCandidate) {
 		has_some_valid_magic := false
 		for _, magic := range append(pclntab_sigs_le, pclntab_sigs_be...) {
 			if bytes.Equal(candidate.Pclntab, magic) {
@@ -219,80 +147,152 @@ func (f *elfFile) pcln_scan() (candidates []PclntabCandidate, err error) {
 
 				new_candidate := candidate
 				new_candidate.Pclntab = pclntab_copy
-				patched_magic_candidates = append(patched_magic_candidates, new_candidate)
-				candidate.Pclntab = pclntab_copy
+				send_tab(new_candidate)
 			}
 		}
 	}
 
-	if len(patched_magic_candidates) > 0 {
-		candidates = patched_magic_candidates
-	}
-
-	if len(stompedmagic_candidates) != 0 {
+	send_stomped_magic_candidate := func(stompedMagicCandidate *StompMagicCandidate) {
 		for _, sec := range f.elf.Sections {
 			data := f.elf.DataAfterSection(sec)
-			for _, stompedMagicCandidate := range stompedmagic_candidates {
-				pclntab_va_candidate := stompedMagicCandidate.PclntabVa
+			pclntab_va_candidate := stompedMagicCandidate.PclntabVa
 
-				// use data length as some binaries have invalid section length
-				if pclntab_va_candidate >= sec.Addr && pclntab_va_candidate < (sec.Addr+sec.Size) && pclntab_va_candidate < (sec.Addr+uint64(len(data))) {
-					sec_offset := pclntab_va_candidate - sec.Addr
-					pclntab = data[sec_offset:]
+			// use data length as some binaries have invalid section length
+			if pclntab_va_candidate >= sec.Addr && pclntab_va_candidate < (sec.Addr+sec.Size) && pclntab_va_candidate < (sec.Addr+uint64(len(data))) {
+				sec_offset := pclntab_va_candidate - sec.Addr
+				pclntab = data[sec_offset:]
 
-					if stompedMagicCandidate.LittleEndian {
-						for _, magicLE := range pclntab_sigs_le {
-							pclntab_copy := make([]byte, len(pclntab))
-							copy(pclntab_copy, pclntab)
-							copy(pclntab_copy, magicLE)
+				if stompedMagicCandidate.LittleEndian {
+					for _, magicLE := range pclntab_sigs_le {
+						pclntab_copy := make([]byte, len(pclntab))
+						copy(pclntab_copy, pclntab)
+						copy(pclntab_copy, magicLE)
 
-							var candidate PclntabCandidate
-							candidate.StompMagicCandidateMeta = &stompedMagicCandidate
-							candidate.Pclntab = pclntab_copy
-							candidate.SecStart = uint64(sec.Addr)
-							candidate.PclntabVA = pclntab_va_candidate
+						var candidate PclntabCandidate
+						candidate.StompMagicCandidateMeta = stompedMagicCandidate
+						candidate.Pclntab = pclntab_copy
+						candidate.SecStart = uint64(sec.Addr)
+						candidate.PclntabVA = pclntab_va_candidate
 
-							candidates = append(candidates, candidate)
-						}
-					} else {
-						for _, magicBE := range pclntab_sigs_be {
-							pclntab_copy := make([]byte, len(pclntab))
-							copy(pclntab_copy, pclntab)
-							copy(pclntab_copy, magicBE)
+						send_tab(&candidate)
+					}
+				} else {
+					for _, magicBE := range pclntab_sigs_be {
+						pclntab_copy := make([]byte, len(pclntab))
+						copy(pclntab_copy, pclntab)
+						copy(pclntab_copy, magicBE)
 
-							var candidate PclntabCandidate
-							candidate.StompMagicCandidateMeta = &stompedMagicCandidate
-							candidate.Pclntab = pclntab_copy
-							candidate.SecStart = uint64(sec.Addr)
-							candidate.PclntabVA = pclntab_va_candidate
+						var candidate PclntabCandidate
+						candidate.StompMagicCandidateMeta = stompedMagicCandidate
+						candidate.Pclntab = pclntab_copy
+						candidate.SecStart = uint64(sec.Addr)
+						candidate.PclntabVA = pclntab_va_candidate
 
-							candidates = append(candidates, candidate)
-						}
+						send_tab(&candidate)
 					}
 				}
 			}
 		}
 	}
 
-	return candidates, nil
+	go func() {
+		defer close(ch_tab)
+
+		for _, sec := range f.elf.Sections {
+			// first section is all zeros, skip
+			if sec.Type == elf.SHT_NULL {
+				continue
+			}
+
+			data := f.elf.DataAfterSection(sec)
+			if !foundpcln {
+				// malware can split the pclntab across multiple sections, re-merge
+				// https://github.com/golang/go/blob/2cb9042dc2d5fdf6013305a077d013dbbfbaac06/src/debug/gosym/pclntab.go#L172
+				matches := findAllOccurrences(data, pclntab_sigs)
+				for _, pclntab_idx := range matches {
+					if pclntab_idx != -1 && pclntab_idx < int(sec.Size) {
+						pclntab = data[pclntab_idx:]
+
+						var candidate PclntabCandidate
+						candidate.Pclntab = pclntab
+
+						candidate.SecStart = uint64(sec.Addr)
+						candidate.PclntabVA = candidate.SecStart + uint64(pclntab_idx)
+						send_patched_magic_candidates(&candidate)
+
+						send_tab(&candidate)
+						// we must scan all signature for all sections. DO NOT BREAK
+					}
+				}
+			} else {
+				// 3) if we found it earlier, figure out which section base to return (might be wrong for packed things)
+				pclntab_idx := bytes.Index(data, pclntab)
+				if pclntab_idx != -1 && pclntab_idx < int(sec.Size) {
+					var candidate PclntabCandidate
+					candidate.Pclntab = pclntab
+					candidate.SecStart = uint64(sec.Addr)
+					candidate.PclntabVA = candidate.SecStart + uint64(pclntab_idx)
+
+					send_patched_magic_candidates(&candidate)
+					send_tab(&candidate)
+				}
+			}
+
+			// 4) Always try this other way! Sometimes the pclntab magic is stomped as well so our byte OR symbol location fail. Byte scan for the moduledata, use that to find the pclntab instead, fix up magic with all combinations.
+			// See the obfuscator 'garble' for an example of randomizing the pclntab magic
+			sigResults := findModuleInitPCHeader(data, sec.Addr)
+			for _, sigResult := range sigResults {
+				// example: off_69D0C0 is the moduleData we found via our scan, the first ptr unk_5DF6E0, is the pclntab!
+				// 0x000000000069D0C0 E0 F6 5D 00 00 00 00 00 off_69D0C0      dq offset unk_5DF6E0    ; DATA XREF: runtime_SetFinalizer+119↑o
+				// 0x000000000069D0C0                                                                 ; runtime_scanstack+40B↑o ...
+				// 0x000000000069D0C8 40 F7 5D 00 00 00 00 00                 dq offset aInternalCpuIni ; "internal/cpu.Initialize"
+				// 0x000000000069D0D0 F0                                      db 0F0h
+				// 0x000000000069D0D1 BB                                      db 0BBh
+
+				// we don't know the endianess or arch, so we submit all combinations as candidates and sort them out later
+				// example: reads out ptr unk_5DF6E0
+				pclntabVARaw64, err := f.read_memory(sigResult.moduleDataVA, 8) // assume 64bit
+				if err == nil {
+					stompedMagicCandidateLE := StompMagicCandidate{
+						binary.LittleEndian.Uint64(pclntabVARaw64),
+						sigResult.moduleDataVA,
+						true,
+					}
+					stompedMagicCandidateBE := StompMagicCandidate{
+						binary.BigEndian.Uint64(pclntabVARaw64),
+						sigResult.moduleDataVA,
+						false,
+					}
+					send_stomped_magic_candidate(&stompedMagicCandidateBE)
+					send_stomped_magic_candidate(&stompedMagicCandidateLE)
+				}
+
+				pclntabVARaw32, err := f.read_memory(sigResult.moduleDataVA, 4) // assume 32bit
+				if err == nil {
+					stompedMagicCandidateLE := StompMagicCandidate{
+						uint64(binary.LittleEndian.Uint32(pclntabVARaw32)),
+						sigResult.moduleDataVA,
+						true,
+					}
+					stompedMagicCandidateBE := StompMagicCandidate{
+						uint64(binary.BigEndian.Uint32(pclntabVARaw32)),
+						sigResult.moduleDataVA,
+						false,
+					}
+					send_stomped_magic_candidate(&stompedMagicCandidateBE)
+					send_stomped_magic_candidate(&stompedMagicCandidateLE)
+				}
+			}
+		}
+	}()
+
+	return ch_tab, nil
 }
 
-func (f *elfFile) pcln() (candidates []PclntabCandidate, err error) {
+func (f *elfFile) pcln() (candidates <-chan PclntabCandidate, err error) {
 	candidates, err = f.pcln_scan()
 	if err != nil {
 		return nil, err
-	}
-
-	// 4) symtab is completely optional, but try to find it
-	var symtab []byte
-	if sect := f.elf.Section(".gosymtab"); sect != nil {
-		symtab, err = sect.Data()
-	}
-
-	if err == nil {
-		for _, c := range candidates {
-			c.Symtab = symtab
-		}
 	}
 
 	return candidates, nil

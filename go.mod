@@ -3,12 +3,12 @@ module github.com/mozillazg/ptcpdump
 go 1.23.0
 
 require (
-	github.com/cilium/ebpf v0.15.0
+	github.com/cilium/ebpf v0.16.0
 	github.com/containerd/containerd v1.7.20
-	github.com/containerd/typeurl/v2 v2.1.1
+	github.com/containerd/typeurl/v2 v2.2.1
 	github.com/docker/docker v26.1.5+incompatible
 	github.com/florianl/go-tc v0.4.4
-	github.com/gopacket/gopacket v1.2.0
+	github.com/gopacket/gopacket v1.3.0
 	github.com/jschwinger233/elibpcap v0.0.0-20231010035657-e99300096f5e
 	github.com/phuslu/log v1.0.111
 	github.com/shirou/gopsutil/v4 v4.24.8
@@ -19,13 +19,13 @@ require (
 
 require (
 	github.com/containerd/containerd/api v1.7.19
-	github.com/containerd/errdefs v0.1.0
+	github.com/containerd/errdefs v0.3.0
 	github.com/go-logr/logr v1.4.2
-	github.com/mandiant/GoReSym v1.7.2-0.20240819162932-534ca84b42d5
+	github.com/mandiant/GoReSym v1.7.2-0.20241019185929-45d5c9d6063f
 	github.com/smira/go-xz v0.1.0
 	github.com/stretchr/testify v1.9.0
 	github.com/vishvananda/netns v0.0.0-20211101163701-50045581ed74
-	golang.org/x/arch v0.10.0
+	golang.org/x/arch v0.11.0
 	k8s.io/cri-api v0.31.1
 	k8s.io/cri-client v0.31.1
 	k8s.io/klog/v2 v2.130.1
@@ -60,8 +60,8 @@ require (
 	github.com/josharian/native v1.1.0 // indirect
 	github.com/klauspost/compress v1.16.7 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
-	github.com/mdlayher/netlink v1.6.0 // indirect
-	github.com/mdlayher/socket v0.1.1 // indirect
+	github.com/mdlayher/netlink v1.7.2 // indirect
+	github.com/mdlayher/socket v0.4.1 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/locker v1.0.1 // indirect
 	github.com/moby/sys/mountinfo v0.6.2 // indirect

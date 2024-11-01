@@ -2,6 +2,7 @@ package objfile
 
 import (
 	"errors"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -238,11 +239,48 @@ func RegexpPatternFromYaraPattern(pattern string) (*RegexAndNeedle, error) {
 	return &RegexAndNeedle{patLen, regex_pattern, r, needleOffset, needle}, nil
 }
 
-func FindRegex(data []byte, regexInfo *RegexAndNeedle) []int {
-	data_len := len(data)
-	matches := make([]int, 0)
+func getOrSetRegion(regionMap map[int]map[int]bool, start, end int) bool {
+	if ends, ok := regionMap[start]; ok {
+		if ends[end] {
+			return true
+		} else {
+			ends[end] = true
+			return false
+		}
+	} else {
+		regionMap[start] = map[int]bool{end: true}
+		return false
+	}
+}
 
-	// use an optimized memscan to find some candidates chunks from the much larger haystack
+func regionMapToSlices(regionMap map[int]map[int]bool) [][]int {
+	totalSize := 0
+	keys := make([]int, 0, len(regionMap))
+	for key, valueMap := range regionMap {
+		keys = append(keys, key)
+		totalSize += len(valueMap)
+	}
+	sort.Ints(keys)
+	result := make([][]int, 0, totalSize)
+	for _, key := range keys {
+		values := make([]int, 0, len(regionMap[key]))
+		for value := range regionMap[key] {
+			values = append(values, value)
+		}
+		sort.Ints(values)
+		for _, value := range values {
+			result = append(result, []int{key, value})
+		}
+	}
+	return result
+}
+
+func FindRegex(data []byte, regexInfo *RegexAndNeedle) [][]int {
+	data_len := len(data)
+	matchMap := make(map[int]map[int]bool)
+	cacheMap := make(map[int]map[int]bool)
+
+	// use an optimized memscan to find all candidates chunks from the much larger haystack
 	needleMatches := findAllOccurrences(data, [][]byte{regexInfo.needle})
 	for _, needleMatch := range needleMatches {
 		// adjust the window to the pattern start and end
@@ -258,35 +296,37 @@ func FindRegex(data []byte, regexInfo *RegexAndNeedle) []int {
 			data_end = data_len
 		}
 
+		// don't repeat previously scanned chunks
+		if getOrSetRegion(cacheMap, data_start, data_end) {
+			continue
+		}
 		// do the full regex scan on a very small chunk
 		for _, reMatch := range regexInfo.re.FindAllIndex(data[data_start:data_end], -1) {
 			// the match offset is the start index of the chunk + reMatch index
 			start := reMatch[0] + data_start
+			end := reMatch[1] + data_start
+			getOrSetRegion(matchMap, start, end)
 
-			//end := reMatch[1] + data_start
-			matches = append(matches, start)
-
-			// special case to handle sub-matches, which are skipped by regex but matched by YARA:
-			// AA AA BB CC
-			// { AA [0-1] BB CC }
-			// must produce:
-			// AA AA BB CC
-			// AA BB CC
+			//  handle sub-matches, which are skipped by regex but matched by YARA
 			subStart := start + 1
 			for {
+				// don't repeat previously scanned chunks
+				if getOrSetRegion(cacheMap, subStart, data_end) {
+					break
+				}
 				subMatches := regexInfo.re.FindAllIndex(data[subStart:data_end], -1)
 				if len(subMatches) == 0 {
 					break
 				}
-
 				for _, match := range subMatches {
-					matches = append(matches, match[0]+subStart)
+					getOrSetRegion(matchMap, match[0]+subStart, match[1]+subStart)
 				}
 				subStart += subMatches[0][0] + 1
 			}
 		}
 	}
-	return matches
+
+	return regionMapToSlices(matchMap)
 }
 
 type RegexAndNeedle struct {

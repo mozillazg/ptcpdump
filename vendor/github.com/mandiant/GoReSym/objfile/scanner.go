@@ -94,7 +94,7 @@ func findModuleInitPCHeader(data []byte, sectionBase uint64) []SignatureMatch {
 	}
 
 	for _, match := range FindRegex(data, x64reg) {
-		sigPtr := uint64(match) // from int
+		sigPtr := uint64(match[0]) // from int
 
 		// this is the pointer offset stored in the instruction
 		// 0x44E06A:       48 8D 0D 4F F0 24 00 lea     rcx, off_69D0C0 (result: 0x24f04f)
@@ -119,7 +119,7 @@ func findModuleInitPCHeader(data []byte, sectionBase uint64) []SignatureMatch {
 	}
 
 	for _, match := range FindRegex(data, x86reg) {
-		sigPtr := uint64(match) // from int
+		sigPtr := uint64(match[0]) // from int
 
 		moduleDataPtr := uint64(binary.LittleEndian.Uint32(data[sigPtr+x86sig.moduleDataPtrLoc:][:4]))
 		matches = append(matches, SignatureMatch{
@@ -138,7 +138,7 @@ func findModuleInitPCHeader(data []byte, sectionBase uint64) []SignatureMatch {
 	}
 
 	for _, match := range FindRegex(data, arm64reg) {
-		sigPtr := uint64(match) // from int
+		sigPtr := uint64(match[0]) // from int
 
 		adrp := binary.LittleEndian.Uint32(data[sigPtr+ARM64_sig.moduleDataPtrADRP:][:4])
 		add := binary.LittleEndian.Uint32(data[sigPtr+ARM64_sig.moduleDataPtrADD:][:4])
@@ -169,7 +169,7 @@ func findModuleInitPCHeader(data []byte, sectionBase uint64) []SignatureMatch {
 	}
 
 	for _, match := range FindRegex(data, arm32reg) {
-		sigPtr := uint64(match) // from int
+		sigPtr := uint64(match[0]) // from int
 		ldr := binary.LittleEndian.Uint32(data[sigPtr+ARM32_sig.moduleDataPtrLDR:][:4])
 		// ARM PC relative is always +8 due to legacy nonsense
 		ldr_pointer_stub := uint64((ldr & 0x00000FFF) + 8)
@@ -190,7 +190,7 @@ func findModuleInitPCHeader(data []byte, sectionBase uint64) []SignatureMatch {
 	}
 
 	for _, match := range FindRegex(data, ppcBEreg) {
-		sigPtr := uint64(match) // from int
+		sigPtr := uint64(match[0]) // from int
 		moduleDataPtrHi := int64(binary.BigEndian.Uint16(data[sigPtr+PPC_BE_sig.moduleDataPtrHi:][:2]))
 		// addi takes a signed immediate
 		moduleDataPtrLo := int64(int16(binary.BigEndian.Uint16(data[sigPtr+PPC_BE_sig.moduleDataPtrLo:][:2])))
