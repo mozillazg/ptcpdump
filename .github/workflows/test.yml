@@ -14,11 +14,13 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+
     steps:
-    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
     - name: Set up Go
-      uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5
+      uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5
       with:
         go-version: '1.23'
 
@@ -29,15 +31,17 @@ jobs:
       run: make test
 
     - name: Store executable
-      uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4
+      uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4
       with:
         name: ptcpdump
         path: ptcpdump
 
   run-with-docker:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
       - name: test running with docker
         run: |
@@ -51,25 +55,25 @@ jobs:
       matrix:
         kernel:
           # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
-          - '4.19-20240912.022020'
+          - '4.19-20241031.113911'
           # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
-          - '5.4-20240912.022020'
+          - '5.4-20241031.113911'
           # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
-          - '5.10-20240912.022020'
+          - '5.10-20241031.113911'
           # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
-          - '5.15-20240912.022020'
+          - '5.15-20241031.113911'
           # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
-          - '6.1-20240912.022020'
+          - '6.1-20241031.113911'
           # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
-          - '6.6-20240912.022020'
+          - '6.6-20241031.113911'
           # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
-          - 'bpf-20240912.022020'
+          - 'bpf-20241101.013334'
           # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
-          - 'bpf-next-20240912.022020'
+          - 'bpf-next-20241101.013334'
     timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
       - name: Retrieve stored ptcpdump executable
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4
