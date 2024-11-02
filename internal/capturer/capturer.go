@@ -232,14 +232,14 @@ func (c *Capturer) Start(ctx context.Context, stopFunc context.CancelFunc) error
 }
 
 func (c *Capturer) Stop() {
-	for _, w := range c.opts.Writers {
-		w.Flush()
-	}
-
 	c.opts.PacketConsumer.Stop()
 	c.opts.ExecConsumer.Stop()
 	c.opts.ExitConsumer.Stop()
 	c.opts.Gcr.Stop()
+
+	for _, w := range c.opts.Writers {
+		w.Flush()
+	}
 
 	runClosers(c.closeFuncs)
 }

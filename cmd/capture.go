@@ -106,6 +106,8 @@ func capture(ctx context.Context, stopFunc context.CancelFunc, opts *Options) er
 	counts := getCaptureCounts(caper.BPF(), packetConsumer)
 	utils.OutStderr("%s\n", strings.Join(counts, "\n"))
 
+	stopFunc()
+
 	return nil
 }
 

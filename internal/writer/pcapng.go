@@ -159,6 +159,9 @@ func (w *PcapNGWriter) WithPcapFilter(filter string) *PcapNGWriter {
 }
 
 func (w *PcapNGWriter) Flush() error {
+	w.lock.RLock()
+	defer w.lock.RUnlock()
+
 	return w.pw.Flush()
 }
 
