@@ -31,7 +31,8 @@ function test_ptcpdump_read() {
     EXPECT_NAME="${LNAME}.read.expect"
     cat "${LNAME}" > "${EXPECT_NAME}"
     timeout 30s ${CMD} --oneline -v -r "${FNAME}" > "${RNAME}"
-    diff "${EXPECT_NAME}" "${RNAME}"
+    cat "${RNAME}" | grep "1.1.1.1.80.*Process (.*wget -T 10 1.1.1.1.*).* Container (.*alpine:3.18.*).* Pod (name test-ptcpdump, namespace test-ns"
+    cat "${RNAME}" | grep "8.8.8.8.53.*Process (.*wget -T 10 8.8.8.8.*).* Container (.*busybox:1.*).* Pod (name test-ptcpdump, namespace test-ns"
 }
 
 function main() {

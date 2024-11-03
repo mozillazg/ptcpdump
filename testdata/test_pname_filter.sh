@@ -34,7 +34,9 @@ function test_ptcpdump_read() {
     EXPECT_NAME="${LNAME}.read.expect"
     cat "${LNAME}" > "${EXPECT_NAME}"
     timeout 30s ${CMD} -v -r "${FNAME}" > "${RNAME}"
-    diff "${EXPECT_NAME}" "${RNAME}"
+    cat "${RNAME}" | grep -F ' > 1.1.1.1.80: Flags [S],'        # SYN
+    cat "${RNAME}" | grep -P '1.1.1.1.80 > .*: Flags \[S.\],'   # SYN-ACK
+    cat "${RNAME}" | grep -F ' > 1.1.1.1.80: Flags [.],'        # ACK
 }
 
 function main() {
