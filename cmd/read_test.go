@@ -21,7 +21,7 @@ func TestFormat(t *testing.T) {
 			opts: &Options{
 				readFilePath: "../testdata/format/tcp.pcapng",
 			},
-			expectedOutFile: "../testdata/format/tcp.pcapng.out",
+			expectedOutFile: "../testdata/format/tcp.pcapng.out.txt",
 		},
 		{
 			name: "tcp -v",
@@ -29,7 +29,7 @@ func TestFormat(t *testing.T) {
 				readFilePath: "../testdata/format/tcp.pcapng",
 				verbose:      1,
 			},
-			expectedOutFile: "../testdata/format/tcp.pcapng.-v.out",
+			expectedOutFile: "../testdata/format/tcp.pcapng.-v.out.txt",
 		},
 		{
 			name: "tcp -q",
@@ -37,7 +37,7 @@ func TestFormat(t *testing.T) {
 				readFilePath: "../testdata/format/tcp.pcapng",
 				quiet:        true,
 			},
-			expectedOutFile: "../testdata/format/tcp.pcapng.-q.out",
+			expectedOutFile: "../testdata/format/tcp.pcapng.-q.out.txt",
 		},
 		{
 			name: "tcp -A",
@@ -45,7 +45,7 @@ func TestFormat(t *testing.T) {
 				readFilePath:     "../testdata/format/tcp.pcapng",
 				printDataAsASCII: true,
 			},
-			expectedOutFile: "../testdata/format/tcp.pcapng.-A.out",
+			expectedOutFile: "../testdata/format/tcp.pcapng.-A.out.txt",
 		},
 		{
 			name: "tcp -x",
@@ -53,7 +53,7 @@ func TestFormat(t *testing.T) {
 				readFilePath:   "../testdata/format/tcp.pcapng",
 				printDataAsHex: 1,
 			},
-			expectedOutFile: "../testdata/format/tcp.pcapng.-x.out",
+			expectedOutFile: "../testdata/format/tcp.pcapng.-x.out.txt",
 		},
 		{
 			name: "tcp -xx",
@@ -61,7 +61,7 @@ func TestFormat(t *testing.T) {
 				readFilePath:   "../testdata/format/tcp.pcapng",
 				printDataAsHex: 2,
 			},
-			expectedOutFile: "../testdata/format/tcp.pcapng.-xx.out",
+			expectedOutFile: "../testdata/format/tcp.pcapng.-xx.out.txt",
 		},
 		{
 			name: "tcp -X",
@@ -69,7 +69,7 @@ func TestFormat(t *testing.T) {
 				readFilePath:        "../testdata/format/tcp.pcapng",
 				printDataAsHexASCII: 1,
 			},
-			expectedOutFile: "../testdata/format/tcp.pcapng.-X.out",
+			expectedOutFile: "../testdata/format/tcp.pcapng.-X.out.txt",
 		},
 		{
 			name: "tcp -XX",
@@ -77,35 +77,35 @@ func TestFormat(t *testing.T) {
 				readFilePath:        "../testdata/format/tcp.pcapng",
 				printDataAsHexASCII: 2,
 			},
-			expectedOutFile: "../testdata/format/tcp.pcapng.-XX.out",
+			expectedOutFile: "../testdata/format/tcp.pcapng.-XX.out.txt",
 		},
 		{
 			name: "mptcp",
 			opts: &Options{
 				readFilePath: "../testdata/format/mptcp.pcap",
 			},
-			expectedOutFile: "../testdata/format/mptcp.pcap.out",
+			expectedOutFile: "../testdata/format/mptcp.pcap.out.txt",
 		},
 		{
 			name: "tfo and sack",
 			opts: &Options{
 				readFilePath: "../testdata/format/tfo.pcap",
 			},
-			expectedOutFile: "../testdata/format/tfo.pcap.out",
+			expectedOutFile: "../testdata/format/tfo.pcap.out.txt",
 		},
 		{
 			name: "udp",
 			opts: &Options{
 				readFilePath: "../testdata/format/udp.pcap",
 			},
-			expectedOutFile: "../testdata/format/udp.pcap.out",
+			expectedOutFile: "../testdata/format/udp.pcap.out.txt",
 		},
 		{
 			name: "udp dns",
 			opts: &Options{
 				readFilePath: "../testdata/format/dns.pcapng",
 			},
-			expectedOutFile: "../testdata/format/dns.pcapng.out",
+			expectedOutFile: "../testdata/format/dns.pcapng.out.txt",
 		},
 		{
 			name: "udp dns -q",
@@ -113,7 +113,7 @@ func TestFormat(t *testing.T) {
 				readFilePath: "../testdata/format/dns.pcapng",
 				quiet:        true,
 			},
-			expectedOutFile: "../testdata/format/dns.pcapng.-q.out",
+			expectedOutFile: "../testdata/format/dns.pcapng.-q.out.txt",
 		},
 	}
 	for _, tt := range tests {
