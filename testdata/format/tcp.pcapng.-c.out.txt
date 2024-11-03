@@ -1,0 +1,2 @@
+13:50:35.524360 lo curl.345650 Out IP 127.0.0.1.58694 > 127.0.0.1.8000: Flags [S], seq 217911223, win 65495, options [mss 65495,sackOK,TS val 2363239505 ecr 0,nop,wscale 7], length 0, ParentProc [ptcpdump.345626]
+13:50:35.524995 lo curl.345650 In IP 127.0.0.1.58694 > 127.0.0.1.8000: Flags [S], seq 217911223, win 65495, options [mss 65495,sackOK,TS val 2363239505 ecr 0,nop,wscale 7], length 0, ParentProc [ptcpdump.345626]

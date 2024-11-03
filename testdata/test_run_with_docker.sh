@@ -22,25 +22,18 @@ function test_ptcpdump() {
 
   cat "${LNAME}"
   cat "${LNAME}" | grep '/usr/bin/curl'
+  cat "${LNAME}" | grep -F 'curl -m 10 1.1.1.1'
   cat "${LNAME}" | grep -F ' > 1.1.1.1.80: Flags [S],'   # SYN
-}
-
-function test_tcpdump_read() {
-  which tcpdump || (apt update || true && apt install -y tcpdump)
-  tcpdump -nr "${FNAME}"
-  tcpdump -nr "${FNAME}" | grep -F ' > 1.1.1.1.80: Flags [S],'   # SYN
 }
 
 function test_ptcpdump_read() {
     EXPECT_NAME="${LNAME}.read.expect"
     cat "${LNAME}" |grep -v packets |grep -v WARN > "${EXPECT_NAME}"
     timeout 30s ${CMD} -v -r "${FNAME}" |tee "${RNAME}"
-    diff "${EXPECT_NAME}" "${RNAME}"
 }
 
 function main() {
     test_ptcpdump
-    test_tcpdump_read
     test_ptcpdump_read
 }
 

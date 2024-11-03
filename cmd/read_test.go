@@ -24,6 +24,14 @@ func TestFormat(t *testing.T) {
 			expectedOutFile: "../testdata/format/tcp.pcapng.out.txt",
 		},
 		{
+			name: "tcp -c",
+			opts: &Options{
+				readFilePath:   "../testdata/format/tcp.pcapng",
+				maxPacketCount: 2,
+			},
+			expectedOutFile: "../testdata/format/tcp.pcapng.-c.out.txt",
+		},
+		{
 			name: "tcp -v",
 			opts: &Options{
 				readFilePath: "../testdata/format/tcp.pcapng",

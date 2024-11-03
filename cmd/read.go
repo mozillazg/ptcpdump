@@ -3,11 +3,11 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"github.com/mozillazg/ptcpdump/internal/utils"
 	"io"
 	"os"
 	"path/filepath"
 
+	"github.com/mozillazg/ptcpdump/internal/log"
 	"github.com/mozillazg/ptcpdump/internal/metadata"
 	"github.com/mozillazg/ptcpdump/internal/parser"
 	"github.com/mozillazg/ptcpdump/internal/writer"
@@ -15,7 +15,7 @@ import (
 
 func read(ctx context.Context, opts *Options) error {
 	fpath := opts.ReadPath()
-	utils.OutStderr("reading from file %s\n", fpath)
+	log.Warnf("reading from file %s", fpath)
 
 	f, err := os.Open(fpath)
 	if err != nil {
@@ -45,7 +45,7 @@ func read(ctx context.Context, opts *Options) error {
 		}
 	}
 
-	var n int64
+	var n uint
 	for {
 		e, err := p.Parse()
 		if err != nil {
@@ -58,6 +58,9 @@ func read(ctx context.Context, opts *Options) error {
 			return err
 		}
 		n++
+		if opts.maxPacketCount > 0 && opts.maxPacketCount <= n {
+			break
+		}
 	}
 	if opts.onlyPrintCount {
 		fmt.Printf("%d packets\n", n)
