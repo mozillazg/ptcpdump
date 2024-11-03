@@ -51,6 +51,7 @@ type Options struct {
 	DirectionOut   bool
 	DirectionIn    bool
 	OneLine        bool
+	Quiet          bool
 
 	PrintPacketNumber   bool
 	DontPrintTimestamp  bool

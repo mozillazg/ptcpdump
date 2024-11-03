@@ -22,7 +22,7 @@ func logFatal(err error) {
 	log.Fatalf("%+v", err)
 }
 
-func setupLogger(opts Options) {
+func setupLogger(opts *Options) {
 	switch opts.logLevel {
 	case "debug":
 		log.SetLevel(plog.DebugLevel)

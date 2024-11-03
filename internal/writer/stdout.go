@@ -22,6 +22,7 @@ type StdoutWriter struct {
 	NoTimestamp   bool
 	TimestampNano bool
 	DoNothing     bool
+	Quiet         bool
 	FormatStyle   pktdump.FormatStyle
 	DataStyle     pktdump.ContentStyle
 
@@ -85,8 +86,9 @@ func (w *StdoutWriter) Write(e *event.Packet) error {
 		HeaderStyle:   w.FormatStyle,
 		ContentStyle:  w.DataStyle,
 		ContentIndent: "        ",
+		Quiet:         w.Quiet,
 	}
-	formatedHeader := pktdump.FormatWithOptions(packet, formatOpts)
+	formatedHeader := (&pktdump.Formatter{}).FormatWithOptions(packet, formatOpts)
 	formatedData := formatOpts.FormatedContent
 
 	builder := strings.Builder{}

@@ -45,6 +45,7 @@ Table of Contents
 * 直接在内核态应用过滤规则，避免在用户态应用过滤规则导致的性能问题
 * 支持以 pcap 或 PcapNG 保存捕获的流程, 可以使用 Wireshark、tcpdump、tshark 等第三方工具对保存的数据进行二次分析.
 * 以静态链接的方式编译程序，不依赖额外的系统链接库
+* 支持对指定网络命名空间下的网络接口进行抓包
 
 
 ## Installation
@@ -76,7 +77,7 @@ sudo ptcpdump -i eth0 -A -s 0 -n -v tcp and port 80 and host 10.10.1.1
 sudo ptcpdump -i eth0 'tcp[tcpflags] & (tcp-syn|tcp-fin) != 0'
 ```
 
-过滤多个网络接口：
+对多个网络接口进行抓包：
 
 ```
 sudo ptcpdump -i eth0 -i lo
@@ -116,6 +117,15 @@ sudo ptcpdump -i any -w - port 80 | tcpdump -n -r -
 sudo ptcpdump -i any -w - port 80 | tshark -r -
 ```
 
+支持对其他网络命名空间下的网络接口进行抓包:
+
+```
+sudo ptcpdump -i lo --netns /run/netns/foo --netns /run/netns/bar
+sudo ptcpdump -i any --netns /run/netns/foobar
+sudo ptcpdump -i any --netns /proc/26/ns/net
+```
+
+
 <p align="right"><a href="#top">🔝</a></p>
 
 
@@ -127,6 +137,13 @@ sudo ptcpdump -i any -w - port 80 | tshark -r -
 ```
 09:32:09.718892 vethee2a302f wget.3553008 In IP 10.244.0.2.33426 > 139.178.84.217.80: Flags [S], seq 4113492822, win 64240, length 0, ParentProc [python3.834381], Container [test], Pod [test.default]
 09:32:09.718941 eth0 wget.3553008 Out IP 172.19.0.2.33426 > 139.178.84.217.80: Flags [S], seq 4113492822, win 64240, length 0, ParentProc [python3.834381], Container [test], Pod [test.default]
+```
+
+通过 `-q` 参数指定不输出协议详细信息:
+
+```
+09:32:09.718892 vethee2a302f wget.3553008 In IP 10.244.0.2.33426 > 139.178.84.217.80: tcp 0, ParentProc [python3.834381], Container [test], Pod [test.default]
+09:32:09.718941 eth0 wget.3553008 Out IP 172.19.0.2.33426 > 139.178.84.217.80: tcp 0, ParentProc [python3.834381], Container [test], Pod [test.default]
 ```
 
 通过 `-v` 参数以详细方式输出:
@@ -228,6 +245,7 @@ Flags:
       --delay-before-handle-packet-events duration   Delay some durations before handle packet events
   -Q, --direction string                             Choose send/receive direction for which packets should be captured. Possible values are 'in', 'out' and 'inout' (default "inout")
       --docker-address string                        Address of Docker Engine service (default "/var/run/docker.sock")
+      --embed-keylog-to-pcapng -- CMD [ARGS]         Write TLS Key Log file to this path (experimental: only support unstripped Go binary and must combined with -- CMD [ARGS])
       --event-chan-size uint                         Size of event chan (default 20)
       --exec-events-worker-number uint               Number of worker to handle exec events (default 50)
   -f, --follow-forks                                 Trace child processes as they are created by currently traced processes when filter by process
@@ -238,6 +256,7 @@ Flags:
       --log-level string                             Set the logging level ("debug", "info", "warn", "error", "fatal") (default "warn")
       --micro                                        Shorthands for --time-stamp-precision=micro
       --nano                                         Shorthands for --time-stamp-precision=nano
+      --netns strings                                Path to an network namespace file or name (default [/proc/self/ns/net])
   -n, --no-convert-addr count                        Don't convert addresses (i.e., host addresses, port numbers, etc.) to names
   -t, --no-timestamp                                 Don't print a timestamp on each dump line
   -#, --number                                       Print an optional packet number at the beginning of the line
@@ -249,6 +268,7 @@ Flags:
   -A, --print-data-in-ascii                          Print each packet (minus its link level header) in ASCII
   -x, --print-data-in-hex count                      When parsing and printing, in addition to printing the headers of each packet, print the data of each packet in hex
   -X, --print-data-in-hex-ascii count                When parsing and printing, in addition to printing the headers of each packet, print the data of each packet in hex and ASCII
+  -q, --quiet                                        Quiet output. Print less protocol information so output lines are shorter
   -r, --read-file string                             Read packets from file (which was created with the -w option). e.g. ptcpdump.pcapng
   -c, --receive-count uint                           Exit after receiving count packets
   -s, --snapshot-length uint32                       Snarf snaplen bytes of data from each packet rather than the default of 262144 bytes (default 262144)
@@ -256,6 +276,8 @@ Flags:
   -v, --verbose count                                When parsing and printing, produce (slightly more) verbose output
       --version                                      Print the ptcpdump and libpcap version strings and exit
   -w, --write-file string                            Write the raw packets to file rather than parsing and printing them out. They can later be printed with the -r option. Standard output is used if file is '-'. e.g. ptcpdump.pcapng
+      --write-keylog-file -- CMD [ARGS]              Write TLS Key Log file to this path (experimental: only support unstripped Go binary and must combined with -- CMD [ARGS])
+
 ```
 
 <p align="right"><a href="#top">🔝</a></p>
@@ -282,21 +304,22 @@ Flags:
 | --pod-name *pod_name.namespace*                   |         | ✅                        |
 | -f, --follow-forks                                |         | ✅                        |
 | -- *command [args]*                               |         | ✅                        |
-| --oneline                                       |         | ✅                        |
+| --oneline                                         |         | ✅                        |
+| --netns *path_to_net_ns*                          |         | ✅                        |
 | --print                                           | ✅       | ✅                        |
 | -c *count*                                        | ✅       | ✅                        |
 | -Q *direction*, --direction=*direction*           | ✅       | ✅                        |
 | -D, --list-interfaces                             | ✅       | ✅                        |
 | -A                                                | ✅       | ✅                        |
-| -x                                                | ✅       | ✅                      |
-| -xx                                               | ✅       | ✅                      |
-| -X                                                | ✅       | ✅                     |
-| -XX                                               | ✅       | ✅                     |
-| -v                                                | ✅       | ✅                       |
-| -vv                                               | ✅       | ⭕                       |
-| -vvv                                              | ✅       | ⭕                       |
+| -x                                                | ✅       | ✅                        |
+| -xx                                               | ✅       | ✅                        |
+| -X                                                | ✅       | ✅                        |
+| -XX                                               | ✅       | ✅                        |
+| -v                                                | ✅       | ✅                        |
+| -vv                                               | ✅       | ⭕                        |
+| -vvv                                              | ✅       | ⭕                        |
 | -B *bufer_size*, --buffer-size=*buffer_size*      | ✅       |                          |
-| --count                                           | ✅       | ✅                       |
+| --count                                           | ✅       | ✅                        |
 | -C *file_size                                     | ✅       |                          |
 | -d                                                | ✅       |                          |
 | -dd                                               | ✅       |                          |
@@ -312,23 +335,24 @@ Flags:
 | --immediate-mode                                  | ✅       |                          |
 | -j *tstamp_type*, --time-stamp-type=*tstamp_type* | ✅       |                          |
 | -J, --list-time-stamp-types                       | ✅       |                          |
-| --time-stamp-precision=*tstamp_precision*         | ✅       | ✅                       |
-| --micro                                           | ✅       | ✅                       |
-| --nano                                            | ✅       | ✅                       |
+| --time-stamp-precision=*tstamp_precision*         | ✅       | ✅                        |
+| --micro                                           | ✅       | ✅                        |
+| --nano                                            | ✅       | ✅                        |
 | -K, --dont-verify-checksums                       | ✅       |                          |
 | -l                                                | ✅       |                          |
 | -L, --list-data-link-types                        | ✅       |                          |
 | -m *module*                                       | ✅       |                          |
 | -M *secret*                                       | ✅       |                          |
-| -n                                                | ✅       | ✅                       |
+| -n                                                | ✅       | ✅                        |
 | -N                                                | ✅       |                          |
-| -#, --number                                      | ✅       | ✅                       |
+| -#, --number                                      | ✅       | ✅                        |
 | -O, --no-optimize                                 | ✅       |                          |
 | -p, --no-promiscuous-mode                         | ✅       | ⛔                        |
+| -q                                                | ✅       | ✅                        |
 | -S, --absolute-tcp-sequence-numbers               | ✅       |                          |
-| -s *snaplen*, --snapshot-length=*snaplen*         | ✅       | ✅                       |
+| -s *snaplen*, --snapshot-length=*snaplen*         | ✅       | ✅                        |
 | -T *type*                                         | ✅       |                          |
-| -t                                                | ✅       | ✅                       |
+| -t                                                | ✅       | ✅                        |
 | -tt                                               | ✅       | ⭕                        |
 | -ttt                                              | ✅       | ⭕                        |
 | -tttt                                             | ✅       | ⭕                        |

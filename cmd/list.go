@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-func listInterfaces(opts Options) error {
+func listInterfaces(opts *Options) error {
 	opts.ifaces = nil
 	devices, err := opts.GetDevices()
 	if err != nil {

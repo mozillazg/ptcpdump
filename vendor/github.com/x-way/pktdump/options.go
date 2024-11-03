@@ -10,6 +10,8 @@ type Options struct {
 
 	rawContent      []byte
 	FormatedContent []byte
+
+	Quiet bool
 }
 
 const (

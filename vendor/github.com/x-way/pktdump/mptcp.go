@@ -502,8 +502,15 @@ func mptcpPrint(options *mptcpPrintOptions, opt layers.TCPOption) string {
 	buf.WriteString(fmt.Sprintf(" %d", length))
 	buf.WriteString(fmt.Sprintf(" %s", MPTCPPrintOptions[subtype].Name))
 
-	// Call the corresponding print function for the subtype.
-	MPTCPPrintOptions[subtype].Print(options, opt, &buf)
+	func() {
+		defer func() {
+			if err := recover(); err != nil {
+				buf.WriteString("[bad opt]")
+			}
+		}()
+		// Call the corresponding print function for the subtype.
+		MPTCPPrintOptions[subtype].Print(options, opt, &buf)
+	}()
 
 	return buf.String()
 }

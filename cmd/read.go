@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/mozillazg/ptcpdump/internal/utils"
 	"io"
 	"os"
 	"path/filepath"
@@ -12,8 +13,11 @@ import (
 	"github.com/mozillazg/ptcpdump/internal/writer"
 )
 
-func read(ctx context.Context, opts Options) error {
-	f, err := os.Open(opts.ReadPath())
+func read(ctx context.Context, opts *Options) error {
+	fpath := opts.ReadPath()
+	utils.OutStderr("reading from file %s\n", fpath)
+
+	f, err := os.Open(fpath)
 	if err != nil {
 		return err
 	}
@@ -21,10 +25,10 @@ func read(ctx context.Context, opts Options) error {
 
 	var p parser.Parser
 	pcache := metadata.NewProcessCache()
-	stdoutWriter := writer.NewStdoutWriter(os.Stdout, pcache)
+	stdoutWriter := writer.NewStdoutWriter(opts.getStdout(), pcache)
 	opts.applyToStdoutWriter(stdoutWriter)
 
-	ext := filepath.Ext(opts.ReadPath())
+	ext := filepath.Ext(fpath)
 	switch ext {
 	case extPcap:
 		pr, err := parser.NewPcapParser(f)
