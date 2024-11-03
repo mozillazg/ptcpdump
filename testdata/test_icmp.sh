@@ -29,17 +29,9 @@ function test_tcpdump_read() {
 
 }
 
-function test_ptcpdump_read() {
-    EXPECT_NAME="${LNAME}.read.expect"
-    cat "${LNAME}" > "${EXPECT_NAME}"
-    timeout 30s ${CMD} -v -r "${FNAME}" > "${RNAME}"
-    diff "${EXPECT_NAME}" "${RNAME}"
-}
-
 function main() {
     test_ptcpdump
     test_tcpdump_read
-    test_ptcpdump_read
 }
 
 main

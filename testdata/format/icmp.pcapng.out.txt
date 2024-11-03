@@ -1,0 +1,4 @@
+11:21:55.924811 ens33 ping.459141 Out IP 10.0.2.15 > 1.1.1.1: ICMP echo request, id 9, seq 1, length 64, ParentProc [bash.45198]
+11:21:56.120630 ens33 In IP 1.1.1.1 > 10.0.2.15: ICMP echo reply, id 9, seq 1, length 64
+11:21:57.926185 ens33 ping.459141 Out IP 10.0.2.15 > 1.1.1.1: ICMP echo request, id 9, seq 2, length 64, ParentProc [bash.45198]
+11:21:58.120455 ens33 In IP 1.1.1.1 > 10.0.2.15: ICMP echo reply, id 9, seq 2, length 64

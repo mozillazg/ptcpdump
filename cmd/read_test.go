@@ -123,6 +123,20 @@ func TestFormat(t *testing.T) {
 			},
 			expectedOutFile: "../testdata/format/dns.pcapng.-q.out.txt",
 		},
+		{
+			name: "arp",
+			opts: &Options{
+				readFilePath: "../testdata/format/arp.pcapng",
+			},
+			expectedOutFile: "../testdata/format/arp.pcapng.out.txt",
+		},
+		{
+			name: "icmp",
+			opts: &Options{
+				readFilePath: "../testdata/format/icmp.pcapng",
+			},
+			expectedOutFile: "../testdata/format/icmp.pcapng.out.txt",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
