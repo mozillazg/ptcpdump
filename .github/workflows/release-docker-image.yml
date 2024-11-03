@@ -59,7 +59,7 @@ jobs:
 
       - name: generate tag name
         run: |
-          echo TAG_NAME=${{ github.ref }} | sed 's/=v/=/' >> $GITHUB_ENV
+          echo TAG_NAME=${{ github.ref }} | sed 's#=refs/tags/v#=#' >> $GITHUB_ENV
 
       # Build and push Docker image with Buildx (don't push on PR)
       # https://github.com/docker/build-push-action
