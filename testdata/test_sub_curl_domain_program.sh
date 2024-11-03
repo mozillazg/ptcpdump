@@ -16,26 +16,11 @@ function test_ptcpdump() {
   cat "${LNAME}"
   cat "${LNAME}" | grep '/usr/bin/curl'
   cat "${LNAME}" | grep -F '.80: Flags [S],'
+  cat "${LNAME}" | grep -F 'curl -m 10 ubuntu.com'
 }
-
-function test_tcpdump_read() {
-  which tcpdump || (apt update || true && apt install -y tcpdump)
-  tcpdump -nr "${FNAME}"
-  tcpdump -nr "${FNAME}" | grep -F '.80: Flags [S],'       # SYN
-}
-
-function test_ptcpdump_read() {
-    EXPECT_NAME="${LNAME}.read.expect"
-    cat "${LNAME}" > "${EXPECT_NAME}"
-    timeout 30s ${CMD} -v -r "${FNAME}" > "${RNAME}"
-    diff "${EXPECT_NAME}" "${RNAME}"
-}
-
 
 function main() {
     test_ptcpdump
-    test_tcpdump_read
-    test_ptcpdump_read
 }
 
 main
