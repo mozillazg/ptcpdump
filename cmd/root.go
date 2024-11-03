@@ -12,7 +12,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var opts = Options{}
+var opts = &Options{}
 
 var rootCmd = &cobra.Command{
 	Use: `ptcpdump [flags] [expression] [-- command [args]]
@@ -36,7 +36,7 @@ Expression: see "man 7 pcap-filter"`,
 		" it adds process info as packet comments for each Packet when possible.\n" +
 		" More info: https://github.com/mozillazg/ptcpdump",
 	Run: func(cmd *cobra.Command, args []string) {
-		prepareOptions(&opts, os.Args, args)
+		prepareOptions(opts, os.Args, args)
 		setupLogger(opts)
 
 		err := run(opts)
@@ -125,6 +125,8 @@ func init() {
 
 	rootCmd.Flags().StringSliceVar(&opts.netNsPaths, "netns", []string{"/proc/self/ns/net"},
 		"Path to an network namespace file or name")
+	rootCmd.Flags().BoolVarP(&opts.quiet, "quiet", "q", false,
+		"Quiet output. Print less protocol information so output lines are shorter")
 
 	silenceKlog()
 }
@@ -133,7 +135,7 @@ func Execute() error {
 	return rootCmd.Execute()
 }
 
-func run(opts Options) error {
+func run(opts *Options) error {
 	ctx, stopFunc := signal.NotifyContext(
 		context.Background(), syscall.SIGINT, syscall.SIGTERM,
 	)
@@ -149,7 +151,7 @@ func run(opts Options) error {
 	case opts.ReadPath() != "":
 		return read(ctx, opts)
 	default:
-		return capture(ctx, stopFunc, &opts)
+		return capture(ctx, stopFunc, opts)
 	}
 
 	return nil

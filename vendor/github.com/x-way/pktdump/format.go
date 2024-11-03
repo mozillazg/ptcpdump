@@ -10,8 +10,13 @@ import (
 	"github.com/gopacket/gopacket/layers"
 )
 
-func formatPacketTCP(tcp *layers.TCP, src, dst string, length int, style FormatStyle) string {
+func (f *Formatter) formatPacketTCP(tcp *layers.TCP, src, dst string, length int) string {
 	length -= int(tcp.DataOffset) * 4
+
+	if f.opts.Quiet {
+		return fmt.Sprintf("%s.%d > %s.%d: tcp %d", src, tcp.SrcPort, dst, tcp.DstPort, length)
+	}
+
 	flags := ""
 	if tcp.FIN {
 		flags += "F"
@@ -44,7 +49,7 @@ func formatPacketTCP(tcp *layers.TCP, src, dst string, length int, style FormatS
 		flags = "none"
 	}
 	out := fmt.Sprintf("%s.%d > %s.%d: Flags [%s]", src, tcp.SrcPort, dst, tcp.DstPort, flags)
-	if style >= FormatStyleVerbose {
+	if f.opts.HeaderStyle >= FormatStyleVerbose {
 		out += fmt.Sprintf(", cksum 0x%x", tcp.Checksum)
 	}
 	if length > 0 || tcp.SYN || tcp.FIN || tcp.RST || tcp.ACK {
@@ -105,7 +110,7 @@ func formatPacketTCP(tcp *layers.TCP, src, dst string, length int, style FormatS
 	return out
 }
 
-func formatPacketSIP(sip *layers.SIP, src, dst string, srcPort, dstPort int, style FormatStyle) string {
+func (f *Formatter) formatPacketSIP(sip *layers.SIP, src, dst string, srcPort, dstPort int) string {
 	sipStr := "SIP: "
 	if sip.IsResponse {
 		sipStr += fmt.Sprintf("%s %d %s", sip.Version, sip.ResponseCode, sip.ResponseStatus)
@@ -115,7 +120,7 @@ func formatPacketSIP(sip *layers.SIP, src, dst string, srcPort, dstPort int, sty
 	return fmt.Sprintf("%s.%d > %s.%d: %s", src, srcPort, dst, dstPort, sipStr)
 }
 
-func formatPacketICMPv6(packet *gopacket.Packet, icmp *layers.ICMPv6, src, dst string, length int, style FormatStyle) string {
+func (f *Formatter) formatPacketICMPv6(packet *gopacket.Packet, icmp *layers.ICMPv6, src, dst string, length int) string {
 	switch icmpType := icmp.TypeCode.Type(); icmpType {
 	case layers.ICMPv6TypeEchoRequest:
 		if echoLayer := (*packet).Layer(layers.LayerTypeICMPv6Echo); echoLayer != nil {
@@ -131,7 +136,7 @@ func formatPacketICMPv6(packet *gopacket.Packet, icmp *layers.ICMPv6, src, dst s
 	return fmt.Sprintf("%s > %s: ICMP6, length %d", src, dst, length)
 }
 
-func formatPacketICMPv4(icmp *layers.ICMPv4, src, dst string, length int, style FormatStyle) string {
+func (f *Formatter) formatPacketICMPv4(icmp *layers.ICMPv4, src, dst string, length int) string {
 	switch icmpType := icmp.TypeCode.Type(); icmpType {
 	case layers.ICMPv4TypeEchoRequest:
 		return fmt.Sprintf("%s > %s: ICMP echo request, id %d, seq %d, length %d", src, dst, icmp.Id, icmp.Seq, length)
@@ -142,7 +147,7 @@ func formatPacketICMPv4(icmp *layers.ICMPv4, src, dst string, length int, style 
 	}
 }
 
-func formatPacketDNS(dns *layers.DNS, src, dst string, srcPort, dstPort, length int, style FormatStyle) string {
+func (f *Formatter) formatPacketDNS(dns *layers.DNS, src, dst string, srcPort, dstPort, length int) string {
 	dnsStr := ""
 	if dns.QR {
 		dnsStr = fmt.Sprintf("%d", dns.ID)
@@ -305,24 +310,28 @@ func formatPacketDNS(dns *layers.DNS, src, dst string, srcPort, dstPort, length 
 	return fmt.Sprintf("%s.%d > %s.%d: %s (%d)", src, srcPort, dst, dstPort, dnsStr, length)
 }
 
-func formatPacketUDP(packet *gopacket.Packet, udp *layers.UDP, src, dst string, style FormatStyle) string {
+func (f *Formatter) formatPacketUDP(packet *gopacket.Packet, udp *layers.UDP, src, dst string) string {
 	length := int(udp.Length) - 8
-	if udp.SrcPort == 53 || udp.DstPort == 53 || udp.SrcPort == 5353 || udp.DstPort == 5353 {
-		if dnsLayer := (*packet).Layer(layers.LayerTypeDNS); dnsLayer != nil {
-			dns, _ := dnsLayer.(*layers.DNS)
-			return formatPacketDNS(dns, src, dst, int(udp.SrcPort), int(udp.DstPort), length, style)
+
+	if !f.opts.Quiet {
+		if udp.SrcPort == 53 || udp.DstPort == 53 || udp.SrcPort == 5353 || udp.DstPort == 5353 {
+			if dnsLayer := (*packet).Layer(layers.LayerTypeDNS); dnsLayer != nil {
+				dns, _ := dnsLayer.(*layers.DNS)
+				return f.formatPacketDNS(dns, src, dst, int(udp.SrcPort), int(udp.DstPort), length)
+			}
+		}
+		if udp.DstPort == 5060 || udp.SrcPort == 5060 {
+			if sipLayer := (*packet).Layer(layers.LayerTypeSIP); sipLayer != nil {
+				sip, _ := sipLayer.(*layers.SIP)
+				return f.formatPacketSIP(sip, src, dst, int(udp.SrcPort), int(udp.DstPort))
+			}
 		}
 	}
-	if udp.DstPort == 5060 || udp.SrcPort == 5060 {
-		if sipLayer := (*packet).Layer(layers.LayerTypeSIP); sipLayer != nil {
-			sip, _ := sipLayer.(*layers.SIP)
-			return formatPacketSIP(sip, src, dst, int(udp.SrcPort), int(udp.DstPort), style)
-		}
-	}
+
 	return fmt.Sprintf("%s.%d > %s.%d: UDP, length %d", src, udp.SrcPort, dst, udp.DstPort, length)
 }
 
-func formatPacketOSPF(ospf layers.OSPF, src, dst string, length int, style FormatStyle) string {
+func (f *Formatter) formatPacketOSPF(ospf layers.OSPF, src, dst string, length int) string {
 	var ospfType string
 	switch ospf.Type {
 	case layers.OSPFHello:
@@ -345,7 +354,7 @@ func formatPacketOSPF(ospf layers.OSPF, src, dst string, length int, style Forma
 	return fmt.Sprintf("%s > %s: OSPFv%d, %s, length %d", src, dst, ospf.Version, ospfType, length)
 }
 
-func formatPacketGRE(gre *layers.GRE, src, dst string, length int, style FormatStyle) string {
+func (f *Formatter) formatPacketGRE(gre *layers.GRE, src, dst string, length int) string {
 	out := fmt.Sprintf("%s > %s: GREv%d", src, dst, gre.Version)
 	switch gre.Version {
 	case 0:
@@ -376,9 +385,9 @@ func formatPacketGRE(gre *layers.GRE, src, dst string, length int, style FormatS
 		out += fmt.Sprintf(", length %d: ", length)
 		switch gre.Protocol {
 		case layers.EthernetTypeIPv4:
-			out += FormatWithStyle(gopacket.NewPacket(gre.LayerPayload(), layers.LayerTypeIPv4, gopacket.Default), style)
+			out += FormatWithStyle(gopacket.NewPacket(gre.LayerPayload(), layers.LayerTypeIPv4, gopacket.Default), f.opts.HeaderStyle)
 		case layers.EthernetTypeIPv6:
-			out += FormatWithStyle(gopacket.NewPacket(gre.LayerPayload(), layers.LayerTypeIPv6, gopacket.Default), style)
+			out += FormatWithStyle(gopacket.NewPacket(gre.LayerPayload(), layers.LayerTypeIPv6, gopacket.Default), f.opts.HeaderStyle)
 		default:
 			out += fmt.Sprintf("gre-proto-0x%x", gre.Protocol&0xffff)
 		}
@@ -401,7 +410,7 @@ func formatPacketGRE(gre *layers.GRE, src, dst string, length int, style FormatS
 			case layers.EthernetTypePPP:
 				if pppLayer := gopacket.NewPacket(gre.LayerPayload(), layers.LayerTypePPP, gopacket.Default).Layer(layers.LayerTypePPP); pppLayer != nil {
 					ppp, _ := pppLayer.(*layers.PPP)
-					out += formatPacketPPP(ppp, style)
+					out += f.formatPacketPPP(ppp)
 				}
 			default:
 				out += fmt.Sprintf("gre-proto-0x%x", gre.Protocol&0xffff)
@@ -413,12 +422,12 @@ func formatPacketGRE(gre *layers.GRE, src, dst string, length int, style FormatS
 	return out
 }
 
-func formatPacketPPP(ppp *layers.PPP, style FormatStyle) string {
+func (f *Formatter) formatPacketPPP(ppp *layers.PPP) string {
 	switch ppp.PPPType {
 	case layers.PPPTypeIPv4:
-		return FormatWithStyle(gopacket.NewPacket(ppp.LayerPayload(), layers.LayerTypeIPv4, gopacket.Default), style)
+		return FormatWithStyle(gopacket.NewPacket(ppp.LayerPayload(), layers.LayerTypeIPv4, gopacket.Default), f.opts.HeaderStyle)
 	case layers.PPPTypeIPv6:
-		return FormatWithStyle(gopacket.NewPacket(ppp.LayerPayload(), layers.LayerTypeIPv6, gopacket.Default), style)
+		return FormatWithStyle(gopacket.NewPacket(ppp.LayerPayload(), layers.LayerTypeIPv6, gopacket.Default), f.opts.HeaderStyle)
 	case layers.PPPTypeMPLSUnicast:
 		return fmt.Sprintf("MPLS, length %d", len(ppp.LayerPayload()))
 	case layers.PPPTypeMPLSMulticast:
@@ -428,7 +437,7 @@ func formatPacketPPP(ppp *layers.PPP, style FormatStyle) string {
 	}
 }
 
-func formatIPv4(ipv4 *layers.IPv4, opts *Options) string {
+func (f *Formatter) formatIPv4(ipv4 *layers.IPv4) string {
 	fields := []string{}
 	fields = append(fields, fmt.Sprintf("tos 0x%x", ipv4.TOS))
 	fields = append(fields, fmt.Sprintf("ttl %d", ipv4.TTL))
@@ -445,7 +454,7 @@ func formatIPv4(ipv4 *layers.IPv4, opts *Options) string {
 	return strings.Join(fields, ", ")
 }
 
-func formatIPv6(ipv6 *layers.IPv6, opts *Options) string {
+func (f *Formatter) formatIPv6(ipv6 *layers.IPv6) string {
 	fields := []string{}
 	fields = append(fields, fmt.Sprintf("flowlabel 0x%x", ipv6.FlowLabel))
 	fields = append(fields, fmt.Sprintf("hlim %d", ipv6.HopLimit))
@@ -455,7 +464,7 @@ func formatIPv6(ipv6 *layers.IPv6, opts *Options) string {
 	return strings.Join(fields, ", ")
 }
 
-func formatLinkLayer(packet gopacket.Packet, opts *Options) string {
+func (f *Formatter) formatLinkLayer(packet gopacket.Packet) string {
 	var layer gopacket.Layer
 	if layer = packet.LinkLayer(); layer == nil {
 		return ""
@@ -469,14 +478,14 @@ func formatLinkLayer(packet gopacket.Packet, opts *Options) string {
 		length = len(layer.LayerPayload())
 		break
 	default:
-		return formatUnknown(layer, packet, opts)
+		return f.formatUnknown(layer, packet)
 	}
 
 	switch nextLayerType {
 	case layers.LayerTypeARP:
 		if ly := packet.Layer(layers.LayerTypeARP); ly != nil {
 			arp, _ := ly.(*layers.ARP)
-			return formatARP(arp, length, opts)
+			return f.formatARP(arp, length)
 		}
 	}
 
@@ -489,25 +498,26 @@ func Format(packet gopacket.Packet) string {
 }
 
 func FormatWithStyle(packet gopacket.Packet, style FormatStyle) string {
-	return FormatWithOptions(packet, &Options{HeaderStyle: style})
+	return NewFormatter(&Options{HeaderStyle: style}).formatWithOptions(packet)
 }
 
-func FormatWithOptions(packet gopacket.Packet, opts *Options) string {
-	data := formatWithOptions(packet, opts)
+func (f *Formatter) FormatWithOptions(packet gopacket.Packet, opts *Options) string {
+	f.opts = opts
+	data := f.formatWithOptions(packet)
 	opts.formatContent()
 	return data
 }
 
-func formatWithOptions(packet gopacket.Packet, opts *Options) string {
+func (f *Formatter) formatWithOptions(packet gopacket.Packet) string {
 	var net gopacket.Layer
-	if opts.needFormatLink() && packet.LinkLayer() != nil {
-		opts.rawContent = append(opts.rawContent, packet.LinkLayer().LayerContents()...)
+	if f.opts.needFormatLink() && packet.LinkLayer() != nil {
+		f.opts.rawContent = append(f.opts.rawContent, packet.LinkLayer().LayerContents()...)
 	}
 	if net = packet.NetworkLayer(); net == nil {
-		return formatLinkLayer(packet, opts)
+		return f.formatLinkLayer(packet)
 	}
-	opts.rawContent = append(opts.rawContent, net.LayerContents()...)
-	style := opts.HeaderStyle
+	f.opts.rawContent = append(f.opts.rawContent, net.LayerContents()...)
+	style := f.opts.HeaderStyle
 
 	var prefix, src, dst string
 	var nextLayerType gopacket.LayerType
@@ -517,7 +527,7 @@ func formatWithOptions(packet gopacket.Packet, opts *Options) string {
 	case *layers.IPv4:
 		prefix = fmt.Sprintf("IP ")
 		if style >= FormatStyleVerbose {
-			prefix = fmt.Sprintf("IP (%s)\n    ", formatIPv4(net, opts))
+			prefix = fmt.Sprintf("IP (%s)\n    ", f.formatIPv4(net))
 		}
 		nextLayerType = net.NextLayerType()
 		nextLayerPayload = net.LayerPayload()
@@ -527,7 +537,7 @@ func formatWithOptions(packet gopacket.Packet, opts *Options) string {
 	case *layers.IPv6:
 		prefix = "IP6 "
 		if style >= FormatStyleVerbose {
-			prefix = fmt.Sprintf("IP6 (%s)\n    ", formatIPv6(net, opts))
+			prefix = fmt.Sprintf("IP6 (%s)\n    ", f.formatIPv6(net))
 		}
 		nextLayerType = net.NextLayerType()
 		nextLayerPayload = net.LayerPayload()
@@ -535,13 +545,13 @@ func formatWithOptions(packet gopacket.Packet, opts *Options) string {
 		dst = net.DstIP.String()
 		length = int(net.Length)
 	default:
-		return formatUnknown(net, packet, opts)
+		return f.formatUnknown(net, packet)
 	}
 
 	if packet.TransportLayer() != nil {
-		opts.rawContent = append(opts.rawContent, packet.TransportLayer().LayerContents()...)
+		f.opts.rawContent = append(f.opts.rawContent, packet.TransportLayer().LayerContents()...)
 		if packet.ApplicationLayer() != nil {
-			opts.rawContent = append(opts.rawContent, packet.ApplicationLayer().LayerContents()...)
+			f.opts.rawContent = append(f.opts.rawContent, packet.ApplicationLayer().LayerContents()...)
 		}
 	}
 
@@ -549,17 +559,17 @@ func formatWithOptions(packet gopacket.Packet, opts *Options) string {
 	case layers.LayerTypeUDP:
 		if udpLayer := packet.Layer(layers.LayerTypeUDP); udpLayer != nil {
 			udp, _ := udpLayer.(*layers.UDP)
-			return prefix + formatPacketUDP(&packet, udp, src, dst, style)
+			return prefix + f.formatPacketUDP(&packet, udp, src, dst)
 		}
 	case layers.LayerTypeTCP:
 		if tcpLayer := packet.Layer(layers.LayerTypeTCP); tcpLayer != nil {
 			tcp, _ := tcpLayer.(*layers.TCP)
-			return prefix + formatPacketTCP(tcp, src, dst, length, style)
+			return prefix + f.formatPacketTCP(tcp, src, dst, length)
 		}
 	case layers.LayerTypeICMPv6:
 		if icmpLayer := packet.Layer(layers.LayerTypeICMPv6); icmpLayer != nil {
 			icmp, _ := icmpLayer.(*layers.ICMPv6)
-			return prefix + formatPacketICMPv6(&packet, icmp, src, dst, length, style)
+			return prefix + f.formatPacketICMPv6(&packet, icmp, src, dst, length)
 		}
 	case layers.LayerTypeOSPF:
 		if ospfLayer := packet.Layer(layers.LayerTypeOSPF); ospfLayer != nil {
@@ -568,20 +578,20 @@ func formatWithOptions(packet gopacket.Packet, opts *Options) string {
 				if ospfLayer.AuType == 2 {
 					length -= 16
 				}
-				return prefix + formatPacketOSPF(ospfLayer.OSPF, src, dst, length, style)
+				return prefix + f.formatPacketOSPF(ospfLayer.OSPF, src, dst, length)
 			case *layers.OSPFv3:
-				return prefix + formatPacketOSPF(ospfLayer.OSPF, src, dst, length, style)
+				return prefix + f.formatPacketOSPF(ospfLayer.OSPF, src, dst, length)
 			}
 		}
 	case layers.LayerTypeGRE:
 		if greLayer := packet.Layer(layers.LayerTypeGRE); greLayer != nil {
 			gre, _ := greLayer.(*layers.GRE)
-			return prefix + formatPacketGRE(gre, src, dst, length, style)
+			return prefix + f.formatPacketGRE(gre, src, dst, length)
 		}
 	case layers.LayerTypeICMPv4:
 		if icmpLayer := packet.Layer(layers.LayerTypeICMPv4); icmpLayer != nil {
 			icmp, _ := icmpLayer.(*layers.ICMPv4)
-			return prefix + formatPacketICMPv4(icmp, src, dst, length, style)
+			return prefix + f.formatPacketICMPv4(icmp, src, dst, length)
 		}
 	case layers.LayerTypeIPv4:
 		fallthrough

@@ -8,7 +8,7 @@ import (
 	"github.com/gopacket/gopacket/layers"
 )
 
-func formatARP(arp *layers.ARP, length int, opts *Options) string {
+func (f *Formatter) formatARP(arp *layers.ARP, length int) string {
 	builder := strings.Builder{}
 	builder.WriteString("ARP")
 

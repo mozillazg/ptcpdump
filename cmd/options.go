@@ -9,6 +9,7 @@ import (
 	"github.com/mozillazg/ptcpdump/internal/types"
 	"github.com/mozillazg/ptcpdump/internal/writer"
 	"github.com/x-way/pktdump"
+	"io"
 	"os"
 	"path"
 	"strings"
@@ -50,6 +51,7 @@ type Options struct {
 
 	dontConvertAddr int
 	verbose         int
+	quiet           bool
 
 	containerId   string
 	containerName string
@@ -75,6 +77,8 @@ type Options struct {
 	mntnsIds []uint32
 	netnsIds []uint32
 	pidnsIds []uint32
+
+	stdout io.Writer
 
 	netNsPaths    []string
 	devices       *types.Interfaces
@@ -162,11 +166,12 @@ func getDefaultCriRuntimeEndpoint() []string {
 	return rs
 }
 
-func (o Options) applyToStdoutWriter(w *writer.StdoutWriter) {
+func (opts *Options) applyToStdoutWriter(w *writer.StdoutWriter) {
 	w.OneLine = opts.oneLine
 	w.PrintNumber = opts.printPacketNumber
 	w.NoTimestamp = opts.dontPrintTimestamp
 	w.TimestampNano = opts.TimeStampAsNano()
+	w.Quiet = opts.quiet
 	if opts.onlyPrintCount {
 		w.DoNothing = true
 	}
@@ -259,6 +264,13 @@ func (o *Options) GetDevices() (*types.Interfaces, error) {
 	return o.devices, nil
 }
 
+func (o *Options) getStdout() io.Writer {
+	if o.stdout == nil {
+		o.stdout = os.Stdout
+	}
+	return o.stdout
+}
+
 func (o *Options) ToCapturerOptions() *capturer.Options {
 	copts := &capturer.Options{
 		Pids:                          o.pids,
@@ -269,6 +281,7 @@ func (o *Options) ToCapturerOptions() *capturer.Options {
 		DirectionIn:                   o.DirectionIn(),
 		DirectionOut:                  o.DirectionOut(),
 		OneLine:                       o.oneLine,
+		Quiet:                         o.quiet,
 		PrintPacketNumber:             o.printPacketNumber,
 		DontPrintTimestamp:            o.dontPrintTimestamp,
 		OnlyPrintCount:                o.onlyPrintCount,
