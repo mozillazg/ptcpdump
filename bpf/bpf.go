@@ -63,6 +63,7 @@ func NewBPF() (*BPF, error) {
 	}
 	b := _BpfBytes
 	if legacyKernel {
+		skipOptimize = true
 		b = _Bpf_legacyBytes
 	} else if !supportTracing() {
 		skipOptimize = true
@@ -75,11 +76,12 @@ func NewBPF() (*BPF, error) {
 	}
 
 	bf := &BPF{
-		spec:           spec,
-		objs:           &BpfObjects{},
-		report:         &types.CountReport{},
-		isLegacyKernel: legacyKernel,
-		skipOptimize:   skipOptimize,
+		spec:             spec,
+		objs:             &BpfObjects{},
+		report:           &types.CountReport{},
+		isLegacyKernel:   legacyKernel,
+		skipAttachCgroup: legacyKernel,
+		skipOptimize:     skipOptimize,
 	}
 
 	return bf, nil
