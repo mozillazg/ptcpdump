@@ -128,6 +128,9 @@ func (b *BPF) Load(opts Options) error {
 	}
 
 	// TODO: refine
+	loadCount := 0
+load:
+	loadCount++
 	if b.isLegacyKernel || !supportCgroupSock() {
 		log.Info("will load the objs for legacy kernel")
 		b.skipAttachCgroup = true
@@ -164,6 +167,11 @@ func (b *BPF) Load(opts Options) error {
 			},
 		})
 		if err != nil {
+			if loadCount < 2 && isTracingNotSupportErr(err) {
+				log.Infof("bpf load failed, try again: %+v", err)
+				b.skipOptimize = true
+				goto load
+			}
 			return fmt.Errorf("bpf load: %w", err)
 		}
 	}

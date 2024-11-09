@@ -6,9 +6,14 @@ import (
 	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/link"
 	"github.com/mozillazg/ptcpdump/internal/log"
+	"regexp"
 )
 
-var errNotSupportTracingProg = errors.New("not support BPF_PROG_TYPE_TRACING")
+var (
+	errNotSupportTracingProg = errors.New("not support BPF_PROG_TYPE_TRACING")
+
+	regexTracingNotSupportErr = regexp.MustCompile(`(fentry|fexit) \w+ not supported`)
+)
 
 func (b *BPF) attachFentryOrKprobe(symbol string, fentryProg *ebpf.Program, kprobeProg *ebpf.Program) error {
 	var lk link.Link
@@ -72,4 +77,11 @@ func (b *BPF) attachFexitOrKprobe(symbol string, fexitProg *ebpf.Program,
 	}
 
 	return nil
+}
+
+func isTracingNotSupportErr(err error) bool {
+	if err == nil {
+		return false
+	}
+	return regexTracingNotSupportErr.MatchString(err.Error())
 }
