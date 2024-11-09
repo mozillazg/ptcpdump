@@ -12,133 +12,28 @@ import (
 	"github.com/cilium/ebpf"
 )
 
-type BpfEnterMountBufT struct {
-	Fs   uint64
-	Src  uint64
-	Dest uint64
-}
-
-type BpfExecEventT struct {
-	Meta              BpfProcessMetaT
-	FilenameTruncated uint8
-	ArgsTruncated     uint8
-	_                 [2]byte
-	ArgsSize          uint32
-	Filename          [512]int8
-	Args              [4096]int8
-}
-
-type BpfExitEventT struct{ Pid uint32 }
-
-type BpfFlowPidKeyT struct {
-	Saddr [2]uint64
-	Sport uint16
-	_     [6]byte
-}
-
-type BpfGconfigT struct {
-	HaveFilter        uint8
-	FilterFollowForks uint8
-	FilterComm        [16]int8
-	FilterCommEnable  uint8
-	_                 [1]byte
-	MaxPayloadSize    uint32
-}
-
-type BpfGoKeylogBufT struct {
-	LabelPtr     uint64
-	LabelLenPtr  uint64
-	RandomPtr    uint64
-	RandomLenPtr uint64
-	SecretPtr    uint64
-	SecretLenPtr uint64
-}
-
-type BpfGoKeylogEventT struct {
-	Label           [32]int8
-	ClientRandom    [32]int8
-	Secret          [64]int8
-	LabelLen        uint8
-	ClientRandomLen uint8
-	SecretLen       uint8
-}
-
-type BpfMountEventT struct {
-	Fs   [8]int8
-	Src  [4096]int8
-	Dest [4096]int8
-}
-
-type BpfNatFlowT struct {
-	Saddr [2]uint64
-	Daddr [2]uint64
-	Sport uint16
-	Dport uint16
-	_     [4]byte
-}
-
-type BpfNetdeviceBufT struct {
-	Dev uint64
-	Net uint64
-}
-
-type BpfNetdeviceChangeEventT struct {
-	OldDevice BpfNetdeviceT
-	NewDevice BpfNetdeviceT
-}
-
-type BpfNetdeviceT struct {
-	NetnsId uint32
-	Ifindex uint32
-	Name    [16]int8
-}
-
-type BpfNewNetdeviceEventT struct{ Dev BpfNetdeviceT }
-
-type BpfPacketEventMetaT struct {
-	Timestamp  uint64
-	PacketType uint8
-	_          [3]byte
-	Ifindex    uint32
-	PayloadLen uint64
-	PacketSize uint64
-	Process    BpfProcessMetaT
-	_          [4]byte
-}
-
-type BpfPacketEventT struct{ Meta BpfPacketEventMetaT }
-
-type BpfProcessMetaT struct {
-	Ppid       uint32
-	Pid        uint32
-	PidnsId    uint32
-	MntnsId    uint32
-	NetnsId    uint32
-	CgroupName [128]int8
-}
-
-// LoadBpf returns the embedded CollectionSpec for Bpf.
-func LoadBpf() (*ebpf.CollectionSpec, error) {
-	reader := bytes.NewReader(_BpfBytes)
+// loadBpf_no_optimize returns the embedded CollectionSpec for bpf_no_optimize.
+func loadBpf_no_optimize() (*ebpf.CollectionSpec, error) {
+	reader := bytes.NewReader(_Bpf_no_optimizeBytes)
 	spec, err := ebpf.LoadCollectionSpecFromReader(reader)
 	if err != nil {
-		return nil, fmt.Errorf("can't load Bpf: %w", err)
+		return nil, fmt.Errorf("can't load bpf_no_optimize: %w", err)
 	}
 
 	return spec, err
 }
 
-// LoadBpfObjects loads Bpf and converts it into a struct.
+// loadBpf_no_optimizeObjects loads bpf_no_optimize and converts it into a struct.
 //
 // The following types are suitable as obj argument:
 //
-//	*BpfObjects
-//	*BpfPrograms
-//	*BpfMaps
+//	*bpf_no_optimizeObjects
+//	*bpf_no_optimizePrograms
+//	*bpf_no_optimizeMaps
 //
 // See ebpf.CollectionSpec.LoadAndAssign documentation for details.
-func LoadBpfObjects(obj interface{}, opts *ebpf.CollectionOptions) error {
-	spec, err := LoadBpf()
+func loadBpf_no_optimizeObjects(obj interface{}, opts *ebpf.CollectionOptions) error {
+	spec, err := loadBpf_no_optimize()
 	if err != nil {
 		return err
 	}
@@ -146,26 +41,20 @@ func LoadBpfObjects(obj interface{}, opts *ebpf.CollectionOptions) error {
 	return spec.LoadAndAssign(obj, opts)
 }
 
-// BpfSpecs contains maps and programs before they are loaded into the kernel.
+// bpf_no_optimizeSpecs contains maps and programs before they are loaded into the kernel.
 //
 // It can be passed ebpf.CollectionSpec.Assign.
-type BpfSpecs struct {
-	BpfProgramSpecs
-	BpfMapSpecs
+type bpf_no_optimizeSpecs struct {
+	bpf_no_optimizeProgramSpecs
+	bpf_no_optimizeMapSpecs
 }
 
-// BpfSpecs contains programs before they are loaded into the kernel.
+// bpf_no_optimizeSpecs contains programs before they are loaded into the kernel.
 //
 // It can be passed ebpf.CollectionSpec.Assign.
-type BpfProgramSpecs struct {
+type bpf_no_optimizeProgramSpecs struct {
 	CgroupSockCreate                     *ebpf.ProgramSpec `ebpf:"cgroup__sock_create"`
 	CgroupSockRelease                    *ebpf.ProgramSpec `ebpf:"cgroup__sock_release"`
-	FentryNfNatManipPkt                  *ebpf.ProgramSpec `ebpf:"fentry__nf_nat_manip_pkt"`
-	FentryNfNatPacket                    *ebpf.ProgramSpec `ebpf:"fentry__nf_nat_packet"`
-	FentrySecuritySkClassifyFlow         *ebpf.ProgramSpec `ebpf:"fentry__security_sk_classify_flow"`
-	FentryTcpSendmsg                     *ebpf.ProgramSpec `ebpf:"fentry__tcp_sendmsg"`
-	FentryUdpSendSkb                     *ebpf.ProgramSpec `ebpf:"fentry__udp_send_skb"`
-	FentryUdpSendmsg                     *ebpf.ProgramSpec `ebpf:"fentry__udp_sendmsg"`
 	KprobeDevChangeNetNamespace          *ebpf.ProgramSpec `ebpf:"kprobe__dev_change_net_namespace"`
 	KprobeDevChangeNetNamespaceLegacy    *ebpf.ProgramSpec `ebpf:"kprobe__dev_change_net_namespace_legacy"`
 	KprobeNfNatManipPkt                  *ebpf.ProgramSpec `ebpf:"kprobe__nf_nat_manip_pkt"`
@@ -191,10 +80,10 @@ type BpfProgramSpecs struct {
 	UprobeGoBuiltinTlsWriteKeyLogRet     *ebpf.ProgramSpec `ebpf:"uprobe__go_builtin__tls__write_key_log__ret"`
 }
 
-// BpfMapSpecs contains maps before they are loaded into the kernel.
+// bpf_no_optimizeMapSpecs contains maps before they are loaded into the kernel.
 //
 // It can be passed ebpf.CollectionSpec.Assign.
-type BpfMapSpecs struct {
+type bpf_no_optimizeMapSpecs struct {
 	ConfigMap             *ebpf.MapSpec `ebpf:"config_map"`
 	EnterMountBufs        *ebpf.MapSpec `ebpf:"enter_mount_bufs"`
 	ExecEventStack        *ebpf.MapSpec `ebpf:"exec_event_stack"`
@@ -220,25 +109,25 @@ type BpfMapSpecs struct {
 	TidNetdeviceMap       *ebpf.MapSpec `ebpf:"tid_netdevice_map"`
 }
 
-// BpfObjects contains all objects after they have been loaded into the kernel.
+// bpf_no_optimizeObjects contains all objects after they have been loaded into the kernel.
 //
-// It can be passed to LoadBpfObjects or ebpf.CollectionSpec.LoadAndAssign.
-type BpfObjects struct {
-	BpfPrograms
-	BpfMaps
+// It can be passed to loadBpf_no_optimizeObjects or ebpf.CollectionSpec.LoadAndAssign.
+type bpf_no_optimizeObjects struct {
+	bpf_no_optimizePrograms
+	bpf_no_optimizeMaps
 }
 
-func (o *BpfObjects) Close() error {
-	return _BpfClose(
-		&o.BpfPrograms,
-		&o.BpfMaps,
+func (o *bpf_no_optimizeObjects) Close() error {
+	return _Bpf_no_optimizeClose(
+		&o.bpf_no_optimizePrograms,
+		&o.bpf_no_optimizeMaps,
 	)
 }
 
-// BpfMaps contains all maps after they have been loaded into the kernel.
+// bpf_no_optimizeMaps contains all maps after they have been loaded into the kernel.
 //
-// It can be passed to LoadBpfObjects or ebpf.CollectionSpec.LoadAndAssign.
-type BpfMaps struct {
+// It can be passed to loadBpf_no_optimizeObjects or ebpf.CollectionSpec.LoadAndAssign.
+type bpf_no_optimizeMaps struct {
 	ConfigMap             *ebpf.Map `ebpf:"config_map"`
 	EnterMountBufs        *ebpf.Map `ebpf:"enter_mount_bufs"`
 	ExecEventStack        *ebpf.Map `ebpf:"exec_event_stack"`
@@ -264,8 +153,8 @@ type BpfMaps struct {
 	TidNetdeviceMap       *ebpf.Map `ebpf:"tid_netdevice_map"`
 }
 
-func (m *BpfMaps) Close() error {
-	return _BpfClose(
+func (m *bpf_no_optimizeMaps) Close() error {
+	return _Bpf_no_optimizeClose(
 		m.ConfigMap,
 		m.EnterMountBufs,
 		m.ExecEventStack,
@@ -292,18 +181,12 @@ func (m *BpfMaps) Close() error {
 	)
 }
 
-// BpfPrograms contains all programs after they have been loaded into the kernel.
+// bpf_no_optimizePrograms contains all programs after they have been loaded into the kernel.
 //
-// It can be passed to LoadBpfObjects or ebpf.CollectionSpec.LoadAndAssign.
-type BpfPrograms struct {
+// It can be passed to loadBpf_no_optimizeObjects or ebpf.CollectionSpec.LoadAndAssign.
+type bpf_no_optimizePrograms struct {
 	CgroupSockCreate                     *ebpf.Program `ebpf:"cgroup__sock_create"`
 	CgroupSockRelease                    *ebpf.Program `ebpf:"cgroup__sock_release"`
-	FentryNfNatManipPkt                  *ebpf.Program `ebpf:"fentry__nf_nat_manip_pkt"`
-	FentryNfNatPacket                    *ebpf.Program `ebpf:"fentry__nf_nat_packet"`
-	FentrySecuritySkClassifyFlow         *ebpf.Program `ebpf:"fentry__security_sk_classify_flow"`
-	FentryTcpSendmsg                     *ebpf.Program `ebpf:"fentry__tcp_sendmsg"`
-	FentryUdpSendSkb                     *ebpf.Program `ebpf:"fentry__udp_send_skb"`
-	FentryUdpSendmsg                     *ebpf.Program `ebpf:"fentry__udp_sendmsg"`
 	KprobeDevChangeNetNamespace          *ebpf.Program `ebpf:"kprobe__dev_change_net_namespace"`
 	KprobeDevChangeNetNamespaceLegacy    *ebpf.Program `ebpf:"kprobe__dev_change_net_namespace_legacy"`
 	KprobeNfNatManipPkt                  *ebpf.Program `ebpf:"kprobe__nf_nat_manip_pkt"`
@@ -329,16 +212,10 @@ type BpfPrograms struct {
 	UprobeGoBuiltinTlsWriteKeyLogRet     *ebpf.Program `ebpf:"uprobe__go_builtin__tls__write_key_log__ret"`
 }
 
-func (p *BpfPrograms) Close() error {
-	return _BpfClose(
+func (p *bpf_no_optimizePrograms) Close() error {
+	return _Bpf_no_optimizeClose(
 		p.CgroupSockCreate,
 		p.CgroupSockRelease,
-		p.FentryNfNatManipPkt,
-		p.FentryNfNatPacket,
-		p.FentrySecuritySkClassifyFlow,
-		p.FentryTcpSendmsg,
-		p.FentryUdpSendSkb,
-		p.FentryUdpSendmsg,
 		p.KprobeDevChangeNetNamespace,
 		p.KprobeDevChangeNetNamespaceLegacy,
 		p.KprobeNfNatManipPkt,
@@ -365,7 +242,7 @@ func (p *BpfPrograms) Close() error {
 	)
 }
 
-func _BpfClose(closers ...io.Closer) error {
+func _Bpf_no_optimizeClose(closers ...io.Closer) error {
 	for _, closer := range closers {
 		if err := closer.Close(); err != nil {
 			return err
@@ -376,5 +253,5 @@ func _BpfClose(closers ...io.Closer) error {
 
 // Do not access this directly.
 //
-//go:embed bpf_arm64_bpfel.o
-var _BpfBytes []byte
+//go:embed bpf_no_optimize_arm64_bpfel.o
+var _Bpf_no_optimizeBytes []byte
