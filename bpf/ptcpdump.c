@@ -499,7 +499,7 @@ static __always_inline int parent_process_filter(struct task_struct *current) {
     return -1;
 }
 
-static __always_inline void handle_fork(struct bpf_raw_tracepoint_args *ctx) {
+static __always_inline void handle_fork(struct task_struct *parent, struct task_struct *child) {
     GET_CONFIG()
 #ifdef LEGACY_KERNEL
     u8 u8_zero = 0;
@@ -509,9 +509,6 @@ static __always_inline void handle_fork(struct bpf_raw_tracepoint_args *ctx) {
         return;
     }
 
-    // args: struct task_struct *parent, struct task_struct *child
-    struct task_struct *parent = (struct task_struct *)BPF_CORE_READ(ctx, args[0]);
-    struct task_struct *child = (struct task_struct *)BPF_CORE_READ(ctx, args[1]);
     u32 child_pid = BPF_CORE_READ(child, tgid);
 
     if (process_filter(parent) == 0) {
@@ -525,8 +522,14 @@ static __always_inline void handle_fork(struct bpf_raw_tracepoint_args *ctx) {
 }
 
 SEC("raw_tracepoint/sched_process_fork")
-int raw_tracepoint__sched_process_fork(struct bpf_raw_tracepoint_args *ctx) {
-    handle_fork(ctx);
+int BPF_PROG(raw_tracepoint__sched_process_fork, struct task_struct *parent, struct task_struct *child) {
+    handle_fork(parent, child);
+    return 0;
+}
+
+SEC("tp_btf/sched_process_fork")
+int BPF_PROG(tp_btf__sched_process_fork, struct task_struct *parent, struct task_struct *child) {
+    handle_fork(parent, child);
     return 0;
 }
 
@@ -976,9 +979,7 @@ static __always_inline void handle_tc(struct __sk_buff *skb, bool egress) {
     return;
 }
 
-static __always_inline void handle_exec(struct bpf_raw_tracepoint_args *ctx) {
-    // args: struct task_struct *p, pid_t old_pid, struct linux_binprm *bprm
-    struct task_struct *task = (struct task_struct *)BPF_CORE_READ(ctx, args[0]);
+static __always_inline void handle_exec(void *ctx, struct task_struct *task, pid_t old_pid, struct linux_binprm *bprm) {
     //    if (process_filter(task) < 0) {
     //        return;
     //    }
@@ -996,7 +997,6 @@ static __always_inline void handle_exec(struct bpf_raw_tracepoint_args *ctx) {
 
     fill_process_meta(task, &event->meta);
 
-    struct linux_binprm *bprm = (struct linux_binprm *)BPF_CORE_READ(ctx, args[2]);
     const char *filename_p = BPF_CORE_READ(bprm, filename);
     int f_ret = bpf_probe_read_str(&event->filename, sizeof(event->filename), filename_p);
     if (f_ret < 0) {
@@ -1027,10 +1027,7 @@ static __always_inline void handle_exec(struct bpf_raw_tracepoint_args *ctx) {
     return;
 }
 
-static __always_inline void handle_exit(struct bpf_raw_tracepoint_args *ctx) {
-    // args: struct task_struct *p
-    struct task_struct *task = (struct task_struct *)BPF_CORE_READ(ctx, args[0]);
-
+static __always_inline void handle_exit(void *ctx, struct task_struct *task) {
     atomic_t live = BPF_CORE_READ(task, signal, live);
     if (live.counter > 0) {
         return;
@@ -1053,16 +1050,32 @@ static __always_inline void handle_exit(struct bpf_raw_tracepoint_args *ctx) {
 }
 
 SEC("raw_tracepoint/sched_process_exec")
-int raw_tracepoint__sched_process_exec(struct bpf_raw_tracepoint_args *ctx) {
-    handle_exec(ctx);
+int BPF_PROG(raw_tracepoint__sched_process_exec, struct task_struct *task, pid_t old_pid, struct linux_binprm *bprm) {
+    handle_exec(ctx, task, old_pid, bprm);
     return 0;
 }
 
-SEC("raw_tracepoint/sched_process_exit")
-int raw_tracepoint__sched_process_exit(struct bpf_raw_tracepoint_args *ctx) {
-    handle_exit(ctx);
+#ifndef NO_OPTIMIZE
+SEC("tp_btf/sched_process_exec")
+int BPF_PROG(tp_btf__sched_process_exec, struct task_struct *task, pid_t old_pid, struct linux_binprm *bprm) {
+    handle_exec(ctx, task, old_pid, bprm);
     return 0;
 }
+#endif
+
+SEC("raw_tracepoint/sched_process_exit")
+int BPF_PROG(raw_tracepoint__sched_process_exit, struct task_struct *task) {
+    handle_exit(ctx, task);
+    return 0;
+}
+
+#ifndef NO_OPTIMIZE
+SEC("tp_btf/sched_process_exit")
+int BPF_PROG(tp_btf__sched_process_exit, struct task_struct *task) {
+    handle_exit(ctx, task);
+    return 0;
+}
+#endif
 
 SEC("tc")
 int tc_ingress(struct __sk_buff *skb) {
