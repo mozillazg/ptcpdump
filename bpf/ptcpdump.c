@@ -655,7 +655,7 @@ int BPF_KPROBE(kprobe__tcp_sendmsg, struct sock *sk) {
     return 0;
 }
 
-#ifndef NO_OPTIMIUIZE
+#ifndef NO_OPTIMIZE
 SEC("fentry/tcp_sendmsg")
 int BPF_PROG(fentry__tcp_sendmsg, struct sock *sk) {
     handle_sendmsg(sk);
@@ -669,7 +669,7 @@ int BPF_KPROBE(kprobe__udp_sendmsg, struct sock *sk) {
     return 0;
 }
 
-#ifndef NO_OPTIMIUIZE
+#ifndef NO_OPTIMIZE
 SEC("fentry/udp_sendmsg")
 int BPF_PROG(fentry__udp_sendmsg, struct sock *sk) {
     handle_sendmsg(sk);
@@ -684,7 +684,7 @@ int BPF_KPROBE(kprobe__udp_send_skb, struct sk_buff *skb) {
     return 0;
 }
 
-#ifndef NO_OPTIMIUIZE
+#ifndef NO_OPTIMIZE
 SEC("fentry/udp_send_skb")
 int BPF_PROG(fentry__udp_send_skb, struct sk_buff *skb) {
     struct sock *sk = BPF_CORE_READ(skb, sk);
@@ -765,7 +765,7 @@ int BPF_KPROBE(kprobe__nf_nat_packet, struct nf_conn *ct) {
     return 0;
 }
 
-#ifndef NO_OPTIMIUIZE
+#ifndef NO_OPTIMIZE
 SEC("fentry/nf_nat_packet")
 int BPF_PROG(fentry__nf_nat_packet, struct nf_conn *ct) {
     handle_nat(ct);
@@ -779,7 +779,7 @@ int BPF_KPROBE(kprobe__nf_nat_manip_pkt, void *_, struct nf_conn *ct) {
     return 0;
 }
 
-#ifndef NO_OPTIMIUIZE
+#ifndef NO_OPTIMIZE
 SEC("fentry/nf_nat_manip_pkt")
 int BPF_PROG(fentry__nf_nat_manip_pkt, void *_, struct nf_conn *ct) {
     handle_nat(ct);

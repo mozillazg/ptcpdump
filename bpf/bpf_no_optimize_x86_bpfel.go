@@ -55,11 +55,6 @@ type bpf_no_optimizeSpecs struct {
 type bpf_no_optimizeProgramSpecs struct {
 	CgroupSockCreate                     *ebpf.ProgramSpec `ebpf:"cgroup__sock_create"`
 	CgroupSockRelease                    *ebpf.ProgramSpec `ebpf:"cgroup__sock_release"`
-	FentryNfNatManipPkt                  *ebpf.ProgramSpec `ebpf:"fentry__nf_nat_manip_pkt"`
-	FentryNfNatPacket                    *ebpf.ProgramSpec `ebpf:"fentry__nf_nat_packet"`
-	FentryTcpSendmsg                     *ebpf.ProgramSpec `ebpf:"fentry__tcp_sendmsg"`
-	FentryUdpSendSkb                     *ebpf.ProgramSpec `ebpf:"fentry__udp_send_skb"`
-	FentryUdpSendmsg                     *ebpf.ProgramSpec `ebpf:"fentry__udp_sendmsg"`
 	KprobeDevChangeNetNamespace          *ebpf.ProgramSpec `ebpf:"kprobe__dev_change_net_namespace"`
 	KprobeDevChangeNetNamespaceLegacy    *ebpf.ProgramSpec `ebpf:"kprobe__dev_change_net_namespace_legacy"`
 	KprobeNfNatManipPkt                  *ebpf.ProgramSpec `ebpf:"kprobe__nf_nat_manip_pkt"`
@@ -192,11 +187,6 @@ func (m *bpf_no_optimizeMaps) Close() error {
 type bpf_no_optimizePrograms struct {
 	CgroupSockCreate                     *ebpf.Program `ebpf:"cgroup__sock_create"`
 	CgroupSockRelease                    *ebpf.Program `ebpf:"cgroup__sock_release"`
-	FentryNfNatManipPkt                  *ebpf.Program `ebpf:"fentry__nf_nat_manip_pkt"`
-	FentryNfNatPacket                    *ebpf.Program `ebpf:"fentry__nf_nat_packet"`
-	FentryTcpSendmsg                     *ebpf.Program `ebpf:"fentry__tcp_sendmsg"`
-	FentryUdpSendSkb                     *ebpf.Program `ebpf:"fentry__udp_send_skb"`
-	FentryUdpSendmsg                     *ebpf.Program `ebpf:"fentry__udp_sendmsg"`
 	KprobeDevChangeNetNamespace          *ebpf.Program `ebpf:"kprobe__dev_change_net_namespace"`
 	KprobeDevChangeNetNamespaceLegacy    *ebpf.Program `ebpf:"kprobe__dev_change_net_namespace_legacy"`
 	KprobeNfNatManipPkt                  *ebpf.Program `ebpf:"kprobe__nf_nat_manip_pkt"`
@@ -226,11 +216,6 @@ func (p *bpf_no_optimizePrograms) Close() error {
 	return _Bpf_no_optimizeClose(
 		p.CgroupSockCreate,
 		p.CgroupSockRelease,
-		p.FentryNfNatManipPkt,
-		p.FentryNfNatPacket,
-		p.FentryTcpSendmsg,
-		p.FentryUdpSendSkb,
-		p.FentryUdpSendmsg,
 		p.KprobeDevChangeNetNamespace,
 		p.KprobeDevChangeNetNamespaceLegacy,
 		p.KprobeNfNatManipPkt,

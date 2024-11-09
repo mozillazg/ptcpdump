@@ -11,7 +11,7 @@ import (
 )
 
 // $TARGET is set by the Makefile
-//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc clang -no-strip -no-global-types -target $TARGET bpf_legacy ./ptcpdump.c -- -I./headers -I./headers/$TARGET -I. -Wall -DLEGACY_KERNEL -DNO_CGROUP_PROG -DNO_TRACING_PROG
+//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc clang -no-strip -no-global-types -target $TARGET bpf_legacy ./ptcpdump.c -- -I./headers -I./headers/$TARGET -I. -Wall -DLEGACY_KERNEL -DNO_CGROUP_PROG -DNO_OPTIMIZE
 
 type BpfObjectsForLegacyKernel struct {
 	KprobeDevChangeNetNamespace          *ebpf.Program `ebpf:"kprobe__dev_change_net_namespace"`

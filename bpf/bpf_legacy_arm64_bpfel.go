@@ -53,12 +53,6 @@ type bpf_legacySpecs struct {
 //
 // It can be passed ebpf.CollectionSpec.Assign.
 type bpf_legacyProgramSpecs struct {
-	FentryNfNatManipPkt                  *ebpf.ProgramSpec `ebpf:"fentry__nf_nat_manip_pkt"`
-	FentryNfNatPacket                    *ebpf.ProgramSpec `ebpf:"fentry__nf_nat_packet"`
-	FentrySecuritySkClassifyFlow         *ebpf.ProgramSpec `ebpf:"fentry__security_sk_classify_flow"`
-	FentryTcpSendmsg                     *ebpf.ProgramSpec `ebpf:"fentry__tcp_sendmsg"`
-	FentryUdpSendSkb                     *ebpf.ProgramSpec `ebpf:"fentry__udp_send_skb"`
-	FentryUdpSendmsg                     *ebpf.ProgramSpec `ebpf:"fentry__udp_sendmsg"`
 	KprobeDevChangeNetNamespace          *ebpf.ProgramSpec `ebpf:"kprobe__dev_change_net_namespace"`
 	KprobeDevChangeNetNamespaceLegacy    *ebpf.ProgramSpec `ebpf:"kprobe__dev_change_net_namespace_legacy"`
 	KprobeNfNatManipPkt                  *ebpf.ProgramSpec `ebpf:"kprobe__nf_nat_manip_pkt"`
@@ -189,12 +183,6 @@ func (m *bpf_legacyMaps) Close() error {
 //
 // It can be passed to loadBpf_legacyObjects or ebpf.CollectionSpec.LoadAndAssign.
 type bpf_legacyPrograms struct {
-	FentryNfNatManipPkt                  *ebpf.Program `ebpf:"fentry__nf_nat_manip_pkt"`
-	FentryNfNatPacket                    *ebpf.Program `ebpf:"fentry__nf_nat_packet"`
-	FentrySecuritySkClassifyFlow         *ebpf.Program `ebpf:"fentry__security_sk_classify_flow"`
-	FentryTcpSendmsg                     *ebpf.Program `ebpf:"fentry__tcp_sendmsg"`
-	FentryUdpSendSkb                     *ebpf.Program `ebpf:"fentry__udp_send_skb"`
-	FentryUdpSendmsg                     *ebpf.Program `ebpf:"fentry__udp_sendmsg"`
 	KprobeDevChangeNetNamespace          *ebpf.Program `ebpf:"kprobe__dev_change_net_namespace"`
 	KprobeDevChangeNetNamespaceLegacy    *ebpf.Program `ebpf:"kprobe__dev_change_net_namespace_legacy"`
 	KprobeNfNatManipPkt                  *ebpf.Program `ebpf:"kprobe__nf_nat_manip_pkt"`
@@ -222,12 +210,6 @@ type bpf_legacyPrograms struct {
 
 func (p *bpf_legacyPrograms) Close() error {
 	return _Bpf_legacyClose(
-		p.FentryNfNatManipPkt,
-		p.FentryNfNatPacket,
-		p.FentrySecuritySkClassifyFlow,
-		p.FentryTcpSendmsg,
-		p.FentryUdpSendSkb,
-		p.FentryUdpSendmsg,
 		p.KprobeDevChangeNetNamespace,
 		p.KprobeDevChangeNetNamespaceLegacy,
 		p.KprobeNfNatManipPkt,
