@@ -32,6 +32,7 @@ type BPF struct {
 	closeFuncs []func()
 
 	skipAttachCgroup bool
+	skipOptimize     bool
 	isLegacyKernel   bool
 	report           *types.CountReport
 }
@@ -54,6 +55,7 @@ type Options struct {
 
 func NewBPF() (*BPF, error) {
 	var legacyKernel bool
+	var skipOptimize bool
 	if ok, err := isLegacyKernel(); err != nil {
 		log.Warnf("%s", err)
 	} else {
@@ -62,6 +64,9 @@ func NewBPF() (*BPF, error) {
 	b := _BpfBytes
 	if legacyKernel {
 		b = _Bpf_legacyBytes
+	} else if !supportTracing() {
+		skipOptimize = true
+		b = _Bpf_no_optimizeBytes
 	}
 
 	spec, err := loadBpfWithData(b)
@@ -74,6 +79,7 @@ func NewBPF() (*BPF, error) {
 		objs:           &BpfObjects{},
 		report:         &types.CountReport{},
 		isLegacyKernel: legacyKernel,
+		skipOptimize:   skipOptimize,
 	}
 
 	return bf, nil
@@ -121,6 +127,7 @@ func (b *BPF) Load(opts Options) error {
 		}
 	}
 
+	// TODO: refine
 	if b.isLegacyKernel || !supportCgroupSock() {
 		log.Info("will load the objs for legacy kernel")
 		b.skipAttachCgroup = true
@@ -135,6 +142,19 @@ func (b *BPF) Load(opts Options) error {
 			return fmt.Errorf("bpf load: %w", err)
 		}
 		b.objs.FromLegacy(&objs)
+	} else if b.skipOptimize {
+		log.Info("will load the objs for skip optimize")
+		objs := BpfObjectsForNoOptimize{}
+		if err = b.spec.LoadAndAssign(&objs, &ebpf.CollectionOptions{
+			Programs: ebpf.ProgramOptions{
+				KernelTypes: opts.kernelTypes,
+				LogLevel:    ebpf.LogLevelInstruction,
+				LogSize:     logSzie,
+			},
+		}); err != nil {
+			return fmt.Errorf("bpf load: %w", err)
+		}
+		b.objs.FromNoOptimize(&objs)
 	} else {
 		err = b.spec.LoadAndAssign(b.objs, &ebpf.CollectionOptions{
 			Programs: ebpf.ProgramOptions{
@@ -221,125 +241,123 @@ func (b *BPF) AttachCgroups(cgroupPath string) error {
 }
 
 func (b *BPF) AttachKprobes() error {
-	lk, err := link.Kprobe("security_sk_classify_flow",
-		b.objs.KprobeSecuritySkClassifyFlow, &link.KprobeOptions{})
+	err := b.attachFentryOrKprobe("security_sk_classify_flow",
+		b.objs.FentrySecuritySkClassifyFlow, b.objs.KprobeSecuritySkClassifyFlow)
 	if err != nil {
-		return fmt.Errorf("attach kprobe/security_sk_classify_flow: %w", err)
+		return fmt.Errorf(": %w", err)
 	}
-	b.links = append(b.links, lk)
 
-	lk, err = link.Kprobe("tcp_sendmsg",
-		b.objs.KprobeTcpSendmsg, &link.KprobeOptions{})
+	err = b.attachFentryOrKprobe("tcp_sendmsg",
+		b.objs.FentryTcpSendmsg, b.objs.KprobeTcpSendmsg)
 	if err != nil {
-		return fmt.Errorf("attach kprobe/tcp_sendmsg: %w", err)
+		return fmt.Errorf(": %w", err)
 	}
-	b.links = append(b.links, lk)
 
-	lk, err = link.Kprobe("udp_send_skb", b.objs.KprobeUdpSendSkb, &link.KprobeOptions{})
+	err = b.attachFentryOrKprobe("udp_send_skb", b.objs.FentryUdpSendSkb, b.objs.KprobeUdpSendSkb)
 	if err != nil {
 		log.Infof("%+v", err)
 		// TODO: use errors.Is(xxx) or ==
 		if strings.Contains(err.Error(), "no such file or directory") {
-			lk, err = link.Kprobe("udp_sendmsg", b.objs.KprobeUdpSendmsg, &link.KprobeOptions{})
+			err = b.attachFentryOrKprobe("udp_sendmsg", b.objs.FentryUdpSendmsg, b.objs.KprobeUdpSendmsg)
 			if err != nil {
-				return fmt.Errorf("attach kprobe/udp_sendmsg: %w", err)
+				return fmt.Errorf(": %w", err)
 			}
 		} else {
-			return fmt.Errorf("attach kprobe/udp_send_skb: %w", err)
+			return fmt.Errorf(": %w", err)
 		}
 	}
-	b.links = append(b.links, lk)
 
-	lk, err = link.Kprobe("nf_nat_packet",
-		b.objs.KprobeNfNatPacket, &link.KprobeOptions{})
+	err = b.attachFentryOrKprobe("nf_nat_packet",
+		b.objs.FentryNfNatPacket, b.objs.KprobeNfNatPacket)
 	if err != nil {
 		// TODO: use errors.Is(xxx) or ==
 		if strings.Contains(err.Error(), "nf_nat_packet: not found: no such file or directory") {
-			log.Warn("the kernel does not support netfilter based NAT feature, skip attach kprobe/nf_nat_packet")
+			log.Info("the kernel does not support netfilter based NAT feature, skip attach kprobe/nf_nat_packet")
 		} else {
-			return fmt.Errorf("attach kprobe/nf_nat_packet: %w", err)
+			return fmt.Errorf(": %w", err)
 		}
 	}
-	if lk != nil {
-		b.links = append(b.links, lk)
-	}
 
-	lk, err = link.Kprobe("nf_nat_manip_pkt",
-		b.objs.KprobeNfNatManipPkt, &link.KprobeOptions{})
+	err = b.attachFentryOrKprobe("nf_nat_manip_pkt",
+		b.objs.FentryNfNatManipPkt, b.objs.KprobeNfNatManipPkt)
 	if err != nil {
 		// TODO: use errors.Is(xxx) or ==
 		if strings.Contains(err.Error(), "nf_nat_manip_pkt: not found: no such file or directory") {
-			log.Warn("the kernel does not support netfilter based NAT feature, skip attach kprobe/nf_nat_manip_pkt")
+			log.Info("the kernel does not support netfilter based NAT feature, skip attach kprobe/nf_nat_manip_pkt")
 		} else {
-			return fmt.Errorf("attach kprobe/nf_nat_manip_pkt: %w", err)
+			return fmt.Errorf(": %w", err)
 		}
-	}
-	if lk != nil {
-		b.links = append(b.links, lk)
 	}
 
-	if b.opts.hookNetDev {
-		lk, err = link.Kprobe("register_netdevice",
-			b.objs.KprobeRegisterNetdevice, &link.KprobeOptions{})
-		if err != nil {
-			return fmt.Errorf("attach kprobe/register_netdevice: %w", err)
-		}
-		b.links = append(b.links, lk)
-		lk, err = link.Kretprobe("register_netdevice",
-			b.objs.KretprobeRegisterNetdevice, &link.KprobeOptions{})
-		if err != nil {
-			return fmt.Errorf("attach kretprobe/register_netdevice: %w", err)
-		}
-		b.links = append(b.links, lk)
-		lk, err = link.Kretprobe("__dev_get_by_index",
-			b.objs.KretprobeDevGetByIndex, &link.KprobeOptions{})
-		if err != nil {
-			log.Infof("%+v", err)
-			// TODO: use errors.Is(xxx) or ==
-			if strings.Contains(err.Error(), "no such file or directory") {
-				lk, err = link.Kretprobe("dev_get_by_index",
-					b.objs.KretprobeDevGetByIndexLegacy, &link.KprobeOptions{})
-				if err != nil {
-					return fmt.Errorf("attach kretprobe/dev_get_by_index: %w", err)
-				}
-			} else {
-				return fmt.Errorf("attach kretprobe/__dev_get_by_index: %w", err)
-			}
-		}
-		b.links = append(b.links, lk)
-		lk, err = link.Kprobe("__dev_change_net_namespace",
-			b.objs.KprobeDevChangeNetNamespace, &link.KprobeOptions{})
-		if err != nil {
-			log.Infof("%+v", err)
-			// TODO: use errors.Is(xxx) or ==
-			if strings.Contains(err.Error(), "no such file or directory") {
-				lk, err = link.Kprobe("dev_change_net_namespace",
-					b.objs.KprobeDevChangeNetNamespaceLegacy, &link.KprobeOptions{})
-				if err != nil {
-					return fmt.Errorf("attach kprobe/dev_change_net_namespace: %w", err)
-				}
-			} else {
-				return fmt.Errorf("attach kprobe/__dev_change_net_namespace: %w", err)
-			}
-		}
-		b.links = append(b.links, lk)
-		lk, err = link.Kretprobe("__dev_change_net_namespace",
-			b.objs.KretprobeDevChangeNetNamespace, &link.KprobeOptions{})
-		if err != nil {
-			log.Infof("%+v", err)
-			// TODO: use errors.Is(xxx) or ==
-			if strings.Contains(err.Error(), "no such file or directory") {
-				lk, err = link.Kretprobe("dev_change_net_namespace",
-					b.objs.KretprobeDevChangeNetNamespaceLegacy, &link.KprobeOptions{})
-				if err != nil {
-					return fmt.Errorf("attach kretprobe/dev_change_net_namespace: %w", err)
-				}
-			} else {
-				return fmt.Errorf("attach kretprobe/__dev_change_net_namespace: %w", err)
-			}
-		}
-		b.links = append(b.links, lk)
+	return b.attachNetDevHooks()
+}
+
+func (b *BPF) attachNetDevHooks() error {
+	if !b.opts.hookNetDev {
+		return nil
 	}
+
+	// TODO: refine
+	lk, err := link.Kprobe("register_netdevice",
+		b.objs.KprobeRegisterNetdevice, &link.KprobeOptions{})
+	if err != nil {
+		return fmt.Errorf("attach kprobe/register_netdevice: %w", err)
+	}
+	b.links = append(b.links, lk)
+	lk, err = link.Kretprobe("register_netdevice",
+		b.objs.KretprobeRegisterNetdevice, &link.KprobeOptions{})
+	if err != nil {
+		return fmt.Errorf("attach kretprobe/register_netdevice: %w", err)
+	}
+	b.links = append(b.links, lk)
+	lk, err = link.Kretprobe("__dev_get_by_index",
+		b.objs.KretprobeDevGetByIndex, &link.KprobeOptions{})
+	if err != nil {
+		log.Infof("%+v", err)
+		// TODO: use errors.Is(xxx) or ==
+		if strings.Contains(err.Error(), "no such file or directory") {
+			lk, err = link.Kretprobe("dev_get_by_index",
+				b.objs.KretprobeDevGetByIndexLegacy, &link.KprobeOptions{})
+			if err != nil {
+				return fmt.Errorf("attach kretprobe/dev_get_by_index: %w", err)
+			}
+		} else {
+			return fmt.Errorf("attach kretprobe/__dev_get_by_index: %w", err)
+		}
+	}
+	b.links = append(b.links, lk)
+	lk, err = link.Kprobe("__dev_change_net_namespace",
+		b.objs.KprobeDevChangeNetNamespace, &link.KprobeOptions{})
+	if err != nil {
+		log.Infof("%+v", err)
+		// TODO: use errors.Is(xxx) or ==
+		if strings.Contains(err.Error(), "no such file or directory") {
+			lk, err = link.Kprobe("dev_change_net_namespace",
+				b.objs.KprobeDevChangeNetNamespaceLegacy, &link.KprobeOptions{})
+			if err != nil {
+				return fmt.Errorf("attach kprobe/dev_change_net_namespace: %w", err)
+			}
+		} else {
+			return fmt.Errorf("attach kprobe/__dev_change_net_namespace: %w", err)
+		}
+	}
+	b.links = append(b.links, lk)
+	lk, err = link.Kretprobe("__dev_change_net_namespace",
+		b.objs.KretprobeDevChangeNetNamespace, &link.KprobeOptions{})
+	if err != nil {
+		log.Infof("%+v", err)
+		// TODO: use errors.Is(xxx) or ==
+		if strings.Contains(err.Error(), "no such file or directory") {
+			lk, err = link.Kretprobe("dev_change_net_namespace",
+				b.objs.KretprobeDevChangeNetNamespaceLegacy, &link.KprobeOptions{})
+			if err != nil {
+				return fmt.Errorf("attach kretprobe/dev_change_net_namespace: %w", err)
+			}
+		} else {
+			return fmt.Errorf("attach kretprobe/__dev_change_net_namespace: %w", err)
+		}
+	}
+	b.links = append(b.links, lk)
 
 	return nil
 }

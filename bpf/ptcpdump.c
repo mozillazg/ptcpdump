@@ -530,7 +530,7 @@ int raw_tracepoint__sched_process_fork(struct bpf_raw_tracepoint_args *ctx) {
     return 0;
 }
 
-#ifndef LEGACY_KERNEL
+#ifndef NO_CGROUP_PROG
 SEC("cgroup/sock_create")
 int cgroup__sock_create(void *ctx) {
     if (!bpf_core_enum_value_exists(enum bpf_func_id, BPF_FUNC_get_socket_cookie)) {
@@ -562,7 +562,7 @@ int cgroup__sock_create(void *ctx) {
 }
 #endif
 
-#ifndef LEGACY_KERNEL
+#ifndef NO_CGROUP_PROG
 SEC("cgroup/sock_release")
 int cgroup__sock_release(void *ctx) {
     if (!bpf_core_enum_value_exists(enum bpf_func_id, BPF_FUNC_get_socket_cookie)) {
@@ -578,8 +578,7 @@ int cgroup__sock_release(void *ctx) {
 }
 #endif
 
-SEC("kprobe/security_sk_classify_flow")
-int BPF_KPROBE(kprobe__security_sk_classify_flow, struct sock *sk) {
+static __always_inline int handle_security_sk_classify_flow(struct sock *sk) {
     struct flow_pid_key_t key = {0};
     struct process_meta_t value = {0};
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
@@ -606,6 +605,20 @@ int BPF_KPROBE(kprobe__security_sk_classify_flow, struct sock *sk) {
     }
     return 0;
 }
+
+SEC("kprobe/security_sk_classify_flow")
+int BPF_KPROBE(kprobe__security_sk_classify_flow, struct sock *sk) {
+    handle_security_sk_classify_flow(sk);
+    return 0;
+}
+
+#ifndef NO_OPTIMIZE
+SEC("fentry/security_sk_classify_flow")
+int BPF_PROG(fentry__security_sk_classify_flow, struct sock *sk) {
+    handle_security_sk_classify_flow(sk);
+    return 0;
+}
+#endif
 
 static __always_inline void handle_sendmsg(struct sock *sk) {
     struct flow_pid_key_t key = {0};
@@ -642,11 +655,27 @@ int BPF_KPROBE(kprobe__tcp_sendmsg, struct sock *sk) {
     return 0;
 }
 
+#ifndef NO_OPTIMIUIZE
+SEC("fentry/tcp_sendmsg")
+int BPF_PROG(fentry__tcp_sendmsg, struct sock *sk) {
+    handle_sendmsg(sk);
+    return 0;
+}
+#endif
+
 SEC("kprobe/udp_sendmsg")
 int BPF_KPROBE(kprobe__udp_sendmsg, struct sock *sk) {
     handle_sendmsg(sk);
     return 0;
 }
+
+#ifndef NO_OPTIMIUIZE
+SEC("fentry/udp_sendmsg")
+int BPF_PROG(fentry__udp_sendmsg, struct sock *sk) {
+    handle_sendmsg(sk);
+    return 0;
+}
+#endif
 
 SEC("kprobe/udp_send_skb")
 int BPF_KPROBE(kprobe__udp_send_skb, struct sk_buff *skb) {
@@ -654,6 +683,15 @@ int BPF_KPROBE(kprobe__udp_send_skb, struct sk_buff *skb) {
     handle_sendmsg(sk);
     return 0;
 }
+
+#ifndef NO_OPTIMIUIZE
+SEC("fentry/udp_send_skb")
+int BPF_PROG(fentry__udp_send_skb, struct sk_buff *skb) {
+    struct sock *sk = BPF_CORE_READ(skb, sk);
+    handle_sendmsg(sk);
+    return 0;
+}
+#endif
 
 static __noinline bool pcap_filter(void *_skb, void *__skb, void *___skb, void *data, void *data_end) {
     return data != data_end && _skb == __skb && __skb == ___skb;
@@ -727,11 +765,27 @@ int BPF_KPROBE(kprobe__nf_nat_packet, struct nf_conn *ct) {
     return 0;
 }
 
+#ifndef NO_OPTIMIUIZE
+SEC("fentry/nf_nat_packet")
+int BPF_PROG(fentry__nf_nat_packet, struct nf_conn *ct) {
+    handle_nat(ct);
+    return 0;
+}
+#endif
+
 SEC("kprobe/nf_nat_manip_pkt")
 int BPF_KPROBE(kprobe__nf_nat_manip_pkt, void *_, struct nf_conn *ct) {
     handle_nat(ct);
     return 0;
 }
+
+#ifndef NO_OPTIMIUIZE
+SEC("fentry/nf_nat_manip_pkt")
+int BPF_PROG(fentry__nf_nat_manip_pkt, void *_, struct nf_conn *ct) {
+    handle_nat(ct);
+    return 0;
+}
+#endif
 
 static __always_inline void clone_flow(struct nat_flow_t *orig, struct nat_flow_t *new_flow) {
     new_flow->saddr[0] = orig->saddr[0];
@@ -1020,67 +1074,4 @@ SEC("tc")
 int tc_egress(struct __sk_buff *skb) {
     handle_tc(skb, true);
     return TC_ACT_UNSPEC;
-}
-
-SEC("uprobe/go:crypto/tls.(*Config).writeKeyLog")
-int uprobe__go_builtin__tls__write_key_log(struct pt_regs *ctx) {
-    struct go_keylog_buf_t buf = {0};
-    u32 smp_id = bpf_get_smp_processor_id();
-
-    read_go_arg_into(&buf.label_len_ptr, ctx, 3);
-    read_go_arg_into(&buf.random_len_ptr, ctx, 5);
-    read_go_arg_into(&buf.secret_len_ptr, ctx, 8);
-
-    read_go_arg_into(&buf.label_ptr, ctx, 2);
-    read_go_arg_into(&buf.random_ptr, ctx, 4);
-    read_go_arg_into(&buf.secret_ptr, ctx, 7);
-
-    bpf_map_update_elem(&go_keylog_buf_storage, &smp_id, &buf, BPF_ANY);
-
-    return 0;
-}
-
-SEC("uprobe/go:crypto/tls.(*Config).writeKeyLog/ret")
-int uprobe__go_builtin__tls__write_key_log__ret(struct pt_regs *ctx) {
-    struct go_keylog_buf_t *buf;
-    struct go_keylog_event_t event = {0};
-    int ret;
-
-    u32 smp_id = bpf_get_smp_processor_id();
-    buf = bpf_map_lookup_elem(&go_keylog_buf_storage, &smp_id);
-    if (!buf) {
-        //        debug_log("no buf");
-        return 0;
-    }
-
-    bpf_probe_read_kernel(&event.label_len, sizeof(event.label_len), &(buf->label_len_ptr));
-    bpf_probe_read_kernel(&event.client_random_len, sizeof(event.client_random_len), &(buf->random_len_ptr));
-    bpf_probe_read_kernel(&event.secret_len, sizeof(event.secret_len), &(buf->secret_len_ptr));
-    if (event.label_len == 0 && event.client_random_len == 0 && event.secret_len == 0) {
-        //                debug_log("go tls read filed, label_len: %d, client_random_len: %d, secret_len: %d",
-        //                            event.label_len, event.client_random_len, event.secret_len );
-        return 0;
-    }
-
-    ret = bpf_probe_read_user(&event.label, sizeof(event.label), (void *)(buf->label_ptr));
-    if (ret < 0) {
-        //        debug_log("go labels, ret: %d", ret);
-    }
-    ret = bpf_probe_read_user(&event.client_random, sizeof(event.client_random), (void *)(buf->random_ptr));
-    if (ret < 0) {
-        //        debug_log("go random, ret: %d", ret);
-    }
-    ret = bpf_probe_read_user(&event.secret, sizeof(event.secret), (void *)(buf->secret_ptr));
-    if (ret < 0) {
-        //        debug_log("go secret, ret: %d", ret);
-    }
-    //        debug_log("go label_len: %d, client_random_len: %d, secret_len: %d", event.label_len,
-    //                event.client_random_len, event.secret_len);
-    //    debug_log("go label: %x, client_random: %x, secret: %x", event.label,
-    //                event.client_random, event.secret);
-    ret = bpf_perf_event_output(ctx, &go_keylog_events, BPF_F_CURRENT_CPU, &event, sizeof(event));
-    if (ret < 0) {
-        //                debug_log("go tls: per event failed, %d", ret);
-    }
-    return 0;
 }
