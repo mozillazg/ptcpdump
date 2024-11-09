@@ -79,6 +79,36 @@ func (b *BPF) attachFexitOrKprobe(symbol string, fexitProg *ebpf.Program,
 	return nil
 }
 
+func (b *BPF) attachBTFTracepointOrRawTP(name string, btfProg *ebpf.Program, rawProg *ebpf.Program) error {
+	var lk link.Link
+	var err error
+
+	if !b.skipOptimize {
+		lk, err = link.AttachTracing(link.TracingOptions{
+			Program:    btfProg,
+			AttachType: ebpf.AttachTraceRawTp,
+		})
+	} else {
+		err = errNotSupportTracingProg
+	}
+
+	if err != nil {
+		log.Infof("attach tp_btf/%s failed: %+v", name, err)
+		lk, err = link.AttachRawTracepoint(link.RawTracepointOptions{
+			Name:    name,
+			Program: rawProg,
+		})
+		if err != nil {
+			return fmt.Errorf("attach raw_tp/%s failed: %w", name, err)
+		}
+		b.links = append(b.links, lk)
+	} else {
+		b.links = append(b.links, lk)
+	}
+
+	return nil
+}
+
 func isTracingNotSupportErr(err error) bool {
 	if err == nil {
 		return false

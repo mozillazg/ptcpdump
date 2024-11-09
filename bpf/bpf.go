@@ -373,37 +373,31 @@ func (b *BPF) attachNetDevHooks() error {
 }
 
 func (b *BPF) AttachTracepoints() error {
-	lk, err := link.AttachRawTracepoint(link.RawTracepointOptions{
-		Name:    "sched_process_exec",
-		Program: b.objs.RawTracepointSchedProcessExec,
-	})
+	err := b.attachBTFTracepointOrRawTP("sched_process_exec",
+		b.objs.TpBtfSchedProcessExec, b.objs.RawTracepointSchedProcessExec,
+	)
 	if err != nil {
-		return fmt.Errorf("attach raw_tracepoint/sched_process_exec: %w", err)
+		return fmt.Errorf(": %w", err)
 	}
-	b.links = append(b.links, lk)
 
-	lk, err = link.AttachRawTracepoint(link.RawTracepointOptions{
-		Name:    "sched_process_exit",
-		Program: b.objs.RawTracepointSchedProcessExit,
-	})
+	err = b.attachBTFTracepointOrRawTP("sched_process_exit",
+		b.objs.TpBtfSchedProcessExit, b.objs.RawTracepointSchedProcessExit,
+	)
 	if err != nil {
-		return fmt.Errorf("attach raw_tracepoint/sched_process_exit: %w", err)
+		return fmt.Errorf(": %w", err)
 	}
-	b.links = append(b.links, lk)
 
 	if b.opts.attachForks() {
-		lk, err := link.AttachRawTracepoint(link.RawTracepointOptions{
-			Name:    "sched_process_fork",
-			Program: b.objs.RawTracepointSchedProcessFork,
-		})
+		err := b.attachBTFTracepointOrRawTP("sched_process_fork",
+			b.objs.TpBtfSchedProcessFork, b.objs.RawTracepointSchedProcessFork,
+		)
 		if err != nil {
-			return fmt.Errorf("attach raw_tracepoint/sched_process_fork: %w", err)
+			return fmt.Errorf(": %w", err)
 		}
-		b.links = append(b.links, lk)
 	}
 
 	if b.opts.hookMount {
-		lk, err = link.Tracepoint("syscalls", "sys_enter_mount", b.objs.TracepointSyscallsSysEnterMount, &link.TracepointOptions{})
+		lk, err := link.Tracepoint("syscalls", "sys_enter_mount", b.objs.TracepointSyscallsSysEnterMount, &link.TracepointOptions{})
 		if err != nil {
 			return fmt.Errorf("attach tracepoint/syscalls/sys_enter_mount: %w", err)
 		}
