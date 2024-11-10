@@ -39,6 +39,10 @@ func NewMetaData(criRuntimeEndpoint string) (*MetaData, error) {
 	}, nil
 }
 
+func NewDummyMetaData() *MetaData {
+	return &MetaData{}
+}
+
 func (m *MetaData) GetPodByContainer(c types.Container) types.Pod {
 	p := types.Pod{}
 	p.LoadFromContainer(c)

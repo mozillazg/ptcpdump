@@ -2,6 +2,7 @@ package writer
 
 import (
 	"fmt"
+	"github.com/mozillazg/ptcpdump/internal/types"
 	"io"
 	"strings"
 
@@ -26,7 +27,8 @@ type StdoutWriter struct {
 	FormatStyle   pktdump.FormatStyle
 	DataStyle     pktdump.ContentStyle
 
-	n int64
+	enhancedContext types.EnhancedContext
+	n               int64
 }
 
 func NewStdoutWriter(writer io.Writer, pcache *metadata.ProcessCache) *StdoutWriter {
@@ -37,6 +39,11 @@ func NewStdoutWriter(writer io.Writer, pcache *metadata.ProcessCache) *StdoutWri
 		n:           1,
 		FormatStyle: pktdump.FormatStyleNormal,
 	}
+}
+
+func (w *StdoutWriter) WithEnhancedContext(c types.EnhancedContext) *StdoutWriter {
+	w.enhancedContext = c
+	return w
 }
 
 func (w *StdoutWriter) Write(e *event.Packet) error {
@@ -60,24 +67,36 @@ func (w *StdoutWriter) Write(e *event.Packet) error {
 
 	switch {
 	case w.FormatStyle >= pktdump.FormatStyleVerbose:
-		processInfo = fmt.Sprintf("Process (pid %d, cmd %s, args %s)",
-			e.Pid, p.Cmd, p.FormatArgs())
-		if p.Parent.Pid > 0 {
+		if w.enhancedContext.ProcessContext() && e.Pid > 0 {
+			processInfo = fmt.Sprintf("Process (pid %d, cmd %s, args %s)",
+				e.Pid, p.Cmd, p.FormatArgs())
+		}
+		if w.enhancedContext.ParentProcContext() && p.Parent.Pid > 0 {
 			parentProcInfo = fmt.Sprintf("ParentProc (pid %d, cmd %s, args %s)",
 				p.Parent.Pid, p.Parent.Cmd, p.Parent.FormatArgs())
 		}
-		containerInfo = fmt.Sprintf("Container (name %s, id %s, image %s, labels %s)",
-			p.Container.TidyName(), p.Container.Id, p.Container.Image, p.Container.FormatLabels())
-		PodInfo = fmt.Sprintf("Pod (name %s, namespace %s, UID %s, labels %s, annotations %s)",
-			p.Pod.Name, p.Pod.Namespace, p.Pod.Uid, p.Pod.FormatLabels(), p.Pod.FormatAnnotations())
+		if w.enhancedContext.ContainerContext() && p.Container.Id != "" {
+			containerInfo = fmt.Sprintf("Container (name %s, id %s, image %s, labels %s)",
+				p.Container.TidyName(), p.Container.Id, p.Container.Image, p.Container.FormatLabels())
+		}
+		if w.enhancedContext.PodContext() && p.Pod.Name != "" {
+			PodInfo = fmt.Sprintf("Pod (name %s, namespace %s, UID %s, labels %s, annotations %s)",
+				p.Pod.Name, p.Pod.Namespace, p.Pod.Uid, p.Pod.FormatLabels(), p.Pod.FormatAnnotations())
+		}
 		break
 	default:
-		processInfo = fmt.Sprintf("%s.%d", p.Comm(), e.Pid)
-		if p.Parent.Pid > 0 {
+		if w.enhancedContext.ProcessContext() && e.Pid > 0 {
+			processInfo = fmt.Sprintf("%s.%d", p.Comm(), e.Pid)
+		}
+		if w.enhancedContext.ParentProcContext() && p.Parent.Pid > 0 {
 			parentProcInfo = fmt.Sprintf("ParentProc [%s.%d]", p.Parent.Comm(), p.Parent.Pid)
 		}
-		containerInfo = fmt.Sprintf("Container [%s]", p.Container.TidyName())
-		PodInfo = fmt.Sprintf("Pod [%s.%s]", p.Pod.Name, p.Pod.Namespace)
+		if w.enhancedContext.ContainerContext() && p.Container.Id != "" {
+			containerInfo = fmt.Sprintf("Container [%s]", p.Container.TidyName())
+		}
+		if w.enhancedContext.PodContext() && p.Pod.Name != "" {
+			PodInfo = fmt.Sprintf("Pod [%s.%s]", p.Pod.Name, p.Pod.Namespace)
+		}
 	}
 
 	// Decode a packet
@@ -108,7 +127,7 @@ func (w *StdoutWriter) Write(e *event.Packet) error {
 	if ifName != "" {
 		builder.WriteString(fmt.Sprintf("%s ", ifName))
 	}
-	if p.Pid > 0 && w.FormatStyle <= pktdump.FormatStyleNormal {
+	if processInfo != "" && w.FormatStyle <= pktdump.FormatStyleNormal {
 		builder.WriteString(fmt.Sprintf("%s ", processInfo))
 	}
 	if packetType != "" {
@@ -118,28 +137,28 @@ func (w *StdoutWriter) Write(e *event.Packet) error {
 	switch {
 	case w.FormatStyle >= pktdump.FormatStyleVerbose:
 		builder.WriteString(fmt.Sprintf("%s\n", formatedHeader))
-		if p.Pid > 0 {
+		if processInfo != "" {
 			builder.WriteString(fmt.Sprintf("    %s\n", processInfo))
-			if p.Parent.Pid > 0 {
+			if parentProcInfo != "" {
 				builder.WriteString(fmt.Sprintf("    %s\n", parentProcInfo))
 			}
 		}
-		if p.Container.Id != "" {
+		if containerInfo != "" {
 			builder.WriteString(fmt.Sprintf("    %s\n", containerInfo))
 		}
-		if p.Pod.Name != "" {
+		if PodInfo != "" {
 			builder.WriteString(fmt.Sprintf("    %s\n", PodInfo))
 		}
 		break
 	default:
 		builder.WriteString(formatedHeader)
-		if p.Parent.Pid > 0 {
+		if parentProcInfo != "" {
 			builder.WriteString(fmt.Sprintf(", %s", parentProcInfo))
 		}
-		if p.Container.Id != "" {
+		if containerInfo != "" {
 			builder.WriteString(fmt.Sprintf(", %s", containerInfo))
 		}
-		if p.Pod.Name != "" {
+		if PodInfo != "" {
 			builder.WriteString(fmt.Sprintf(", %s", PodInfo))
 		}
 		builder.WriteString("\n")

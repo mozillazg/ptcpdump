@@ -7,6 +7,7 @@ import (
 	"github.com/mozillazg/ptcpdump/internal/log"
 	"github.com/mozillazg/ptcpdump/internal/metadata"
 	"github.com/mozillazg/ptcpdump/internal/types"
+	"github.com/mozillazg/ptcpdump/internal/utils"
 	"github.com/mozillazg/ptcpdump/internal/writer"
 	"github.com/x-way/pktdump"
 	"io"
@@ -21,6 +22,11 @@ import (
 const (
 	extPcap   = ".pcap"
 	extPcapNG = ".pcapng"
+
+	contextProcess    = "process"
+	contextParentProc = "parentproc"
+	contextContainer  = "container"
+	contextPod        = "pod"
 )
 
 type Options struct {
@@ -78,7 +84,9 @@ type Options struct {
 	netnsIds []uint32
 	pidnsIds []uint32
 
-	stdout io.Writer
+	stdout           io.Writer
+	enhancedContexts []string
+	enhancedContext  types.EnhancedContext
 
 	netNsPaths    []string
 	devices       *types.Interfaces
@@ -138,6 +146,27 @@ func prepareOptions(opts *Options, rawArgs []string, args []string) {
 	if opts.podName != "" {
 		opts.podName, opts.podNamespace = getPodNameFilter(opts.podName)
 	}
+
+	opts.ifaces = utils.TidyCliMultipleVals(opts.ifaces)
+	opts.netNsPaths = utils.TidyCliMultipleVals(opts.netNsPaths)
+	opts.enhancedContexts = utils.TidyCliMultipleVals(opts.enhancedContexts)
+
+	if len(opts.enhancedContexts) == 0 {
+		opts.enhancedContext = types.EnhancedContextProcess | types.EnhancedContextParentProc |
+			types.EnhancedContextContainer | types.EnhancedContextPod
+	}
+	for _, c := range opts.enhancedContexts {
+		switch c {
+		case contextProcess:
+			opts.enhancedContext |= types.EnhancedContextProcess
+		case contextParentProc:
+			opts.enhancedContext |= types.EnhancedContextParentProc
+		case contextContainer:
+			opts.enhancedContext |= types.EnhancedContextContainer
+		case contextPod:
+			opts.enhancedContext |= types.EnhancedContextPod
+		}
+	}
 }
 
 func getPodNameFilter(raw string) (name, ns string) {
@@ -195,6 +224,7 @@ func (opts *Options) applyToStdoutWriter(w *writer.StdoutWriter) {
 		w.DataStyle = pktdump.ContentStyleASCII
 		break
 	}
+	w.WithEnhancedContext(opts.enhancedContext)
 }
 
 func (o Options) shouldEnableGoTLSHooks() bool {
@@ -317,4 +347,20 @@ func (o *Options) ToCapturerOptions() *capturer.Options {
 		DevNames:                      opts.ifaces,
 	}
 	return copts
+}
+
+func (o *Options) enableProcessContext() bool {
+	return o.enhancedContext.ProcessContext()
+}
+
+func (o *Options) enableParentProcContext() bool {
+	return o.enhancedContext.ParentProcContext()
+}
+
+func (o *Options) enableContainerContext() bool {
+	return o.enhancedContext.ContainerContext()
+}
+
+func (o *Options) enablePodContext() bool {
+	return o.enhancedContext.PodContext()
 }

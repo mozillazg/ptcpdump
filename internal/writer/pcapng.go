@@ -23,11 +23,18 @@ type PcapNGWriter struct {
 	noBuffer bool
 	lock     sync.RWMutex
 	keylogs  bytes.Buffer
+
+	enhancedContext types.EnhancedContext
 }
 
 func NewPcapNGWriter(pw *pcapgo.NgWriter, pcache *metadata.ProcessCache,
 	interfaceIds map[string]int) *PcapNGWriter {
 	return &PcapNGWriter{pw: pw, pcache: pcache, interfaceIds: interfaceIds, lock: sync.RWMutex{}}
+}
+
+func (w *PcapNGWriter) WithEnhancedContext(c types.EnhancedContext) *PcapNGWriter {
+	w.enhancedContext = c
+	return w
 }
 
 func (w *PcapNGWriter) Write(e *event.Packet) error {
@@ -41,24 +48,26 @@ func (w *PcapNGWriter) Write(e *event.Packet) error {
 	p := w.pcache.Get(e.Pid, e.MntNs, e.NetNs, e.CgroupName)
 
 	opts := pcapgo.NgPacketOptions{}
-	if p.Pid != 0 {
+	if w.enhancedContext.ProcessContext() && p.Pid != 0 {
 		log.Debugf("found pid from cache: %d", e.Pid)
 		opts.Comments = append(opts.Comments,
 			fmt.Sprintf("PID: %d\nCmd: %s\nArgs: %s",
 				e.Pid, p.Cmd, p.FormatArgs()),
 		)
-		opts.Comments = append(opts.Comments,
-			fmt.Sprintf("ParentPID: %d\nParentCmd: %s\nParentArgs: %s",
-				p.Parent.Pid, p.Parent.Cmd, p.Parent.FormatArgs()),
-		)
+		if w.enhancedContext.ParentProcContext() && p.Parent.Pid > 0 {
+			opts.Comments = append(opts.Comments,
+				fmt.Sprintf("ParentPID: %d\nParentCmd: %s\nParentArgs: %s",
+					p.Parent.Pid, p.Parent.Cmd, p.Parent.FormatArgs()),
+			)
+		}
 	}
-	if p.Container.Id != "" {
+	if w.enhancedContext.ContainerContext() && p.Container.Id != "" {
 		opts.Comments = append(opts.Comments,
 			fmt.Sprintf("ContainerName: %s\nContainerId: %s\nContainerImage: %s\nContainerLabels: %s",
 				p.Container.TidyName(), p.Container.Id, p.Container.Image, p.Container.FormatLabels()),
 		)
 	}
-	if p.Pod.Name != "" {
+	if w.enhancedContext.PodContext() && p.Pod.Name != "" {
 		opts.Comments = append(opts.Comments,
 			fmt.Sprintf("PodName: %s\nPodNamespace: %s\nPodUID: %s\nPodLabels: %s\nPodAnnotations: %s",
 				p.Pod.Name, p.Pod.Namespace, p.Pod.Uid, p.Pod.FormatLabels(), p.Pod.FormatAnnotations()),

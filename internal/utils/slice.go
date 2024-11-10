@@ -1,5 +1,7 @@
 package utils
 
+import "strings"
+
 func GetUniqInts(items []int) []int {
 	var uniqItems []int
 	uniqMap := map[int]bool{}
@@ -10,4 +12,22 @@ func GetUniqInts(items []int) []int {
 		}
 	}
 	return uniqItems
+}
+
+func TidyCliMultipleVals(arr []string) []string {
+	seen := make(map[string]bool)
+	var result []string
+
+	for _, str := range arr {
+		parts := strings.Split(str, ",")
+		for _, part := range parts {
+			part = strings.TrimSpace(part)
+			if !seen[part] && part != "" {
+				seen[part] = true
+				result = append(result, part)
+			}
+		}
+	}
+
+	return result
 }

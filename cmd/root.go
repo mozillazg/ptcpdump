@@ -127,6 +127,9 @@ func init() {
 		"Path to an network namespace file or name")
 	rootCmd.Flags().BoolVarP(&opts.quiet, "quiet", "q", false,
 		"Quiet output. Print less protocol information so output lines are shorter")
+	rootCmd.Flags().StringSliceVar(&opts.enhancedContexts, "context",
+		[]string{contextProcess, contextParentProc, contextContainer, contextPod},
+		"Specify which context information to include in the output")
 
 	silenceKlog()
 }
