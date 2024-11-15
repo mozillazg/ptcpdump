@@ -40,6 +40,15 @@ func TestFormat(t *testing.T) {
 			expectedOutFile: "../testdata/format/tcp.pcapng.-v.out.txt",
 		},
 		{
+			name: "tcp -v --context=process",
+			opts: &Options{
+				readFilePath:     "../testdata/format/tcp.pcapng",
+				verbose:          1,
+				enhancedContexts: []string{contextProcess},
+			},
+			expectedOutFile: "../testdata/format/tcp.pcapng.-v.--context.process.out.txt",
+		},
+		{
 			name: "tcp -q",
 			opts: &Options{
 				readFilePath: "../testdata/format/tcp.pcapng",
@@ -142,6 +151,7 @@ func TestFormat(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			output := bytes.Buffer{}
 			tt.opts.stdout = &output
+			prepareOptions(tt.opts, nil, nil)
 
 			err := read(context.TODO(), tt.opts)
 			assert.NoError(t, err)

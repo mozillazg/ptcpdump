@@ -108,6 +108,7 @@ func newPcapNgWriter(w io.Writer, pcache *metadata.ProcessCache, opts *Options) 
 	}
 
 	wt := writer.NewPcapNGWriter(pcapNgWriter, pcache, interfaceIds).WithPcapFilter(opts.pcapFilter)
+	wt.WithEnhancedContext(opts.enhancedContext)
 	return wt, nil
 }
 

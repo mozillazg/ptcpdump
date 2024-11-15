@@ -15,21 +15,33 @@ type ContainerCache struct {
 }
 
 func NewContainerCache(ctx context.Context,
-	dockerEndpoint, containerdEndpoint, criRuntimeEndpoint string) (*ContainerCache, error) {
+	dockerEndpoint, containerdEndpoint, criRuntimeEndpoint string, nok8s bool) (*ContainerCache, error) {
 	d := container.NewMultipleEngineMetaData(dockerEndpoint, containerdEndpoint)
 
 	if err := d.Start(ctx); err != nil {
 		return nil, err
 	}
-	k8sd, err := k8s.NewMetaData(criRuntimeEndpoint)
-	if err != nil {
-		log.Warnf("skip k8s integration: %s", err)
+	cc := &ContainerCache{d: d}
+
+	if nok8s {
+		cc.k8s = k8s.NewDummyMetaData()
+	} else {
+		k8sd, err := k8s.NewMetaData(criRuntimeEndpoint)
+		if err != nil {
+			log.Warnf("skip k8s integration: %s", err)
+			k8sd = k8s.NewDummyMetaData()
+		}
+		cc.k8s = k8sd
 	}
 
+	return cc, nil
+}
+
+func NewDummyContainerCache() *ContainerCache {
 	return &ContainerCache{
-		d:   d,
-		k8s: k8sd,
-	}, nil
+		d:   container.DummyMetadata{},
+		k8s: k8s.NewDummyMetaData(),
+	}
 }
 
 func (c *ContainerCache) GetById(containerId string) types.Container {

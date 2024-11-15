@@ -157,6 +157,27 @@ sudo ptcpdump -i any --netns /proc/26/ns/net
     Pod (name test, namespace default, UID 9e4bc54b-de48-4b1c-8b9e-54709f67ed0c, labels {"run":"test"}, annotations {"kubernetes.io/config.seen":"2024-07-21T12:41:00.460249620Z","kubernetes.io/config.source":"api"})
 ```
 
+使用 `--context` 限制输出中的进程/容器/Pod相关上下文信息(默认显示所有上下文信息):
+
+```
+# --context=process
+09:32:09.718892 vethee2a302f wget.3553008 In IP 10.244.0.2.33426 > 139.178.84.217.80: Flags [S], seq 4113492822, win 64240, length 0
+
+# -v --context=process
+13:44:41.529003 eth0 In IP (tos 0x4, ttl 45, id 45428, offset 0, flags [DF], proto TCP (6), length 52)
+    139.178.84.217.443 > 172.19.0.2.42606: Flags [.], cksum 0x5284, seq 3173118145, ack 1385712707, win 118, options [nop,nop,TS val 134560683 ecr 1627716996], length 0
+    Process (pid 553587, cmd /usr/bin/wget, args wget kernel.org)
+
+# -v --context=process,parentproc,container,pod
+# or -v --context=process --context=parentproc --context=container --context=pod
+13:44:41.529003 eth0 In IP (tos 0x4, ttl 45, id 45428, offset 0, flags [DF], proto TCP (6), length 52)
+    139.178.84.217.443 > 172.19.0.2.42606: Flags [.], cksum 0x5284, seq 3173118145, ack 1385712707, win 118, options [nop,nop,TS val 134560683 ecr 1627716996], length 0
+    Process (pid 553587, cmd /usr/bin/wget, args wget kernel.org)
+    ParentProc (pid 553296, cmd /bin/sh, args sh)
+    Container (name test, id d9028334568bf75a5a084963a8f98f78c56bba7f45f823b3780a135b71b91e95, image docker.io/library/alpine:3.18, labels {"io.cri-containerd.kind":"container","io.kubernetes.container.name":"test","io.kubernetes.pod.name":"test","io.kubernetes.pod.namespace":"default","io.kubernetes.pod.uid":"9e4bc54b-de48-4b1c-8b9e-54709f67ed0c"})
+    Pod (name test, namespace default, UID 9e4bc54b-de48-4b1c-8b9e-54709f67ed0c, labels {"run":"test"}, annotations {"kubernetes.io/config.seen":"2024-07-21T12:41:00.460249620Z","kubernetes.io/config.source":"api"})
+```
+
 通过 `-A` 参数以 ASCII 格式输出:
 
 ```
@@ -240,6 +261,7 @@ Flags:
       --container-id string                          Filter by container id (only TCP and UDP packets are supported)
       --container-name string                        Filter by container name (only TCP and UDP packets are supported)
       --containerd-address string                    Address of containerd service (default "/run/containerd/containerd.sock")
+      --context strings                              Specify which context information to include in the output (default [process,parentproc,container,pod])
       --count                                        Print only on stdout the packet count when reading capture file instead of parsing/printing the packets
       --cri-runtime-address string                   Address of CRI container runtime service (default: uses in order the first successful one of [/var/run/dockershim.sock, /var/run/cri-dockerd.sock, /run/crio/crio.sock, /run/containerd/containerd.sock])
       --delay-before-handle-packet-events duration   Delay some durations before handle packet events

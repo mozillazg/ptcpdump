@@ -9,8 +9,12 @@ import (
 )
 
 func applyContainerFilter(ctx context.Context, opts *Options) (*metadata.ContainerCache, error) {
+	if !(opts.enableContainerContext() || opts.enablePodContext()) {
+		return metadata.NewDummyContainerCache(), nil
+	}
+
 	cc, err := metadata.NewContainerCache(ctx, opts.dockerEndpoint,
-		opts.containerdEndpoint, opts.criRuntimeEndpoint)
+		opts.containerdEndpoint, opts.criRuntimeEndpoint, !opts.enablePodContext())
 	if err != nil {
 		if opts.filterByContainer() {
 			log.Fatalf("find container failed: %s", err)
