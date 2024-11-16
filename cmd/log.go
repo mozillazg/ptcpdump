@@ -17,6 +17,7 @@ func logFatal(err error) {
 	if errors.As(err, &ve) {
 		// Using %+v will print the whole verifier error, not just the last
 		// few lines.
+		log.Errorf("%+v", err)
 		log.Fatalf("Verifier error: %+v", ve)
 	}
 	log.Fatalf("%+v", err)
