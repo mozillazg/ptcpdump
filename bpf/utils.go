@@ -1,43 +1,35 @@
 package bpf
 
 import (
-	"errors"
 	"fmt"
 	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/link"
 	"github.com/mozillazg/ptcpdump/internal/log"
-	"regexp"
-)
-
-var (
-	errNotSupportTracingProg = errors.New("not support BPF_PROG_TYPE_TRACING")
-
-	regexTracingNotSupportErr = regexp.MustCompile(`(fentry|fexit) \w+ not supported`)
 )
 
 func (b *BPF) attachFentryOrKprobe(symbol string, fentryProg *ebpf.Program, kprobeProg *ebpf.Program) error {
 	var lk link.Link
 	var err error
 
-	if !b.skipOptimize {
+	if fentryProg != nil {
+		log.Infof("attaching fentry/%s", symbol)
 		lk, err = link.AttachTracing(link.TracingOptions{
 			Program:    fentryProg,
 			AttachType: ebpf.AttachTraceFEntry,
 		})
-	} else {
-		err = errNotSupportTracingProg
+		if err == nil {
+			b.links = append(b.links, lk)
+			return nil
+		}
+		log.Infof("attach fentry/%s failed: %+v", symbol, err)
 	}
 
+	log.Infof("attaching kprobe/%s", symbol)
+	lk, err = link.Kprobe(symbol, kprobeProg, &link.KprobeOptions{})
 	if err != nil {
-		log.Infof("attach fentry/%s failed: %+v", symbol, err)
-		lk, err = link.Kprobe(symbol, kprobeProg, &link.KprobeOptions{})
-		if err != nil {
-			return fmt.Errorf("attach kprobe/%s failed: %w", symbol, err)
-		}
-		b.links = append(b.links, lk)
-	} else {
-		b.links = append(b.links, lk)
+		return fmt.Errorf("attach kprobe/%s failed: %w", symbol, err)
 	}
+	b.links = append(b.links, lk)
 
 	return nil
 }
@@ -47,32 +39,33 @@ func (b *BPF) attachFexitOrKprobe(symbol string, fexitProg *ebpf.Program,
 	var lk link.Link
 	var err error
 
-	if !b.skipOptimize {
+	if fexitProg != nil {
+		log.Infof("attaching fentry/%s", symbol)
 		lk, err = link.AttachTracing(link.TracingOptions{
 			Program:    fexitProg,
 			AttachType: ebpf.AttachTraceFExit,
 		})
-	} else {
-		err = errNotSupportTracingProg
+		if err == nil {
+			b.links = append(b.links, lk)
+			return nil
+		}
+		log.Infof("attach fexit/%s failed: %+v", symbol, err)
 	}
 
-	if err != nil {
-		log.Infof("attach fexit/%s failed: %+v", symbol, err)
-		if kprobeProg != nil {
-			lk, err = link.Kprobe(symbol, kprobeProg, &link.KprobeOptions{})
-			if err != nil {
-				return fmt.Errorf("attach kprobe/%s failed: %w", symbol, err)
-			}
-			b.links = append(b.links, lk)
+	if kprobeProg != nil {
+		log.Infof("attaching kprobe/%s", symbol)
+		lk, err = link.Kprobe(symbol, kprobeProg, &link.KprobeOptions{})
+		if err != nil {
+			return fmt.Errorf("attach kprobe/%s failed: %w", symbol, err)
 		}
-		if kretprobeProg != nil {
-			lk, err = link.Kretprobe(symbol, kretprobeProg, &link.KprobeOptions{})
-			if err != nil {
-				return fmt.Errorf("attach kretprobe/%s failed: %w", symbol, err)
-			}
-			b.links = append(b.links, lk)
+		b.links = append(b.links, lk)
+	}
+	if kretprobeProg != nil {
+		log.Infof("attaching kretprobe/%s", symbol)
+		lk, err = link.Kretprobe(symbol, kretprobeProg, &link.KprobeOptions{})
+		if err != nil {
+			return fmt.Errorf("attach kretprobe/%s failed: %w", symbol, err)
 		}
-	} else {
 		b.links = append(b.links, lk)
 	}
 
@@ -83,35 +76,28 @@ func (b *BPF) attachBTFTracepointOrRawTP(name string, btfProg *ebpf.Program, raw
 	var lk link.Link
 	var err error
 
-	if !b.skipOptimize {
+	if btfProg != nil {
+		log.Infof("attaching tp_btf/%s", name)
 		lk, err = link.AttachTracing(link.TracingOptions{
 			Program:    btfProg,
 			AttachType: ebpf.AttachTraceRawTp,
 		})
-	} else {
-		err = errNotSupportTracingProg
+		if err == nil {
+			b.links = append(b.links, lk)
+			return nil
+		}
+		log.Infof("attach tp_btf/%s failed: %+v", name, err)
 	}
 
+	log.Infof("attaching raw_tp/%s", name)
+	lk, err = link.AttachRawTracepoint(link.RawTracepointOptions{
+		Name:    name,
+		Program: rawProg,
+	})
 	if err != nil {
-		log.Infof("attach tp_btf/%s failed: %+v", name, err)
-		lk, err = link.AttachRawTracepoint(link.RawTracepointOptions{
-			Name:    name,
-			Program: rawProg,
-		})
-		if err != nil {
-			return fmt.Errorf("attach raw_tp/%s failed: %w", name, err)
-		}
-		b.links = append(b.links, lk)
-	} else {
-		b.links = append(b.links, lk)
+		return fmt.Errorf("attach raw_tp/%s failed: %w", name, err)
 	}
+	b.links = append(b.links, lk)
 
 	return nil
-}
-
-func isTracingNotSupportErr(err error) bool {
-	if err == nil {
-		return false
-	}
-	return regexTracingNotSupportErr.MatchString(err.Error())
 }

@@ -32,7 +32,6 @@ type BPF struct {
 	closeFuncs []func()
 
 	skipAttachCgroup bool
-	skipOptimize     bool
 	isLegacyKernel   bool
 	report           *types.CountReport
 }
@@ -55,19 +54,25 @@ type Options struct {
 
 func NewBPF() (*BPF, error) {
 	var legacyKernel bool
-	var skipOptimize bool
+	var skipAttachCgroup bool
 	if ok, err := isLegacyKernel(); err != nil {
 		log.Warnf("%s", err)
 	} else {
 		legacyKernel = ok
 	}
+	if !supportCgroupSock() {
+		skipAttachCgroup = true
+		legacyKernel = true
+	}
+
 	b := _BpfBytes
 	if legacyKernel {
-		skipOptimize = true
 		b = _Bpf_legacyBytes
-	} else if !supportTracing() {
-		skipOptimize = true
-		b = _Bpf_no_optimizeBytes
+		skipAttachCgroup = true
+	} else {
+		if !supportTracing() {
+			b = _Bpf_no_tracingBytes
+		}
 	}
 
 	spec, err := loadBpfWithData(b)
@@ -80,8 +85,7 @@ func NewBPF() (*BPF, error) {
 		objs:             &BpfObjects{},
 		report:           &types.CountReport{},
 		isLegacyKernel:   legacyKernel,
-		skipAttachCgroup: legacyKernel,
-		skipOptimize:     skipOptimize,
+		skipAttachCgroup: skipAttachCgroup,
 	}
 
 	return bf, nil
@@ -129,53 +133,17 @@ func (b *BPF) Load(opts Options) error {
 		}
 	}
 
-	// TODO: refine
-	loadCount := 0
-load:
-	loadCount++
-	if b.isLegacyKernel || !supportCgroupSock() {
-		log.Info("will load the objs for legacy kernel")
-		b.skipAttachCgroup = true
-		objs := BpfObjectsForLegacyKernel{}
-		if err = b.spec.LoadAndAssign(&objs, &ebpf.CollectionOptions{
-			Programs: ebpf.ProgramOptions{
-				KernelTypes: opts.kernelTypes,
-				LogLevel:    ebpf.LogLevelInstruction,
-				LogSize:     logSzie,
-			},
-		}); err != nil {
-			return fmt.Errorf("bpf load: %w", err)
-		}
-		b.objs.FromLegacy(&objs)
-	} else if b.skipOptimize {
-		log.Info("will load the objs for skip optimize")
-		objs := BpfObjectsForNoOptimize{}
-		if err = b.spec.LoadAndAssign(&objs, &ebpf.CollectionOptions{
-			Programs: ebpf.ProgramOptions{
-				KernelTypes: opts.kernelTypes,
-				LogLevel:    ebpf.LogLevelInstruction,
-				LogSize:     logSzie,
-			},
-		}); err != nil {
-			return fmt.Errorf("bpf load: %w", err)
-		}
-		b.objs.FromNoOptimize(&objs)
-	} else {
-		err = b.spec.LoadAndAssign(b.objs, &ebpf.CollectionOptions{
-			Programs: ebpf.ProgramOptions{
-				KernelTypes: opts.kernelTypes,
-				LogLevel:    ebpf.LogLevelInstruction,
-				LogSize:     logSzie,
-			},
-		})
-		if err != nil {
-			if loadCount < 2 && isTracingNotSupportErr(err) {
-				log.Infof("bpf load failed, try again: %+v", err)
-				b.skipOptimize = true
-				goto load
-			}
-			return fmt.Errorf("bpf load: %w", err)
-		}
+	err = b.spec.LoadAndAssign(b.objs, &ebpf.CollectionOptions{
+		Programs: ebpf.ProgramOptions{
+			KernelTypes: opts.kernelTypes,
+			LogLevel:    ebpf.LogLevelInstruction,
+			LogSize:     logSzie,
+		},
+		IgnoreUnknownProgram:      true,
+		IgnoreNotSupportedProgram: true,
+	})
+	if err != nil {
+		return fmt.Errorf("bpf load and assign: %w", err)
 	}
 
 	b.opts = opts
@@ -266,7 +234,6 @@ func (b *BPF) AttachKprobes() error {
 	err = b.attachFentryOrKprobe("udp_send_skb", b.objs.FentryUdpSendSkb, b.objs.KprobeUdpSendSkb)
 	if err != nil {
 		log.Infof("%+v", err)
-		// TODO: use errors.Is(xxx) or ==
 		if strings.Contains(err.Error(), "no such file or directory") {
 			err = b.attachFentryOrKprobe("udp_sendmsg", b.objs.FentryUdpSendmsg, b.objs.KprobeUdpSendmsg)
 			if err != nil {
@@ -280,8 +247,8 @@ func (b *BPF) AttachKprobes() error {
 	err = b.attachFentryOrKprobe("nf_nat_packet",
 		b.objs.FentryNfNatPacket, b.objs.KprobeNfNatPacket)
 	if err != nil {
-		// TODO: use errors.Is(xxx) or ==
-		if strings.Contains(err.Error(), "nf_nat_packet: not found: no such file or directory") {
+		log.Infof("%+v", err)
+		if strings.Contains(err.Error(), "no such file or directory") {
 			log.Info("the kernel does not support netfilter based NAT feature, skip attach kprobe/nf_nat_packet")
 		} else {
 			return fmt.Errorf(": %w", err)
@@ -291,8 +258,8 @@ func (b *BPF) AttachKprobes() error {
 	err = b.attachFentryOrKprobe("nf_nat_manip_pkt",
 		b.objs.FentryNfNatManipPkt, b.objs.KprobeNfNatManipPkt)
 	if err != nil {
-		// TODO: use errors.Is(xxx) or ==
-		if strings.Contains(err.Error(), "nf_nat_manip_pkt: not found: no such file or directory") {
+		log.Infof("%+v", err)
+		if strings.Contains(err.Error(), "no such file or directory") {
 			log.Info("the kernel does not support netfilter based NAT feature, skip attach kprobe/nf_nat_manip_pkt")
 		} else {
 			return fmt.Errorf(": %w", err)
@@ -307,67 +274,57 @@ func (b *BPF) attachNetDevHooks() error {
 		return nil
 	}
 
+	err := b.attachFexitOrKprobe("register_netdevice",
+		nil, b.objs.KprobeRegisterNetdevice, b.objs.KretprobeRegisterNetdevice)
+	if err != nil {
+		return err
+	}
+
 	// TODO: refine
-	lk, err := link.Kprobe("register_netdevice",
-		b.objs.KprobeRegisterNetdevice, &link.KprobeOptions{})
-	if err != nil {
-		return fmt.Errorf("attach kprobe/register_netdevice: %w", err)
-	}
-	b.links = append(b.links, lk)
-	lk, err = link.Kretprobe("register_netdevice",
-		b.objs.KretprobeRegisterNetdevice, &link.KprobeOptions{})
-	if err != nil {
-		return fmt.Errorf("attach kretprobe/register_netdevice: %w", err)
-	}
-	b.links = append(b.links, lk)
-	lk, err = link.Kretprobe("__dev_get_by_index",
-		b.objs.KretprobeDevGetByIndex, &link.KprobeOptions{})
+	err = b.attachFexitOrKprobe("__dev_get_by_index",
+		nil, nil, b.objs.KretprobeDevGetByIndex)
 	if err != nil {
 		log.Infof("%+v", err)
-		// TODO: use errors.Is(xxx) or ==
 		if strings.Contains(err.Error(), "no such file or directory") {
-			lk, err = link.Kretprobe("dev_get_by_index",
-				b.objs.KretprobeDevGetByIndexLegacy, &link.KprobeOptions{})
+			err = b.attachFexitOrKprobe("dev_get_by_index",
+				nil, nil, b.objs.KretprobeDevGetByIndexLegacy)
 			if err != nil {
-				return fmt.Errorf("attach kretprobe/dev_get_by_index: %w", err)
+				return err
 			}
 		} else {
-			return fmt.Errorf("attach kretprobe/__dev_get_by_index: %w", err)
+			return err
 		}
 	}
-	b.links = append(b.links, lk)
-	lk, err = link.Kprobe("__dev_change_net_namespace",
-		b.objs.KprobeDevChangeNetNamespace, &link.KprobeOptions{})
+
+	err = b.attachFentryOrKprobe("__dev_change_net_namespace",
+		nil, b.objs.KprobeDevChangeNetNamespace)
 	if err != nil {
 		log.Infof("%+v", err)
-		// TODO: use errors.Is(xxx) or ==
 		if strings.Contains(err.Error(), "no such file or directory") {
-			lk, err = link.Kprobe("dev_change_net_namespace",
-				b.objs.KprobeDevChangeNetNamespaceLegacy, &link.KprobeOptions{})
+			err = b.attachFentryOrKprobe("dev_change_net_namespace",
+				nil, b.objs.KprobeDevChangeNetNamespaceLegacy)
 			if err != nil {
-				return fmt.Errorf("attach kprobe/dev_change_net_namespace: %w", err)
+				return err
 			}
 		} else {
-			return fmt.Errorf("attach kprobe/__dev_change_net_namespace: %w", err)
+			return err
 		}
 	}
-	b.links = append(b.links, lk)
-	lk, err = link.Kretprobe("__dev_change_net_namespace",
-		b.objs.KretprobeDevChangeNetNamespace, &link.KprobeOptions{})
+
+	err = b.attachFexitOrKprobe("__dev_change_net_namespace",
+		nil, nil, b.objs.KretprobeDevChangeNetNamespace)
 	if err != nil {
 		log.Infof("%+v", err)
-		// TODO: use errors.Is(xxx) or ==
 		if strings.Contains(err.Error(), "no such file or directory") {
-			lk, err = link.Kretprobe("dev_change_net_namespace",
-				b.objs.KretprobeDevChangeNetNamespaceLegacy, &link.KprobeOptions{})
+			err = b.attachFexitOrKprobe("dev_change_net_namespace",
+				nil, nil, b.objs.KretprobeDevChangeNetNamespaceLegacy)
 			if err != nil {
-				return fmt.Errorf("attach kretprobe/dev_change_net_namespace: %w", err)
+				return err
 			}
 		} else {
-			return fmt.Errorf("attach kretprobe/__dev_change_net_namespace: %w", err)
+			return err
 		}
 	}
-	b.links = append(b.links, lk)
 
 	return nil
 }
@@ -397,11 +354,13 @@ func (b *BPF) AttachTracepoints() error {
 	}
 
 	if b.opts.hookMount {
+		log.Info("attaching tracepoint/syscalls/sys_enter_mount")
 		lk, err := link.Tracepoint("syscalls", "sys_enter_mount", b.objs.TracepointSyscallsSysEnterMount, &link.TracepointOptions{})
 		if err != nil {
 			return fmt.Errorf("attach tracepoint/syscalls/sys_enter_mount: %w", err)
 		}
 		b.links = append(b.links, lk)
+		log.Info("attaching tracepoint/syscalls/sys_exit_mount")
 		lk, err = link.Tracepoint("syscalls", "sys_exit_mount", b.objs.TracepointSyscallsSysExitMount, &link.TracepointOptions{})
 		if err != nil {
 			return fmt.Errorf("attach tracepoint/syscalls/sys_exit_mount: %w", err)

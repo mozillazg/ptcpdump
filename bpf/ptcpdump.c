@@ -527,11 +527,13 @@ int BPF_PROG(raw_tracepoint__sched_process_fork, struct task_struct *parent, str
     return 0;
 }
 
+#ifndef NO_TRACING
 SEC("tp_btf/sched_process_fork")
 int BPF_PROG(tp_btf__sched_process_fork, struct task_struct *parent, struct task_struct *child) {
     handle_fork(parent, child);
     return 0;
 }
+#endif
 
 #ifndef NO_CGROUP_PROG
 SEC("cgroup/sock_create")
@@ -615,7 +617,7 @@ int BPF_KPROBE(kprobe__security_sk_classify_flow, struct sock *sk) {
     return 0;
 }
 
-#ifndef NO_OPTIMIZE
+#ifndef NO_TRACING
 SEC("fentry/security_sk_classify_flow")
 int BPF_PROG(fentry__security_sk_classify_flow, struct sock *sk) {
     handle_security_sk_classify_flow(sk);
@@ -658,7 +660,7 @@ int BPF_KPROBE(kprobe__tcp_sendmsg, struct sock *sk) {
     return 0;
 }
 
-#ifndef NO_OPTIMIZE
+#ifndef NO_TRACING
 SEC("fentry/tcp_sendmsg")
 int BPF_PROG(fentry__tcp_sendmsg, struct sock *sk) {
     handle_sendmsg(sk);
@@ -672,7 +674,7 @@ int BPF_KPROBE(kprobe__udp_sendmsg, struct sock *sk) {
     return 0;
 }
 
-#ifndef NO_OPTIMIZE
+#ifndef NO_TRACING
 SEC("fentry/udp_sendmsg")
 int BPF_PROG(fentry__udp_sendmsg, struct sock *sk) {
     handle_sendmsg(sk);
@@ -687,7 +689,7 @@ int BPF_KPROBE(kprobe__udp_send_skb, struct sk_buff *skb) {
     return 0;
 }
 
-#ifndef NO_OPTIMIZE
+#ifndef NO_TRACING
 SEC("fentry/udp_send_skb")
 int BPF_PROG(fentry__udp_send_skb, struct sk_buff *skb) {
     struct sock *sk = BPF_CORE_READ(skb, sk);
@@ -768,7 +770,7 @@ int BPF_KPROBE(kprobe__nf_nat_packet, struct nf_conn *ct) {
     return 0;
 }
 
-#ifndef NO_OPTIMIZE
+#ifndef NO_TRACING
 SEC("fentry/nf_nat_packet")
 int BPF_PROG(fentry__nf_nat_packet, struct nf_conn *ct) {
     handle_nat(ct);
@@ -782,7 +784,7 @@ int BPF_KPROBE(kprobe__nf_nat_manip_pkt, void *_, struct nf_conn *ct) {
     return 0;
 }
 
-#ifndef NO_OPTIMIZE
+#ifndef NO_TRACING
 SEC("fentry/nf_nat_manip_pkt")
 int BPF_PROG(fentry__nf_nat_manip_pkt, void *_, struct nf_conn *ct) {
     handle_nat(ct);
@@ -1055,7 +1057,7 @@ int BPF_PROG(raw_tracepoint__sched_process_exec, struct task_struct *task, pid_t
     return 0;
 }
 
-#ifndef NO_OPTIMIZE
+#ifndef NO_TRACING
 SEC("tp_btf/sched_process_exec")
 int BPF_PROG(tp_btf__sched_process_exec, struct task_struct *task, pid_t old_pid, struct linux_binprm *bprm) {
     handle_exec(ctx, task, old_pid, bprm);
@@ -1069,7 +1071,7 @@ int BPF_PROG(raw_tracepoint__sched_process_exit, struct task_struct *task) {
     return 0;
 }
 
-#ifndef NO_OPTIMIZE
+#ifndef NO_TRACING
 SEC("tp_btf/sched_process_exit")
 int BPF_PROG(tp_btf__sched_process_exit, struct task_struct *task) {
     handle_exit(ctx, task);

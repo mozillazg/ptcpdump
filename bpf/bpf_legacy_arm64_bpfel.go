@@ -72,7 +72,6 @@ type bpf_legacyProgramSpecs struct {
 	RawTracepointSchedProcessFork        *ebpf.ProgramSpec `ebpf:"raw_tracepoint__sched_process_fork"`
 	TcEgress                             *ebpf.ProgramSpec `ebpf:"tc_egress"`
 	TcIngress                            *ebpf.ProgramSpec `ebpf:"tc_ingress"`
-	TpBtfSchedProcessFork                *ebpf.ProgramSpec `ebpf:"tp_btf__sched_process_fork"`
 	TracepointSyscallsSysEnterMount      *ebpf.ProgramSpec `ebpf:"tracepoint__syscalls__sys_enter_mount"`
 	TracepointSyscallsSysExitMount       *ebpf.ProgramSpec `ebpf:"tracepoint__syscalls__sys_exit_mount"`
 	UprobeGoBuiltinTlsWriteKeyLog        *ebpf.ProgramSpec `ebpf:"uprobe__go_builtin__tls__write_key_log"`
@@ -203,7 +202,6 @@ type bpf_legacyPrograms struct {
 	RawTracepointSchedProcessFork        *ebpf.Program `ebpf:"raw_tracepoint__sched_process_fork"`
 	TcEgress                             *ebpf.Program `ebpf:"tc_egress"`
 	TcIngress                            *ebpf.Program `ebpf:"tc_ingress"`
-	TpBtfSchedProcessFork                *ebpf.Program `ebpf:"tp_btf__sched_process_fork"`
 	TracepointSyscallsSysEnterMount      *ebpf.Program `ebpf:"tracepoint__syscalls__sys_enter_mount"`
 	TracepointSyscallsSysExitMount       *ebpf.Program `ebpf:"tracepoint__syscalls__sys_exit_mount"`
 	UprobeGoBuiltinTlsWriteKeyLog        *ebpf.Program `ebpf:"uprobe__go_builtin__tls__write_key_log"`
@@ -231,7 +229,6 @@ func (p *bpf_legacyPrograms) Close() error {
 		p.RawTracepointSchedProcessFork,
 		p.TcEgress,
 		p.TcIngress,
-		p.TpBtfSchedProcessFork,
 		p.TracepointSyscallsSysEnterMount,
 		p.TracepointSyscallsSysExitMount,
 		p.UprobeGoBuiltinTlsWriteKeyLog,
