@@ -11,7 +11,7 @@ import (
 )
 
 // $TARGET is set by the Makefile
-//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc clang -no-strip -no-global-types -target $TARGET bpf_legacy ./ptcpdump.c -- -I./headers -I./headers/$TARGET -I. -Wall -DLEGACY_KERNEL -DNO_CGROUP_PROG -DNO_TRACING
+//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc clang -no-strip -no-global-types -target $TARGET bpf_legacy ./ptcpdump.c -- -I./headers -I./headers/$TARGET -I. -Wall -DLEGACY_KERNEL -DNO_CGROUP_PROG -DNO_TRACING -DNO_TCX
 
 func supportCgroupSock() bool {
 	if err := features.HaveProgramHelper(ebpf.CGroupSock, asm.FnGetSocketCookie); err != nil {
@@ -44,6 +44,14 @@ func isLegacyKernel() (bool, error) {
 		return true, nil
 	}
 	return false, nil
+}
+
+func supportTcx() bool {
+	versionCode, _ := features.LinuxVersionCode()
+	if versionCode <= 0 {
+		return false
+	}
+	return versionCode >= kernelVersion(6, 6, 0)
 }
 
 func loadBpfWithData(b []byte) (*ebpf.CollectionSpec, error) {

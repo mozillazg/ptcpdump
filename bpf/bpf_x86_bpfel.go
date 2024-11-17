@@ -185,6 +185,8 @@ type BpfProgramSpecs struct {
 	RawTracepointSchedProcessFork        *ebpf.ProgramSpec `ebpf:"raw_tracepoint__sched_process_fork"`
 	TcEgress                             *ebpf.ProgramSpec `ebpf:"tc_egress"`
 	TcIngress                            *ebpf.ProgramSpec `ebpf:"tc_ingress"`
+	TcxEgress                            *ebpf.ProgramSpec `ebpf:"tcx_egress"`
+	TcxIngress                           *ebpf.ProgramSpec `ebpf:"tcx_ingress"`
 	TpBtfSchedProcessExec                *ebpf.ProgramSpec `ebpf:"tp_btf__sched_process_exec"`
 	TpBtfSchedProcessExit                *ebpf.ProgramSpec `ebpf:"tp_btf__sched_process_exit"`
 	TpBtfSchedProcessFork                *ebpf.ProgramSpec `ebpf:"tp_btf__sched_process_fork"`
@@ -326,6 +328,8 @@ type BpfPrograms struct {
 	RawTracepointSchedProcessFork        *ebpf.Program `ebpf:"raw_tracepoint__sched_process_fork"`
 	TcEgress                             *ebpf.Program `ebpf:"tc_egress"`
 	TcIngress                            *ebpf.Program `ebpf:"tc_ingress"`
+	TcxEgress                            *ebpf.Program `ebpf:"tcx_egress"`
+	TcxIngress                           *ebpf.Program `ebpf:"tcx_ingress"`
 	TpBtfSchedProcessExec                *ebpf.Program `ebpf:"tp_btf__sched_process_exec"`
 	TpBtfSchedProcessExit                *ebpf.Program `ebpf:"tp_btf__sched_process_exit"`
 	TpBtfSchedProcessFork                *ebpf.Program `ebpf:"tp_btf__sched_process_fork"`
@@ -364,6 +368,8 @@ func (p *BpfPrograms) Close() error {
 		p.RawTracepointSchedProcessFork,
 		p.TcEgress,
 		p.TcIngress,
+		p.TcxEgress,
+		p.TcxIngress,
 		p.TpBtfSchedProcessExec,
 		p.TpBtfSchedProcessExit,
 		p.TpBtfSchedProcessFork,

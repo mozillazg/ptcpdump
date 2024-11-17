@@ -70,7 +70,7 @@ jobs:
           - 'bpf-20241101.013334'
           # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
           - 'bpf-next-20241101.013334'
-    timeout-minutes: 10
+    timeout-minutes: 15
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
