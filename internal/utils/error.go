@@ -11,3 +11,12 @@ func UnwrapErr(err error) error {
 		}
 	}
 }
+
+func RunClosers(funcs []func()) {
+	for i := len(funcs) - 1; i >= 0; i-- {
+		f := funcs[i]
+		if f != nil {
+			f()
+		}
+	}
+}

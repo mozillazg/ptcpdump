@@ -23,6 +23,7 @@
 #define IPPROTO_UDP 17    /* User Datagram Protocol		*/
 #define IPPROTO_SCTP 132  /* Stream Control Transport Protocol	*/
 #define TC_ACT_UNSPEC (-1)
+#define TCX_NEXT (-1)
 #define AF_INET 2
 #define AF_INET6 10
 #define INGRESS_PACKET 1
@@ -1085,8 +1086,24 @@ int tc_ingress(struct __sk_buff *skb) {
     return TC_ACT_UNSPEC;
 }
 
+#ifndef NO_TCX
+SEC("tcx/ingress")
+int tcx_ingress(struct __sk_buff *skb) {
+    handle_tc(skb, false);
+    return TCX_NEXT;
+}
+#endif
+
 SEC("tc")
 int tc_egress(struct __sk_buff *skb) {
     handle_tc(skb, true);
     return TC_ACT_UNSPEC;
 }
+
+#ifndef NO_TCX
+SEC("tcx/egress")
+int tcx_egress(struct __sk_buff *skb) {
+    handle_tc(skb, true);
+    return TCX_NEXT;
+}
+#endif

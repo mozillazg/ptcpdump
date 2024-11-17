@@ -15,6 +15,7 @@ import (
 	"github.com/jschwinger233/elibpcap"
 	"github.com/mozillazg/ptcpdump/internal/log"
 	"github.com/mozillazg/ptcpdump/internal/types"
+	"github.com/mozillazg/ptcpdump/internal/utils"
 	"golang.org/x/sys/unix"
 )
 
@@ -32,6 +33,7 @@ type BPF struct {
 	closeFuncs []func()
 
 	skipAttachCgroup bool
+	skipTcx          bool
 	isLegacyKernel   bool
 	report           *types.CountReport
 }
@@ -86,6 +88,7 @@ func NewBPF() (*BPF, error) {
 		report:           &types.CountReport{},
 		isLegacyKernel:   legacyKernel,
 		skipAttachCgroup: skipAttachCgroup,
+		skipTcx:          !supportTcx(),
 	}
 
 	return bf, nil
@@ -113,10 +116,15 @@ func (b *BPF) Load(opts Options) error {
 	}
 
 	if opts.pcapFilter != "" {
-		for _, progName := range []string{"tc_ingress", "tc_egress"} {
+		for _, progName := range []string{"tc_ingress", "tc_egress", "tcx_ingress", "tcx_egress"} {
 			prog, ok := b.spec.Programs[progName]
 			if !ok {
-				return fmt.Errorf("program %s not found", progName)
+				log.Infof("program %s not found", progName)
+				continue
+			}
+			if prog == nil {
+				log.Infof("program %s is nil", progName)
+				continue
 			}
 			prog.Instructions, err = elibpcap.Inject(
 				opts.pcapFilter,
@@ -372,6 +380,54 @@ func (b *BPF) AttachTracepoints() error {
 }
 
 func (b *BPF) AttachTcHooks(ifindex int, egress, ingress bool) ([]func(), error) {
+	closers, err := b.attachTcxHooks(ifindex, egress, ingress)
+	if err != nil {
+		log.Infof("attach tcx failed, fallback to tc: %+v", err)
+		utils.RunClosers(closers)
+		closers, err = b.attachTcHooks(ifindex, egress, ingress)
+	}
+	return closers, err
+}
+
+func (b *BPF) attachTcxHooks(ifindex int, egress, ingress bool) ([]func(), error) {
+	var closeFuncs []func()
+
+	if b.skipTcx || b.objs.TcxEgress == nil || b.objs.TcxIngress == nil {
+		return closeFuncs, errors.New("tcx programs not found")
+	}
+
+	if egress {
+		lk, err := link.AttachTCX(link.TCXOptions{
+			Interface: ifindex,
+			Program:   b.objs.TcxEgress,
+			Attach:    ebpf.AttachTCXEgress,
+		})
+		if err != nil {
+			return closeFuncs, fmt.Errorf("attach tcx/egress hooks: %w", err)
+		}
+		closeFuncs = append(closeFuncs, func() {
+			lk.Close()
+		})
+	}
+
+	if ingress {
+		lk, err := link.AttachTCX(link.TCXOptions{
+			Interface: ifindex,
+			Program:   b.objs.TcxIngress,
+			Attach:    ebpf.AttachTCXIngress,
+		})
+		if err != nil {
+			return closeFuncs, fmt.Errorf("attach tcx/ingress hooks: %w", err)
+		}
+		closeFuncs = append(closeFuncs, func() {
+			lk.Close()
+		})
+	}
+
+	return closeFuncs, nil
+}
+
+func (b *BPF) attachTcHooks(ifindex int, egress, ingress bool) ([]func(), error) {
 	var closeFuncs []func()
 	closeFunc, err := ensureTcQdisc(ifindex)
 	if err != nil {
