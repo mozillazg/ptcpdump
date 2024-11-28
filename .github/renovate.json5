@@ -1,176 +1,179 @@
 {
-  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:base",
-    ":gitSignOff",
-    "helpers:pinGitHubActionDigests"
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
+  extends: [
+    'config:recommended',
+    ':gitSignOff',
+    'helpers:pinGitHubActionDigests',
   ],
-  // This ensures that the gitAuthor and gitSignOff fields match
-  "gitAuthor": "renovate[bot] <bot@renovateapp.com>",
-  "includePaths": [
-    ".github/workflows/**",
-    "go.mod",
-    "go.sum",
-    "Dockerfile",
+  gitAuthor: 'renovate[bot] <bot@renovateapp.com>',
+  includePaths: [
+    '.github/workflows/**',
+    'go.mod',
+    'go.sum',
+    'Dockerfile',
   ],
   postUpdateOptions: [
-    "gomodTidy"
+    'gomodTidy',
   ],
-  "pinDigests": true,
-  "ignorePresets": [":prHourlyLimit2"],
-  "ignoreDeps": [
-      "github.com/mozillazg/gopacket",
-      "github.com/mozillazg/pktdump",
-      "github.com/Microsoft/hcsshim",
-      "github.com/Microsoft/hcsshim/test",
-      "github.com/containerd/containerd",
-      "github.com/docker/docker",
-      "go.opencensus.io",
-      "go.opentelemetry.io/contrib",
-      "go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc",
-      "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp",
-      "go.opentelemetry.io/otel",
-      "go.opentelemetry.io/otel/exporters/otlp",
-      "go.opentelemetry.io/otel/metric",
-      "go.opentelemetry.io/otel/oteltest",
-      "go.opentelemetry.io/otel/sdk",
-      "go.opentelemetry.io/otel/sdk/export/metric",
-      "go.opentelemetry.io/otel/sdk/metric",
-      "go.opentelemetry.io/otel/trace",
-      "go.opentelemetry.io/proto/otlp",
-      "k8s.io/api",
-      "k8s.io/apimachinery",
-      "k8s.io/apiserver",
-      "k8s.io/client-go",
-      "k8s.io/component-base",
-      "k8s.io/cri-api",
-      "k8s.io/kubernetes"
+  pinDigests: true,
+  ignorePresets: [
+    ':prHourlyLimit2',
   ],
-  "separateMajorMinor": true,
-  "separateMultipleMajor": true,
-  "separateMinorPatch": true,
-  "pruneStaleBranches": true,
-  "baseBranches": [
-    "master"
+  ignoreDeps: [
+    'github.com/mozillazg/gopacket',
+    'github.com/mozillazg/pktdump',
+    'github.com/Microsoft/hcsshim',
+    'github.com/Microsoft/hcsshim/test',
+    'github.com/containerd/containerd',
+    'github.com/docker/docker',
+    'go.opencensus.io',
+    'go.opentelemetry.io/contrib',
+    'go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc',
+    'go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp',
+    'go.opentelemetry.io/otel',
+    'go.opentelemetry.io/otel/exporters/otlp',
+    'go.opentelemetry.io/otel/metric',
+    'go.opentelemetry.io/otel/oteltest',
+    'go.opentelemetry.io/otel/sdk',
+    'go.opentelemetry.io/otel/sdk/export/metric',
+    'go.opentelemetry.io/otel/sdk/metric',
+    'go.opentelemetry.io/otel/trace',
+    'go.opentelemetry.io/proto/otlp',
+    'k8s.io/api',
+    'k8s.io/apimachinery',
+    'k8s.io/apiserver',
+    'k8s.io/client-go',
+    'k8s.io/component-base',
+    'k8s.io/cri-api',
+    'k8s.io/kubernetes',
   ],
-  "vulnerabilityAlerts": {
-    "enabled": true
+  separateMajorMinor: true,
+  separateMultipleMajor: true,
+  separateMinorPatch: true,
+  pruneStaleBranches: true,
+  baseBranches: [
+    'master',
+  ],
+  vulnerabilityAlerts: {
+    enabled: true,
   },
-  "labels": [
-    "dependencies",
-    "renovate/stop-updating",
+  labels: [
+    'dependencies',
+    'renovate/stop-updating',
   ],
-  "stopUpdatingLabel": "renovate/stop-updating",
-  "packageRules": [
+  stopUpdatingLabel: 'renovate/stop-updating',
+  packageRules: [
     {
-      "enabled": false,
-      "matchPackageNames": [
-        "quay.io/lvh-images/kernel-images",
+      enabled: false,
+      matchPackageNames: [
+        'quay.io/lvh-images/kernel-images',
       ],
-      "matchUpdateTypes": [
-        "major",
-        "minor"
+      matchUpdateTypes: [
+        'major',
+        'minor',
       ],
     },
     {
-      "groupName": "all github action dependencies",
-      "groupSlug": "all-github-action",
-      "extends": ["schedule:monthly"],
-      "matchPaths": [
-        ".github/workflows/**"
+      groupName: 'all github action dependencies',
+      groupSlug: 'all-github-action',
+      extends: [
+        'schedule:monthly',
       ],
-      "matchUpdateTypes": [
-        "major",
-        "minor",
-        "digest",
-        "patch",
-        "pin",
-        "pinDigest"
-      ]
+      matchFileNames: [
+        '.github/workflows/**',
+      ],
+      matchUpdateTypes: [
+        'major',
+        'minor',
+        'digest',
+        'patch',
+        'pin',
+        'pinDigest',
+      ],
     },
     {
-      "groupName": "all go dependencies master",
-      "groupSlug": "all-go-deps-master",
-      "extends": ["schedule:monthly"],
-      "matchFiles": [
-        "go.mod",
-        "go.sum"
+      groupName: 'all go dependencies master',
+      groupSlug: 'all-go-deps-master',
+      extends: [
+        'schedule:monthly',
       ],
-      "postUpdateOptions": [
-        // update source import paths on major updates
-        "gomodUpdateImportPaths",
+      matchFileNames: [
+        'go.mod',
+        'go.sum',
       ],
-      "matchUpdateTypes": [
-        "major",
-        "minor",
-        "digest",
-        "patch",
-        "pin",
-        "pinDigest"
+      postUpdateOptions: [
+        'gomodUpdateImportPaths',
+      ],
+      matchUpdateTypes: [
+        'major',
+        'minor',
+        'digest',
+        'patch',
+        'pin',
+        'pinDigest',
       ],
       matchBaseBranches: [
-        "master"
+        'master',
       ],
     },
     {
-      "groupName": "Go",
-      "extends": ["schedule:monthly"],
-      "matchDepNames": [
-        "go",
-        "docker.io/library/golang"
+      groupName: 'Go',
+      extends: [
+        'schedule:monthly',
+      ],
+      matchDepNames: [
+        'go',
+        'docker.io/library/golang',
       ],
     },
     {
-      // Avoid updating patch releases of golang in go.mod
-      "enabled": "false",
-      "matchFiles": [
-        "go.mod",
+      enabled: false,
+      matchFileNames: [
+        'go.mod',
       ],
-      "matchDepNames": [
-        "go"
+      matchDepNames: [
+        'go',
       ],
-      "matchDatasources": [
-        "golang-version"
+      matchDatasources: [
+        'golang-version',
       ],
-      "matchUpdateTypes": [
-        "patch"
+      matchUpdateTypes: [
+        'patch',
       ],
       matchBaseBranches: [
-        "master"
-      ]
+        'master',
+      ],
     },
     {
-      "matchDepNames": [
-        "quay.io/lvh-images/kernel-images",
+      matchDepNames: [
+        'quay.io/lvh-images/kernel-images',
       ],
-      "versioning": "regex:^((?<compatibility>[a-z0-9-]+)|((?<major>\\d+)\\.(?<minor>\\d+)))\\-(?<patch>\\d+)\\.(?<build>\\d+)(@(?<currentDigest>sha256:[a-f0-9]+))?$"
+      versioning: 'regex:^((?<compatibility>[a-z0-9-]+)|((?<major>\\d+)\\.(?<minor>\\d+)))\\-(?<patch>\\d+)\\.(?<build>\\d+)(@(?<currentDigest>sha256:[a-f0-9]+))?$',
     },
     {
-      "groupName": "all lvh-images main",
-      "groupSlug": "all-lvh-images-main",
-      "matchPackageNames": [
-        "quay.io/lvh-images/kernel-images",
+      groupName: 'all lvh-images main',
+      groupSlug: 'all-lvh-images-main',
+      matchPackageNames: [
+        'quay.io/lvh-images/kernel-images',
       ],
-      "matchUpdateTypes": [
-        "digest",
-        "patch",
-        "pin",
-        "pinDigest"
+      matchUpdateTypes: [
+        'digest',
+        'patch',
+        'pin',
+        'pinDigest',
       ],
     },
   ],
-  "regexManagers": [
+  customManagers: [
     {
-      "fileMatch": [
-         "^\\.github/workflows/[^/]+\\.ya?ml$",
+      customType: 'regex',
+      fileMatch: [
+        '^\\.github/workflows/[^/]+\\.ya?ml$',
       ],
-      // This regex manages version strings in GitHub actions workflow files,
-      // similar to the examples shown here:
-      //   https://docs.renovatebot.com/modules/manager/regex/#advanced-capture
-      "matchStrings": [
-        "# renovate: datasource=(?<datasource>.*?) depName=(?<depName>.*?)\\s+.+version: (?<currentValue>.*)",
-        "# renovate: datasource=(?<datasource>.*?) depName=(?<depName>.*?)\\s+.+ ['\"]?(?<currentValue>[^'\"\\s]*)"
-      ]
+      matchStrings: [
+        '# renovate: datasource=(?<datasource>.*?) depName=(?<depName>.*?)\\s+.+version: (?<currentValue>.*)',
+        '# renovate: datasource=(?<datasource>.*?) depName=(?<depName>.*?)\\s+.+ [\'"]?(?<currentValue>[^\'"\\s]*)',
+      ],
     },
-  ]
+  ],
 }
