@@ -63,7 +63,7 @@ jobs:
       # https://github.com/docker/build-push-action
       - name: Build and push Docker image (no latest tag)
         id: build-and-push
-        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
+        uses: docker/build-push-action@48aba3b46d1b1fec4febb7c5d0c644b249a11355 # v6.10.0
         with:
           context: .
           file: .github/build.Dockerfile
@@ -93,7 +93,7 @@ jobs:
       # https://github.com/docker/build-push-action
       - name: Build and push Docker image (latest tag)
         id: build-and-push-latest
-        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
+        uses: docker/build-push-action@48aba3b46d1b1fec4febb7c5d0c644b249a11355 # v6.10.0
         with:
           context: .
           file: .github/build.Dockerfile
