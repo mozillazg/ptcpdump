@@ -1,7 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:base",
+    "config:recommended",
     ":gitSignOff",
     "helpers:pinGitHubActionDigests"
   ],
@@ -9,42 +9,27 @@
   "gitAuthor": "renovate[bot] <bot@renovateapp.com>",
   "includePaths": [
     ".github/workflows/**",
+    ".github/**",
+    ".github/build.Dockerfile",
     "go.mod",
     "go.sum",
     "Dockerfile",
   ],
-  postUpdateOptions: [
+  "postUpdateOptions": [
     "gomodTidy"
   ],
   "pinDigests": true,
-  "ignorePresets": [":prHourlyLimit2"],
+  "ignorePresets": [
+      ":prHourlyLimit2",
+  ],
   "ignoreDeps": [
       "github.com/mozillazg/gopacket",
       "github.com/mozillazg/pktdump",
-      "github.com/Microsoft/hcsshim",
-      "github.com/Microsoft/hcsshim/test",
-      "github.com/containerd/containerd",
-      "github.com/docker/docker",
-      "go.opencensus.io",
-      "go.opentelemetry.io/contrib",
-      "go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc",
-      "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp",
-      "go.opentelemetry.io/otel",
-      "go.opentelemetry.io/otel/exporters/otlp",
-      "go.opentelemetry.io/otel/metric",
-      "go.opentelemetry.io/otel/oteltest",
-      "go.opentelemetry.io/otel/sdk",
-      "go.opentelemetry.io/otel/sdk/export/metric",
-      "go.opentelemetry.io/otel/sdk/metric",
-      "go.opentelemetry.io/otel/trace",
-      "go.opentelemetry.io/proto/otlp",
-      "k8s.io/api",
-      "k8s.io/apimachinery",
-      "k8s.io/apiserver",
-      "k8s.io/client-go",
-      "k8s.io/component-base",
+      "github.com/cilium/ebpf",
       "k8s.io/cri-api",
-      "k8s.io/kubernetes"
+      "k8s.io/cri-client",
+      "github.com/containerd/errdefs",
+      "github.com/mandiant/GoReSym",
   ],
   "separateMajorMinor": true,
   "separateMultipleMajor": true,
@@ -108,7 +93,7 @@
         "pin",
         "pinDigest"
       ],
-      matchBaseBranches: [
+      "matchBaseBranches": [
         "master"
       ],
     },
@@ -135,7 +120,7 @@
       "matchUpdateTypes": [
         "patch"
       ],
-      matchBaseBranches: [
+      "matchBaseBranches": [
         "master"
       ]
     },
@@ -159,8 +144,9 @@
       ],
     },
   ],
-  "regexManagers": [
+  "customManagers": [
     {
+      "customType": "regex",
       "fileMatch": [
          "^\\.github/workflows/[^/]+\\.ya?ml$",
       ],
