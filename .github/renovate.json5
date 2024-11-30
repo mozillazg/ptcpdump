@@ -5,6 +5,7 @@
     ':gitSignOff',
     'helpers:pinGitHubActionDigests',
   ],
+  // This ensures that the gitAuthor and gitSignOff fields match
   gitAuthor: 'renovate[bot] <bot@renovateapp.com>',
   includePaths: [
     '.github/workflows/**',
@@ -24,9 +25,8 @@
   ignoreDeps: [
     'github.com/mozillazg/gopacket',
     'github.com/mozillazg/pktdump',
-    'github.com/cilium/ebpf',
-    'k8s.io/cri-api',
-    'k8s.io/cri-client',
+    'github.com/mozillazg/cri-api',
+    'github.com/mozillazg/cri-client',
     'github.com/containerd/errdefs',
     'github.com/mandiant/GoReSym',
   ],
@@ -85,6 +85,7 @@
         'go.sum',
       ],
       postUpdateOptions: [
+         // update source import paths on major updates
         'gomodUpdateImportPaths',
       ],
       matchUpdateTypes: [
@@ -153,6 +154,9 @@
       fileMatch: [
         '^\\.github/workflows/[^/]+\\.ya?ml$',
       ],
+      // This regex manages version strings in GitHub actions workflow files,
+      // similar to the examples shown here:
+      //   https://docs.renovatebot.com/modules/manager/regex/#advanced-capture
       matchStrings: [
         '# renovate: datasource=(?<datasource>.*?) depName=(?<depName>.*?)\\s+.+version: (?<currentValue>.*)',
         '# renovate: datasource=(?<datasource>.*?) depName=(?<depName>.*?)\\s+.+ [\'"]?(?<currentValue>[^\'"\\s]*)',
