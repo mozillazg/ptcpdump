@@ -198,34 +198,6 @@ func (b *BPF) UpdateFlowPidMapValues(data map[*BpfFlowPidKeyT]BpfProcessMetaT) e
 	return nil
 }
 
-func (b *BPF) AttachCgroups(cgroupPath string) error {
-	if b.skipAttachCgroup {
-		return nil
-	}
-
-	lk, err := link.AttachCgroup(link.CgroupOptions{
-		Path:    cgroupPath,
-		Attach:  ebpf.AttachCGroupInetSockCreate,
-		Program: b.objs.CgroupSockCreate,
-	})
-	if err != nil {
-		return fmt.Errorf("attach cgroup/sock_create: %w", err)
-	}
-	b.links = append(b.links, lk)
-
-	lk, err = link.AttachCgroup(link.CgroupOptions{
-		Path:    cgroupPath,
-		Attach:  ebpf.AttachCgroupInetSockRelease,
-		Program: b.objs.CgroupSockRelease,
-	})
-	if err != nil {
-		return fmt.Errorf("attach cgroup/sock_release: %w", err)
-	}
-	b.links = append(b.links, lk)
-
-	return nil
-}
-
 func (b *BPF) AttachKprobes() error {
 	err := b.attachFentryOrKprobe("security_sk_classify_flow",
 		b.objs.FentrySecuritySkClassifyFlow, b.objs.KprobeSecuritySkClassifyFlow)
@@ -233,108 +205,32 @@ func (b *BPF) AttachKprobes() error {
 		return fmt.Errorf(": %w", err)
 	}
 
-	err = b.attachFentryOrKprobe("tcp_sendmsg",
-		b.objs.FentryTcpSendmsg, b.objs.KprobeTcpSendmsg)
-	if err != nil {
+	if b.skipAttachCgroup {
+		err = b.attachFentryOrKprobe("tcp_sendmsg",
+			b.objs.FentryTcpSendmsg, b.objs.KprobeTcpSendmsg)
+		if err != nil {
+			return fmt.Errorf(": %w", err)
+		}
+
+		err = b.attachFentryOrKprobe("udp_send_skb", b.objs.FentryUdpSendSkb, b.objs.KprobeUdpSendSkb)
+		if err != nil {
+			log.Infof("%+v", err)
+			if strings.Contains(err.Error(), "no such file or directory") {
+				err = b.attachFentryOrKprobe("udp_sendmsg", b.objs.FentryUdpSendmsg, b.objs.KprobeUdpSendmsg)
+				if err != nil {
+					return fmt.Errorf(": %w", err)
+				}
+			} else {
+				return fmt.Errorf(": %w", err)
+			}
+		}
+	}
+
+	if err := b.attachNatHooks(); err != nil {
 		return fmt.Errorf(": %w", err)
 	}
 
-	err = b.attachFentryOrKprobe("udp_send_skb", b.objs.FentryUdpSendSkb, b.objs.KprobeUdpSendSkb)
-	if err != nil {
-		log.Infof("%+v", err)
-		if strings.Contains(err.Error(), "no such file or directory") {
-			err = b.attachFentryOrKprobe("udp_sendmsg", b.objs.FentryUdpSendmsg, b.objs.KprobeUdpSendmsg)
-			if err != nil {
-				return fmt.Errorf(": %w", err)
-			}
-		} else {
-			return fmt.Errorf(": %w", err)
-		}
-	}
-
-	err = b.attachFentryOrKprobe("nf_nat_packet",
-		b.objs.FentryNfNatPacket, b.objs.KprobeNfNatPacket)
-	if err != nil {
-		log.Infof("%+v", err)
-		if strings.Contains(err.Error(), "no such file or directory") {
-			log.Info("the kernel does not support netfilter based NAT feature, skip attach kprobe/nf_nat_packet")
-		} else {
-			return fmt.Errorf(": %w", err)
-		}
-	}
-
-	err = b.attachFentryOrKprobe("nf_nat_manip_pkt",
-		b.objs.FentryNfNatManipPkt, b.objs.KprobeNfNatManipPkt)
-	if err != nil {
-		log.Infof("%+v", err)
-		if strings.Contains(err.Error(), "no such file or directory") {
-			log.Info("the kernel does not support netfilter based NAT feature, skip attach kprobe/nf_nat_manip_pkt")
-		} else {
-			return fmt.Errorf(": %w", err)
-		}
-	}
-
 	return b.attachNetDevHooks()
-}
-
-func (b *BPF) attachNetDevHooks() error {
-	if !b.opts.hookNetDev {
-		return nil
-	}
-
-	err := b.attachFexitOrKprobe("register_netdevice",
-		nil, b.objs.KprobeRegisterNetdevice, b.objs.KretprobeRegisterNetdevice)
-	if err != nil {
-		return err
-	}
-
-	// TODO: refine
-	err = b.attachFexitOrKprobe("__dev_get_by_index",
-		nil, nil, b.objs.KretprobeDevGetByIndex)
-	if err != nil {
-		log.Infof("%+v", err)
-		if strings.Contains(err.Error(), "no such file or directory") {
-			err = b.attachFexitOrKprobe("dev_get_by_index",
-				nil, nil, b.objs.KretprobeDevGetByIndexLegacy)
-			if err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-	}
-
-	err = b.attachFentryOrKprobe("__dev_change_net_namespace",
-		nil, b.objs.KprobeDevChangeNetNamespace)
-	if err != nil {
-		log.Infof("%+v", err)
-		if strings.Contains(err.Error(), "no such file or directory") {
-			err = b.attachFentryOrKprobe("dev_change_net_namespace",
-				nil, b.objs.KprobeDevChangeNetNamespaceLegacy)
-			if err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-	}
-
-	err = b.attachFexitOrKprobe("__dev_change_net_namespace",
-		nil, nil, b.objs.KretprobeDevChangeNetNamespace)
-	if err != nil {
-		log.Infof("%+v", err)
-		if strings.Contains(err.Error(), "no such file or directory") {
-			err = b.attachFexitOrKprobe("dev_change_net_namespace",
-				nil, nil, b.objs.KretprobeDevChangeNetNamespaceLegacy)
-			if err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-	}
-
-	return nil
 }
 
 func (b *BPF) AttachTracepoints() error {

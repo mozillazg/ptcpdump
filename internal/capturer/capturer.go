@@ -181,10 +181,8 @@ func (c *Capturer) AttachTracingHooks() error {
 	if err != nil {
 		log.Warnf("skip attach cgroup due to get cgroup v2 root dir failed: %s", err)
 	}
-	if cgroupPath != "" {
-		if err := bf.AttachCgroups(cgroupPath); err != nil {
-			return err
-		}
+	if err := bf.AttachCgroups(cgroupPath); err != nil {
+		return err
 	}
 
 	if err := bf.AttachKprobes(); err != nil {
