@@ -5,6 +5,7 @@ import (
 	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/link"
 	"github.com/mozillazg/ptcpdump/internal/log"
+	"strings"
 )
 
 func (b *BPF) attachFentryOrKprobe(symbol string, fentryProg *ebpf.Program, kprobeProg *ebpf.Program) error {
@@ -100,4 +101,15 @@ func (b *BPF) attachBTFTracepointOrRawTP(name string, btfProg *ebpf.Program, raw
 	b.links = append(b.links, lk)
 
 	return nil
+}
+
+func isProbeNotSupportErr(err error) bool {
+	// TODO: refine
+	if strings.Contains(err.Error(), "no such file or directory") ||
+		strings.Contains(err.Error(), "invalid argument") {
+		log.Infof("%T", err)
+		log.Infof("%#v", err)
+		return true
+	}
+	return false
 }
