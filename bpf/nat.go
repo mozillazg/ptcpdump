@@ -3,7 +3,6 @@ package bpf
 import (
 	"fmt"
 	"github.com/mozillazg/ptcpdump/internal/log"
-	"strings"
 )
 
 func (b *BPF) attachNatHooks() error {
@@ -11,7 +10,7 @@ func (b *BPF) attachNatHooks() error {
 		b.objs.FentryNfNatPacket, b.objs.KprobeNfNatPacket)
 	if err != nil {
 		log.Infof("%+v", err)
-		if strings.Contains(err.Error(), "no such file or directory") {
+		if isProbeNotSupportErr(err) {
 			log.Info("the kernel does not support netfilter based NAT feature, skip attach kprobe/nf_nat_packet")
 		} else {
 			return fmt.Errorf(": %w", err)
@@ -22,7 +21,7 @@ func (b *BPF) attachNatHooks() error {
 		b.objs.FentryNfNatManipPkt, b.objs.KprobeNfNatManipPkt)
 	if err != nil {
 		log.Infof("%+v", err)
-		if strings.Contains(err.Error(), "no such file or directory") {
+		if isProbeNotSupportErr(err) {
 			log.Info("the kernel does not support netfilter based NAT feature, skip attach kprobe/nf_nat_manip_pkt")
 		} else {
 			return fmt.Errorf(": %w", err)

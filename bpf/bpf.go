@@ -216,7 +216,7 @@ func (b *BPF) AttachKprobes() error {
 		err = b.attachFentryOrKprobe("udp_send_skb", b.objs.FentryUdpSendSkb, b.objs.KprobeUdpSendSkb)
 		if err != nil {
 			log.Infof("%+v", err)
-			if strings.Contains(err.Error(), "no such file or directory") {
+			if isProbeNotSupportErr(err) {
 				err = b.attachFentryOrKprobe("udp_sendmsg", b.objs.FentryUdpSendmsg, b.objs.KprobeUdpSendmsg)
 				if err != nil {
 					return fmt.Errorf(": %w", err)

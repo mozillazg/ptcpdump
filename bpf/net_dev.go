@@ -2,7 +2,6 @@ package bpf
 
 import (
 	"github.com/mozillazg/ptcpdump/internal/log"
-	"strings"
 )
 
 func (b *BPF) attachNetDevHooks() error {
@@ -21,7 +20,7 @@ func (b *BPF) attachNetDevHooks() error {
 		nil, nil, b.objs.KretprobeDevGetByIndex)
 	if err != nil {
 		log.Infof("%+v", err)
-		if strings.Contains(err.Error(), "no such file or directory") {
+		if isProbeNotSupportErr(err) {
 			err = b.attachFexitOrKprobe("dev_get_by_index",
 				nil, nil, b.objs.KretprobeDevGetByIndexLegacy)
 			if err != nil {
@@ -36,7 +35,7 @@ func (b *BPF) attachNetDevHooks() error {
 		nil, b.objs.KprobeDevChangeNetNamespace)
 	if err != nil {
 		log.Infof("%+v", err)
-		if strings.Contains(err.Error(), "no such file or directory") {
+		if isProbeNotSupportErr(err) {
 			err = b.attachFentryOrKprobe("dev_change_net_namespace",
 				nil, b.objs.KprobeDevChangeNetNamespaceLegacy)
 			if err != nil {
@@ -51,7 +50,7 @@ func (b *BPF) attachNetDevHooks() error {
 		nil, nil, b.objs.KretprobeDevChangeNetNamespace)
 	if err != nil {
 		log.Infof("%+v", err)
-		if strings.Contains(err.Error(), "no such file or directory") {
+		if isProbeNotSupportErr(err) {
 			err = b.attachFexitOrKprobe("dev_change_net_namespace",
 				nil, nil, b.objs.KretprobeDevChangeNetNamespaceLegacy)
 			if err != nil {
