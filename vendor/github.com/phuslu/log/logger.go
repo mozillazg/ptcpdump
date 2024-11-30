@@ -11,6 +11,7 @@ import (
 	"reflect"
 	"runtime"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -1864,7 +1865,7 @@ func (e *Entry) caller(n int, pc uintptr, fullpath bool) {
 		return
 	}
 
-	file, line := pcFileLine(pc)
+	file, line, name := pcFileLineName(pc)
 	if !fullpath {
 		var i, j int
 		for i = len(file) - 1; i >= 0; i-- {
@@ -1883,12 +1884,17 @@ func (e *Entry) caller(n int, pc uintptr, fullpath bool) {
 			}
 			file = file[i+1:]
 		}
+		if i = strings.LastIndexByte(name, '/'); i > 0 {
+			name = name[i+1:]
+		}
 	}
 
 	e.buf = append(e.buf, ",\"caller\":\""...)
 	e.buf = append(e.buf, file...)
 	e.buf = append(e.buf, ':')
 	e.buf = strconv.AppendInt(e.buf, int64(line), 10)
+	e.buf = append(e.buf, "\",\"callerfunc\":\""...)
+	e.buf = append(e.buf, name...)
 	e.buf = append(e.buf, "\",\"goid\":"...)
 	e.buf = strconv.AppendInt(e.buf, int64(goid()), 10)
 }

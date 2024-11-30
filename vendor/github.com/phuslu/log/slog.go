@@ -229,6 +229,8 @@ func (h *slogJSONHandler) Handle(_ context.Context, r slog.Record) error {
 		e.buf = append(e.buf, file...)
 		e.buf = append(e.buf, `","line":`...)
 		e.buf = strconv.AppendInt(e.buf, int64(line), 10)
+		// e.buf = append(e.buf, `,"goid":`...)
+		// e.buf = strconv.AppendInt(e.buf, int64(goid()), 10)
 		e.buf = append(e.buf, '}')
 	}
 

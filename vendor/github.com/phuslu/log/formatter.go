@@ -57,7 +57,7 @@ func formatterArgsPos(key string) (pos int) {
 func parseFormatterArgs(json []byte, args *FormatterArgs) {
 	// treat formatter args as []string
 	const size = int(unsafe.Sizeof(FormatterArgs{}) / unsafe.Sizeof(""))
-	// nolint
+	//nolint:all
 	slice := *(*[]string)(unsafe.Pointer(&reflect.SliceHeader{
 		Data: uintptr(unsafe.Pointer(args)), Len: size, Cap: size,
 	}))

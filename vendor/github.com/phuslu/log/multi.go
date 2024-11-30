@@ -52,7 +52,7 @@ func (w *MultiLevelWriter) WriteEntry(e *Entry) (n int, err error) {
 	case noLevel, PanicLevel, FatalLevel, ErrorLevel:
 		if w.ErrorWriter != nil {
 			n, err1 = w.ErrorWriter.WriteEntry(e)
-			if err1 != nil && err == nil {
+			if err1 != nil && err == nil { //nolint:nilness
 				err = err1
 			}
 		}
@@ -60,7 +60,7 @@ func (w *MultiLevelWriter) WriteEntry(e *Entry) (n int, err error) {
 	case WarnLevel:
 		if w.WarnWriter != nil {
 			n, err1 = w.WarnWriter.WriteEntry(e)
-			if err1 != nil && err == nil {
+			if err1 != nil && err == nil { //nolint:nilness
 				err = err1
 			}
 		}
@@ -68,7 +68,7 @@ func (w *MultiLevelWriter) WriteEntry(e *Entry) (n int, err error) {
 	default:
 		if w.InfoWriter != nil {
 			n, err1 = w.InfoWriter.WriteEntry(e)
-			if err1 != nil && err == nil {
+			if err1 != nil && err == nil { //nolint:nilness
 				err = err1
 			}
 		}

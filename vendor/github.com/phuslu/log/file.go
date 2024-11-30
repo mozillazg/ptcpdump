@@ -2,6 +2,7 @@ package log
 
 import (
 	"crypto/md5"
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -155,7 +156,14 @@ func (w *FileWriter) rotate() (err error) {
 	var file *os.File
 	file, err = os.OpenFile(w.fileargs(timeNow()))
 	if err != nil {
-		return err
+		if errors.Is(err, os.ErrNotExist) && w.EnsureFolder {
+			if err = os.MkdirAll(filepath.Dir(w.Filename), 0755); err == nil {
+				file, err = os.OpenFile(w.fileargs(timeNow()))
+			}
+		}
+		if err != nil {
+			return err
+		}
 	}
 	if w.file != nil {
 		w.file.Close()
