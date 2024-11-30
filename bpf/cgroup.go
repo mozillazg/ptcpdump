@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/link"
+	"github.com/mozillazg/ptcpdump/internal/log"
 )
 
 func (b *BPF) AttachCgroups(cgroupPath string) error {
@@ -14,6 +15,7 @@ func (b *BPF) AttachCgroups(cgroupPath string) error {
 		return nil
 	}
 
+	log.Info("attaching cgroup/sock_create")
 	lk, err := link.AttachCgroup(link.CgroupOptions{
 		Path:    cgroupPath,
 		Attach:  ebpf.AttachCGroupInetSockCreate,
@@ -24,6 +26,7 @@ func (b *BPF) AttachCgroups(cgroupPath string) error {
 	}
 	b.links = append(b.links, lk)
 
+	log.Info("attaching cgroup/sock_release")
 	lk, err = link.AttachCgroup(link.CgroupOptions{
 		Path:    cgroupPath,
 		Attach:  ebpf.AttachCgroupInetSockRelease,

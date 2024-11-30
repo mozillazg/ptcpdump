@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/mdlayher/netlink"
 	"strings"
 	"unsafe"
 
@@ -368,6 +369,10 @@ func attachTcHook(ifindex int, prog *ebpf.Program, ingress bool) (func(), error)
 			}
 		}
 	}
+	err = tcnl.SetOption(netlink.ExtendedAcknowledge, true)
+	if err != nil {
+		return closeFunc, fmt.Errorf("tc: set option ExtendedAcknowledge: %w", err)
+	}
 
 	var filter *tc.Object
 	fd := uint32(prog.FD())
@@ -439,6 +444,10 @@ func ensureTcQdisc(ifindex int) (func(), error) {
 				log.Warnf("tcnl.Close() failed: %+v", err)
 			}
 		}
+	}
+	err = tcnl.SetOption(netlink.ExtendedAcknowledge, true)
+	if err != nil {
+		return closeFunc, fmt.Errorf("tc: set option ExtendedAcknowledge: %w", err)
 	}
 
 	qdisc := tc.Object{

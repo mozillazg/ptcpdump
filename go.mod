@@ -22,6 +22,7 @@ require (
 	github.com/containerd/errdefs v0.3.0
 	github.com/go-logr/logr v1.4.2
 	github.com/mandiant/GoReSym v1.7.2-0.20240819162932-534ca84b42d5
+	github.com/mdlayher/netlink v1.7.2
 	github.com/smira/go-xz v0.1.0
 	github.com/stretchr/testify v1.9.0
 	github.com/vishvananda/netns v0.0.5
@@ -61,7 +62,6 @@ require (
 	github.com/josharian/native v1.1.0 // indirect
 	github.com/klauspost/compress v1.16.7 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
-	github.com/mdlayher/netlink v1.7.2 // indirect
 	github.com/mdlayher/socket v0.4.1 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/locker v1.0.1 // indirect
