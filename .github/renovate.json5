@@ -23,6 +23,7 @@
     ':prHourlyLimit2',
   ],
   ignoreDeps: [
+    'github.com/mozillazg/ebpf',
     'github.com/mozillazg/gopacket',
     'github.com/mozillazg/pktdump',
     'github.com/mozillazg/cri-api',
