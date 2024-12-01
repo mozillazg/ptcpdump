@@ -4,7 +4,7 @@ go 1.23.0
 
 require (
 	github.com/cilium/ebpf v0.16.0
-	github.com/containerd/containerd v1.7.24
+	github.com/containerd/containerd/v2 v2.0.0
 	github.com/containerd/typeurl/v2 v2.2.3
 	github.com/docker/docker v26.1.5+incompatible
 	github.com/florianl/go-tc v0.4.4
