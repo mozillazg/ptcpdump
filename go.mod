@@ -14,19 +14,19 @@ require (
 	github.com/shirou/gopsutil/v4 v4.24.10
 	github.com/spf13/cobra v1.8.1
 	github.com/x-way/pktdump v0.0.5
-	golang.org/x/sys v0.26.0
+	golang.org/x/sys v0.27.0
 )
 
 require (
-	github.com/containerd/containerd/api v1.7.19
+	github.com/containerd/containerd/api v1.8.0
 	github.com/containerd/errdefs v0.3.0
 	github.com/go-logr/logr v1.4.2
 	github.com/mandiant/GoReSym v1.7.2-0.20240819162932-534ca84b42d5
 	github.com/mdlayher/netlink v1.7.2
 	github.com/smira/go-xz v0.1.0
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	github.com/vishvananda/netns v0.0.5
-	golang.org/x/arch v0.11.0
+	golang.org/x/arch v0.12.0
 	k8s.io/cri-api v0.31.3
 	k8s.io/cri-client v0.31.3
 	k8s.io/klog/v2 v2.130.1
