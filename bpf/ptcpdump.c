@@ -30,6 +30,8 @@
 #define EGRESS_PACKET 2
 #define EXEC_FILENAME_LEN 512
 #define EXEC_ARGS_LEN 4096
+#define MIN_CGROUP_NAME_LEN 64 + 1
+#define MAX_CGROUP_NAME_LEN 128
 
 char _license[] SEC("license") = "Dual MIT/GPL";
 
@@ -76,7 +78,7 @@ struct process_meta_t {
     u32 pidns_id;
     u32 mntns_id;
     u32 netns_id;
-    char cgroup_name[128];
+    char cgroup_name[MAX_CGROUP_NAME_LEN];
 };
 
 struct packet_event_meta_t {
@@ -343,7 +345,10 @@ static __always_inline void fill_process_meta(struct task_struct *task, struct p
     BPF_CORE_READ_INTO(&meta->ppid, task, real_parent, tgid);
 
     const char *cname = BPF_CORE_READ(task, cgroups, subsys[0], cgroup, kn, name);
-    bpf_core_read_str(&meta->cgroup_name, sizeof(meta->cgroup_name), cname);
+    int size = bpf_core_read_str(&meta->cgroup_name, sizeof(meta->cgroup_name), cname);
+    if (size < MIN_CGROUP_NAME_LEN) {
+        __builtin_memset(&meta->cgroup_name, 0, sizeof(meta->cgroup_name));
+    }
 }
 
 static __always_inline void fill_sk_meta(struct sock *sk, struct flow_pid_key_t *meta) {
