@@ -206,24 +206,18 @@ func (b *BPF) AttachKprobes() error {
 		return fmt.Errorf(": %w", err)
 	}
 
-	if b.skipAttachCgroup {
-		err = b.attachFentryOrKprobe("tcp_sendmsg",
-			b.objs.FentryTcpSendmsg, b.objs.KprobeTcpSendmsg)
-		if err != nil {
-			return fmt.Errorf(": %w", err)
-		}
-
-		err = b.attachFentryOrKprobe("udp_send_skb", b.objs.FentryUdpSendSkb, b.objs.KprobeUdpSendSkb)
-		if err != nil {
-			log.Infof("%+v", err)
-			if isProbeNotSupportErr(err) {
-				err = b.attachFentryOrKprobe("udp_sendmsg", b.objs.FentryUdpSendmsg, b.objs.KprobeUdpSendmsg)
-				if err != nil {
-					return fmt.Errorf(": %w", err)
-				}
-			} else {
+	if err := b.attachFentryOrKprobe("tcp_sendmsg", b.objs.FentryTcpSendmsg, b.objs.KprobeTcpSendmsg); err != nil {
+		return fmt.Errorf(": %w", err)
+	}
+	if err := b.attachFentryOrKprobe("udp_send_skb", b.objs.FentryUdpSendSkb, b.objs.KprobeUdpSendSkb); err != nil {
+		log.Infof("%+v", err)
+		if isProbeNotSupportErr(err) {
+			err = b.attachFentryOrKprobe("udp_sendmsg", b.objs.FentryUdpSendmsg, b.objs.KprobeUdpSendmsg)
+			if err != nil {
 				return fmt.Errorf(": %w", err)
 			}
+		} else {
+			return fmt.Errorf(": %w", err)
 		}
 	}
 
