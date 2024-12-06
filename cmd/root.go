@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/mozillazg/ptcpdump/internal/types"
 	"os"
 	"os/signal"
 	"strings"
@@ -130,6 +131,9 @@ func init() {
 	rootCmd.Flags().StringSliceVar(&opts.enhancedContexts, "context",
 		[]string{contextProcess, contextParentProc, contextContainer, contextPod},
 		"Specify which context information to include in the output")
+	rootCmd.Flags().StringVar(&opts.backend, "backend", string(types.NetHookBackendTc),
+		"Specify the backend to use for capturing packets. "+
+			fmt.Sprintf("Possible values are %q", types.NetHookBackendTc))
 
 	silenceKlog()
 }
