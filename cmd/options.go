@@ -58,6 +58,7 @@ type Options struct {
 	dontConvertAddr int
 	verbose         int
 	quiet           bool
+	backend         string
 
 	containerId   string
 	containerName string
@@ -167,6 +168,13 @@ func prepareOptions(opts *Options, rawArgs []string, args []string) {
 			opts.enhancedContext |= types.EnhancedContextPod
 		}
 	}
+
+	switch types.NetHookBackend(opts.backend) {
+	case types.NetHookBackendTc:
+	default:
+		opts.backend = string(types.NetHookBackendTc)
+	}
+
 }
 
 func getPodNameFilter(raw string) (name, ns string) {
