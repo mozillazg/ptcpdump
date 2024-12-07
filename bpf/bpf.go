@@ -54,6 +54,7 @@ type Options struct {
 	hookMount      bool
 	hookNetDev     bool
 	kernelTypes    *btf.Spec
+	backend        types.NetHookBackend
 }
 
 func NewBPF() (*BPF, error) {
@@ -100,6 +101,7 @@ func (b *BPF) Load(opts Options) error {
 	log.Infof("load with opts: %#v", opts)
 	var err error
 
+	b.opts = opts
 	config := BpfGconfigT{
 		HaveFilter:        opts.haveFilter,
 		FilterFollowForks: opts.followForks,
@@ -121,29 +123,8 @@ func (b *BPF) Load(opts Options) error {
 	}
 
 	if opts.pcapFilter != "" {
-		for _, progName := range []string{"tc_ingress", "tc_egress", "tcx_ingress", "tcx_egress", "cgroup_skb__ingress", "cgroup_skb__egress"} {
-			prog, ok := b.spec.Programs[progName]
-			if !ok {
-				log.Infof("program %s not found", progName)
-				continue
-			}
-			if prog == nil {
-				log.Infof("program %s is nil", progName)
-				continue
-			}
-			l2skb := !strings.Contains(progName, "cgroup_skb")
-			prog.Instructions, err = elibpcap.Inject(
-				opts.pcapFilter,
-				prog.Instructions,
-				elibpcap.Options{
-					AtBpf2Bpf:  "pcap_filter",
-					DirectRead: true,
-					L2Skb:      l2skb,
-				},
-			)
-			if err != nil {
-				return fmt.Errorf("inject pcap filter: %w", err)
-			}
+		if err := b.injectPcapFilter(); err != nil {
+			return fmt.Errorf(": %w", err)
 		}
 	}
 
@@ -160,8 +141,6 @@ func (b *BPF) Load(opts Options) error {
 		return fmt.Errorf("bpf load and assign: %w", err)
 	}
 
-	b.opts = opts
-
 	if b.isLegacyKernel {
 		log.Infof("update config map with %+v", config)
 		key := uint32(0)
@@ -173,6 +152,43 @@ func (b *BPF) Load(opts Options) error {
 		return fmt.Errorf(": %w", err)
 	}
 
+	return nil
+}
+
+func (b *BPF) injectPcapFilter() error {
+	var err error
+	for _, progName := range []string{"tc_ingress", "tc_egress", "tcx_ingress", "tcx_egress",
+		"cgroup_skb__ingress", "cgroup_skb__egress"} {
+		prog, ok := b.spec.Programs[progName]
+		if !ok {
+			log.Infof("program %s not found", progName)
+			continue
+		}
+		if prog == nil {
+			log.Infof("program %s is nil", progName)
+			continue
+		}
+		l2skb := true
+		if strings.Contains(progName, "cgroup_skb") {
+			l2skb = false
+			if b.opts.backend != types.NetHookBackendCgroupSkb {
+				continue
+			}
+		}
+		log.Infof("inject pcap filter to %s", progName)
+		prog.Instructions, err = elibpcap.Inject(
+			b.opts.pcapFilter,
+			prog.Instructions,
+			elibpcap.Options{
+				AtBpf2Bpf:  "pcap_filter",
+				DirectRead: true,
+				L2Skb:      l2skb,
+			},
+		)
+		if err != nil {
+			return fmt.Errorf("inject pcap filter to %s: %w", progName, err)
+		}
+	}
 	return nil
 }
 
@@ -619,6 +635,11 @@ func (opts *Options) WithHookNetDev(v bool) *Options {
 
 func (opts *Options) WithKernelTypes(spec *btf.Spec) *Options {
 	opts.kernelTypes = spec
+	return opts
+}
+
+func (opts *Options) WithBackend(backend types.NetHookBackend) *Options {
+	opts.backend = backend
 	return opts
 }
 

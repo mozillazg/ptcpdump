@@ -164,6 +164,7 @@ func (c *Capturer) Prepare() error {
 		WithHookMount(c.opts.AllNetNs || c.opts.AllNewlyNetNs).
 		WithHookNetDev(c.opts.AllNetNs || c.opts.AllNewlyNetNs || c.opts.AllDev).
 		WithPcapFilter(c.opts.PcapFilter).
+		WithBackend(c.opts.Backend).
 		WithKernelTypes(c.btfSpec)
 
 	if err := bf.Load(*bpfopts); err != nil {
