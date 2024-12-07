@@ -133,7 +133,8 @@ func init() {
 		"Specify which context information to include in the output")
 	rootCmd.Flags().StringVar(&opts.backend, "backend", string(types.NetHookBackendTc),
 		"Specify the backend to use for capturing packets. "+
-			fmt.Sprintf("Possible values are %q", types.NetHookBackendTc))
+			fmt.Sprintf("Possible values are %q and %q",
+				types.NetHookBackendTc, types.NetHookBackendCgroupSkb))
 
 	silenceKlog()
 }

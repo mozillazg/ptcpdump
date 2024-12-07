@@ -21,12 +21,16 @@
 #define TCX_NEXT (-1)
 #define INGRESS_PACKET 1
 #define EGRESS_PACKET 2
+#define L2_LAYER 2
+#define L3_LAYER 3
 
 char _license[] SEC("license") = "Dual MIT/GPL";
 
 struct packet_event_meta_t {
     u64 timestamp;
     u8 packet_type;
+    u8 first_layer;
+    u16 l3_protocol;
     u32 ifindex;
     u64 payload_len;
     u64 packet_size;
@@ -37,6 +41,13 @@ struct packet_event_meta_t {
 struct packet_event_t {
     struct packet_event_meta_t meta;
 };
+
+struct {
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, 100);
+    __type(key, u32);
+    __type(value, u8);
+} filter_ifindex_map SEC(".maps");
 
 struct {
     __uint(type, BPF_MAP_TYPE_LRU_HASH);
@@ -276,7 +287,35 @@ static __always_inline void route_packet(struct packet_meta_t *packet_meta, stru
     return;
 }
 
-static __always_inline int get_pid_meta(struct __sk_buff *skb, struct process_meta_t *pid_meta, bool egress) {
+static __always_inline int fill_packet_event_meta(struct __sk_buff *skb, bool cgroup_skb,
+                                                  struct packet_event_meta_t *event_meta, bool egress) {
+    struct process_meta_t *pid_meta = &event_meta->process;
+
+    if (cgroup_skb && egress) {
+        struct task_struct *task = (struct task_struct *)bpf_get_current_task();
+        if (task && !is_kernel_thread(task)) {
+            event_meta->l3_protocol = bpf_ntohs(skb->protocol);
+            fill_process_meta(task, pid_meta);
+            if (pid_meta->pid > 0) {
+                // debug_log("[ptcpdump][cgroup_sk] get_current_task success\n");
+                return 0;
+            }
+        }
+        // debug_log("[ptcpdump][cgroup_sk] get_current_task failed\n");
+    }
+
+    struct packet_meta_t packet_meta = {0};
+    if (cgroup_skb) {
+        packet_meta.l2.h_protocol = bpf_ntohs(skb->protocol);
+    }
+    int ret = parse_skb_meta(skb, !cgroup_skb, &packet_meta);
+    if (ret < 0) {
+        // debug_log("[ptcpdump] parse skb meta failed\n");
+        return -1;
+    }
+    event_meta->l3_protocol = packet_meta.l2.h_protocol;
+    // debug_log("l3_protocol: %d\n", event_meta->l3_protocol);
+
 #ifndef LEGACY_KERNEL
     if (bpf_core_enum_value_exists(enum bpf_func_id, BPF_FUNC_get_socket_cookie)) {
         u64 cookie = bpf_get_socket_cookie(skb);
@@ -296,12 +335,6 @@ static __always_inline int get_pid_meta(struct __sk_buff *skb, struct process_me
     }
 #endif
 
-    struct packet_meta_t packet_meta = {0};
-    int ret = parse_skb_meta(skb, &packet_meta);
-    if (ret < 0) {
-        // debug_log("parse skb meta failed\n");
-        return -1;
-    }
     struct nat_flow_t flow = {0};
     route_packet(&packet_meta, &flow);
 
@@ -353,12 +386,12 @@ static __always_inline int get_pid_meta(struct __sk_buff *skb, struct process_me
     return 0;
 }
 
-static __always_inline void handle_tc(struct __sk_buff *skb, bool egress) {
-    bpf_skb_pull_data(skb, 0);
+static __always_inline void handle_tc(bool cgroup_skb, struct __sk_buff *skb, bool egress) {
 
     if (!pcap_filter((void *)skb, (void *)skb, (void *)skb, (void *)(long)skb->data, (void *)(long)skb->data_end)) {
         return;
     }
+
 #ifdef LEGACY_KERNEL
     u32 u32_zero = 0;
 #endif
@@ -373,7 +406,7 @@ static __always_inline void handle_tc(struct __sk_buff *skb, bool egress) {
     __builtin_memset(&event->meta.process, 0, sizeof(event->meta.process));
     __builtin_memset(&event->meta.process.cgroup_name, 0, sizeof(event->meta.process.cgroup_name));
 
-    if (get_pid_meta(skb, &event->meta.process, egress) < 0) {
+    if (fill_packet_event_meta(skb, cgroup_skb, &event->meta, egress) < 0) {
         // debug_log("tc, not found pid\n");
         return;
     };
@@ -392,6 +425,11 @@ static __always_inline void handle_tc(struct __sk_buff *skb, bool egress) {
         event->meta.packet_type = EGRESS_PACKET;
     } else {
         event->meta.packet_type = INGRESS_PACKET;
+    }
+    if (cgroup_skb) {
+        event->meta.first_layer = L3_LAYER;
+    } else {
+        event->meta.first_layer = L2_LAYER;
     }
     event->meta.timestamp = bpf_ktime_get_ns();
     event->meta.ifindex = skb->ifindex;
@@ -416,28 +454,62 @@ static __always_inline void handle_tc(struct __sk_buff *skb, bool egress) {
 
 SEC("tc")
 int tc_ingress(struct __sk_buff *skb) {
-    handle_tc(skb, false);
+    bpf_skb_pull_data(skb, 0);
+    handle_tc(false, skb, false);
     return TC_ACT_UNSPEC;
 }
 
 #ifndef NO_TCX
 SEC("tcx/ingress")
 int tcx_ingress(struct __sk_buff *skb) {
-    handle_tc(skb, false);
+    bpf_skb_pull_data(skb, 0);
+    handle_tc(false, skb, false);
     return TCX_NEXT;
 }
 #endif
 
 SEC("tc")
 int tc_egress(struct __sk_buff *skb) {
-    handle_tc(skb, true);
+    bpf_skb_pull_data(skb, 0);
+    handle_tc(false, skb, true);
     return TC_ACT_UNSPEC;
 }
 
 #ifndef NO_TCX
 SEC("tcx/egress")
 int tcx_egress(struct __sk_buff *skb) {
-    handle_tc(skb, true);
+    bpf_skb_pull_data(skb, 0);
+    handle_tc(false, skb, true);
     return TCX_NEXT;
+}
+#endif
+
+#ifndef NO_CGROUP_PROG
+static __always_inline void handle_cgroup_skb(struct __sk_buff *skb, bool egress) {
+    GET_CONFIG()
+
+    if (g.filter_ifindex_enable) {
+        u32 ifindex = skb->ifindex;
+        if (ifindex == 0) {
+            return;
+        }
+        if (!bpf_map_lookup_elem(&filter_ifindex_map, &ifindex)) {
+            return;
+        }
+    }
+
+    handle_tc(true, skb, egress);
+}
+
+SEC("cgroup_skb/ingress")
+int cgroup_skb__ingress(struct __sk_buff *skb) {
+    handle_cgroup_skb(skb, false);
+    return 1;
+}
+
+SEC("cgroup_skb/egress")
+int cgroup_skb__egress(struct __sk_buff *skb) {
+    handle_cgroup_skb(skb, true);
+    return 1;
 }
 #endif

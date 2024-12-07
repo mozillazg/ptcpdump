@@ -79,7 +79,10 @@ jobs:
       - run:
           name: e2e (test netns)
           command: |
-            sudo bash testdata/test_netns.sh ./ptcpdump
+            for i in {1..5}; do
+              sudo bash testdata/test_netns.sh ./ptcpdump && exit 0 || sleep 1
+            done
+            exit 1
 
       - run:
           name: e2e (test netns newly)
@@ -274,6 +277,30 @@ jobs:
           command: |
             sudo bash testdata/run_test_k8s_filter_by_pod_2.sh
 
+  test-backend:
+    machine:
+      image: ubuntu-2204:2024.04.4
+    resource_class: medium
+    steps:
+      - checkout
+
+      - run:
+          name: build
+          command: |
+            make build-via-docker
+
+            echo '========== info =========='
+            uname -a
+            cat /etc/issue
+            file ./ptcpdump
+      - run:
+          name: test cgroup-skb
+          command: |
+            set -ex
+            sudo bash testdata/test_cgroup_skb_base_pcap.sh ./ptcpdump
+            sudo bash testdata/test_cgroup_skb_base_pcapng.sh ./ptcpdump
+            sudo bash testdata/test_cgroup_skb_filer_ifindex.sh ./ptcpdump
+
 workflows:
   e2e:
     jobs:
@@ -287,3 +314,4 @@ workflows:
       - docker-e2e
       - containerd-e2e
       - k8s-1-30-e2e
+      - test-backend

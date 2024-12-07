@@ -23,6 +23,7 @@ Table of Contents
     * [Example commands](#example-commands)
     * [Example output](#example-output)
     * [Running with Docker](#running-with-docker)
+    * [Backend](#backend)
     * [Flags](#flags)
 * [Compare with tcpdump](#compare-with-tcpdump)
 * [Developing](#developing)
@@ -229,6 +230,24 @@ docker run --privileged --rm -t --net=host --pid=host \
 <p align="right"><a href="#top">🔝</a></p>
 
 
+### Backend
+
+
+ptcpdump supports specifying a particular eBPF technology for packet capture through the
+`--backend` flag.
+
+| --backend    | eBPF Program Type          | Include the Layer 2 data |
+|--------------|----------------------------|--------------------------|
+| `tc`         | `BPF_PROG_TYPE_SCHED_ACT`  | ✅                        |
+| `cgroup-skb` | `BPF_PROG_TYPE_CGROUP_SKB` | ❌                        |
+
+
+If this flag isn't specified, it defaults to `tc`.
+
+
+<p align="right"><a href="#top">🔝</a></p>
+
+
 ### Flags
 
 
@@ -252,6 +271,7 @@ Examples:
 Expression: see "man 7 pcap-filter"
 
 Flags:
+      --backend string                               Specify the backend to use for capturing packets. Possible values are "tc" and "cgroup-skb" (default "tc")
       --container-id string                          Filter by container id (only TCP and UDP packets are supported)
       --container-name string                        Filter by container name (only TCP and UDP packets are supported)
       --containerd-address string                    Address of containerd service (default "/run/containerd/containerd.sock")

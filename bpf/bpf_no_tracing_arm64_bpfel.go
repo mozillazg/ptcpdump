@@ -55,6 +55,8 @@ type bpf_no_tracingSpecs struct {
 type bpf_no_tracingProgramSpecs struct {
 	CgroupSockCreate                     *ebpf.ProgramSpec `ebpf:"cgroup__sock_create"`
 	CgroupSockRelease                    *ebpf.ProgramSpec `ebpf:"cgroup__sock_release"`
+	CgroupSkbEgress                      *ebpf.ProgramSpec `ebpf:"cgroup_skb__egress"`
+	CgroupSkbIngress                     *ebpf.ProgramSpec `ebpf:"cgroup_skb__ingress"`
 	KprobeDevChangeNetNamespace          *ebpf.ProgramSpec `ebpf:"kprobe__dev_change_net_namespace"`
 	KprobeDevChangeNetNamespaceLegacy    *ebpf.ProgramSpec `ebpf:"kprobe__dev_change_net_namespace_legacy"`
 	KprobeNfNatManipPkt                  *ebpf.ProgramSpec `ebpf:"kprobe__nf_nat_manip_pkt"`
@@ -90,6 +92,7 @@ type bpf_no_tracingMapSpecs struct {
 	ExecEvents            *ebpf.MapSpec `ebpf:"exec_events"`
 	ExitEvents            *ebpf.MapSpec `ebpf:"exit_events"`
 	FilterByKernelCount   *ebpf.MapSpec `ebpf:"filter_by_kernel_count"`
+	FilterIfindexMap      *ebpf.MapSpec `ebpf:"filter_ifindex_map"`
 	FilterMntnsMap        *ebpf.MapSpec `ebpf:"filter_mntns_map"`
 	FilterNetnsMap        *ebpf.MapSpec `ebpf:"filter_netns_map"`
 	FilterPidMap          *ebpf.MapSpec `ebpf:"filter_pid_map"`
@@ -134,6 +137,7 @@ type bpf_no_tracingMaps struct {
 	ExecEvents            *ebpf.Map `ebpf:"exec_events"`
 	ExitEvents            *ebpf.Map `ebpf:"exit_events"`
 	FilterByKernelCount   *ebpf.Map `ebpf:"filter_by_kernel_count"`
+	FilterIfindexMap      *ebpf.Map `ebpf:"filter_ifindex_map"`
 	FilterMntnsMap        *ebpf.Map `ebpf:"filter_mntns_map"`
 	FilterNetnsMap        *ebpf.Map `ebpf:"filter_netns_map"`
 	FilterPidMap          *ebpf.Map `ebpf:"filter_pid_map"`
@@ -161,6 +165,7 @@ func (m *bpf_no_tracingMaps) Close() error {
 		m.ExecEvents,
 		m.ExitEvents,
 		m.FilterByKernelCount,
+		m.FilterIfindexMap,
 		m.FilterMntnsMap,
 		m.FilterNetnsMap,
 		m.FilterPidMap,
@@ -187,6 +192,8 @@ func (m *bpf_no_tracingMaps) Close() error {
 type bpf_no_tracingPrograms struct {
 	CgroupSockCreate                     *ebpf.Program `ebpf:"cgroup__sock_create"`
 	CgroupSockRelease                    *ebpf.Program `ebpf:"cgroup__sock_release"`
+	CgroupSkbEgress                      *ebpf.Program `ebpf:"cgroup_skb__egress"`
+	CgroupSkbIngress                     *ebpf.Program `ebpf:"cgroup_skb__ingress"`
 	KprobeDevChangeNetNamespace          *ebpf.Program `ebpf:"kprobe__dev_change_net_namespace"`
 	KprobeDevChangeNetNamespaceLegacy    *ebpf.Program `ebpf:"kprobe__dev_change_net_namespace_legacy"`
 	KprobeNfNatManipPkt                  *ebpf.Program `ebpf:"kprobe__nf_nat_manip_pkt"`
@@ -216,6 +223,8 @@ func (p *bpf_no_tracingPrograms) Close() error {
 	return _Bpf_no_tracingClose(
 		p.CgroupSockCreate,
 		p.CgroupSockRelease,
+		p.CgroupSkbEgress,
+		p.CgroupSkbIngress,
 		p.KprobeDevChangeNetNamespace,
 		p.KprobeDevChangeNetNamespaceLegacy,
 		p.KprobeNfNatManipPkt,

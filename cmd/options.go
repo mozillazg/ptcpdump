@@ -169,12 +169,6 @@ func prepareOptions(opts *Options, rawArgs []string, args []string) {
 		}
 	}
 
-	switch types.NetHookBackend(opts.backend) {
-	case types.NetHookBackendTc:
-	default:
-		opts.backend = string(types.NetHookBackendTc)
-	}
-
 }
 
 func getPodNameFilter(raw string) (name, ns string) {
@@ -320,6 +314,7 @@ func (o *Options) ToCapturerOptions() *capturer.Options {
 		DirectionOut:                  o.DirectionOut(),
 		OneLine:                       o.oneLine,
 		Quiet:                         o.quiet,
+		Backend:                       types.NetHookBackend(o.backend),
 		PrintPacketNumber:             o.printPacketNumber,
 		DontPrintTimestamp:            o.dontPrintTimestamp,
 		OnlyPrintCount:                o.onlyPrintCount,

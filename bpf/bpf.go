@@ -49,6 +49,7 @@ type Options struct {
 	mntnsIds       []uint32
 	pidnsIds       []uint32
 	netnsIds       []uint32
+	ifindexes      []uint32
 	maxPayloadSize uint32
 	hookMount      bool
 	hookNetDev     bool
@@ -106,6 +107,9 @@ func (b *BPF) Load(opts Options) error {
 		FilterCommEnable:  opts.filterComm,
 		MaxPayloadSize:    opts.maxPayloadSize,
 	}
+	if len(opts.ifindexes) > 0 {
+		config.FilterIfindexEnable = 1
+	}
 	if !b.isLegacyKernel {
 		log.Infof("rewrite constants with %+v", config)
 		err = b.spec.RewriteConstants(map[string]interface{}{
@@ -117,7 +121,7 @@ func (b *BPF) Load(opts Options) error {
 	}
 
 	if opts.pcapFilter != "" {
-		for _, progName := range []string{"tc_ingress", "tc_egress", "tcx_ingress", "tcx_egress"} {
+		for _, progName := range []string{"tc_ingress", "tc_egress", "tcx_ingress", "tcx_egress", "cgroup_skb__ingress", "cgroup_skb__egress"} {
 			prog, ok := b.spec.Programs[progName]
 			if !ok {
 				log.Infof("program %s not found", progName)
@@ -127,13 +131,14 @@ func (b *BPF) Load(opts Options) error {
 				log.Infof("program %s is nil", progName)
 				continue
 			}
+			l2skb := !strings.Contains(progName, "cgroup_skb")
 			prog.Instructions, err = elibpcap.Inject(
 				opts.pcapFilter,
 				prog.Instructions,
 				elibpcap.Options{
 					AtBpf2Bpf:  "pcap_filter",
 					DirectRead: true,
-					L2Skb:      true,
+					L2Skb:      l2skb,
 				},
 			)
 			if err != nil {
@@ -507,6 +512,14 @@ func (b *BPF) applyFilters() error {
 		}
 	}
 
+	log.Infof("start to update FilterIfindexMap with %+v", opts.ifindexes)
+	for _, id := range opts.ifindexes {
+		id := id
+		if err := b.objs.BpfMaps.FilterIfindexMap.Update(id, value, ebpf.UpdateAny); err != nil {
+			return fmt.Errorf("update FilterIfindexMap: %w", err)
+		}
+	}
+
 	return nil
 }
 
@@ -606,5 +619,15 @@ func (opts *Options) WithHookNetDev(v bool) *Options {
 
 func (opts *Options) WithKernelTypes(spec *btf.Spec) *Options {
 	opts.kernelTypes = spec
+	return opts
+}
+
+func (opts *Options) WithIfindexes(ifindexes []uint32) *Options {
+	for _, id := range ifindexes {
+		if id == 0 {
+			continue
+		}
+		opts.ifindexes = append(opts.ifindexes, id)
+	}
 	return opts
 }

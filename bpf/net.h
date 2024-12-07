@@ -20,11 +20,11 @@
 #define AF_INET6 10
 
 struct l2_t {
-    u16 h_protocol;
+    u16 h_protocol; /* next layer protocol */
 };
 
 struct l3_t {
-    u8 protocol;
+    u8 protocol; /* next layer protocol */
     u64 saddr[2];
     u64 daddr[2];
 };
@@ -157,11 +157,13 @@ static __always_inline int parse_skb_l4(struct __sk_buff *skb, u8 protocol, stru
     return 0;
 }
 
-static __always_inline int parse_skb_meta(struct __sk_buff *skb, struct packet_meta_t *meta) {
+static __always_inline int parse_skb_meta(struct __sk_buff *skb, bool l2_skb, struct packet_meta_t *meta) {
     meta->ifindex = skb->ifindex;
 
-    if (parse_skb_l2(skb, &meta->l2, &meta->offset) < 0) {
-        return -1;
+    if (l2_skb) {
+        if (parse_skb_l2(skb, &meta->l2, &meta->offset) < 0) {
+            return -1;
+        }
     }
 
     if (parse_skb_l3(skb, meta->l2.h_protocol, &meta->l3, &meta->offset) < 0) {

@@ -47,6 +47,25 @@ jobs:
         run: |
             bash testdata/test_run_with_docker.sh "quay.io/ptcpdump/ptcpdump:latest"
 
+  test-backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - name: Retrieve stored ptcpdump executable
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4
+        with:
+          name: ptcpdump
+          path: ptcpdump
+
+      - name: test cgroup-skb
+        run: |
+          set -ex
+          bash testdata/test_cgroup_skb_base_pcap.sh ./ptcpdump/ptcpdump
+          bash testdata/test_cgroup_skb_base_pcapng.sh ./ptcpdump/ptcpdump
+          bash testdata/test_cgroup_skb_filer_ifindex.sh ./ptcpdump/ptcpdump
+
   e2e-test:
     name: e2e-test
     needs: build
