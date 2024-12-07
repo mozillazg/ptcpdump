@@ -299,7 +299,7 @@ jobs:
             set -ex
             sudo bash testdata/test_cgroup_skb_base_pcap.sh ./ptcpdump
             sudo bash testdata/test_cgroup_skb_base_pcapng.sh ./ptcpdump
-            sudo bash testdata/test_cgroup_skb_filer_ifindex.sh ./ptcpdump
+            sudo bash testdata/test_cgroup_skb_filter_ifindex.sh ./ptcpdump
 
 workflows:
   e2e:

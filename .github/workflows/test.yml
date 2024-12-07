@@ -64,7 +64,7 @@ jobs:
           set -ex
           bash testdata/test_cgroup_skb_base_pcap.sh ./ptcpdump/ptcpdump
           bash testdata/test_cgroup_skb_base_pcapng.sh ./ptcpdump/ptcpdump
-          bash testdata/test_cgroup_skb_filer_ifindex.sh ./ptcpdump/ptcpdump
+          bash testdata/test_cgroup_skb_filter_ifindex.sh ./ptcpdump/ptcpdump
 
   e2e-test:
     name: e2e-test
