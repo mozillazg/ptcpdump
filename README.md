@@ -7,8 +7,8 @@
 English | [中文](README.zh-CN.md)
 
 
-ptcpdump is the tcpdump(8) implementation using eBPF, with an extra feature:
-it adds process info as packet comments for each Packet when possible.
+ptcpdump is an eBPF-based implementation of tcpdump that includes an additional feature:
+it adds process information as comments for each packet when available.
 Inspired by [jschwinger233/skbdump](https://github.com/jschwinger233/skbdump).
 
 ![](./docs/wireshark.png)
