@@ -38,6 +38,7 @@ type Capturer struct {
 	stopByInternal bool
 	closeFuncs     []func()
 	stopped        chan struct{}
+	cgroupPath     string
 }
 
 type Options struct {
@@ -52,6 +53,7 @@ type Options struct {
 	DirectionIn    bool
 	OneLine        bool
 	Quiet          bool
+	Backend        types.NetHookBackend
 
 	PrintPacketNumber   bool
 	DontPrintTimestamp  bool
@@ -105,6 +107,7 @@ type Options struct {
 
 	NetNsPaths    []string
 	DevNames      []string
+	Devices       []types.Device
 	AllDev        bool
 	AllNetNs      bool
 	AllNewlyNetNs bool
@@ -134,24 +137,21 @@ func (c *Capturer) StartSubProcessLoader(ctx context.Context, program string, su
 
 func (c *Capturer) Prepare() error {
 	if err := rlimit.RemoveMemlock(); err != nil {
-		return err
+		return fmt.Errorf("remove memlock failed: %w", err)
 	}
 
 	btfspec, err := c.loadBTF()
 	if err != nil {
-		return err
+		return fmt.Errorf("load btf failed: %w", err)
 	}
 	c.btfSpec = btfspec
 
-	return nil
-}
-
-func (c *Capturer) AttachTracingHooks() error {
-	bf, err := bpf.NewBPF()
+	c.bpf, err = bpf.NewBPF()
 	if err != nil {
-		return err
+		return fmt.Errorf("new bpf failed: %w", err)
 	}
 
+	bf := c.bpf
 	bpfopts := &bpf.Options{}
 	bpfopts = bpfopts.WithPids(c.opts.Pids).
 		WithComm(c.opts.Comm).
@@ -163,26 +163,46 @@ func (c *Capturer) AttachTracingHooks() error {
 		WithHookMount(c.opts.AllNetNs || c.opts.AllNewlyNetNs).
 		WithHookNetDev(c.opts.AllNetNs || c.opts.AllNewlyNetNs || c.opts.AllDev).
 		WithPcapFilter(c.opts.PcapFilter).
+		WithBackend(c.opts.Backend).
 		WithKernelTypes(c.btfSpec)
+	if !c.opts.AllDev {
+		bpfopts = bpfopts.WithIfindexes(c.ifindexes())
+	}
 
 	if err := bf.Load(*bpfopts); err != nil {
-		return err
+		return fmt.Errorf("load bpf failed: %w", err)
 	}
-	c.bpf = bf
 	c.closeFuncs = append(c.closeFuncs, bf.Close)
 
 	if len(c.opts.Connections) > 0 {
 		if err := updateFlowPidMapValues(bf, c.opts.Connections); err != nil {
-			return err
+			return fmt.Errorf("update flow pid map values failed: %w", err)
 		}
 	}
+
+	return nil
+}
+
+func (c *Capturer) ifindexes() []uint32 {
+	var ifindexes []uint32
+	for _, dev := range c.opts.Devices {
+		ifindexes = append(ifindexes, uint32(dev.Ifindex))
+	}
+	return ifindexes
+}
+
+func (c *Capturer) AttachTracingHooks() error {
+	bf := c.bpf
 
 	cgroupPath, err := utils.GetCgroupV2RootDir()
 	if err != nil {
 		log.Warnf("skip attach cgroup due to get cgroup v2 root dir failed: %s", err)
 	}
+	log.Infof("cgroup path: %s", cgroupPath)
 	if err := bf.AttachCgroups(cgroupPath); err != nil {
 		return err
+	} else {
+		c.cgroupPath = cgroupPath
 	}
 
 	if err := bf.AttachKprobes(); err != nil {
@@ -195,7 +215,17 @@ func (c *Capturer) AttachTracingHooks() error {
 	return nil
 }
 
-func (c *Capturer) AttachTcHooksToDevs(devs []types.Device) error {
+func (c *Capturer) AttachCaptureHooks() error {
+	log.Infof("backend: %s", c.opts.Backend)
+	switch c.opts.Backend {
+	case types.NetHookBackendCgroupSkb:
+		return c.bpf.AttachCgroupSkb(c.cgroupPath, c.opts.DirectionOut, c.opts.DirectionIn)
+	default:
+		return c.attachTcHooksToDevs(c.opts.Devices)
+	}
+}
+
+func (c *Capturer) attachTcHooksToDevs(devs []types.Device) error {
 	for _, iface := range devs {
 		err := c.attachTcHooks(iface)
 		if err != nil {
@@ -267,20 +297,22 @@ func (c *Capturer) pullEvents(ctx context.Context) error {
 		return err
 	}
 
-	if c.opts.AllDev {
-		c.newDevCh, err = c.bpf.PullNewNetDeviceEvents(ctx, int(c.opts.EventChanSize))
-		if err != nil {
-			return err
+	if c.opts.Backend != types.NetHookBackendCgroupSkb {
+		if c.opts.AllDev {
+			c.newDevCh, err = c.bpf.PullNewNetDeviceEvents(ctx, int(c.opts.EventChanSize))
+			if err != nil {
+				return err
+			}
+			c.devChangeCh, err = c.bpf.PullNetDeviceChangeEvents(ctx, int(c.opts.EventChanSize))
+			if err != nil {
+				return err
+			}
 		}
-		c.devChangeCh, err = c.bpf.PullNetDeviceChangeEvents(ctx, int(c.opts.EventChanSize))
-		if err != nil {
-			return err
-		}
-	}
-	if c.opts.AllNetNs || c.opts.AllNewlyNetNs {
-		c.mountCh, err = c.bpf.PullMountEventEvents(ctx, int(c.opts.EventChanSize))
-		if err != nil {
-			return err
+		if c.opts.AllNetNs || c.opts.AllNewlyNetNs {
+			c.mountCh, err = c.bpf.PullMountEventEvents(ctx, int(c.opts.EventChanSize))
+			if err != nil {
+				return err
+			}
 		}
 	}
 

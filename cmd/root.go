@@ -33,8 +33,8 @@ Examples:
 
 Expression: see "man 7 pcap-filter"`,
 	DisableFlagsInUseLine: true,
-	Short: "ptcpdump is the tcpdump(8) implementation using eBPF, with an extra feature: \n" +
-		" it adds process info as packet comments for each Packet when possible.\n" +
+	Short: "ptcpdump is an eBPF-based implementation of tcpdump that includes an additional feature:\n" +
+		" it adds process information as comments for each packet when available.\n" +
 		" More info: https://github.com/mozillazg/ptcpdump",
 	Run: func(cmd *cobra.Command, args []string) {
 		prepareOptions(opts, os.Args, args)
@@ -133,7 +133,8 @@ func init() {
 		"Specify which context information to include in the output")
 	rootCmd.Flags().StringVar(&opts.backend, "backend", string(types.NetHookBackendTc),
 		"Specify the backend to use for capturing packets. "+
-			fmt.Sprintf("Possible values are %q", types.NetHookBackendTc))
+			fmt.Sprintf("Possible values are %q and %q",
+				types.NetHookBackendTc, types.NetHookBackendCgroupSkb))
 
 	silenceKlog()
 }

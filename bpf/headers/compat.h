@@ -10,6 +10,7 @@ struct gconfig_t {
     u8 filter_follow_forks;
     char filter_comm[TASK_COMM_LEN];
     u8 filter_comm_enable;
+    u8 filter_ifindex_enable;
     u32 max_payload_size;
 };
 

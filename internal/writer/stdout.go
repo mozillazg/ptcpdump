@@ -2,12 +2,12 @@ package writer
 
 import (
 	"fmt"
+	"github.com/gopacket/gopacket/layers"
 	"github.com/mozillazg/ptcpdump/internal/types"
 	"io"
 	"strings"
 
 	"github.com/gopacket/gopacket"
-	"github.com/gopacket/gopacket/layers"
 	"github.com/mozillazg/ptcpdump/internal/event"
 	"github.com/mozillazg/ptcpdump/internal/log"
 	"github.com/mozillazg/ptcpdump/internal/metadata"

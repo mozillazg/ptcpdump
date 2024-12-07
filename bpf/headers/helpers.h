@@ -8,6 +8,8 @@
 #include <bpf/bpf_tracing.h>
 
 #define EEXIST 17 /* File exists */
+// https://github.com/torvalds/linux/blob/b5f217084ab3ddd4bdd03cd437f8e3b7e2d1f5b6/include/linux/sched.h#L1686
+#define PF_KTHREAD 0x00200000 /* I am a kernel thread */
 
 static __always_inline void *bpf_map_lookup_or_try_init(void *map, const void *key, const void *init) {
     void *value;
@@ -32,6 +34,10 @@ static __always_inline int str_cmp(const char *a, const volatile char *b, int le
             break;
     }
     return 0;
+}
+
+static __always_inline bool is_kernel_thread(struct task_struct *task) {
+    return (BPF_CORE_READ(task, flags) & PF_KTHREAD) || (BPF_CORE_READ(task, real_parent, tgid) == 2);
 }
 
 #endif /* __PTCPDUMP_HELPERS_H__ */

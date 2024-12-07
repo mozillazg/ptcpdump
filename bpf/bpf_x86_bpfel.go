@@ -37,12 +37,12 @@ type BpfFlowPidKeyT struct {
 }
 
 type BpfGconfigT struct {
-	HaveFilter        uint8
-	FilterFollowForks uint8
-	FilterComm        [16]int8
-	FilterCommEnable  uint8
-	_                 [1]byte
-	MaxPayloadSize    uint32
+	HaveFilter          uint8
+	FilterFollowForks   uint8
+	FilterComm          [16]int8
+	FilterCommEnable    uint8
+	FilterIfindexEnable uint8
+	MaxPayloadSize      uint32
 }
 
 type BpfGoKeylogBufT struct {
@@ -98,7 +98,8 @@ type BpfNewNetdeviceEventT struct{ Dev BpfNetdeviceT }
 type BpfPacketEventMetaT struct {
 	Timestamp  uint64
 	PacketType uint8
-	_          [3]byte
+	FirstLayer uint8
+	L3Protocol uint16
 	Ifindex    uint32
 	PayloadLen uint64
 	PacketSize uint64
@@ -160,6 +161,8 @@ type BpfSpecs struct {
 type BpfProgramSpecs struct {
 	CgroupSockCreate                     *ebpf.ProgramSpec `ebpf:"cgroup__sock_create"`
 	CgroupSockRelease                    *ebpf.ProgramSpec `ebpf:"cgroup__sock_release"`
+	CgroupSkbEgress                      *ebpf.ProgramSpec `ebpf:"cgroup_skb__egress"`
+	CgroupSkbIngress                     *ebpf.ProgramSpec `ebpf:"cgroup_skb__ingress"`
 	FentryNfNatManipPkt                  *ebpf.ProgramSpec `ebpf:"fentry__nf_nat_manip_pkt"`
 	FentryNfNatPacket                    *ebpf.ProgramSpec `ebpf:"fentry__nf_nat_packet"`
 	FentrySecuritySkClassifyFlow         *ebpf.ProgramSpec `ebpf:"fentry__security_sk_classify_flow"`
@@ -206,6 +209,7 @@ type BpfMapSpecs struct {
 	ExecEvents            *ebpf.MapSpec `ebpf:"exec_events"`
 	ExitEvents            *ebpf.MapSpec `ebpf:"exit_events"`
 	FilterByKernelCount   *ebpf.MapSpec `ebpf:"filter_by_kernel_count"`
+	FilterIfindexMap      *ebpf.MapSpec `ebpf:"filter_ifindex_map"`
 	FilterMntnsMap        *ebpf.MapSpec `ebpf:"filter_mntns_map"`
 	FilterNetnsMap        *ebpf.MapSpec `ebpf:"filter_netns_map"`
 	FilterPidMap          *ebpf.MapSpec `ebpf:"filter_pid_map"`
@@ -250,6 +254,7 @@ type BpfMaps struct {
 	ExecEvents            *ebpf.Map `ebpf:"exec_events"`
 	ExitEvents            *ebpf.Map `ebpf:"exit_events"`
 	FilterByKernelCount   *ebpf.Map `ebpf:"filter_by_kernel_count"`
+	FilterIfindexMap      *ebpf.Map `ebpf:"filter_ifindex_map"`
 	FilterMntnsMap        *ebpf.Map `ebpf:"filter_mntns_map"`
 	FilterNetnsMap        *ebpf.Map `ebpf:"filter_netns_map"`
 	FilterPidMap          *ebpf.Map `ebpf:"filter_pid_map"`
@@ -277,6 +282,7 @@ func (m *BpfMaps) Close() error {
 		m.ExecEvents,
 		m.ExitEvents,
 		m.FilterByKernelCount,
+		m.FilterIfindexMap,
 		m.FilterMntnsMap,
 		m.FilterNetnsMap,
 		m.FilterPidMap,
@@ -303,6 +309,8 @@ func (m *BpfMaps) Close() error {
 type BpfPrograms struct {
 	CgroupSockCreate                     *ebpf.Program `ebpf:"cgroup__sock_create"`
 	CgroupSockRelease                    *ebpf.Program `ebpf:"cgroup__sock_release"`
+	CgroupSkbEgress                      *ebpf.Program `ebpf:"cgroup_skb__egress"`
+	CgroupSkbIngress                     *ebpf.Program `ebpf:"cgroup_skb__ingress"`
 	FentryNfNatManipPkt                  *ebpf.Program `ebpf:"fentry__nf_nat_manip_pkt"`
 	FentryNfNatPacket                    *ebpf.Program `ebpf:"fentry__nf_nat_packet"`
 	FentrySecuritySkClassifyFlow         *ebpf.Program `ebpf:"fentry__security_sk_classify_flow"`
@@ -343,6 +351,8 @@ func (p *BpfPrograms) Close() error {
 	return _BpfClose(
 		p.CgroupSockCreate,
 		p.CgroupSockRelease,
+		p.CgroupSkbEgress,
+		p.CgroupSkbIngress,
 		p.FentryNfNatManipPkt,
 		p.FentryNfNatPacket,
 		p.FentrySecuritySkClassifyFlow,

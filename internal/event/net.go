@@ -1,6 +1,7 @@
 package event
 
 import (
+	"encoding/binary"
 	"github.com/mozillazg/ptcpdump/internal/metadata"
 	"github.com/mozillazg/ptcpdump/internal/types"
 	"time"
@@ -13,10 +14,14 @@ import (
 )
 
 type packetType int
+type firstLayerType int
 
 const (
 	packetTypeIngress packetType = 1
 	packetTypeEgress  packetType = 2
+
+	FirstLayerL2 firstLayerType = 2
+	FirstLayerL3 firstLayerType = 3
 )
 
 type Packet struct {
@@ -32,6 +37,8 @@ type Packet struct {
 	Data []byte
 
 	CgroupName string
+	FirstLayer firstLayerType
+	L3Protocol uint16
 }
 
 func ParsePacketEvent(deviceCache *metadata.DeviceCache, event bpf.BpfPacketEventWithPayloadT) (*Packet, error) {
@@ -51,15 +58,40 @@ func ParsePacketEvent(deviceCache *metadata.DeviceCache, event bpf.BpfPacketEven
 	log.Infof("new packet event, pid: %d mntns: %d, netns: %d, cgroupName: %s",
 		p.Pid, p.MntNs, p.NetNs, p.CgroupName)
 
+	p.L3Protocol = event.Meta.L3Protocol
+	p.FirstLayer = firstLayerType(event.Meta.FirstLayer)
 	p.Type = packetType(event.Meta.PacketType)
 	if event.Meta.PacketSize > event.Meta.PayloadLen {
 		p.Truncated = true
 	}
 	p.Len = int(event.Meta.PacketSize)
-	p.Data = make([]byte, event.Meta.PayloadLen)
-	copy(p.Data[:], event.Payload[:event.Meta.PayloadLen])
+
+	var fakeEthernet []byte
+	var fakeEthernetLen int
+	if p.FirstLayer == FirstLayerL3 {
+		fakeEthernet = newFakeEthernet(p.L3Protocol)
+		fakeEthernetLen = len(fakeEthernet)
+	}
+
+	p.Data = make([]byte, event.Meta.PayloadLen+uint64(fakeEthernetLen))
+	if fakeEthernetLen > 0 {
+		copy(p.Data[:fakeEthernetLen], fakeEthernet)
+		p.Len += fakeEthernetLen
+	}
+	copy(p.Data[fakeEthernetLen:], event.Payload[:event.Meta.PayloadLen])
+
+	log.Infof("%d, %+v", p.L3Protocol, p.Data)
 
 	return &p, nil
+}
+
+func newFakeEthernet(l3Protocol uint16) []byte {
+	ethernetHeader := make([]byte, 14)
+	copy(ethernetHeader[0:6], []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x02})
+	copy(ethernetHeader[6:12], []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x01})
+	binary.BigEndian.PutUint16(ethernetHeader[12:14], l3Protocol)
+
+	return ethernetHeader
 }
 
 func FromPacket(ci gopacket.CaptureInfo, data []byte) (*Packet, error) {

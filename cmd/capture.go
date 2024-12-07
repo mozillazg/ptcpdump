@@ -63,6 +63,7 @@ func capture(ctx context.Context, stopFunc context.CancelFunc, opts *Options) er
 	copts.ExecConsumer = execConsumer
 	copts.ExitConsumer = exitConsumer
 	copts.PacketConsumer = packetConsumer
+	copts.Devices = devices.Devs()
 	copts.Gcr = gcr
 	copts.Writers = writers
 	caper := capturer.NewCapturer(copts)
@@ -84,8 +85,9 @@ func capture(ctx context.Context, stopFunc context.CancelFunc, opts *Options) er
 	if err := attachGoTLSHooks(opts, caper.BPF()); err != nil {
 		return err
 	}
-	log.Info("start to attach tc hooks when startup")
-	if err := caper.AttachTcHooksToDevs(devices.Devs()); err != nil {
+
+	log.Info("start to attach capture hooks when startup")
+	if err := caper.AttachCaptureHooks(); err != nil {
 		return err
 	}
 	log.Info("start events monitor")

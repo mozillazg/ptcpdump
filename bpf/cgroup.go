@@ -39,3 +39,39 @@ func (b *BPF) AttachCgroups(cgroupPath string) error {
 
 	return nil
 }
+
+func (b *BPF) AttachCgroupSkb(cgroupPath string, egress, ingress bool) error {
+	if cgroupPath == "" {
+		b.skipAttachCgroup = true
+	}
+	if b.skipAttachCgroup {
+		return nil
+	}
+
+	if ingress {
+		log.Info("attaching cgroup_skb/ingress")
+		lk, err := link.AttachCgroup(link.CgroupOptions{
+			Path:    cgroupPath,
+			Attach:  ebpf.AttachCGroupInetIngress,
+			Program: b.objs.CgroupSkbIngress,
+		})
+		if err != nil {
+			return fmt.Errorf("attach cgroup_skb/ingress: %w", err)
+		}
+		b.links = append(b.links, lk)
+	}
+	if egress {
+		log.Info("attaching cgroup_skb/egress")
+		lk, err := link.AttachCgroup(link.CgroupOptions{
+			Path:    cgroupPath,
+			Attach:  ebpf.AttachCGroupInetEgress,
+			Program: b.objs.CgroupSkbEgress,
+		})
+		if err != nil {
+			return fmt.Errorf("attach cgroup_skb/egress: %w", err)
+		}
+		b.links = append(b.links, lk)
+	}
+
+	return nil
+}
