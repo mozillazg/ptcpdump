@@ -63,9 +63,10 @@ jobs:
       - name: test cgroup-skb
         run: |
           set -ex
-          bash testdata/test_cgroup_skb_base_pcap.sh ./ptcpdump/ptcpdump
-          bash testdata/test_cgroup_skb_base_pcapng.sh ./ptcpdump/ptcpdump
-          bash testdata/test_cgroup_skb_filter_ifindex.sh ./ptcpdump/ptcpdump
+          chmod +x ./ptcpdump/ptcpdump
+          sudo bash testdata/test_cgroup_skb_base_pcap.sh ./ptcpdump/ptcpdump
+          sudo bash testdata/test_cgroup_skb_base_pcapng.sh ./ptcpdump/ptcpdump
+          sudo bash testdata/test_cgroup_skb_filter_ifindex.sh ./ptcpdump/ptcpdump
 
   e2e-test:
     name: e2e-test

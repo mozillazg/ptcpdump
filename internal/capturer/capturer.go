@@ -159,13 +159,15 @@ func (c *Capturer) Prepare() error {
 		WithPidNsIds(c.opts.PidnsIds).
 		WithMntNsIds(c.opts.MntnsIds).
 		WithNetNsIds(c.opts.NetnsIds).
-		WithIfindexes(c.ifindexes()).
 		WithMaxPayloadSize(c.opts.SnapshotLength).
 		WithHookMount(c.opts.AllNetNs || c.opts.AllNewlyNetNs).
 		WithHookNetDev(c.opts.AllNetNs || c.opts.AllNewlyNetNs || c.opts.AllDev).
 		WithPcapFilter(c.opts.PcapFilter).
 		WithBackend(c.opts.Backend).
 		WithKernelTypes(c.btfSpec)
+	if !c.opts.AllDev {
+		bpfopts = bpfopts.WithIfindexes(c.ifindexes())
+	}
 
 	if err := bf.Load(*bpfopts); err != nil {
 		return fmt.Errorf("load bpf failed: %w", err)
