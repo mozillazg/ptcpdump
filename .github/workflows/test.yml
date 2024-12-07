@@ -49,6 +49,7 @@ jobs:
 
   test-backend:
     runs-on: ubuntu-latest
+    needs: build
     timeout-minutes: 5
 
     steps:
