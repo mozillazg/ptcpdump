@@ -168,6 +168,9 @@ func (c *Capturer) Prepare() error {
 	if !c.opts.AllDev {
 		bpfopts = bpfopts.WithIfindexes(c.ifindexes())
 	}
+	if c.opts.Backend != types.NetHookBackendTc {
+		bpfopts = bpfopts.WithHookMount(false).WithHookNetDev(false)
+	}
 
 	if err := bf.Load(*bpfopts); err != nil {
 		return fmt.Errorf("load bpf failed: %w", err)
