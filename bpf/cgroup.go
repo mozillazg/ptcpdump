@@ -42,11 +42,10 @@ func (b *BPF) AttachCgroups(cgroupPath string) error {
 }
 
 func (b *BPF) disableCgroupSkb() {
-	if _, ok := b.spec.Programs["cgroup_skb__ingress"]; ok {
-		delete(b.spec.Programs, "cgroup_skb__ingress")
-	}
-	if _, ok := b.spec.Programs["cgroup_skb__egress"]; ok {
-		delete(b.spec.Programs, "cgroup_skb__egress")
+	for k, v := range b.spec.Programs {
+		if v.Type == ebpf.CGroupSKB {
+			delete(b.spec.Programs, k)
+		}
 	}
 }
 
