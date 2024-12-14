@@ -112,6 +112,9 @@ func (b *BPF) Load(opts Options) error {
 	if len(opts.ifindexes) > 0 {
 		config.FilterIfindexEnable = 1
 	}
+	if opts.backend != types.NetHookBackendCgroupSkb {
+		b.disableCgroupSkb()
+	}
 	if !b.isLegacyKernel {
 		log.Infof("rewrite constants with %+v", config)
 		err = b.spec.RewriteConstants(map[string]interface{}{
@@ -221,10 +224,13 @@ func (b *BPF) UpdateFlowPidMapValues(data map[*BpfFlowPidKeyT]BpfProcessMetaT) e
 }
 
 func (b *BPF) AttachKprobes() error {
-	err := b.attachFentryOrKprobe("security_sk_classify_flow",
-		b.objs.FentrySecuritySkClassifyFlow, b.objs.KprobeSecuritySkClassifyFlow)
-	if err != nil {
-		return fmt.Errorf(": %w", err)
+	if err := b.attachFentryOrKprobe("security_sk_classify_flow",
+		b.objs.FentrySecuritySkClassifyFlow, b.objs.KprobeSecuritySkClassifyFlow); err != nil {
+		if isProbeNotSupportErr(err) { // some systems do not support this kprobe, e.g. openwrt
+			log.Warnf("%+v", err)
+		} else {
+			return fmt.Errorf(": %w", err)
+		}
 	}
 
 	if err := b.attachFentryOrKprobe("tcp_sendmsg", b.objs.FentryTcpSendmsg, b.objs.KprobeTcpSendmsg); err != nil {

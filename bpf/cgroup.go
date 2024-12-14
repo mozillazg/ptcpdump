@@ -12,6 +12,7 @@ func (b *BPF) AttachCgroups(cgroupPath string) error {
 		b.skipAttachCgroup = true
 	}
 	if b.skipAttachCgroup {
+		log.Info("skipping cgroup attach")
 		return nil
 	}
 
@@ -38,6 +39,15 @@ func (b *BPF) AttachCgroups(cgroupPath string) error {
 	b.links = append(b.links, lk)
 
 	return nil
+}
+
+func (b *BPF) disableCgroupSkb() {
+	if _, ok := b.spec.Programs["cgroup_skb__ingress"]; ok {
+		delete(b.spec.Programs, "cgroup_skb__ingress")
+	}
+	if _, ok := b.spec.Programs["cgroup_skb__egress"]; ok {
+		delete(b.spec.Programs, "cgroup_skb__egress")
+	}
 }
 
 func (b *BPF) AttachCgroupSkb(cgroupPath string, egress, ingress bool) error {

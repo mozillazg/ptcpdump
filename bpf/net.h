@@ -139,6 +139,10 @@ static __always_inline int parse_skb_l4(struct __sk_buff *skb, u8 protocol, stru
         return 0;
     }
     case IPPROTO_SCTP: {
+        // some systems do not have struct sctphdr. e.g. openwrt
+        if (!bpf_core_type_exists(struct sctphdr)) {
+            return 0;
+        }
         struct sctphdr sctp_hdr;
         if (bpf_skb_load_bytes(skb, *offset, &sctp_hdr, sizeof(struct sctphdr)) < 0) {
             // debug_log("parse_skb_l4 3 failed:\n");

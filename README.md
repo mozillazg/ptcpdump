@@ -53,7 +53,7 @@ You can download the statically linked executable for x86_64 and arm64 from the 
 
 ### Requirements
 
-Linux kernel version >= 5.2.
+Linux kernel >= 5.2 (compiled with BPF and BTF support).
 
 <p align="right"><a href="#top">🔝</a></p>
 
