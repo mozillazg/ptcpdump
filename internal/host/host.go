@@ -44,10 +44,10 @@ func GetRelease() (*Release, error) {
 			key = strings.TrimSpace(key)
 			switch key {
 			case "ID":
-				release.Id = strings.TrimSpace(value)
+				release.Id = strings.Trim(strings.TrimSpace(value), `"'`)
 				break
 			case "VERSION_ID":
-				release.VersionId = strings.TrimSpace(value)
+				release.VersionId = strings.Trim(strings.TrimSpace(value), `"'`)
 				break
 			}
 		}

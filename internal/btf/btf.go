@@ -47,6 +47,8 @@ func LoadBTFSpec(path string) (*btf.Spec, string, error) {
 		return spec, DefaultPath, nil
 	}
 
+	log.Warnf("could not load BTF specs from default location (/sys/kernel/btf/vmlinux): %s"+
+		", try to load from candidate locations", err)
 	spec, path, err = loadSpecFromCandidateLocations()
 	if err == nil {
 		return spec, path, nil
