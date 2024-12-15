@@ -131,6 +131,9 @@ func (b *BPF) Load(opts Options) error {
 		}
 	}
 
+	loadCount := 0
+load:
+	loadCount++
 	err = b.spec.LoadAndAssign(b.objs, &ebpf.CollectionOptions{
 		Programs: ebpf.ProgramOptions{
 			KernelTypes: opts.kernelTypes,
@@ -141,6 +144,11 @@ func (b *BPF) Load(opts Options) error {
 		IgnoreNotSupportedProgram: true,
 	})
 	if err != nil {
+		log.Infof("load and assign failed: %+v", err)
+		if isTracingNotSupportErr(err) || loadCount < 2 {
+			b.disableTracing()
+			goto load
+		}
 		return fmt.Errorf("bpf load and assign: %w", err)
 	}
 
