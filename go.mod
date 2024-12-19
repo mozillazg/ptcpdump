@@ -11,7 +11,7 @@ require (
 	github.com/gopacket/gopacket v1.3.1
 	github.com/jschwinger233/elibpcap v0.0.0-20231010035657-e99300096f5e
 	github.com/phuslu/log v1.0.113
-	github.com/shirou/gopsutil/v4 v4.24.10
+	github.com/shirou/gopsutil/v4 v4.24.11
 	github.com/spf13/cobra v1.8.1
 	github.com/x-way/pktdump v0.0.5
 	golang.org/x/sys v0.28.0
@@ -27,8 +27,8 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/vishvananda/netns v0.0.5
 	golang.org/x/arch v0.11.0
-	k8s.io/cri-api v0.31.3
-	k8s.io/cri-client v0.31.3
+	k8s.io/cri-api v0.31.4
+	k8s.io/cri-client v0.31.4
 	k8s.io/klog/v2 v2.130.1
 )
 
