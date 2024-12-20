@@ -145,7 +145,7 @@ load:
 	})
 	if err != nil {
 		log.Infof("load and assign failed: %+v", err)
-		if isTracingNotSupportErr(err) || loadCount < 2 {
+		if isTracingNotSupportErr(err) && loadCount < 2 {
 			b.disableTracing()
 			goto load
 		}
