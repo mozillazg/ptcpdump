@@ -113,3 +113,23 @@ func isProbeNotSupportErr(err error) bool {
 	}
 	return false
 }
+
+func isTracingNotSupportErr(err error) bool {
+	// TODO: refine
+	// find target in modules: parse types for module cast_common: can't read type names: string table is empty
+	// openwrt will raise this error
+	if strings.Contains(err.Error(), "can't read type names") {
+		log.Infof("%T", err)
+		log.Infof("%#v", err)
+		return true
+	}
+	return false
+}
+
+func (b *BPF) disableTracing() {
+	for k, v := range b.spec.Programs {
+		if v.Type == ebpf.Tracing {
+			delete(b.spec.Programs, k)
+		}
+	}
+}
