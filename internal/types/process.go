@@ -60,6 +60,12 @@ func (p ProcessBase) FormatArgs() string {
 }
 
 func (p ProcessBase) Comm() string {
+	// openwrt case: pid 13055, cmd /dev/fd/5, args /usr/sbin/dropbear -F -P /var/run/dropbear.1.pid -p 22 -K 300
+	if strings.HasPrefix(p.Cmd, "/dev/fd/") {
+		if len(p.Args) > 0 {
+			return filepath.Base(p.Args[0])
+		}
+	}
 	return filepath.Base(p.Cmd)
 }
 
