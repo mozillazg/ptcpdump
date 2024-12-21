@@ -126,7 +126,7 @@ func (d *MetaData) GetById(containerId string) types.Container {
 	id := getContainerId(containerId)
 	log.Debugf("get by id, id: %s", id)
 
-	if len(id) == shortContainerIdLength {
+	if len(id) >= shortContainerIdLength {
 		return d.getByShortId(id)
 	}
 
