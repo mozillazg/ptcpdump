@@ -9,6 +9,8 @@ type ProcessBase struct {
 	Pid          int
 	Cmd          string
 	CmdTruncated bool
+	Tid          int
+	TName        string
 
 	Args          []string
 	ArgsTruncated bool
@@ -30,6 +32,9 @@ type Process struct {
 type ProcessExec struct {
 	PPid int
 	Pid  int
+
+	Tid   int
+	TName string
 
 	Filename          string
 	FilenameTruncated bool
