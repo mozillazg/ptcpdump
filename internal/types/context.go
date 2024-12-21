@@ -24,6 +24,10 @@ func (c *PacketContext) FromPacketComments(comments []string) {
 			switch key {
 			case "PID":
 				c.Pid, _ = strconv.Atoi(value)
+			case "ThreadId", "TID":
+				c.Tid, _ = strconv.Atoi(value)
+			case "ThreadName":
+				c.TName = value
 			case "ParentPID":
 				c.Parent.Pid, _ = strconv.Atoi(value)
 			case "Command", "Cmd", "ParentCommand", "ParentCmd":

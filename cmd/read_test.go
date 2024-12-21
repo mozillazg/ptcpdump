@@ -146,6 +146,21 @@ func TestFormat(t *testing.T) {
 			},
 			expectedOutFile: "../testdata/format/icmp.pcapng.out.txt",
 		},
+		{
+			name: "thread",
+			opts: &Options{
+				readFilePath: "../testdata/format/curl-thread.pcapng",
+			},
+			expectedOutFile: "../testdata/format/curl-thread.pcapng.out.txt",
+		},
+		{
+			name: "thread -v",
+			opts: &Options{
+				readFilePath: "../testdata/format/curl-thread.pcapng",
+				verbose:      1,
+			},
+			expectedOutFile: "../testdata/format/curl-thread.pcapng.-v.out.txt",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

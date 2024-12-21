@@ -7,10 +7,15 @@ const (
 	EnhancedContextParentProc
 	EnhancedContextContainer
 	EnhancedContextPod
+	EnhancedContextThread
 )
 
 func (c EnhancedContext) ProcessContext() bool {
 	return c == 0 || c&EnhancedContextProcess != 0
+}
+
+func (c EnhancedContext) ThreadContext() bool {
+	return c == 0 || c&EnhancedContextThread != 0
 }
 
 func (c EnhancedContext) ParentProcContext() bool {

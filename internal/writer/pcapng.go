@@ -46,14 +46,22 @@ func (w *PcapNGWriter) Write(e *event.Packet) error {
 		InterfaceIndex: w.getInterfaceIndex(e.Device),
 	}
 	p := w.pcache.Get(e.Pid, e.MntNs, e.NetNs, e.CgroupName)
+	p.Tid = e.Tid
+	p.TName = e.TName
 
 	opts := pcapgo.NgPacketOptions{}
-	if w.enhancedContext.ProcessContext() && p.Pid != 0 {
+	if w.enhancedContext.ProcessContext() && p.Pid > 0 {
 		log.Debugf("found pid from cache: %d", e.Pid)
 		opts.Comments = append(opts.Comments,
 			fmt.Sprintf("PID: %d\nCmd: %s\nArgs: %s",
 				e.Pid, p.Cmd, p.FormatArgs()),
 		)
+		if w.enhancedContext.ThreadContext() && p.Tid > 0 {
+			opts.Comments = append(opts.Comments,
+				fmt.Sprintf("ThreadId: %d\nThreadName: %s",
+					p.Tid, p.TName),
+			)
+		}
 		if w.enhancedContext.ParentProcContext() && p.Parent.Pid > 0 {
 			opts.Comments = append(opts.Comments,
 				fmt.Sprintf("ParentPID: %d\nParentCmd: %s\nParentArgs: %s",

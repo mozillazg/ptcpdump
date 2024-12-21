@@ -24,6 +24,7 @@ const (
 	extPcapNG = ".pcapng"
 
 	contextProcess    = "process"
+	contextThread     = "thread"
 	contextParentProc = "parentproc"
 	contextContainer  = "container"
 	contextPod        = "pod"
@@ -154,12 +155,14 @@ func prepareOptions(opts *Options, rawArgs []string, args []string) {
 
 	if len(opts.enhancedContexts) == 0 {
 		opts.enhancedContext = types.EnhancedContextProcess | types.EnhancedContextParentProc |
-			types.EnhancedContextContainer | types.EnhancedContextPod
+			types.EnhancedContextContainer | types.EnhancedContextPod | types.EnhancedContextThread
 	}
 	for _, c := range opts.enhancedContexts {
 		switch c {
 		case contextProcess:
 			opts.enhancedContext |= types.EnhancedContextProcess
+		case contextThread:
+			opts.enhancedContext |= types.EnhancedContextThread
 		case contextParentProc:
 			opts.enhancedContext |= types.EnhancedContextParentProc
 		case contextContainer:
@@ -167,6 +170,13 @@ func prepareOptions(opts *Options, rawArgs []string, args []string) {
 		case contextPod:
 			opts.enhancedContext |= types.EnhancedContextPod
 		}
+	}
+
+	switch opts.backend {
+	case string(types.NetHookBackendCgroupSkb):
+		break
+	default:
+		opts.backend = string(types.NetHookBackendTc)
 	}
 
 }

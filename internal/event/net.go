@@ -29,6 +29,8 @@ type Packet struct {
 	Type      packetType
 	Device    types.Device
 	Pid       int
+	Tid       int
+	TName     string
 	MntNs     int
 	NetNs     int
 	Truncated bool
@@ -50,13 +52,15 @@ func ParsePacketEvent(deviceCache *metadata.DeviceCache, event bpf.BpfPacketEven
 		p.Time = t.UTC()
 	}
 	p.Pid = int(event.Meta.Process.Pid)
+	p.Tid = int(event.Meta.Process.Tid)
+	p.TName = utils.GoString(event.Meta.Process.Tname[:])
 	p.MntNs = int(event.Meta.Process.MntnsId)
 	p.NetNs = int(event.Meta.Process.NetnsId)
 	p.CgroupName = utils.GoString(event.Meta.Process.CgroupName[:])
 	p.Device, _ = deviceCache.GetByIfindex(int(event.Meta.Ifindex), event.Meta.Process.NetnsId)
 
-	log.Infof("new packet event, pid: %d mntns: %d, netns: %d, cgroupName: %s",
-		p.Pid, p.MntNs, p.NetNs, p.CgroupName)
+	log.Infof("new packet event, thread: %s.%d, pid: %d mntns: %d, netns: %d, cgroupName: %s",
+		p.TName, p.Tid, p.Pid, p.MntNs, p.NetNs, p.CgroupName)
 
 	p.L3Protocol = event.Meta.L3Protocol
 	p.FirstLayer = firstLayerType(event.Meta.FirstLayer)
