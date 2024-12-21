@@ -80,7 +80,7 @@ func (d *MetaData) GetById(containerId string) types.Container {
 
 	id := getDockerContainerId(containerId)
 
-	if len(id) == shortContainerIdLength {
+	if len(id) >= shortContainerIdLength {
 		return d.getByShortId(id)
 	}
 
