@@ -3,7 +3,7 @@ module github.com/mozillazg/ptcpdump
 go 1.23.0
 
 require (
-	github.com/cilium/ebpf v0.16.0
+	github.com/cilium/ebpf v0.17.0
 	github.com/containerd/containerd v1.7.24
 	github.com/containerd/typeurl/v2 v2.2.3
 	github.com/docker/docker v26.1.5+incompatible
@@ -18,17 +18,17 @@ require (
 )
 
 require (
-	github.com/containerd/containerd/api v1.7.19
+	github.com/containerd/containerd/api v1.8.0
 	github.com/containerd/errdefs v0.3.0
 	github.com/go-logr/logr v1.4.2
 	github.com/mandiant/GoReSym v1.7.2-0.20240819162932-534ca84b42d5
 	github.com/mdlayher/netlink v1.7.2
 	github.com/smira/go-xz v0.1.0
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	github.com/vishvananda/netns v0.0.5
-	golang.org/x/arch v0.11.0
-	k8s.io/cri-api v0.31.3
-	k8s.io/cri-client v0.31.3
+	golang.org/x/arch v0.12.0
+	k8s.io/cri-api v0.32.0
+	k8s.io/cri-client v0.32.0
 	k8s.io/klog/v2 v2.130.1
 )
 
