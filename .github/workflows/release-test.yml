@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
       - name: Set up Go
-        uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5
+        uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a # v5
         with:
           go-version: '1.23.2'
 
@@ -49,13 +49,13 @@ jobs:
           govulncheck -mode=binary -show verbose -scan module ./arm64/ptcpdump
 
       - name: Store Releases
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4
+        uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4
         with:
           name: ptcpdump_v0.0.0-next_linux_amd64.tar.gz
           path: dist/ptcpdump_v0.0.0-next_linux_amd64.tar.gz
 
       - name: Store Releases
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4
+        uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4
         with:
           name: ptcpdump_v0.0.0-next_linux_arm64.tar.gz
           path: dist/ptcpdump_v0.0.0-next_linux_arm64.tar.gz
