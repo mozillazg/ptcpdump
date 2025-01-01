@@ -272,7 +272,7 @@ github.com/inconshreveable/mousetrap
 # github.com/josharian/native v1.1.0
 ## explicit; go 1.13
 github.com/josharian/native
-# github.com/jschwinger233/elibpcap v0.0.0-20231010035657-e99300096f5e
+# github.com/jschwinger233/elibpcap v1.0.0
 ## explicit; go 1.21.0
 github.com/jschwinger233/elibpcap
 # github.com/klauspost/compress v1.16.7
