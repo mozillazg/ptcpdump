@@ -9,7 +9,7 @@ require (
 	github.com/docker/docker v26.1.5+incompatible
 	github.com/florianl/go-tc v0.4.4
 	github.com/gopacket/gopacket v1.3.1
-	github.com/jschwinger233/elibpcap v0.0.0-20231010035657-e99300096f5e
+	github.com/jschwinger233/elibpcap v1.0.0
 	github.com/phuslu/log v1.0.113
 	github.com/shirou/gopsutil/v4 v4.24.11
 	github.com/spf13/cobra v1.8.1
