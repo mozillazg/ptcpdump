@@ -295,7 +295,7 @@ static __always_inline int fill_packet_event_meta(struct __sk_buff *skb, bool cg
         struct task_struct *task = (struct task_struct *)bpf_get_current_task();
         if (task && !is_kernel_thread(task)) {
             event_meta->l3_protocol = bpf_ntohs(skb->protocol);
-            fill_process_meta(task, pid_meta);
+            fill_process_meta_with_thread(task, pid_meta);
             if (pid_meta->pid > 0) {
                 // debug_log("[ptcpdump][cgroup_sk] get_current_task success\n");
                 return 0;

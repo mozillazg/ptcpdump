@@ -49,6 +49,8 @@ func FromPacketOptions(opts pcapgo.NgPacketOptions) (types.ProcessExec, types.Pa
 	pctx.FromPacketComments(opts.Comments)
 	p.PPid = pctx.Parent.Pid
 	p.Pid = pctx.Pid
+	p.Tid = pctx.Tid
+	p.TName = pctx.TName
 	p.Filename = pctx.Cmd
 	p.FilenameTruncated = pctx.CmdTruncated
 	p.Args = pctx.Args
