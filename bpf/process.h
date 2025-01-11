@@ -20,6 +20,8 @@ struct process_meta_t {
     u32 pidns_id;
     u32 mntns_id;
     u32 netns_id;
+    u32 tid;
+    char tname[TASK_COMM_LEN];
     char cgroup_name[MAX_CGROUP_NAME_LEN];
 };
 
@@ -158,6 +160,7 @@ static __always_inline int process_filter(struct task_struct *task) {
 
     if (!should_filter) {
         if (g.filter_comm_enable == 1) {
+            // TODO: check real process name instead of comm
             char comm[TASK_COMM_LEN];
             __builtin_memset(&comm, 0, sizeof(comm));
             BPF_CORE_READ_STR_INTO(&comm, task, comm);
@@ -253,6 +256,12 @@ static __always_inline void fill_process_meta(struct task_struct *task, struct p
     if (size < MIN_CGROUP_NAME_LEN) {
         __builtin_memset(&meta->cgroup_name, 0, sizeof(meta->cgroup_name));
     }
+}
+
+static __always_inline void fill_process_meta_with_thread(struct task_struct *task, struct process_meta_t *meta) {
+    fill_process_meta(task, meta);
+    BPF_CORE_READ_INTO(&meta->tid, task, pid);
+    BPF_CORE_READ_STR_INTO(&meta->tname, task, comm);
 }
 
 static __always_inline void handle_exec(void *ctx, struct task_struct *task, pid_t old_pid, struct linux_binprm *bprm) {
