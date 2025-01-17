@@ -38,7 +38,7 @@ $(LIBPCAP_OBJ): $(LIBPCAP_SRC)/pcap.h $(wildcard $(LIBPCAP_SRC)/*.[ch]) | $(LIBP
 	cd $(LIBPCAP_SRC) && \
 	  sh autogen.sh && \
 	  CC=$(LIBPCAP_CC) ./configure --disable-shared --disable-usb --disable-netmap --disable-bluetooth --disable-dbus --without-libnl \
-	  	--host=$(LIBPCAP_ARCH) && \
+	  	--disable-rdma --host=$(LIBPCAP_ARCH) && \
 	  $(MAKE) && \
 	  $(MAKE) install prefix=$(LIBPCAP_DIST_DIR)
 
