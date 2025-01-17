@@ -224,6 +224,8 @@ Docker images for `ptcpdump` are published at https://quay.io/repository/ptcpdum
 ```
 docker run --privileged --rm -t --net=host --pid=host \
   -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
+  -v /var/run:/var/run:ro \
+  -v /run:/run:ro \
   quay.io/ptcpdump/ptcpdump:latest ptcpdump -i any -c 2 tcp
 ```
 
