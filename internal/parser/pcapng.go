@@ -56,6 +56,8 @@ func (p *PcapNGParser) Parse() (*event.Packet, error) {
 	exec, ctx := event.FromPacketOptions(opts)
 	e.Pid = exec.Pid
 	e.Tid = exec.Tid
+	e.Uid = exec.Uid
+	e.Gid = exec.Gid
 	e.TName = exec.TName
 	p.pcache.AddItemWithContext(exec, ctx)
 

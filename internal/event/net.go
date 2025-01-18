@@ -30,6 +30,8 @@ type Packet struct {
 	Device    types.Device
 	Pid       int
 	Tid       int
+	Uid       int
+	Gid       int
 	TName     string
 	MntNs     int
 	NetNs     int
@@ -53,14 +55,16 @@ func ParsePacketEvent(deviceCache *metadata.DeviceCache, event bpf.BpfPacketEven
 	}
 	p.Pid = int(event.Meta.Process.Pid)
 	p.Tid = int(event.Meta.Process.Tid)
+	p.Uid = int(event.Meta.Process.Uid)
+	p.Gid = int(event.Meta.Process.Gid)
 	p.TName = utils.GoString(event.Meta.Process.Tname[:])
 	p.MntNs = int(event.Meta.Process.MntnsId)
 	p.NetNs = int(event.Meta.Process.NetnsId)
 	p.CgroupName = utils.GoString(event.Meta.Process.CgroupName[:])
 	p.Device, _ = deviceCache.GetByIfindex(int(event.Meta.Ifindex), event.Meta.Process.NetnsId)
 
-	log.Infof("new packet event, thread: %s.%d, pid: %d mntns: %d, netns: %d, cgroupName: %s",
-		p.TName, p.Tid, p.Pid, p.MntNs, p.NetNs, p.CgroupName)
+	log.Infof("new packet event, thread: %s.%d, pid: %d, uid: %d, gid: %d, mntns: %d, netns: %d, cgroupName: %s",
+		p.TName, p.Tid, p.Pid, p.Uid, p.Gid, p.MntNs, p.NetNs, p.CgroupName)
 
 	p.L3Protocol = event.Meta.L3Protocol
 	p.FirstLayer = firstLayerType(event.Meta.FirstLayer)

@@ -21,6 +21,8 @@ struct process_meta_t {
     u32 mntns_id;
     u32 netns_id;
     u32 tid;
+    u32 uid;
+    u32 gid;
     char tname[TASK_COMM_LEN];
     char cgroup_name[MAX_CGROUP_NAME_LEN];
 };
@@ -251,6 +253,17 @@ static __always_inline void fill_process_meta(struct task_struct *task, struct p
     BPF_CORE_READ_INTO(&meta->pid, task, tgid);
     BPF_CORE_READ_INTO(&meta->ppid, task, real_parent, tgid);
 
+    u64 uid_gid = bpf_get_current_uid_gid();
+    if (uid_gid > 0) {
+        meta->uid = uid_gid & 0xFFFFFFFF;
+        meta->gid = uid_gid >> 32;
+    } else {
+        BPF_CORE_READ_INTO(&meta->uid, task, cred, uid);
+        BPF_CORE_READ_INTO(&meta->gid, task, cred, gid);
+    }
+
+    debug_log("uid %lld, gid %lld\n", meta->uid, meta->gid);
+
     const char *cname = BPF_CORE_READ(task, cgroups, subsys[0], cgroup, kn, name);
     int size = bpf_core_read_str(&meta->cgroup_name, sizeof(meta->cgroup_name), cname);
     if (size < MIN_CGROUP_NAME_LEN) {
@@ -368,6 +381,8 @@ static __always_inline void clone_process_meta(struct process_meta_t *origin, st
     target->mntns_id = origin->mntns_id;
     target->netns_id = origin->netns_id;
     target->pidns_id = origin->pidns_id;
+    target->uid = origin->uid;
+    target->gid = origin->gid;
     __builtin_memcpy(&target->cgroup_name, &origin->cgroup_name, sizeof(origin->cgroup_name));
 }
 

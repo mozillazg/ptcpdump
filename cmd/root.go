@@ -129,7 +129,8 @@ func init() {
 	rootCmd.Flags().BoolVarP(&opts.quiet, "quiet", "q", false,
 		"Quiet output. Print less protocol information so output lines are shorter")
 	rootCmd.Flags().StringSliceVar(&opts.enhancedContexts, "context",
-		[]string{contextProcess, contextThread, contextParentProc, contextContainer, contextPod},
+		[]string{contextProcess, contextThread, contextParentProc, contextUser,
+			contextContainer, contextPod},
 		"Specify which context information to include in the output")
 	rootCmd.Flags().StringVar(&opts.backend, "backend", string(types.NetHookBackendTc),
 		"Specify the backend to use for capturing packets. "+

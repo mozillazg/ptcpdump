@@ -48,6 +48,8 @@ func (w *PcapNGWriter) Write(e *event.Packet) error {
 	p := w.pcache.Get(e.Pid, e.MntNs, e.NetNs, e.CgroupName)
 	p.Tid = e.Tid
 	p.TName = e.TName
+	p.UserId = e.Uid
+	p.GroupId = e.Gid
 
 	opts := pcapgo.NgPacketOptions{}
 	if w.enhancedContext.ProcessContext() && p.Pid > 0 {
@@ -60,6 +62,12 @@ func (w *PcapNGWriter) Write(e *event.Packet) error {
 			opts.Comments = append(opts.Comments,
 				fmt.Sprintf("ThreadId: %d\nThreadName: %s",
 					p.Tid, p.TName),
+			)
+		}
+		if w.enhancedContext.UserContext() && p.UserId > 0 {
+			opts.Comments = append(opts.Comments,
+				fmt.Sprintf("UserId: %d\nGroupId: %d",
+					p.UserId, p.GroupId),
 			)
 		}
 		if w.enhancedContext.ParentProcContext() && p.Parent.Pid > 0 {

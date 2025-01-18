@@ -50,6 +50,8 @@ func FromPacketOptions(opts pcapgo.NgPacketOptions) (types.ProcessExec, types.Pa
 	p.PPid = pctx.Parent.Pid
 	p.Pid = pctx.Pid
 	p.Tid = pctx.Tid
+	p.Uid = pctx.UserId
+	p.Gid = pctx.GroupId
 	p.TName = pctx.TName
 	p.Filename = pctx.Cmd
 	p.FilenameTruncated = pctx.CmdTruncated
