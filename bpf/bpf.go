@@ -140,6 +140,7 @@ load:
 		},
 		IgnoreUnknownProgram:      true,
 		IgnoreNotSupportedProgram: true,
+		IgnoreUnknownVariable:     true,
 	})
 	if err != nil {
 		log.Infof("load and assign failed: %+v", err)
