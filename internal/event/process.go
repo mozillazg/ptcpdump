@@ -47,8 +47,7 @@ func FromPacketOptions(opts pcapgo.NgPacketOptions) (types.ProcessExec, types.Pa
 	pctx := &types.PacketContext{
 		Process: types.Process{
 			ProcessBase: types.ProcessBase{
-				UserId:  -1,
-				GroupId: -1,
+				UserId: -1,
 			},
 		},
 	}
@@ -58,7 +57,6 @@ func FromPacketOptions(opts pcapgo.NgPacketOptions) (types.ProcessExec, types.Pa
 	p.Pid = pctx.Pid
 	p.Tid = pctx.Tid
 	p.Uid = pctx.UserId
-	p.Gid = pctx.GroupId
 	p.TName = pctx.TName
 	p.Filename = pctx.Cmd
 	p.FilenameTruncated = pctx.CmdTruncated

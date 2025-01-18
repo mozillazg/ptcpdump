@@ -104,6 +104,7 @@ type BpfPacketEventMetaT struct {
 	PayloadLen uint64
 	PacketSize uint64
 	Process    BpfProcessMetaT
+	_          [4]byte
 }
 
 type BpfPacketEventT struct{ Meta BpfPacketEventMetaT }
@@ -116,7 +117,6 @@ type BpfProcessMetaT struct {
 	NetnsId    uint32
 	Tid        uint32
 	Uid        uint32
-	Gid        uint32
 	Tname      [16]int8
 	CgroupName [128]int8
 }
