@@ -6,6 +6,8 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/cilium/ebpf/link"
+	"github.com/mozillazg/ptcpdump/internal/types"
 	"github.com/mozillazg/ptcpdump/internal/utils"
 	"io"
 	"os"
@@ -20,6 +22,8 @@ type BpfPacketEventWithPayloadT struct {
 	BpfPacketEventT
 	Payload []byte
 }
+
+var ErrIteratorIsNotSupported = errors.New("iterator is not supported")
 
 func (b *BPF) PullPacketEvents(ctx context.Context, chanSize int, maxPacketSize int) (<-chan BpfPacketEventWithPayloadT, error) {
 	pageSize := os.Getpagesize()
@@ -471,6 +475,40 @@ func (b *BPF) handleExitEvents(ctx context.Context, reader *perf.Reader, ch chan
 			// TODO: XXX
 		}
 	}
+}
+
+func (b *BPF) IterConnections(ctx context.Context) error {
+	log.Info("start to iter task files")
+	if b.objs.IterTaskFile == nil {
+		return ErrIteratorIsNotSupported
+	}
+
+	var closers []types.Closer
+	iter, err := link.AttachIter(link.IterOptions{
+		Program: b.objs.IterTaskFile,
+	})
+	if err != nil {
+		log.Errorf("attach iter task files failed: %s", err)
+		return fmt.Errorf(": %w", err)
+	}
+	defer iter.Close()
+
+	reader, err := iter.Open()
+	if err != nil {
+		utils.CloseAll(closers)
+		log.Errorf("open iter task files failed: %s", err)
+		return fmt.Errorf(": %w", err)
+	}
+	defer reader.Close()
+
+	if _, err := io.ReadAll(reader); err != nil {
+		if !errors.Is(err, io.EOF) {
+			return fmt.Errorf("read iter task files: %w", err)
+		}
+	}
+
+	log.Info("iter task files done")
+	return nil
 }
 
 func parseExitEvent(rawSample []byte) (*BpfExitEventT, error) {

@@ -173,6 +173,7 @@ type BpfProgramSpecs struct {
 	FentryTcpSendmsg                     *ebpf.ProgramSpec `ebpf:"fentry__tcp_sendmsg"`
 	FentryUdpSendSkb                     *ebpf.ProgramSpec `ebpf:"fentry__udp_send_skb"`
 	FentryUdpSendmsg                     *ebpf.ProgramSpec `ebpf:"fentry__udp_sendmsg"`
+	IterTaskFile                         *ebpf.ProgramSpec `ebpf:"iter__task_file"`
 	KprobeDevChangeNetNamespace          *ebpf.ProgramSpec `ebpf:"kprobe__dev_change_net_namespace"`
 	KprobeDevChangeNetNamespaceLegacy    *ebpf.ProgramSpec `ebpf:"kprobe__dev_change_net_namespace_legacy"`
 	KprobeNfNatManipPkt                  *ebpf.ProgramSpec `ebpf:"kprobe__nf_nat_manip_pkt"`
@@ -354,6 +355,7 @@ type BpfPrograms struct {
 	FentryTcpSendmsg                     *ebpf.Program `ebpf:"fentry__tcp_sendmsg"`
 	FentryUdpSendSkb                     *ebpf.Program `ebpf:"fentry__udp_send_skb"`
 	FentryUdpSendmsg                     *ebpf.Program `ebpf:"fentry__udp_sendmsg"`
+	IterTaskFile                         *ebpf.Program `ebpf:"iter__task_file"`
 	KprobeDevChangeNetNamespace          *ebpf.Program `ebpf:"kprobe__dev_change_net_namespace"`
 	KprobeDevChangeNetNamespaceLegacy    *ebpf.Program `ebpf:"kprobe__dev_change_net_namespace_legacy"`
 	KprobeNfNatManipPkt                  *ebpf.Program `ebpf:"kprobe__nf_nat_manip_pkt"`
@@ -396,6 +398,7 @@ func (p *BpfPrograms) Close() error {
 		p.FentryTcpSendmsg,
 		p.FentryUdpSendSkb,
 		p.FentryUdpSendmsg,
+		p.IterTaskFile,
 		p.KprobeDevChangeNetNamespace,
 		p.KprobeDevChangeNetNamespaceLegacy,
 		p.KprobeNfNatManipPkt,

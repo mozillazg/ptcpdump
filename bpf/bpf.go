@@ -221,7 +221,7 @@ func (b *BPF) UpdateFlowPidMapValues(data map[*BpfFlowPidKeyT]BpfProcessMetaT) e
 	for k, v := range data {
 		err := b.objs.BpfMaps.FlowPidMap.Update(*k, v, ebpf.UpdateNoExist)
 		if err != nil {
-			if err == ebpf.ErrKeyExist || strings.Contains(err.Error(), "key already exists") {
+			if errors.Is(err, ebpf.ErrKeyExist) || strings.Contains(err.Error(), "key already exists") {
 				continue
 			}
 			return fmt.Errorf(": %w", err)

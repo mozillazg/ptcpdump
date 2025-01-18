@@ -1,7 +1,9 @@
 #ifndef __PTCPDUMP_NET_H__
 #define __PTCPDUMP_NET_H__
 
+#include "common.h"
 #include "compat.h"
+#include "process.h"
 #include "vmlinux.h"
 #include <bpf/bpf_core_read.h>
 #include <bpf/bpf_endian.h>
@@ -18,38 +20,6 @@
 #define IPPROTO_SCTP 132  /* Stream Control Transport Protocol	*/
 #define AF_INET 2
 #define AF_INET6 10
-
-struct l2_t {
-    u16 h_protocol; /* next layer protocol */
-};
-
-struct l3_t {
-    u8 protocol; /* next layer protocol */
-    u64 saddr[2];
-    u64 daddr[2];
-};
-
-struct l4_t {
-    u16 sport;
-    u16 dport;
-};
-
-struct packet_meta_t {
-    u32 ifindex;
-
-    struct l2_t l2;
-    struct l3_t l3;
-    struct l4_t l4;
-
-    u32 offset;
-};
-
-struct flow_pid_key_t {
-    u64 saddr[2];
-    u16 sport;
-};
-
-const struct flow_pid_key_t *unused3 __attribute__((unused));
 
 static __always_inline int parse_skb_l2(struct __sk_buff *skb, struct l2_t *l2, u32 *offset) {
     if (bpf_skb_load_bytes(skb, *offset + offsetof(struct ethhdr, h_proto), &l2->h_protocol, sizeof(l2->h_protocol)) <
@@ -198,5 +168,71 @@ static __always_inline void fill_sk_meta(struct sock *sk, struct flow_pid_key_t 
     }
     }
 }
+
+static __always_inline void save_flow_from_sock(struct task_struct *task, struct sock *sk) {
+    struct flow_pid_key_t key = {0};
+    struct process_meta_t value = {0};
+
+    if (parent_process_filter(task) < 0) {
+        if (process_filter(task) < 0) {
+            return;
+        }
+    }
+    // debug_log("sendmsg match\n");
+
+    fill_sk_meta(sk, &key);
+    if (bpf_map_lookup_elem(&flow_pid_map, &key)) {
+        return;
+    }
+
+    fill_process_meta(task, &value);
+    if (key.sport == 0) {
+        return;
+    }
+//     debug_log("[ptcpdump][sendmsg] %lld flow key: %pI4 %d\n", value.pid, &key.saddr[0], key.sport);
+    int ret = bpf_map_update_elem(&flow_pid_map, &key, &value, BPF_NOEXIST);
+    if (ret != 0) {
+        // debug_log("[handle_tcp_sendmsg] bpf_map_update_elem flow_pid_map failed: %d\n", ret);
+    }
+    return;
+}
+
+
+#ifndef NO_TRACING
+
+extern void socket_file_ops __ksym;
+
+SEC("iter/task_file")
+int iter__task_file(struct bpf_iter__task_file *ctx) {
+    struct seq_file *seq = ctx->meta->seq;
+    struct file *file = ctx->file;
+    struct task_struct *task = ctx->task;
+    u8 zero_val = 0;
+
+    if (!file || !task) {
+        goto out;
+    }
+
+    struct socket *socket = NULL;
+    if (bpf_core_enum_value_exists(enum bpf_func_id, BPF_FUNC_sock_from_file)) {
+        socket = bpf_sock_from_file(file);
+    } else {
+        if (file->f_op != &socket_file_ops) {
+            goto out;
+        }
+        socket = (struct socket *)file->private_data;
+    }
+    if (!socket) {
+        goto out;
+    }
+
+    struct sock *sk = BPF_CORE_READ(socket, sk);
+    save_flow_from_sock(task, sk);
+
+out:
+    bpf_seq_write(seq, &zero_val, sizeof(u8));
+    return 0;
+}
+#endif
 
 #endif /* __PTCPDUMP_NET_H__ */

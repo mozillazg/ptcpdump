@@ -40,12 +40,12 @@ func (c *ExecEventConsumer) worker(ctx context.Context, ch <-chan bpf.BpfExecEve
 		case <-ctx.Done():
 			return
 		case et := <-ch:
-			c.handleExecEvent(et)
+			c.HandleExecEvent(et)
 		}
 	}
 }
 
-func (c *ExecEventConsumer) handleExecEvent(et bpf.BpfExecEventT) {
+func (c *ExecEventConsumer) HandleExecEvent(et bpf.BpfExecEventT) {
 	e, err := event.ParseProcessExecEvent(et)
 	if err != nil {
 		log.Errorf("[ExecEventConsumer] parse event failed: %s", err)

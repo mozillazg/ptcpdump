@@ -135,7 +135,7 @@ func (c *Capturer) StartSubProcessLoader(ctx context.Context, program string, su
 	return nil
 }
 
-func (c *Capturer) Prepare() error {
+func (c *Capturer) Prepare(ctx context.Context) error {
 	if err := rlimit.RemoveMemlock(); err != nil {
 		return fmt.Errorf("remove memlock failed: %w", err)
 	}
@@ -177,10 +177,8 @@ func (c *Capturer) Prepare() error {
 	}
 	c.closeFuncs = append(c.closeFuncs, bf.Close)
 
-	if len(c.opts.Connections) > 0 {
-		if err := updateFlowPidMapValues(bf, c.opts.Connections); err != nil {
-			return fmt.Errorf("update flow pid map values failed: %w", err)
-		}
+	if err := c.iterConnections(ctx); err != nil {
+		return err
 	}
 
 	return nil
@@ -518,6 +516,7 @@ func updateFlowPidMapValues(bf *bpf.BPF, conns []metadata.Connection) error {
 		}
 		v := bpf.BpfProcessMetaT{
 			Pid:     uint32(conn.Pid),
+			Uid:     uint32(conn.Uid),
 			MntnsId: uint32(conn.MntNs),
 			NetnsId: uint32(conn.NetNs),
 		}
