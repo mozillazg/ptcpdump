@@ -48,8 +48,12 @@ func (w *PcapNGWriter) Write(e *event.Packet) error {
 	p := w.pcache.Get(e.Pid, e.MntNs, e.NetNs, e.CgroupName)
 	p.Tid = e.Tid
 	p.TName = e.TName
-	p.UserId = e.Uid
-	p.GroupId = e.Gid
+	if p.UserId == 0 && e.Uid != 0 {
+		p.UserId = e.Uid
+	}
+	if p.GroupId == 0 && e.Gid != 0 {
+		p.GroupId = e.Gid
+	}
 
 	opts := pcapgo.NgPacketOptions{}
 	if w.enhancedContext.ProcessContext() && p.Pid > 0 {
@@ -64,7 +68,7 @@ func (w *PcapNGWriter) Write(e *event.Packet) error {
 					p.Tid, p.TName),
 			)
 		}
-		if w.enhancedContext.UserContext() && p.UserId > 0 {
+		if w.enhancedContext.UserContext() && p.UserId >= 0 {
 			opts.Comments = append(opts.Comments,
 				fmt.Sprintf("UserId: %d\nGroupId: %d",
 					p.UserId, p.GroupId),
