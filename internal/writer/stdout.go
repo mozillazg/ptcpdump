@@ -61,9 +61,16 @@ func (w *StdoutWriter) Write(e *event.Packet) error {
 	p := w.pcache.Get(e.Pid, e.MntNs, e.NetNs, e.CgroupName)
 	p.Tid = e.Tid
 	p.TName = e.TName
+	if p.UserId == 0 && e.Uid != 0 {
+		p.UserId = e.Uid
+	}
+	if p.GroupId == 0 && e.Gid != 0 {
+		p.GroupId = e.Gid
+	}
 
 	processInfo := ""
 	threadInfo := ""
+	userInfo := ""
 	parentProcInfo := ""
 	containerInfo := ""
 	PodInfo := ""
@@ -76,6 +83,9 @@ func (w *StdoutWriter) Write(e *event.Packet) error {
 		}
 		if w.enhancedContext.ProcessContext() && p.Tid > 0 {
 			threadInfo = fmt.Sprintf("Thread (tid %d, name %s)", p.Tid, p.TName)
+		}
+		if w.enhancedContext.UserContext() && p.UserId >= 0 {
+			userInfo = fmt.Sprintf("User (uid %d, gid %d)", p.UserId, p.GroupId)
 		}
 		if w.enhancedContext.ParentProcContext() && p.Parent.Pid > 0 {
 			parentProcInfo = fmt.Sprintf("ParentProc (pid %d, cmd %s, args %s)",
@@ -151,6 +161,9 @@ func (w *StdoutWriter) Write(e *event.Packet) error {
 			if threadInfo != "" {
 				builder.WriteString(fmt.Sprintf("    %s\n", threadInfo))
 			}
+			if userInfo != "" {
+				builder.WriteString(fmt.Sprintf("    %s\n", userInfo))
+			}
 			if parentProcInfo != "" {
 				builder.WriteString(fmt.Sprintf("    %s\n", parentProcInfo))
 			}
@@ -166,6 +179,9 @@ func (w *StdoutWriter) Write(e *event.Packet) error {
 		builder.WriteString(formatedHeader)
 		if threadInfo != "" {
 			builder.WriteString(fmt.Sprintf(", %s", threadInfo))
+		}
+		if userInfo != "" {
+			builder.WriteString(fmt.Sprintf(", %s", userInfo))
 		}
 		if parentProcInfo != "" {
 			builder.WriteString(fmt.Sprintf(", %s", parentProcInfo))

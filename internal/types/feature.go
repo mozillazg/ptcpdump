@@ -8,10 +8,15 @@ const (
 	EnhancedContextContainer
 	EnhancedContextPod
 	EnhancedContextThread
+	EnhancedContextUser
 )
 
 func (c EnhancedContext) ProcessContext() bool {
 	return c == 0 || c&EnhancedContextProcess != 0
+}
+
+func (c EnhancedContext) UserContext() bool {
+	return c == 0 || c&EnhancedContextUser != 0
 }
 
 func (c EnhancedContext) ThreadContext() bool {

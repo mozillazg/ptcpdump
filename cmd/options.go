@@ -23,6 +23,7 @@ const (
 	extPcap   = ".pcap"
 	extPcapNG = ".pcapng"
 
+	contextUser       = "user"
 	contextProcess    = "process"
 	contextThread     = "thread"
 	contextParentProc = "parentproc"
@@ -155,7 +156,8 @@ func prepareOptions(opts *Options, rawArgs []string, args []string) {
 
 	if len(opts.enhancedContexts) == 0 {
 		opts.enhancedContext = types.EnhancedContextProcess | types.EnhancedContextParentProc |
-			types.EnhancedContextContainer | types.EnhancedContextPod | types.EnhancedContextThread
+			types.EnhancedContextContainer | types.EnhancedContextPod |
+			types.EnhancedContextThread | types.EnhancedContextUser
 	}
 	for _, c := range opts.enhancedContexts {
 		switch c {
@@ -163,6 +165,8 @@ func prepareOptions(opts *Options, rawArgs []string, args []string) {
 			opts.enhancedContext |= types.EnhancedContextProcess
 		case contextThread:
 			opts.enhancedContext |= types.EnhancedContextThread
+		case contextUser:
+			opts.enhancedContext |= types.EnhancedContextUser
 		case contextParentProc:
 			opts.enhancedContext |= types.EnhancedContextParentProc
 		case contextContainer:

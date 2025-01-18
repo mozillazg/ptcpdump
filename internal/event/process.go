@@ -44,12 +44,21 @@ func ParseProcessExecEvent(event bpf.BpfExecEventT) (*types.ProcessExec, error) 
 
 func FromPacketOptions(opts pcapgo.NgPacketOptions) (types.ProcessExec, types.PacketContext) {
 	p := &types.ProcessExec{}
-	pctx := &types.PacketContext{}
+	pctx := &types.PacketContext{
+		Process: types.Process{
+			ProcessBase: types.ProcessBase{
+				UserId:  -1,
+				GroupId: -1,
+			},
+		},
+	}
 
 	pctx.FromPacketComments(opts.Comments)
 	p.PPid = pctx.Parent.Pid
 	p.Pid = pctx.Pid
 	p.Tid = pctx.Tid
+	p.Uid = pctx.UserId
+	p.Gid = pctx.GroupId
 	p.TName = pctx.TName
 	p.Filename = pctx.Cmd
 	p.FilenameTruncated = pctx.CmdTruncated
