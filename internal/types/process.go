@@ -12,7 +12,6 @@ type ProcessBase struct {
 	Tid          int
 	TName        string
 	UserId       int
-	GroupId      int
 
 	Args          []string
 	ArgsTruncated bool
@@ -39,7 +38,6 @@ type ProcessExec struct {
 	TName string
 
 	Uid int
-	Gid int
 
 	Filename          string
 	FilenameTruncated bool

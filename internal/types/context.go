@@ -30,8 +30,6 @@ func (c *PacketContext) FromPacketComments(comments []string) {
 				c.TName = value
 			case "UserId":
 				c.UserId, _ = strconv.Atoi(value)
-			case "GroupId":
-				c.GroupId, _ = strconv.Atoi(value)
 			case "ParentPID":
 				c.Parent.Pid, _ = strconv.Atoi(value)
 			case "Command", "Cmd", "ParentCommand", "ParentCmd":

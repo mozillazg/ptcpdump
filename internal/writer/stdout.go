@@ -64,9 +64,6 @@ func (w *StdoutWriter) Write(e *event.Packet) error {
 	if p.UserId == 0 && e.Uid != 0 {
 		p.UserId = e.Uid
 	}
-	if p.GroupId == 0 && e.Gid != 0 {
-		p.GroupId = e.Gid
-	}
 
 	processInfo := ""
 	threadInfo := ""
@@ -85,7 +82,7 @@ func (w *StdoutWriter) Write(e *event.Packet) error {
 			threadInfo = fmt.Sprintf("Thread (tid %d, name %s)", p.Tid, p.TName)
 		}
 		if w.enhancedContext.UserContext() && p.UserId >= 0 {
-			userInfo = fmt.Sprintf("User (uid %d, gid %d)", p.UserId, p.GroupId)
+			userInfo = fmt.Sprintf("User (uid %d)", p.UserId)
 		}
 		if w.enhancedContext.ParentProcContext() && p.Parent.Pid > 0 {
 			parentProcInfo = fmt.Sprintf("ParentProc (pid %d, cmd %s, args %s)",

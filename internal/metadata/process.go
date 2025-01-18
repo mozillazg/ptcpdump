@@ -93,19 +93,13 @@ func (c *ProcessCache) fillRunningProcesses(ctx context.Context) error {
 			}
 			args, _ := p.CmdlineSlice()
 			uid := -1
-			gid := -1
 			if uids, _ := p.Uids(); len(uids) > 0 {
 				uid = int(uids[0])
 			}
-			if gids, _ := p.Gids(); len(gids) > 0 {
-				gid = int(gids[0])
-			}
-
 			e := types.ProcessExec{
 				PPid:              ppid,
 				Pid:               int(p.Pid),
 				Uid:               uid,
-				Gid:               gid,
 				Filename:          filename,
 				FilenameTruncated: false,
 				Args:              args,
@@ -203,7 +197,6 @@ func (c *ProcessCache) AddItemWithContext(exec types.ProcessExec, rawCtx types.P
 				Tid:           0,
 				TName:         "",
 				UserId:        exec.Uid,
-				GroupId:       exec.Gid,
 				Args:          exec.Args,
 				ArgsTruncated: exec.ArgsTruncated,
 			},
@@ -255,7 +248,6 @@ func (c *ProcessCache) getProcessBase(pid int) types.ProcessBase {
 		Tid:           0,
 		TName:         "",
 		UserId:        -1,
-		GroupId:       -1,
 		Args:          args,
 		ArgsTruncated: false,
 	}
