@@ -88,6 +88,8 @@ jobs:
           # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
           - '6.6-20241031.113911'
           # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
+          - '6.12-20250116.014736'
+          # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
           - 'bpf-20241101.013334'
           # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
           - 'bpf-next-20241101.013334'
@@ -304,6 +306,7 @@ jobs:
           make -C testdata/gohttpapp build
 
       - name: Test go tls keylog (unstripped)
+        if: ${{ (!startsWith(matrix.kernel, '5.4')) && (!startsWith(matrix.kernel, '4.')) }}
         uses: cilium/little-vm-helper@97c89f004bd0ab4caeacfe92ebc956e13e362e6b # v0.0.19
         with:
           provision: 'false'
@@ -322,6 +325,7 @@ jobs:
             exit 1
 
       - name: Test go tls keylog (PIE)
+        if: ${{ (!startsWith(matrix.kernel, '5.4')) && (!startsWith(matrix.kernel, '4.')) }}
         uses: cilium/little-vm-helper@97c89f004bd0ab4caeacfe92ebc956e13e362e6b # v0.0.19
         with:
           provision: 'false'
@@ -340,6 +344,7 @@ jobs:
             exit 1
 
       - name: Test go tls keylog (stripped)
+        if: ${{ (!startsWith(matrix.kernel, '5.4')) && (!startsWith(matrix.kernel, '4.')) }}
         uses: cilium/little-vm-helper@97c89f004bd0ab4caeacfe92ebc956e13e362e6b # v0.0.19
         with:
           provision: 'false'
@@ -358,6 +363,7 @@ jobs:
             exit 1
 
       - name: Test go tls keylog (stripped + PIE)
+        if: ${{ (!startsWith(matrix.kernel, '5.4')) && (!startsWith(matrix.kernel, '4.')) }}
         uses: cilium/little-vm-helper@97c89f004bd0ab4caeacfe92ebc956e13e362e6b # v0.0.19
         with:
           provision: 'false'
