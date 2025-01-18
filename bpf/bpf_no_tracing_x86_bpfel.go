@@ -47,9 +47,10 @@ func loadBpf_no_tracingObjects(obj interface{}, opts *ebpf.CollectionOptions) er
 type bpf_no_tracingSpecs struct {
 	bpf_no_tracingProgramSpecs
 	bpf_no_tracingMapSpecs
+	bpf_no_tracingVariableSpecs
 }
 
-// bpf_no_tracingSpecs contains programs before they are loaded into the kernel.
+// bpf_no_tracingProgramSpecs contains programs before they are loaded into the kernel.
 //
 // It can be passed ebpf.CollectionSpec.Assign.
 type bpf_no_tracingProgramSpecs struct {
@@ -112,12 +113,29 @@ type bpf_no_tracingMapSpecs struct {
 	TidNetdeviceMap       *ebpf.MapSpec `ebpf:"tid_netdevice_map"`
 }
 
+// bpf_no_tracingVariableSpecs contains global variables before they are loaded into the kernel.
+//
+// It can be passed ebpf.CollectionSpec.Assign.
+type bpf_no_tracingVariableSpecs struct {
+	G        *ebpf.VariableSpec `ebpf:"g"`
+	Unused1  *ebpf.VariableSpec `ebpf:"unused1"`
+	Unused10 *ebpf.VariableSpec `ebpf:"unused10"`
+	Unused11 *ebpf.VariableSpec `ebpf:"unused11"`
+	Unused2  *ebpf.VariableSpec `ebpf:"unused2"`
+	Unused3  *ebpf.VariableSpec `ebpf:"unused3"`
+	Unused4  *ebpf.VariableSpec `ebpf:"unused4"`
+	Unused5  *ebpf.VariableSpec `ebpf:"unused5"`
+	Unused6  *ebpf.VariableSpec `ebpf:"unused6"`
+	Unused7  *ebpf.VariableSpec `ebpf:"unused7"`
+}
+
 // bpf_no_tracingObjects contains all objects after they have been loaded into the kernel.
 //
 // It can be passed to loadBpf_no_tracingObjects or ebpf.CollectionSpec.LoadAndAssign.
 type bpf_no_tracingObjects struct {
 	bpf_no_tracingPrograms
 	bpf_no_tracingMaps
+	bpf_no_tracingVariables
 }
 
 func (o *bpf_no_tracingObjects) Close() error {
@@ -184,6 +202,22 @@ func (m *bpf_no_tracingMaps) Close() error {
 		m.SockCookiePidMap,
 		m.TidNetdeviceMap,
 	)
+}
+
+// bpf_no_tracingVariables contains all global variables after they have been loaded into the kernel.
+//
+// It can be passed to loadBpf_no_tracingObjects or ebpf.CollectionSpec.LoadAndAssign.
+type bpf_no_tracingVariables struct {
+	G        *ebpf.Variable `ebpf:"g"`
+	Unused1  *ebpf.Variable `ebpf:"unused1"`
+	Unused10 *ebpf.Variable `ebpf:"unused10"`
+	Unused11 *ebpf.Variable `ebpf:"unused11"`
+	Unused2  *ebpf.Variable `ebpf:"unused2"`
+	Unused3  *ebpf.Variable `ebpf:"unused3"`
+	Unused4  *ebpf.Variable `ebpf:"unused4"`
+	Unused5  *ebpf.Variable `ebpf:"unused5"`
+	Unused6  *ebpf.Variable `ebpf:"unused6"`
+	Unused7  *ebpf.Variable `ebpf:"unused7"`
 }
 
 // bpf_no_tracingPrograms contains all programs after they have been loaded into the kernel.

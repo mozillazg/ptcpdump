@@ -156,9 +156,10 @@ func LoadBpfObjects(obj interface{}, opts *ebpf.CollectionOptions) error {
 type BpfSpecs struct {
 	BpfProgramSpecs
 	BpfMapSpecs
+	BpfVariableSpecs
 }
 
-// BpfSpecs contains programs before they are loaded into the kernel.
+// BpfProgramSpecs contains programs before they are loaded into the kernel.
 //
 // It can be passed ebpf.CollectionSpec.Assign.
 type BpfProgramSpecs struct {
@@ -232,12 +233,29 @@ type BpfMapSpecs struct {
 	TidNetdeviceMap       *ebpf.MapSpec `ebpf:"tid_netdevice_map"`
 }
 
+// BpfVariableSpecs contains global variables before they are loaded into the kernel.
+//
+// It can be passed ebpf.CollectionSpec.Assign.
+type BpfVariableSpecs struct {
+	G        *ebpf.VariableSpec `ebpf:"g"`
+	Unused1  *ebpf.VariableSpec `ebpf:"unused1"`
+	Unused10 *ebpf.VariableSpec `ebpf:"unused10"`
+	Unused11 *ebpf.VariableSpec `ebpf:"unused11"`
+	Unused2  *ebpf.VariableSpec `ebpf:"unused2"`
+	Unused3  *ebpf.VariableSpec `ebpf:"unused3"`
+	Unused4  *ebpf.VariableSpec `ebpf:"unused4"`
+	Unused5  *ebpf.VariableSpec `ebpf:"unused5"`
+	Unused6  *ebpf.VariableSpec `ebpf:"unused6"`
+	Unused7  *ebpf.VariableSpec `ebpf:"unused7"`
+}
+
 // BpfObjects contains all objects after they have been loaded into the kernel.
 //
 // It can be passed to LoadBpfObjects or ebpf.CollectionSpec.LoadAndAssign.
 type BpfObjects struct {
 	BpfPrograms
 	BpfMaps
+	BpfVariables
 }
 
 func (o *BpfObjects) Close() error {
@@ -304,6 +322,22 @@ func (m *BpfMaps) Close() error {
 		m.SockCookiePidMap,
 		m.TidNetdeviceMap,
 	)
+}
+
+// BpfVariables contains all global variables after they have been loaded into the kernel.
+//
+// It can be passed to LoadBpfObjects or ebpf.CollectionSpec.LoadAndAssign.
+type BpfVariables struct {
+	G        *ebpf.Variable `ebpf:"g"`
+	Unused1  *ebpf.Variable `ebpf:"unused1"`
+	Unused10 *ebpf.Variable `ebpf:"unused10"`
+	Unused11 *ebpf.Variable `ebpf:"unused11"`
+	Unused2  *ebpf.Variable `ebpf:"unused2"`
+	Unused3  *ebpf.Variable `ebpf:"unused3"`
+	Unused4  *ebpf.Variable `ebpf:"unused4"`
+	Unused5  *ebpf.Variable `ebpf:"unused5"`
+	Unused6  *ebpf.Variable `ebpf:"unused6"`
+	Unused7  *ebpf.Variable `ebpf:"unused7"`
 }
 
 // BpfPrograms contains all programs after they have been loaded into the kernel.
