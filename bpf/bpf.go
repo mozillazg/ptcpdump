@@ -24,7 +24,7 @@ import (
 //go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc clang -no-strip -target $TARGET -type gconfig_t -type packet_event_t -type exec_event_t -type exit_event_t -type flow_pid_key_t -type process_meta_t -type packet_event_meta_t -type go_keylog_event_t -type new_netdevice_event_t -type netdevice_change_event_t -type mount_event_t Bpf ./ptcpdump.c -- -I./headers -I./headers/$TARGET -I. -Wall
 
 const tcFilterName = "ptcpdump"
-const logSzie = ebpf.DefaultVerifierLogSize * 64
+const logSzie = 64 * 1024 * 64
 
 type BPF struct {
 	spec       *ebpf.CollectionSpec
@@ -117,9 +117,7 @@ func (b *BPF) Load(opts Options) error {
 	}
 	if !b.isLegacyKernel {
 		log.Infof("rewrite constants with %+v", config)
-		err = b.spec.RewriteConstants(map[string]interface{}{
-			"g": config,
-		})
+		err = b.spec.Variables["g"].Set(config)
 		if err != nil {
 			return fmt.Errorf("rewrite constants: %w", err)
 		}
@@ -136,9 +134,9 @@ load:
 	loadCount++
 	err = b.spec.LoadAndAssign(b.objs, &ebpf.CollectionOptions{
 		Programs: ebpf.ProgramOptions{
-			KernelTypes: opts.kernelTypes,
-			LogLevel:    ebpf.LogLevelInstruction,
-			LogSize:     logSzie,
+			KernelTypes:  opts.kernelTypes,
+			LogLevel:     ebpf.LogLevelInstruction,
+			LogSizeStart: logSzie,
 		},
 		IgnoreUnknownProgram:      true,
 		IgnoreNotSupportedProgram: true,

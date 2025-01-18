@@ -47,9 +47,10 @@ func loadBpf_legacyObjects(obj interface{}, opts *ebpf.CollectionOptions) error 
 type bpf_legacySpecs struct {
 	bpf_legacyProgramSpecs
 	bpf_legacyMapSpecs
+	bpf_legacyVariableSpecs
 }
 
-// bpf_legacySpecs contains programs before they are loaded into the kernel.
+// bpf_legacyProgramSpecs contains programs before they are loaded into the kernel.
 //
 // It can be passed ebpf.CollectionSpec.Assign.
 type bpf_legacyProgramSpecs struct {
@@ -108,12 +109,28 @@ type bpf_legacyMapSpecs struct {
 	TidNetdeviceMap       *ebpf.MapSpec `ebpf:"tid_netdevice_map"`
 }
 
+// bpf_legacyVariableSpecs contains global variables before they are loaded into the kernel.
+//
+// It can be passed ebpf.CollectionSpec.Assign.
+type bpf_legacyVariableSpecs struct {
+	Unused1  *ebpf.VariableSpec `ebpf:"unused1"`
+	Unused10 *ebpf.VariableSpec `ebpf:"unused10"`
+	Unused11 *ebpf.VariableSpec `ebpf:"unused11"`
+	Unused2  *ebpf.VariableSpec `ebpf:"unused2"`
+	Unused3  *ebpf.VariableSpec `ebpf:"unused3"`
+	Unused4  *ebpf.VariableSpec `ebpf:"unused4"`
+	Unused5  *ebpf.VariableSpec `ebpf:"unused5"`
+	Unused6  *ebpf.VariableSpec `ebpf:"unused6"`
+	Unused7  *ebpf.VariableSpec `ebpf:"unused7"`
+}
+
 // bpf_legacyObjects contains all objects after they have been loaded into the kernel.
 //
 // It can be passed to loadBpf_legacyObjects or ebpf.CollectionSpec.LoadAndAssign.
 type bpf_legacyObjects struct {
 	bpf_legacyPrograms
 	bpf_legacyMaps
+	bpf_legacyVariables
 }
 
 func (o *bpf_legacyObjects) Close() error {
@@ -180,6 +197,21 @@ func (m *bpf_legacyMaps) Close() error {
 		m.SockCookiePidMap,
 		m.TidNetdeviceMap,
 	)
+}
+
+// bpf_legacyVariables contains all global variables after they have been loaded into the kernel.
+//
+// It can be passed to loadBpf_legacyObjects or ebpf.CollectionSpec.LoadAndAssign.
+type bpf_legacyVariables struct {
+	Unused1  *ebpf.Variable `ebpf:"unused1"`
+	Unused10 *ebpf.Variable `ebpf:"unused10"`
+	Unused11 *ebpf.Variable `ebpf:"unused11"`
+	Unused2  *ebpf.Variable `ebpf:"unused2"`
+	Unused3  *ebpf.Variable `ebpf:"unused3"`
+	Unused4  *ebpf.Variable `ebpf:"unused4"`
+	Unused5  *ebpf.Variable `ebpf:"unused5"`
+	Unused6  *ebpf.Variable `ebpf:"unused6"`
+	Unused7  *ebpf.Variable `ebpf:"unused7"`
 }
 
 // bpf_legacyPrograms contains all programs after they have been loaded into the kernel.

@@ -15,7 +15,7 @@ struct gconfig_t {
 };
 
 #ifndef LEGACY_KERNEL
-static volatile const struct gconfig_t g = {0};
+volatile const struct gconfig_t g = {0};
 static const u8 u8_zero = 0;
 static const u32 u32_zero = 0;
 #endif
