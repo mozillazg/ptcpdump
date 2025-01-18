@@ -27,7 +27,8 @@ type ProcessCache struct {
 
 	deadPids sync.Map // map[int]time.Time
 
-	cc *ContainerCache
+	cc           *ContainerCache
+	skipIterProc bool
 }
 
 func init() {
@@ -38,8 +39,9 @@ func init() {
 
 func NewProcessCache() *ProcessCache {
 	return &ProcessCache{
-		pids:     sync.Map{},
-		deadPids: sync.Map{},
+		pids:         sync.Map{},
+		deadPids:     sync.Map{},
+		skipIterProc: true,
 	}
 }
 
@@ -49,15 +51,16 @@ func (c *ProcessCache) WithContainerCache(cc *ContainerCache) *ProcessCache {
 }
 
 func (c *ProcessCache) Start(ctx context.Context) {
-	// TODO: change to get running processes via ebpf task iter
-	log.Info("start to fill running process info")
-	if err := c.fillRunningProcesses(ctx); err != nil {
-		log.Errorf("fill running processes info failed: %s", err)
+	if !c.skipIterProc {
+		log.Info("start to fill running process info")
+		if err := c.FillRunningProcesses(ctx); err != nil {
+			log.Errorf("fill running processes info failed: %s", err)
+		}
 	}
 	go c.cleanDeadsLoop(ctx)
 }
 
-func (c *ProcessCache) fillRunningProcesses(ctx context.Context) error {
+func (c *ProcessCache) FillRunningProcesses(ctx context.Context) error {
 	log.Info("start to get all processes")
 	ps, err := process.ProcessesWithContext(ctx)
 	if err != nil {

@@ -74,7 +74,7 @@ func capture(ctx context.Context, stopFunc context.CancelFunc, opts *Options) er
 	}
 
 	log.Info("start prepare capturer")
-	if err := caper.Prepare(); err != nil {
+	if err := caper.Prepare(ctx); err != nil {
 		return err
 	}
 

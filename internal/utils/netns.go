@@ -11,6 +11,7 @@ import (
 )
 
 type CloseFunc func()
+type CloseFuncWithErr func() error
 
 type NetNs struct {
 	handle netns.NsHandle

@@ -1,6 +1,7 @@
 #ifndef __PTCPDUMP_PROCESS_H__
 #define __PTCPDUMP_PROCESS_H__
 
+#include "common.h"
 #include "compat.h"
 #include "helpers.h"
 #include "vmlinux.h"
@@ -8,24 +9,6 @@
 #include <bpf/bpf_endian.h>
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
-
-#define EXEC_FILENAME_LEN 512
-#define EXEC_ARGS_LEN 4096
-#define MIN_CGROUP_NAME_LEN 64 + 1
-#define MAX_CGROUP_NAME_LEN 128
-
-struct process_meta_t {
-    u32 ppid;
-    u32 pid;
-    u32 pidns_id;
-    u32 mntns_id;
-    u32 netns_id;
-    u32 tid;
-    u32 uid;
-    u32 gid;
-    char tname[TASK_COMM_LEN];
-    char cgroup_name[MAX_CGROUP_NAME_LEN];
-};
 
 struct exec_event_t {
     struct process_meta_t meta;
@@ -96,7 +79,6 @@ struct {
 } exit_events SEC(".maps");
 
 const struct exec_event_t *unused2 __attribute__((unused));
-const struct process_meta_t *unused4 __attribute__((unused));
 const struct exit_event_t *unused5 __attribute__((unused));
 
 static __always_inline bool have_pid_filter_rules() {

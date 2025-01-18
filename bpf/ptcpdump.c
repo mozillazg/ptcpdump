@@ -15,7 +15,6 @@
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
 
-#define TASK_COMM_LEN 16
 #define TTY_NAME_LEN 64
 #define TC_ACT_UNSPEC (-1)
 #define TCX_NEXT (-1)
@@ -48,13 +47,6 @@ struct {
     __type(key, u32);
     __type(value, u8);
 } filter_ifindex_map SEC(".maps");
-
-struct {
-    __uint(type, BPF_MAP_TYPE_LRU_HASH);
-    __uint(max_entries, 65536);
-    __type(key, struct flow_pid_key_t);
-    __type(value, struct process_meta_t);
-} flow_pid_map SEC(".maps");
 
 struct {
     __uint(type, BPF_MAP_TYPE_LRU_HASH);
@@ -180,31 +172,8 @@ int BPF_PROG(fentry__security_sk_classify_flow, struct sock *sk) {
 #endif
 
 static __always_inline void handle_sendmsg(struct sock *sk) {
-    struct flow_pid_key_t key = {0};
-    struct process_meta_t value = {0};
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
-
-    if (parent_process_filter(task) < 0) {
-        if (process_filter(task) < 0) {
-            return;
-        }
-    }
-    // debug_log("sendmsg match\n");
-
-    fill_sk_meta(sk, &key);
-    if (bpf_map_lookup_elem(&flow_pid_map, &key)) {
-        return;
-    }
-
-    fill_process_meta(task, &value);
-    if (key.sport == 0) {
-        return;
-    }
-    // debug_log("[ptcpdump][sendmsg] flow key: %pI4 %d\n", &key.saddr[0], key.sport);
-    int ret = bpf_map_update_elem(&flow_pid_map, &key, &value, BPF_NOEXIST);
-    if (ret != 0) {
-        // debug_log("[handle_tcp_sendmsg] bpf_map_update_elem flow_pid_map failed: %d\n", ret);
-    }
+    save_flow_from_sock(task, sk);
     return;
 }
 

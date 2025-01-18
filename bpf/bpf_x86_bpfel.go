@@ -172,6 +172,7 @@ type BpfProgramSpecs struct {
 	FentryTcpSendmsg                     *ebpf.ProgramSpec `ebpf:"fentry__tcp_sendmsg"`
 	FentryUdpSendSkb                     *ebpf.ProgramSpec `ebpf:"fentry__udp_send_skb"`
 	FentryUdpSendmsg                     *ebpf.ProgramSpec `ebpf:"fentry__udp_sendmsg"`
+	IterTask                             *ebpf.ProgramSpec `ebpf:"iter__task"`
 	KprobeDevChangeNetNamespace          *ebpf.ProgramSpec `ebpf:"kprobe__dev_change_net_namespace"`
 	KprobeDevChangeNetNamespaceLegacy    *ebpf.ProgramSpec `ebpf:"kprobe__dev_change_net_namespace_legacy"`
 	KprobeNfNatManipPkt                  *ebpf.ProgramSpec `ebpf:"kprobe__nf_nat_manip_pkt"`
@@ -220,6 +221,7 @@ type BpfMapSpecs struct {
 	FlowPidMap            *ebpf.MapSpec `ebpf:"flow_pid_map"`
 	GoKeylogBufStorage    *ebpf.MapSpec `ebpf:"go_keylog_buf_storage"`
 	GoKeylogEvents        *ebpf.MapSpec `ebpf:"go_keylog_events"`
+	IterExecEvents        *ebpf.MapSpec `ebpf:"iter_exec_events"`
 	MountEventStack       *ebpf.MapSpec `ebpf:"mount_event_stack"`
 	MountEvents           *ebpf.MapSpec `ebpf:"mount_events"`
 	NatFlowMap            *ebpf.MapSpec `ebpf:"nat_flow_map"`
@@ -265,6 +267,7 @@ type BpfMaps struct {
 	FlowPidMap            *ebpf.Map `ebpf:"flow_pid_map"`
 	GoKeylogBufStorage    *ebpf.Map `ebpf:"go_keylog_buf_storage"`
 	GoKeylogEvents        *ebpf.Map `ebpf:"go_keylog_events"`
+	IterExecEvents        *ebpf.Map `ebpf:"iter_exec_events"`
 	MountEventStack       *ebpf.Map `ebpf:"mount_event_stack"`
 	MountEvents           *ebpf.Map `ebpf:"mount_events"`
 	NatFlowMap            *ebpf.Map `ebpf:"nat_flow_map"`
@@ -293,6 +296,7 @@ func (m *BpfMaps) Close() error {
 		m.FlowPidMap,
 		m.GoKeylogBufStorage,
 		m.GoKeylogEvents,
+		m.IterExecEvents,
 		m.MountEventStack,
 		m.MountEvents,
 		m.NatFlowMap,
@@ -320,6 +324,7 @@ type BpfPrograms struct {
 	FentryTcpSendmsg                     *ebpf.Program `ebpf:"fentry__tcp_sendmsg"`
 	FentryUdpSendSkb                     *ebpf.Program `ebpf:"fentry__udp_send_skb"`
 	FentryUdpSendmsg                     *ebpf.Program `ebpf:"fentry__udp_sendmsg"`
+	IterTask                             *ebpf.Program `ebpf:"iter__task"`
 	KprobeDevChangeNetNamespace          *ebpf.Program `ebpf:"kprobe__dev_change_net_namespace"`
 	KprobeDevChangeNetNamespaceLegacy    *ebpf.Program `ebpf:"kprobe__dev_change_net_namespace_legacy"`
 	KprobeNfNatManipPkt                  *ebpf.Program `ebpf:"kprobe__nf_nat_manip_pkt"`
@@ -362,6 +367,7 @@ func (p *BpfPrograms) Close() error {
 		p.FentryTcpSendmsg,
 		p.FentryUdpSendSkb,
 		p.FentryUdpSendmsg,
+		p.IterTask,
 		p.KprobeDevChangeNetNamespace,
 		p.KprobeDevChangeNetNamespaceLegacy,
 		p.KprobeNfNatManipPkt,

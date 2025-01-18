@@ -135,7 +135,7 @@ func (c *Capturer) StartSubProcessLoader(ctx context.Context, program string, su
 	return nil
 }
 
-func (c *Capturer) Prepare() error {
+func (c *Capturer) Prepare(ctx context.Context) error {
 	if err := rlimit.RemoveMemlock(); err != nil {
 		return fmt.Errorf("remove memlock failed: %w", err)
 	}
@@ -176,6 +176,10 @@ func (c *Capturer) Prepare() error {
 		return fmt.Errorf("load bpf failed: %w", err)
 	}
 	c.closeFuncs = append(c.closeFuncs, bf.Close)
+
+	if err := c.iterTasks(ctx); err != nil {
+		return err
+	}
 
 	if len(c.opts.Connections) > 0 {
 		if err := updateFlowPidMapValues(bf, c.opts.Connections); err != nil {

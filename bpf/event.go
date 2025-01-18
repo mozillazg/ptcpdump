@@ -6,6 +6,9 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/cilium/ebpf"
+	"github.com/cilium/ebpf/link"
+	"github.com/mozillazg/ptcpdump/internal/types"
 	"github.com/mozillazg/ptcpdump/internal/utils"
 	"io"
 	"os"
@@ -20,6 +23,8 @@ type BpfPacketEventWithPayloadT struct {
 	BpfPacketEventT
 	Payload []byte
 }
+
+var ErrIteratorIsNotSupported = errors.New("iterator is not supported")
 
 func (b *BPF) PullPacketEvents(ctx context.Context, chanSize int, maxPacketSize int) (<-chan BpfPacketEventWithPayloadT, error) {
 	pageSize := os.Getpagesize()
@@ -469,6 +474,81 @@ func (b *BPF) handleExitEvents(ctx context.Context, reader *perf.Reader, ch chan
 		}
 		if record.LostSamples > 0 {
 			// TODO: XXX
+		}
+	}
+}
+
+func (b *BPF) IterTasks(ctx context.Context, chanSize int) (<-chan BpfExecEventT, error) {
+	log.Info("start to iter tasks")
+	if b.objs.IterTask == nil {
+		return nil, ErrIteratorIsNotSupported
+	}
+
+	var closers []types.Closer
+	iter, err := link.AttachIter(link.IterOptions{
+		Program: b.objs.IterTask,
+	})
+	if err != nil {
+		log.Errorf("attach iter task failed: %s", err)
+		return nil, fmt.Errorf(": %w", err)
+	}
+	closers = append(closers, iter)
+
+	reader, err := iter.Open()
+	if err != nil {
+		utils.CloseAll(closers)
+		log.Errorf("open iter task failed: %s", err)
+		return nil, fmt.Errorf(": %w", err)
+	}
+	closers = append(closers, reader)
+
+	ch := make(chan BpfExecEventT, chanSize)
+	//scanner := bufio.NewScanner(reader)
+
+	go func() {
+		defer utils.CloseAll(closers)
+		defer close(ch)
+
+		iterAllTasks(ctx, b.objs.IterExecEvents, reader, ch)
+
+		log.Info("iter tasks done")
+	}()
+
+	return ch, nil
+}
+
+func iterAllTasks(ctx context.Context, events *ebpf.Map, reader io.ReadCloser, ch chan BpfExecEventT) {
+	entrySize := int(unsafe.Sizeof(BpfExecEventT{}))
+	buffer := make([]byte, entrySize)
+	for {
+		select {
+		case <-ctx.Done():
+			log.Infof("iter tasks canceled: %s", ctx.Err())
+			return
+		default:
+		}
+
+		n, err := io.ReadFull(reader, buffer)
+		if err != nil {
+			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+				log.Infof("got EOF error: %s", err)
+				return
+			}
+		}
+		if n < entrySize {
+			log.Errorf("read iter tasks failed, read size %d, expecte %d", n, entrySize)
+			return
+		}
+
+		var event BpfExecEventT
+		if err := binary.Read(bytes.NewBuffer(buffer), binary.LittleEndian, &event); err != nil {
+			log.Infof("parse event: %s", err)
+			continue
+		}
+
+		if event.Meta.Pid > 0 {
+			log.Infof("got new event via iter tasks: %d, %v", event.Meta.Pid, event.Args)
+			ch <- event
 		}
 	}
 }
