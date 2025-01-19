@@ -325,6 +325,27 @@ func (c *ProcessCache) GetPidsByComm(name string) []int {
 	return pids
 }
 
+func (c *ProcessCache) GetPidsByUid(uid int) []int {
+	var pids []int
+
+	c.pids.Range(func(key, value any) bool {
+		pid, ok := key.(int)
+		if !ok {
+			return true
+		}
+		info, ok := value.(*types.PacketContext)
+		if !ok {
+			return true
+		}
+		if info.UserId == uid {
+			pids = append(pids, pid)
+		}
+		return true
+	})
+
+	return pids
+}
+
 func (c *ProcessCache) GetPidsByPidNsId(nsid int64) []int {
 	var pids []int
 

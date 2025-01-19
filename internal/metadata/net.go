@@ -14,6 +14,7 @@ type Connection struct {
 	LocalIP   netip.Addr
 	LocalPort int
 	Pid       int
+	Uid       int
 	MntNs     int64
 	NetNs     int64
 }
@@ -58,6 +59,9 @@ func convertConnectionStat(stat net.ConnectionStat) (Connection, error) {
 	conn.LocalIP = addr
 	conn.LocalPort = port
 	conn.Pid = int(stat.Pid)
+	if len(stat.Uids) > 0 {
+		conn.Uid = int(stat.Uids[0])
+	}
 	conn.MntNs = utils.GetMountNamespaceFromPid(conn.Pid)
 	conn.NetNs = utils.GetNetworkNamespaceFromPid(conn.Pid)
 	return conn, nil

@@ -86,6 +86,7 @@ type Options struct {
 	mntnsIds []uint32
 	netnsIds []uint32
 	pidnsIds []uint32
+	uids     []uint
 
 	stdout           io.Writer
 	enhancedContexts []string
@@ -356,6 +357,7 @@ func (o *Options) ToCapturerOptions() *capturer.Options {
 		MntnsIds:                      o.mntnsIds,
 		NetnsIds:                      o.netnsIds,
 		PidnsIds:                      o.pidnsIds,
+		Uids:                          o.uids,
 		BTFPath:                       o.btfPath,
 		AllDev:                        o.allDev,
 		AllNetNs:                      o.allNetNs,

@@ -56,6 +56,7 @@ func init() {
 		"Interfaces to capture")
 	rootCmd.Flags().UintSliceVar(&opts.pids, "pid", nil, "Filter by process IDs (only TCP and UDP packets are supported)")
 	rootCmd.Flags().StringVar(&opts.comm, "pname", "", "Filter by process name (only TCP and UDP packets are supported)")
+	rootCmd.Flags().UintSliceVar(&opts.uids, "uid", nil, "Filter by user IDs (only TCP and UDP packets are supported)")
 	rootCmd.Flags().BoolVarP(&opts.followForks, "follow-forks", "f", false,
 		"Trace child processes as they are created by currently traced processes when filter by process")
 	rootCmd.Flags().BoolVarP(&opts.listInterfaces, "list-interfaces", "D", false,

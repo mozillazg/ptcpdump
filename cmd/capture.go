@@ -175,6 +175,13 @@ func getCurrentConnects(ctx context.Context, pcache *metadata.ProcessCache, opts
 		ps := pcache.GetPidsByComm(opts.comm)
 		pids = append(pids, ps...)
 	}
+	if len(opts.uids) > 0 {
+		filterPid = true
+		for _, uid := range opts.uids {
+			ps := pcache.GetPidsByUid(int(uid))
+			pids = append(pids, ps...)
+		}
+	}
 	if len(opts.pidnsIds) > 0 {
 		filterPid = true
 		for _, id := range opts.pidnsIds {
