@@ -76,11 +76,12 @@ Multiple interfaces:
 sudo ptcpdump -i eth0 -i lo
 ```
 
-Filter by process:
+Filter by process or user:
 
 ```
 sudo ptcpdump -i any --pid 1234 --pid 233 -f
 sudo ptcpdump -i any --pname curl
+sudo ptcpdump -i any --uid 1000
 ```
 
 Capture by process via run target program:
@@ -146,6 +147,7 @@ With `-v`:
 13:44:41.529003 eth0 In IP (tos 0x4, ttl 45, id 45428, offset 0, flags [DF], proto TCP (6), length 52)
     139.178.84.217.443 > 172.19.0.2.42606: Flags [.], cksum 0x5284, seq 3173118145, ack 1385712707, win 118, options [nop,nop,TS val 134560683 ecr 1627716996], length 0
     Process (pid 553587, cmd /usr/bin/wget, args wget kernel.org)
+    User (uid 1000)
     ParentProc (pid 553296, cmd /bin/sh, args sh)
     Container (name test, id d9028334568bf75a5a084963a8f98f78c56bba7f45f823b3780a135b71b91e95, image docker.io/library/alpine:3.18, labels {"io.cri-containerd.kind":"container","io.kubernetes.container.name":"test","io.kubernetes.pod.name":"test","io.kubernetes.pod.namespace":"default","io.kubernetes.pod.uid":"9e4bc54b-de48-4b1c-8b9e-54709f67ed0c"})
     Pod (name test, namespace default, UID 9e4bc54b-de48-4b1c-8b9e-54709f67ed0c, labels {"run":"test"}, annotations {"kubernetes.io/config.seen":"2024-07-21T12:41:00.460249620Z","kubernetes.io/config.source":"api"})
@@ -277,7 +279,7 @@ Flags:
       --container-id string                          Filter by container id (only TCP and UDP packets are supported)
       --container-name string                        Filter by container name (only TCP and UDP packets are supported)
       --containerd-address string                    Address of containerd service (default "/run/containerd/containerd.sock")
-      --context strings                              Specify which context information to include in the output (default [process,parentproc,container,pod])
+      --context strings                              Specify which context information to include in the output (default [process,thread,parentproc,user,container,pod])
       --count                                        Print only on stdout the packet count when reading capture file instead of parsing/printing the packets
       --cri-runtime-address string                   Address of CRI container runtime service (default: uses in order the first successful one of [/var/run/dockershim.sock, /var/run/cri-dockerd.sock, /run/crio/crio.sock, /run/containerd/containerd.sock])
       --delay-before-handle-packet-events duration   Delay some durations before handle packet events
@@ -311,6 +313,7 @@ Flags:
   -c, --receive-count uint                           Exit after receiving count packets
   -s, --snapshot-length uint32                       Snarf snaplen bytes of data from each packet rather than the default of 262144 bytes (default 262144)
       --time-stamp-precision string                  When capturing, set the time stamp precision for the capture to the format (default "micro")
+      --uid uints                                    Filter by user IDs (only TCP and UDP packets are supported) (default [])
   -v, --verbose count                                When parsing and printing, produce (slightly more) verbose output
       --version                                      Print the ptcpdump and libpcap version strings and exit
   -w, --write-file string                            Write the raw packets to file rather than parsing and printing them out. They can later be printed with the -r option. Standard output is used if file is '-'. e.g. ptcpdump.pcapng
@@ -334,6 +337,7 @@ Flags:
 | -r *-*                                            | ✅       |                          |
 | --pid *process_id*                                |         | ✅                        |
 | --pname *process_name*                            |         | ✅                        |
+| --uid *user_id*                                   |         | ✅                        |
 | --container-id *container_id*                     |         | ✅                        |
 | --container-name *container_name*                 |         | ✅                        |
 | --pod-name *pod_name.namespace*                   |         | ✅                        |

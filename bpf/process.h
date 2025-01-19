@@ -76,6 +76,13 @@ struct {
 } filter_pid_map SEC(".maps");
 
 struct {
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, 10);
+    __type(key, u32);
+    __type(value, u8);
+} filter_uid_map SEC(".maps");
+
+struct {
     __uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
     __uint(max_entries, 1);
     __type(key, u32);
@@ -106,6 +113,13 @@ static __always_inline bool have_pid_filter_rules() {
 
 static __always_inline int filter_pid(u32 pid) {
     if (bpf_map_lookup_elem(&filter_pid_map, &pid)) {
+        return 0;
+    }
+    return -1;
+}
+
+static __always_inline int filter_uid(u32 uid) {
+    if (bpf_map_lookup_elem(&filter_uid_map, &uid)) {
         return 0;
     }
     return -1;
@@ -154,7 +168,9 @@ static __always_inline int process_filter(struct task_struct *task) {
     u32 mntns_id = BPF_CORE_READ(task, nsproxy, mnt_ns, ns.inum);
     u32 netns_id = BPF_CORE_READ(task, nsproxy, net_ns, ns.inum);
     u32 pidns_id = BPF_CORE_READ(task, nsproxy, pid_ns_for_children, ns.inum);
-    if ((filter_pidns(pidns_id) == 0) || (filter_mntns(mntns_id) == 0) || (filter_netns(netns_id) == 0)) {
+    u32 uid = BPF_CORE_READ(task, cred, uid.val);
+    if ((filter_pidns(pidns_id) == 0) || (filter_mntns(mntns_id) == 0) || (filter_netns(netns_id) == 0) ||
+        (filter_uid(uid) == 0)) {
         // debug_log("%u %u %u\n", mntns_id, netns_id, pidns_id);
         should_filter = true;
     }

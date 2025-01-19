@@ -42,6 +42,7 @@ type BPF struct {
 type Options struct {
 	haveFilter     uint8
 	pids           []uint32
+	uids           []uint32
 	comm           [16]int8
 	filterComm     uint8
 	followForks    uint8
@@ -517,6 +518,14 @@ func (b *BPF) applyFilters() error {
 		}
 	}
 
+	log.Infof("start to update FilterUidMap with %+v", opts.pids)
+	for _, uid := range opts.uids {
+		uid := uid
+		if err := b.objs.BpfMaps.FilterUidMap.Update(uid, value, ebpf.UpdateAny); err != nil {
+			return fmt.Errorf("update FilterUidMap: %w", err)
+		}
+	}
+
 	log.Infof("start to update FilterPidnsMap with %+v", opts.pidnsIds)
 	for _, id := range opts.pidnsIds {
 		id := id
@@ -560,6 +569,16 @@ func (opts *Options) WithPids(pids []uint) *Options {
 		opts.pids = append(opts.pids, uint32(id))
 	}
 	if len(opts.pids) > 0 {
+		opts.haveFilter = 1
+	}
+	return opts
+}
+
+func (opts *Options) WithUids(uids []uint) *Options {
+	for _, id := range uids {
+		opts.uids = append(opts.uids, uint32(id))
+	}
+	if len(opts.uids) > 0 {
 		opts.haveFilter = 1
 	}
 	return opts

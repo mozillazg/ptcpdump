@@ -43,6 +43,7 @@ type Capturer struct {
 
 type Options struct {
 	Pids           []uint
+	Uids           []uint
 	Comm           string
 	FollowForks    bool
 	WriteFilePath  string
@@ -156,6 +157,7 @@ func (c *Capturer) Prepare() error {
 	bpfopts = bpfopts.WithPids(c.opts.Pids).
 		WithComm(c.opts.Comm).
 		WithFollowFork(c.opts.FollowForks).
+		WithUids(c.opts.Uids).
 		WithPidNsIds(c.opts.PidnsIds).
 		WithMntNsIds(c.opts.MntnsIds).
 		WithNetNsIds(c.opts.NetnsIds).
@@ -518,6 +520,7 @@ func updateFlowPidMapValues(bf *bpf.BPF, conns []metadata.Connection) error {
 		}
 		v := bpf.BpfProcessMetaT{
 			Pid:     uint32(conn.Pid),
+			Uid:     uint32(conn.Uid),
 			MntnsId: uint32(conn.MntNs),
 			NetnsId: uint32(conn.NetNs),
 		}

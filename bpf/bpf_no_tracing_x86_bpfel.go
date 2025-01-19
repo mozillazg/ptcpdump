@@ -98,6 +98,7 @@ type bpf_no_tracingMapSpecs struct {
 	FilterNetnsMap        *ebpf.MapSpec `ebpf:"filter_netns_map"`
 	FilterPidMap          *ebpf.MapSpec `ebpf:"filter_pid_map"`
 	FilterPidnsMap        *ebpf.MapSpec `ebpf:"filter_pidns_map"`
+	FilterUidMap          *ebpf.MapSpec `ebpf:"filter_uid_map"`
 	FlowPidMap            *ebpf.MapSpec `ebpf:"flow_pid_map"`
 	GoKeylogBufStorage    *ebpf.MapSpec `ebpf:"go_keylog_buf_storage"`
 	GoKeylogEvents        *ebpf.MapSpec `ebpf:"go_keylog_events"`
@@ -160,6 +161,7 @@ type bpf_no_tracingMaps struct {
 	FilterNetnsMap        *ebpf.Map `ebpf:"filter_netns_map"`
 	FilterPidMap          *ebpf.Map `ebpf:"filter_pid_map"`
 	FilterPidnsMap        *ebpf.Map `ebpf:"filter_pidns_map"`
+	FilterUidMap          *ebpf.Map `ebpf:"filter_uid_map"`
 	FlowPidMap            *ebpf.Map `ebpf:"flow_pid_map"`
 	GoKeylogBufStorage    *ebpf.Map `ebpf:"go_keylog_buf_storage"`
 	GoKeylogEvents        *ebpf.Map `ebpf:"go_keylog_events"`
@@ -188,6 +190,7 @@ func (m *bpf_no_tracingMaps) Close() error {
 		m.FilterNetnsMap,
 		m.FilterPidMap,
 		m.FilterPidnsMap,
+		m.FilterUidMap,
 		m.FlowPidMap,
 		m.GoKeylogBufStorage,
 		m.GoKeylogEvents,
