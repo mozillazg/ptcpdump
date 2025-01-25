@@ -90,6 +90,11 @@ struct {
 } exec_event_stack SEC(".maps");
 
 struct {
+    __uint(type, BPF_MAP_TYPE_RINGBUF);
+    __uint(max_entries, 1 << 24);
+} exec_events_ringbuf SEC(".maps");
+
+struct {
     __uint(type, BPF_MAP_TYPE_PERF_EVENT_ARRAY);
     __uint(key_size, sizeof(u32));
     __uint(value_size, sizeof(u32));
@@ -286,12 +291,19 @@ static __always_inline void handle_exec(void *ctx, struct task_struct *task, pid
     //    if (process_filter(task) < 0) {
     //        return;
     //    }
+    bool use_ringbuf = false;
 
     struct exec_event_t *event;
 #ifdef LEGACY_KERNEL
     u32 u32_zero = 0;
 #endif
-    event = bpf_map_lookup_elem(&exec_event_stack, &u32_zero);
+
+    if (ringbuf_available()) {
+        event = bpf_ringbuf_reserve(&exec_events_ringbuf, sizeof(*event), 0);
+        use_ringbuf = true;
+    } else {
+        event = bpf_map_lookup_elem(&exec_event_stack, &u32_zero);
+    }
     if (!event) {
         // debug_log("[ptcpdump] exec_event_stack failed\n");
         return;
@@ -323,9 +335,13 @@ static __always_inline void handle_exec(void *ctx, struct task_struct *task, pid
         event->args_size = arg_length;
     }
 
-    int event_ret = bpf_perf_event_output(ctx, &exec_events, BPF_F_CURRENT_CPU, event, sizeof(*event));
-    if (event_ret != 0) {
-        // debug_log("[ptcpdump] bpf_perf_event_output exec_events failed: %d\n", event_ret);
+    if (use_ringbuf) {
+        bpf_ringbuf_submit(event, 0);
+    } else {
+        int event_ret = bpf_perf_event_output(ctx, &exec_events, BPF_F_CURRENT_CPU, event, sizeof(*event));
+        if (event_ret != 0) {
+            // debug_log("[ptcpdump] bpf_perf_event_output exec_events failed: %d\n", event_ret);
+        }
     }
     return;
 }

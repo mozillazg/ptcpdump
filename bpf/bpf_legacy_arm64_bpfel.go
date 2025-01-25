@@ -87,6 +87,7 @@ type bpf_legacyMapSpecs struct {
 	EnterMountBufs        *ebpf.MapSpec `ebpf:"enter_mount_bufs"`
 	ExecEventStack        *ebpf.MapSpec `ebpf:"exec_event_stack"`
 	ExecEvents            *ebpf.MapSpec `ebpf:"exec_events"`
+	ExecEventsRingbuf     *ebpf.MapSpec `ebpf:"exec_events_ringbuf"`
 	ExitEvents            *ebpf.MapSpec `ebpf:"exit_events"`
 	FilterByKernelCount   *ebpf.MapSpec `ebpf:"filter_by_kernel_count"`
 	FilterIfindexMap      *ebpf.MapSpec `ebpf:"filter_ifindex_map"`
@@ -151,6 +152,7 @@ type bpf_legacyMaps struct {
 	EnterMountBufs        *ebpf.Map `ebpf:"enter_mount_bufs"`
 	ExecEventStack        *ebpf.Map `ebpf:"exec_event_stack"`
 	ExecEvents            *ebpf.Map `ebpf:"exec_events"`
+	ExecEventsRingbuf     *ebpf.Map `ebpf:"exec_events_ringbuf"`
 	ExitEvents            *ebpf.Map `ebpf:"exit_events"`
 	FilterByKernelCount   *ebpf.Map `ebpf:"filter_by_kernel_count"`
 	FilterIfindexMap      *ebpf.Map `ebpf:"filter_ifindex_map"`
@@ -182,6 +184,7 @@ func (m *bpf_legacyMaps) Close() error {
 		m.EnterMountBufs,
 		m.ExecEventStack,
 		m.ExecEvents,
+		m.ExecEventsRingbuf,
 		m.ExitEvents,
 		m.FilterByKernelCount,
 		m.FilterIfindexMap,
