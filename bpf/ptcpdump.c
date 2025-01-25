@@ -469,8 +469,10 @@ static __always_inline void handle_tc(bool cgroup_skb, struct __sk_buff *skb, bo
     event->meta.payload_len = payload_len;
 
     if (use_ringbuf) {
-        struct skb_data_t *skb_data = (struct skb_data_t *)(event + 1);
-        bpf_probe_read_kernel(&skb_data->data, payload_len, (void *)(long)skb->data);
+        if (payload_len > 0) {
+            struct skb_data_t *skb_data = (struct skb_data_t *)(event + 1);
+            bpf_skb_load_bytes(skb, 0, &skb_data->data, payload_len);
+        }
         bpf_ringbuf_submit(ringbuf, 0);
     } else {
         int event_ret = bpf_perf_event_output(skb, &packet_events, BPF_F_CURRENT_CPU | (payload_len << 32), event,
