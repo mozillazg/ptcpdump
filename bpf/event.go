@@ -34,7 +34,7 @@ type BpfPacketEventWithPayloadT struct {
 
 func (b *BPF) PullPacketEvents(ctx context.Context, chanSize int, maxPacketSize int) (<-chan BpfPacketEventWithPayloadT, error) {
 	var reader EventReader
-	if b.supportRingBuf {
+	if b.supportRingBuf && b.useRingBufSubmitSkb {
 		log.Info("use ringbuf for packet events")
 		ringbufReader, err := ringbuf.NewReader(b.objs.PacketEventsRingbuf)
 		if err != nil {
@@ -106,7 +106,7 @@ func parsePacketEvent(rawSample []byte) (*BpfPacketEventWithPayloadT, error) {
 	if err := binary.Read(bytes.NewBuffer(rawSample), binary.LittleEndian, &event.Meta); err != nil {
 		return nil, fmt.Errorf("parse meta: %w", err)
 	}
-	event.Payload = make([]byte, int(event.Meta.PacketSize))
+	event.Payload = make([]byte, int(event.Meta.PayloadLen))
 	copy(event.Payload[:], rawSample[unsafe.Sizeof(BpfPacketEventT{}):])
 	return &event, nil
 }

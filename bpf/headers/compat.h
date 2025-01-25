@@ -15,6 +15,7 @@ struct gconfig_t {
     char filter_comm[TASK_COMM_LEN];
     u8 filter_comm_enable;
     u8 filter_ifindex_enable;
+    u8 use_ringbuf_submit_skb;
     u32 max_payload_size;
 };
 

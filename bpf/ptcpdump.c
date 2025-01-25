@@ -410,7 +410,7 @@ static __always_inline void handle_tc(bool cgroup_skb, struct __sk_buff *skb, bo
     struct packet_event_t *event;
     bool use_ringbuf = false;
 
-    if (ringbuf_available()) {
+    if (g.use_ringbuf_submit_skb && ringbuf_available()) {
         ringbuf = bpf_ringbuf_reserve(&packet_events_ringbuf, sizeof(*event) + g.max_payload_size, 0);
         if (!ringbuf) {
             return;

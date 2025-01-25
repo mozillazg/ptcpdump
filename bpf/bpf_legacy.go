@@ -55,11 +55,8 @@ func supportTcx() bool {
 }
 
 func supportRingBuf() bool {
-	versionCode, _ := features.LinuxVersionCode()
-	if versionCode <= 0 {
-		return false
-	}
-	if versionCode < kernelVersion(5, 8, 0) {
+	log.Info("Checking ringbuf support")
+	if ok := kernelVersionEeqOrGreaterThan(5, 8, 0); !ok {
 		return false
 	}
 	if err := features.HaveMapType(ebpf.RingBuf); err != nil {
@@ -67,6 +64,30 @@ func supportRingBuf() bool {
 		return false
 	}
 	return true
+}
+
+func canUseRingBufSubmitSkb() bool {
+	log.Info("Checking ringbuf submit skb support")
+	if !supportRingBuf() {
+		return false
+	}
+	// 5.8 ~ 6.7 will raise "R3 min value is outside of the allowed memory range" error
+	if ok := kernelVersionEeqOrGreaterThan(6, 8, 0); ok {
+		return true
+	}
+	return false
+}
+
+func kernelVersionEeqOrGreaterThan(a, b, c int) bool {
+	versionCode, err := features.LinuxVersionCode()
+	if err != nil {
+		log.Infof("%+v", err)
+		return false
+	}
+	if versionCode >= kernelVersion(a, b, c) {
+		return true
+	}
+	return false
 }
 
 func loadBpfWithData(b []byte) (*ebpf.CollectionSpec, error) {
