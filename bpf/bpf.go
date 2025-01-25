@@ -36,6 +36,7 @@ type BPF struct {
 	skipAttachCgroup bool
 	skipTcx          bool
 	isLegacyKernel   bool
+	supportRingBuf   bool
 	report           *types.CountReport
 }
 
@@ -93,6 +94,7 @@ func NewBPF() (*BPF, error) {
 		isLegacyKernel:   legacyKernel,
 		skipAttachCgroup: skipAttachCgroup,
 		skipTcx:          !supportTcx(),
+		supportRingBuf:   !legacyKernel && supportRingBuf(),
 	}
 
 	return bf, nil

@@ -63,6 +63,7 @@ github.com/cilium/ebpf/internal/tracefs
 github.com/cilium/ebpf/internal/unix
 github.com/cilium/ebpf/link
 github.com/cilium/ebpf/perf
+github.com/cilium/ebpf/ringbuf
 github.com/cilium/ebpf/rlimit
 # github.com/cloudflare/cbpfc v0.0.0-20230809125630-31aa294050ff
 ## explicit; go 1.19

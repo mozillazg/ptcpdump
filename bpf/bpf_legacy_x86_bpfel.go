@@ -97,7 +97,9 @@ type bpf_legacyMapSpecs struct {
 	FilterUidMap          *ebpf.MapSpec `ebpf:"filter_uid_map"`
 	FlowPidMap            *ebpf.MapSpec `ebpf:"flow_pid_map"`
 	GoKeylogBufStorage    *ebpf.MapSpec `ebpf:"go_keylog_buf_storage"`
+	GoKeylogEventTmp      *ebpf.MapSpec `ebpf:"go_keylog_event_tmp"`
 	GoKeylogEvents        *ebpf.MapSpec `ebpf:"go_keylog_events"`
+	GoKeylogEventsRingbuf *ebpf.MapSpec `ebpf:"go_keylog_events_ringbuf"`
 	MountEventStack       *ebpf.MapSpec `ebpf:"mount_event_stack"`
 	MountEvents           *ebpf.MapSpec `ebpf:"mount_events"`
 	NatFlowMap            *ebpf.MapSpec `ebpf:"nat_flow_map"`
@@ -159,7 +161,9 @@ type bpf_legacyMaps struct {
 	FilterUidMap          *ebpf.Map `ebpf:"filter_uid_map"`
 	FlowPidMap            *ebpf.Map `ebpf:"flow_pid_map"`
 	GoKeylogBufStorage    *ebpf.Map `ebpf:"go_keylog_buf_storage"`
+	GoKeylogEventTmp      *ebpf.Map `ebpf:"go_keylog_event_tmp"`
 	GoKeylogEvents        *ebpf.Map `ebpf:"go_keylog_events"`
+	GoKeylogEventsRingbuf *ebpf.Map `ebpf:"go_keylog_events_ringbuf"`
 	MountEventStack       *ebpf.Map `ebpf:"mount_event_stack"`
 	MountEvents           *ebpf.Map `ebpf:"mount_events"`
 	NatFlowMap            *ebpf.Map `ebpf:"nat_flow_map"`
@@ -188,7 +192,9 @@ func (m *bpf_legacyMaps) Close() error {
 		m.FilterUidMap,
 		m.FlowPidMap,
 		m.GoKeylogBufStorage,
+		m.GoKeylogEventTmp,
 		m.GoKeylogEvents,
+		m.GoKeylogEventsRingbuf,
 		m.MountEventStack,
 		m.MountEvents,
 		m.NatFlowMap,

@@ -54,6 +54,21 @@ func supportTcx() bool {
 	return versionCode >= kernelVersion(6, 6, 0)
 }
 
+func supportRingBuf() bool {
+	versionCode, _ := features.LinuxVersionCode()
+	if versionCode <= 0 {
+		return false
+	}
+	if versionCode < kernelVersion(5, 8, 0) {
+		return false
+	}
+	if err := features.HaveMapType(ebpf.RingBuf); err != nil {
+		log.Infof("%+v", err)
+		return false
+	}
+	return true
+}
+
 func loadBpfWithData(b []byte) (*ebpf.CollectionSpec, error) {
 	reader := bytes.NewReader(b)
 	spec, err := ebpf.LoadCollectionSpecFromReader(reader)

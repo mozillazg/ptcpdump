@@ -12,9 +12,20 @@ import (
 	"unsafe"
 
 	"github.com/cilium/ebpf/perf"
+	"github.com/cilium/ebpf/ringbuf"
 
 	"github.com/mozillazg/ptcpdump/internal/log"
 )
+
+type EventReader struct {
+	perfReader    *perf.Reader
+	ringbufReader *ringbuf.Reader
+}
+
+type EventRecord struct {
+	RawSample   []byte
+	LostSamples uint64
+}
 
 type BpfPacketEventWithPayloadT struct {
 	BpfPacketEventT
@@ -144,30 +155,44 @@ func (b *BPF) handleExecEvents(ctx context.Context, reader *perf.Reader, ch chan
 }
 
 func (b *BPF) PullGoKeyLogEvents(ctx context.Context, chanSize int) (<-chan BpfGoKeylogEventT, error) {
-	pageSize := os.Getpagesize()
-	log.Infof("pagesize is %d", pageSize)
-	perCPUBuffer := pageSize * 4
-	eventSize := int(unsafe.Sizeof(BpfGoKeylogEventT{}))
-	if eventSize >= perCPUBuffer {
-		perCPUBuffer = perCPUBuffer * (1 + (eventSize / perCPUBuffer))
-	}
-	log.Infof("use %d as perCPUBuffer", perCPUBuffer)
+	var reader EventReader
 
-	reader, err := perf.NewReader(b.objs.GoKeylogEvents, perCPUBuffer)
-	if err != nil {
-		return nil, fmt.Errorf(": %w", err)
+	if b.supportRingBuf {
+		log.Info("use ringbuf for go keylog events")
+		ringbufReader, err := ringbuf.NewReader(b.objs.GoKeylogEventsRingbuf)
+		if err != nil {
+			return nil, fmt.Errorf(": %w", err)
+		}
+		reader.ringbufReader = ringbufReader
+	} else {
+		log.Info("use perf for go keylog events")
+		pageSize := os.Getpagesize()
+		log.Infof("pagesize is %d", pageSize)
+		perCPUBuffer := pageSize * 4
+		eventSize := int(unsafe.Sizeof(BpfGoKeylogEventT{}))
+		if eventSize >= perCPUBuffer {
+			perCPUBuffer = perCPUBuffer * (1 + (eventSize / perCPUBuffer))
+		}
+		log.Infof("use %d as perCPUBuffer", perCPUBuffer)
+
+		preader, err := perf.NewReader(b.objs.GoKeylogEvents, perCPUBuffer)
+		if err != nil {
+			return nil, fmt.Errorf(": %w", err)
+		}
+		reader.perfReader = preader
 	}
+
 	ch := make(chan BpfGoKeylogEventT, chanSize)
 	go func() {
 		defer close(ch)
 		defer reader.Close()
-		b.handleGoKeyLogEvents(ctx, reader, ch)
+		b.handleGoKeyLogEvents(ctx, &reader, ch)
 	}()
 
 	return ch, nil
 }
 
-func (b *BPF) handleGoKeyLogEvents(ctx context.Context, reader *perf.Reader, ch chan<- BpfGoKeylogEventT) {
+func (b *BPF) handleGoKeyLogEvents(ctx context.Context, reader *EventReader, ch chan<- BpfGoKeylogEventT) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -479,4 +504,45 @@ func parseExitEvent(rawSample []byte) (*BpfExitEventT, error) {
 		return nil, fmt.Errorf("parse event: %w", err)
 	}
 	return &event, nil
+}
+
+func NewEventReader(perfReader *perf.Reader, ringbufReader *ringbuf.Reader) *EventReader {
+	return &EventReader{
+		perfReader:    perfReader,
+		ringbufReader: ringbufReader,
+	}
+}
+
+func (r *EventReader) Read() (*EventRecord, error) {
+	if r.perfReader != nil {
+		record, err := r.perfReader.Read()
+		if err != nil {
+			return nil, err
+		}
+		return &EventRecord{
+			RawSample:   record.RawSample,
+			LostSamples: record.LostSamples,
+		}, nil
+	}
+	if r.ringbufReader != nil {
+		record, err := r.ringbufReader.Read()
+		if err != nil {
+			return nil, err
+		}
+		return &EventRecord{
+			RawSample:   record.RawSample,
+			LostSamples: 0,
+		}, nil
+	}
+	return nil, errors.New("no reader")
+}
+
+func (r *EventReader) Close() error {
+	if r.perfReader != nil {
+		return r.perfReader.Close()
+	}
+	if r.ringbufReader != nil {
+		return r.ringbufReader.Close()
+	}
+	return nil
 }
