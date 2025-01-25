@@ -33,30 +33,43 @@ type BpfPacketEventWithPayloadT struct {
 }
 
 func (b *BPF) PullPacketEvents(ctx context.Context, chanSize int, maxPacketSize int) (<-chan BpfPacketEventWithPayloadT, error) {
-	pageSize := os.Getpagesize()
-	log.Infof("pagesize is %d", pageSize)
-	perCPUBuffer := pageSize * 64
-	eventSize := int(unsafe.Sizeof(BpfPacketEventT{})) + maxPacketSize
-	if eventSize >= perCPUBuffer {
-		perCPUBuffer = perCPUBuffer * (1 + (eventSize / perCPUBuffer))
-	}
-	log.Infof("use %d as perCPUBuffer", perCPUBuffer)
+	var reader EventReader
+	if b.supportRingBuf {
+		log.Info("use ringbuf for packet events")
+		ringbufReader, err := ringbuf.NewReader(b.objs.PacketEventsRingbuf)
+		if err != nil {
+			return nil, fmt.Errorf(": %w", err)
+		}
+		reader.ringbufReader = ringbufReader
+	} else {
+		log.Info("use perf for packet events")
+		pageSize := os.Getpagesize()
+		log.Infof("pagesize is %d", pageSize)
+		perCPUBuffer := pageSize * 64
+		eventSize := int(unsafe.Sizeof(BpfPacketEventT{})) + maxPacketSize
+		if eventSize >= perCPUBuffer {
+			perCPUBuffer = perCPUBuffer * (1 + (eventSize / perCPUBuffer))
+		}
+		log.Infof("use %d as perCPUBuffer", perCPUBuffer)
 
-	reader, err := perf.NewReader(b.objs.PacketEvents, perCPUBuffer)
-	if err != nil {
-		return nil, fmt.Errorf(": %w", err)
+		preader, err := perf.NewReader(b.objs.PacketEvents, perCPUBuffer)
+		if err != nil {
+			return nil, fmt.Errorf(": %w", err)
+		}
+		reader.perfReader = preader
 	}
+
 	ch := make(chan BpfPacketEventWithPayloadT, chanSize)
 	go func() {
 		defer close(ch)
 		defer reader.Close()
-		b.handlePacketEvents(ctx, reader, ch)
+		b.handlePacketEvents(ctx, &reader, ch)
 	}()
 
 	return ch, nil
 }
 
-func (b *BPF) handlePacketEvents(ctx context.Context, reader *perf.Reader, ch chan<- BpfPacketEventWithPayloadT) {
+func (b *BPF) handlePacketEvents(ctx context.Context, reader *EventReader, ch chan<- BpfPacketEventWithPayloadT) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -66,7 +79,7 @@ func (b *BPF) handlePacketEvents(ctx context.Context, reader *perf.Reader, ch ch
 
 		record, err := reader.Read()
 		if err != nil {
-			if errors.Is(err, perf.ErrClosed) {
+			if errors.Is(err, perf.ErrClosed) || errors.Is(err, ringbuf.ErrClosed) {
 				return
 			}
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
@@ -145,7 +158,7 @@ func (b *BPF) handleExecEvents(ctx context.Context, reader *EventReader, ch chan
 
 		record, err := reader.Read()
 		if err != nil {
-			if errors.Is(err, perf.ErrClosed) {
+			if errors.Is(err, perf.ErrClosed) || errors.Is(err, ringbuf.ErrClosed) {
 				return
 			}
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
@@ -215,7 +228,7 @@ func (b *BPF) handleGoKeyLogEvents(ctx context.Context, reader *EventReader, ch 
 
 		record, err := reader.Read()
 		if err != nil {
-			if errors.Is(err, perf.ErrClosed) {
+			if errors.Is(err, perf.ErrClosed) || errors.Is(err, ringbuf.ErrClosed) {
 				return
 			}
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
@@ -271,7 +284,7 @@ func (b *BPF) handleNewNetDeviceEvents(ctx context.Context, reader *perf.Reader,
 
 		record, err := reader.Read()
 		if err != nil {
-			if errors.Is(err, perf.ErrClosed) {
+			if errors.Is(err, perf.ErrClosed) || errors.Is(err, ringbuf.ErrClosed) {
 				return
 			}
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
@@ -338,7 +351,7 @@ func (b *BPF) handleNetDeviceChangeEvents(ctx context.Context, reader *perf.Read
 
 		record, err := reader.Read()
 		if err != nil {
-			if errors.Is(err, perf.ErrClosed) {
+			if errors.Is(err, perf.ErrClosed) || errors.Is(err, ringbuf.ErrClosed) {
 				return
 			}
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
@@ -407,7 +420,7 @@ func (b *BPF) handleMountEvents(ctx context.Context, reader *perf.Reader, ch cha
 
 		record, err := reader.Read()
 		if err != nil {
-			if errors.Is(err, perf.ErrClosed) {
+			if errors.Is(err, perf.ErrClosed) || errors.Is(err, ringbuf.ErrClosed) {
 				return
 			}
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
@@ -489,7 +502,7 @@ func (b *BPF) handleExitEvents(ctx context.Context, reader *perf.Reader, ch chan
 
 		record, err := reader.Read()
 		if err != nil {
-			if errors.Is(err, perf.ErrClosed) {
+			if errors.Is(err, perf.ErrClosed) || errors.Is(err, ringbuf.ErrClosed) {
 				return
 			}
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {

@@ -113,6 +113,7 @@ type bpf_no_tracingMapSpecs struct {
 	NewNetdeviceEvents    *ebpf.MapSpec `ebpf:"new_netdevice_events"`
 	PacketEventStack      *ebpf.MapSpec `ebpf:"packet_event_stack"`
 	PacketEvents          *ebpf.MapSpec `ebpf:"packet_events"`
+	PacketEventsRingbuf   *ebpf.MapSpec `ebpf:"packet_events_ringbuf"`
 	SockCookiePidMap      *ebpf.MapSpec `ebpf:"sock_cookie_pid_map"`
 	TidNetdeviceMap       *ebpf.MapSpec `ebpf:"tid_netdevice_map"`
 }
@@ -179,6 +180,7 @@ type bpf_no_tracingMaps struct {
 	NewNetdeviceEvents    *ebpf.Map `ebpf:"new_netdevice_events"`
 	PacketEventStack      *ebpf.Map `ebpf:"packet_event_stack"`
 	PacketEvents          *ebpf.Map `ebpf:"packet_events"`
+	PacketEventsRingbuf   *ebpf.Map `ebpf:"packet_events_ringbuf"`
 	SockCookiePidMap      *ebpf.Map `ebpf:"sock_cookie_pid_map"`
 	TidNetdeviceMap       *ebpf.Map `ebpf:"tid_netdevice_map"`
 }
@@ -211,6 +213,7 @@ func (m *bpf_no_tracingMaps) Close() error {
 		m.NewNetdeviceEvents,
 		m.PacketEventStack,
 		m.PacketEvents,
+		m.PacketEventsRingbuf,
 		m.SockCookiePidMap,
 		m.TidNetdeviceMap,
 	)

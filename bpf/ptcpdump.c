@@ -76,6 +76,15 @@ struct {
     __uint(value_size, sizeof(u32));
 } packet_events SEC(".maps");
 
+struct skb_data_t {
+    u8 data[1 << 18];
+};
+
+struct {
+    __uint(type, BPF_MAP_TYPE_RINGBUF);
+    __uint(max_entries, 1 << 25);
+} packet_events_ringbuf SEC(".maps");
+
 struct {
     __uint(type, BPF_MAP_TYPE_HASH);
     __uint(max_entries, 1);
@@ -395,19 +404,37 @@ static __always_inline void handle_tc(bool cgroup_skb, struct __sk_buff *skb, bo
 #ifdef LEGACY_KERNEL
     u32 u32_zero = 0;
 #endif
+    GET_CONFIG()
 
+    void *ringbuf = NULL;
     struct packet_event_t *event;
-    event = bpf_map_lookup_elem(&packet_event_stack, &u32_zero);
+    bool use_ringbuf = false;
+
+    if (ringbuf_available()) {
+        ringbuf = bpf_ringbuf_reserve(&packet_events_ringbuf, sizeof(*event) + g.max_payload_size, 0);
+        if (!ringbuf) {
+            return;
+        }
+        event = (struct packet_event_t *)ringbuf;
+        use_ringbuf = true;
+    } else {
+        event = bpf_map_lookup_elem(&packet_event_stack, &u32_zero);
+    }
+
     if (!event) {
         // debug_log("[ptcpdump] packet_event_stack failed\n");
         return;
     }
+
     __builtin_memset(&event->meta, 0, sizeof(event->meta));
     __builtin_memset(&event->meta.process, 0, sizeof(event->meta.process));
     __builtin_memset(&event->meta.process.cgroup_name, 0, sizeof(event->meta.process.cgroup_name));
 
     if (fill_packet_event_meta(skb, cgroup_skb, &event->meta, egress) < 0) {
         // debug_log("tc, not found pid\n");
+        if (use_ringbuf) {
+            bpf_ringbuf_discard(ringbuf, 0);
+        }
         return;
     };
     // if (process_meta_filter(&event->meta.process) < 0) {
@@ -434,8 +461,6 @@ static __always_inline void handle_tc(bool cgroup_skb, struct __sk_buff *skb, bo
     event->meta.timestamp = bpf_ktime_get_ns();
     event->meta.ifindex = skb->ifindex;
 
-    GET_CONFIG()
-
     u64 payload_len = (u64)skb->len;
     event->meta.packet_size = payload_len;
     if (g.max_payload_size > 0) {
@@ -443,10 +468,16 @@ static __always_inline void handle_tc(bool cgroup_skb, struct __sk_buff *skb, bo
     }
     event->meta.payload_len = payload_len;
 
-    int event_ret = bpf_perf_event_output(skb, &packet_events, BPF_F_CURRENT_CPU | (payload_len << 32), event,
-                                          sizeof(struct packet_event_t));
-    if (event_ret != 0) {
-        // debug_log("[ptcpdump] bpf_perf_event_output exec_events failed: %d\n", event_ret);
+    if (use_ringbuf) {
+        struct skb_data_t *skb_data = (struct skb_data_t *)(event + 1);
+        bpf_probe_read_kernel(&skb_data->data, payload_len, (void *)(long)skb->data);
+        bpf_ringbuf_submit(ringbuf, 0);
+    } else {
+        int event_ret = bpf_perf_event_output(skb, &packet_events, BPF_F_CURRENT_CPU | (payload_len << 32), event,
+                                              sizeof(struct packet_event_t));
+        if (event_ret != 0) {
+            // debug_log("[ptcpdump] bpf_perf_event_output exec_events failed: %d\n", event_ret);
+        }
     }
 
     return;
