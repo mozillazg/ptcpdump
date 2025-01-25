@@ -469,30 +469,44 @@ func parseExecEvent(rawSample []byte) (*BpfExecEventT, error) {
 }
 
 func (b *BPF) PullExitEvents(ctx context.Context, chanSize int) (<-chan BpfExitEventT, error) {
-	pageSize := os.Getpagesize()
-	log.Infof("pagesize is %d", pageSize)
-	perCPUBuffer := pageSize * 4
-	eventSize := int(unsafe.Sizeof(BpfExitEventT{}))
-	if eventSize >= perCPUBuffer {
-		perCPUBuffer = perCPUBuffer * (1 + (eventSize / perCPUBuffer))
-	}
-	log.Infof("use %d as perCPUBuffer", perCPUBuffer)
+	var reader EventReader
+	if b.supportRingBuf {
+		log.Info("use ringbuf for exit events")
+		ringbufReader, err := ringbuf.NewReader(b.objs.ExitEventsRingbuf)
+		if err != nil {
+			return nil, fmt.Errorf(": %w", err)
+		}
+		reader.ringbufReader = ringbufReader
+	} else {
+		log.Info("use perf for exit events")
 
-	reader, err := perf.NewReader(b.objs.ExitEvents, perCPUBuffer)
-	if err != nil {
-		return nil, fmt.Errorf(": %w", err)
+		pageSize := os.Getpagesize()
+		log.Infof("pagesize is %d", pageSize)
+		perCPUBuffer := pageSize * 4
+		eventSize := int(unsafe.Sizeof(BpfExitEventT{}))
+		if eventSize >= perCPUBuffer {
+			perCPUBuffer = perCPUBuffer * (1 + (eventSize / perCPUBuffer))
+		}
+		log.Infof("use %d as perCPUBuffer", perCPUBuffer)
+
+		preader, err := perf.NewReader(b.objs.ExitEvents, perCPUBuffer)
+		if err != nil {
+			return nil, fmt.Errorf(": %w", err)
+		}
+		reader.perfReader = preader
 	}
+
 	ch := make(chan BpfExitEventT, chanSize)
 	go func() {
 		defer close(ch)
 		defer reader.Close()
-		b.handleExitEvents(ctx, reader, ch)
+		b.handleExitEvents(ctx, &reader, ch)
 	}()
 
 	return ch, nil
 }
 
-func (b *BPF) handleExitEvents(ctx context.Context, reader *perf.Reader, ch chan<- BpfExitEventT) {
+func (b *BPF) handleExitEvents(ctx context.Context, reader *EventReader, ch chan<- BpfExitEventT) {
 	for {
 		select {
 		case <-ctx.Done():

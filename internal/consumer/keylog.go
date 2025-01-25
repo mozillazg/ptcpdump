@@ -53,6 +53,7 @@ func (c *GoKeyLogEventConsumer) handleEvent(e bpf.BpfGoKeylogEventT) {
 	secret := utils.GoBytes(e.Secret[:int(e.SecretLen)])
 
 	line := fmt.Sprintf("%s %x %x\n", label, clientRandom, secret)
+	log.Infof("new key log event: %s", line)
 	c.write(line)
 }
 
