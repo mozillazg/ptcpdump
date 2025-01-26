@@ -105,7 +105,7 @@ struct {
     __uint(max_entries, 1);
     __type(key, u32);
     __type(value, struct exit_event_t);
-} exec_event_tmp SEC(".maps");
+} exit_event_tmp SEC(".maps");
 
 struct {
     __uint(type, BPF_MAP_TYPE_PERF_EVENT_ARRAY);
@@ -376,10 +376,9 @@ static __always_inline void handle_exit(void *ctx, struct task_struct *task) {
         event = bpf_ringbuf_reserve(&exit_events_ringbuf, sizeof(*event), 0);
         use_ringbuf = true;
     } else {
-        event = bpf_map_lookup_elem(&exec_event_tmp, &pid);
+        event = bpf_map_lookup_elem(&exit_event_tmp, &pid);
     }
     if (!event) {
-        // debug_log("[ptcpdump] exec_event_tmp failed\n");
         return;
     }
 

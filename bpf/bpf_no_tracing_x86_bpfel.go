@@ -90,9 +90,9 @@ type bpf_no_tracingMapSpecs struct {
 	ConfigMap             *ebpf.MapSpec `ebpf:"config_map"`
 	EnterMountBufs        *ebpf.MapSpec `ebpf:"enter_mount_bufs"`
 	ExecEventStack        *ebpf.MapSpec `ebpf:"exec_event_stack"`
-	ExecEventTmp          *ebpf.MapSpec `ebpf:"exec_event_tmp"`
 	ExecEvents            *ebpf.MapSpec `ebpf:"exec_events"`
 	ExecEventsRingbuf     *ebpf.MapSpec `ebpf:"exec_events_ringbuf"`
+	ExitEventTmp          *ebpf.MapSpec `ebpf:"exit_event_tmp"`
 	ExitEvents            *ebpf.MapSpec `ebpf:"exit_events"`
 	ExitEventsRingbuf     *ebpf.MapSpec `ebpf:"exit_events_ringbuf"`
 	FilterByKernelCount   *ebpf.MapSpec `ebpf:"filter_by_kernel_count"`
@@ -159,9 +159,9 @@ type bpf_no_tracingMaps struct {
 	ConfigMap             *ebpf.Map `ebpf:"config_map"`
 	EnterMountBufs        *ebpf.Map `ebpf:"enter_mount_bufs"`
 	ExecEventStack        *ebpf.Map `ebpf:"exec_event_stack"`
-	ExecEventTmp          *ebpf.Map `ebpf:"exec_event_tmp"`
 	ExecEvents            *ebpf.Map `ebpf:"exec_events"`
 	ExecEventsRingbuf     *ebpf.Map `ebpf:"exec_events_ringbuf"`
+	ExitEventTmp          *ebpf.Map `ebpf:"exit_event_tmp"`
 	ExitEvents            *ebpf.Map `ebpf:"exit_events"`
 	ExitEventsRingbuf     *ebpf.Map `ebpf:"exit_events_ringbuf"`
 	FilterByKernelCount   *ebpf.Map `ebpf:"filter_by_kernel_count"`
@@ -194,9 +194,9 @@ func (m *bpf_no_tracingMaps) Close() error {
 		m.ConfigMap,
 		m.EnterMountBufs,
 		m.ExecEventStack,
-		m.ExecEventTmp,
 		m.ExecEvents,
 		m.ExecEventsRingbuf,
+		m.ExitEventTmp,
 		m.ExitEvents,
 		m.ExitEventsRingbuf,
 		m.FilterByKernelCount,
