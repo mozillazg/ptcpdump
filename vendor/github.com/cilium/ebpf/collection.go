@@ -26,6 +26,7 @@ type CollectionOptions struct {
 	IgnoreUnknownProgram      bool
 	IgnoreNotSupportedProgram bool
 	IgnoreUnknownVariable     bool
+	IgnoreInvalidMap          bool
 
 	// MapReplacements takes a set of Maps that will be used instead of
 	// creating new ones when loading the CollectionSpec.
@@ -285,7 +286,13 @@ func (cs *CollectionSpec) LoadAndAssign(to interface{}, opts *CollectionOptions)
 
 		case reflect.TypeOf((*Map)(nil)):
 			assignedMaps[name] = true
-			return loader.loadMap(name)
+			m, err := loader.loadMap(name)
+			if err != nil {
+				if strings.Contains(err.Error(), "invalid argument") && opts.IgnoreInvalidMap {
+					return nil, nil
+				}
+			}
+			return m, err
 
 		case reflect.TypeOf((*Variable)(nil)):
 			assignedVars[name] = true

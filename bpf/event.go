@@ -12,9 +12,20 @@ import (
 	"unsafe"
 
 	"github.com/cilium/ebpf/perf"
+	"github.com/cilium/ebpf/ringbuf"
 
 	"github.com/mozillazg/ptcpdump/internal/log"
 )
+
+type EventReader struct {
+	perfReader    *perf.Reader
+	ringbufReader *ringbuf.Reader
+}
+
+type EventRecord struct {
+	RawSample   []byte
+	LostSamples uint64
+}
 
 type BpfPacketEventWithPayloadT struct {
 	BpfPacketEventT
@@ -22,30 +33,43 @@ type BpfPacketEventWithPayloadT struct {
 }
 
 func (b *BPF) PullPacketEvents(ctx context.Context, chanSize int, maxPacketSize int) (<-chan BpfPacketEventWithPayloadT, error) {
-	pageSize := os.Getpagesize()
-	log.Infof("pagesize is %d", pageSize)
-	perCPUBuffer := pageSize * 64
-	eventSize := int(unsafe.Sizeof(BpfPacketEventT{})) + maxPacketSize
-	if eventSize >= perCPUBuffer {
-		perCPUBuffer = perCPUBuffer * (1 + (eventSize / perCPUBuffer))
-	}
-	log.Infof("use %d as perCPUBuffer", perCPUBuffer)
+	var reader EventReader
+	if b.supportRingBuf && b.useRingBufSubmitSkb {
+		log.Info("use ringbuf for packet events")
+		ringbufReader, err := ringbuf.NewReader(b.objs.PacketEventsRingbuf)
+		if err != nil {
+			return nil, fmt.Errorf(": %w", err)
+		}
+		reader.ringbufReader = ringbufReader
+	} else {
+		log.Info("use perf for packet events")
+		pageSize := os.Getpagesize()
+		log.Infof("pagesize is %d", pageSize)
+		perCPUBuffer := pageSize * 64
+		eventSize := int(unsafe.Sizeof(BpfPacketEventT{})) + maxPacketSize
+		if eventSize >= perCPUBuffer {
+			perCPUBuffer = perCPUBuffer * (1 + (eventSize / perCPUBuffer))
+		}
+		log.Infof("use %d as perCPUBuffer", perCPUBuffer)
 
-	reader, err := perf.NewReader(b.objs.PacketEvents, perCPUBuffer)
-	if err != nil {
-		return nil, fmt.Errorf(": %w", err)
+		preader, err := perf.NewReader(b.objs.PacketEvents, perCPUBuffer)
+		if err != nil {
+			return nil, fmt.Errorf(": %w", err)
+		}
+		reader.perfReader = preader
 	}
+
 	ch := make(chan BpfPacketEventWithPayloadT, chanSize)
 	go func() {
 		defer close(ch)
 		defer reader.Close()
-		b.handlePacketEvents(ctx, reader, ch)
+		b.handlePacketEvents(ctx, &reader, ch)
 	}()
 
 	return ch, nil
 }
 
-func (b *BPF) handlePacketEvents(ctx context.Context, reader *perf.Reader, ch chan<- BpfPacketEventWithPayloadT) {
+func (b *BPF) handlePacketEvents(ctx context.Context, reader *EventReader, ch chan<- BpfPacketEventWithPayloadT) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -55,7 +79,7 @@ func (b *BPF) handlePacketEvents(ctx context.Context, reader *perf.Reader, ch ch
 
 		record, err := reader.Read()
 		if err != nil {
-			if errors.Is(err, perf.ErrClosed) {
+			if errors.Is(err, perf.ErrClosed) || errors.Is(err, ringbuf.ErrClosed) {
 				return
 			}
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
@@ -82,36 +106,49 @@ func parsePacketEvent(rawSample []byte) (*BpfPacketEventWithPayloadT, error) {
 	if err := binary.Read(bytes.NewBuffer(rawSample), binary.LittleEndian, &event.Meta); err != nil {
 		return nil, fmt.Errorf("parse meta: %w", err)
 	}
-	event.Payload = make([]byte, int(event.Meta.PacketSize))
+	event.Payload = make([]byte, int(event.Meta.PayloadLen))
 	copy(event.Payload[:], rawSample[unsafe.Sizeof(BpfPacketEventT{}):])
 	return &event, nil
 }
 
 func (b *BPF) PullExecEvents(ctx context.Context, chanSize int) (<-chan BpfExecEventT, error) {
-	pageSize := os.Getpagesize()
-	log.Infof("pagesize is %d", pageSize)
-	perCPUBuffer := pageSize * 64
-	eventSize := int(unsafe.Sizeof(BpfExecEventT{}))
-	if eventSize >= perCPUBuffer {
-		perCPUBuffer = perCPUBuffer * (1 + (eventSize / perCPUBuffer))
-	}
-	log.Infof("use %d as perCPUBuffer", perCPUBuffer)
+	var reader EventReader
 
-	reader, err := perf.NewReader(b.objs.ExecEvents, perCPUBuffer)
-	if err != nil {
-		return nil, fmt.Errorf(": %w", err)
+	if b.supportRingBuf {
+		log.Info("use ringbuf for exec events")
+		ringbufReader, err := ringbuf.NewReader(b.objs.ExecEventsRingbuf)
+		if err != nil {
+			return nil, fmt.Errorf(": %w", err)
+		}
+		reader.ringbufReader = ringbufReader
+	} else {
+		log.Info("use perf for exec events")
+		pageSize := os.Getpagesize()
+		log.Infof("pagesize is %d", pageSize)
+		perCPUBuffer := pageSize * 64
+		eventSize := int(unsafe.Sizeof(BpfExecEventT{}))
+		if eventSize >= perCPUBuffer {
+			perCPUBuffer = perCPUBuffer * (1 + (eventSize / perCPUBuffer))
+		}
+		log.Infof("use %d as perCPUBuffer", perCPUBuffer)
+
+		preader, err := perf.NewReader(b.objs.ExecEvents, perCPUBuffer)
+		if err != nil {
+			return nil, fmt.Errorf(": %w", err)
+		}
+		reader.perfReader = preader
 	}
 	ch := make(chan BpfExecEventT, chanSize)
 	go func() {
 		defer close(ch)
 		defer reader.Close()
-		b.handleExecEvents(ctx, reader, ch)
+		b.handleExecEvents(ctx, &reader, ch)
 	}()
 
 	return ch, nil
 }
 
-func (b *BPF) handleExecEvents(ctx context.Context, reader *perf.Reader, ch chan<- BpfExecEventT) {
+func (b *BPF) handleExecEvents(ctx context.Context, reader *EventReader, ch chan<- BpfExecEventT) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -121,7 +158,7 @@ func (b *BPF) handleExecEvents(ctx context.Context, reader *perf.Reader, ch chan
 
 		record, err := reader.Read()
 		if err != nil {
-			if errors.Is(err, perf.ErrClosed) {
+			if errors.Is(err, perf.ErrClosed) || errors.Is(err, ringbuf.ErrClosed) {
 				return
 			}
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
@@ -144,30 +181,44 @@ func (b *BPF) handleExecEvents(ctx context.Context, reader *perf.Reader, ch chan
 }
 
 func (b *BPF) PullGoKeyLogEvents(ctx context.Context, chanSize int) (<-chan BpfGoKeylogEventT, error) {
-	pageSize := os.Getpagesize()
-	log.Infof("pagesize is %d", pageSize)
-	perCPUBuffer := pageSize * 4
-	eventSize := int(unsafe.Sizeof(BpfGoKeylogEventT{}))
-	if eventSize >= perCPUBuffer {
-		perCPUBuffer = perCPUBuffer * (1 + (eventSize / perCPUBuffer))
-	}
-	log.Infof("use %d as perCPUBuffer", perCPUBuffer)
+	var reader EventReader
 
-	reader, err := perf.NewReader(b.objs.GoKeylogEvents, perCPUBuffer)
-	if err != nil {
-		return nil, fmt.Errorf(": %w", err)
+	if b.supportRingBuf {
+		log.Info("use ringbuf for go keylog events")
+		ringbufReader, err := ringbuf.NewReader(b.objs.GoKeylogEventsRingbuf)
+		if err != nil {
+			return nil, fmt.Errorf(": %w", err)
+		}
+		reader.ringbufReader = ringbufReader
+	} else {
+		log.Info("use perf for go keylog events")
+		pageSize := os.Getpagesize()
+		log.Infof("pagesize is %d", pageSize)
+		perCPUBuffer := pageSize * 4
+		eventSize := int(unsafe.Sizeof(BpfGoKeylogEventT{}))
+		if eventSize >= perCPUBuffer {
+			perCPUBuffer = perCPUBuffer * (1 + (eventSize / perCPUBuffer))
+		}
+		log.Infof("use %d as perCPUBuffer", perCPUBuffer)
+
+		preader, err := perf.NewReader(b.objs.GoKeylogEvents, perCPUBuffer)
+		if err != nil {
+			return nil, fmt.Errorf(": %w", err)
+		}
+		reader.perfReader = preader
 	}
+
 	ch := make(chan BpfGoKeylogEventT, chanSize)
 	go func() {
 		defer close(ch)
 		defer reader.Close()
-		b.handleGoKeyLogEvents(ctx, reader, ch)
+		b.handleGoKeyLogEvents(ctx, &reader, ch)
 	}()
 
 	return ch, nil
 }
 
-func (b *BPF) handleGoKeyLogEvents(ctx context.Context, reader *perf.Reader, ch chan<- BpfGoKeylogEventT) {
+func (b *BPF) handleGoKeyLogEvents(ctx context.Context, reader *EventReader, ch chan<- BpfGoKeylogEventT) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -177,7 +228,7 @@ func (b *BPF) handleGoKeyLogEvents(ctx context.Context, reader *perf.Reader, ch 
 
 		record, err := reader.Read()
 		if err != nil {
-			if errors.Is(err, perf.ErrClosed) {
+			if errors.Is(err, perf.ErrClosed) || errors.Is(err, ringbuf.ErrClosed) {
 				return
 			}
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
@@ -233,7 +284,7 @@ func (b *BPF) handleNewNetDeviceEvents(ctx context.Context, reader *perf.Reader,
 
 		record, err := reader.Read()
 		if err != nil {
-			if errors.Is(err, perf.ErrClosed) {
+			if errors.Is(err, perf.ErrClosed) || errors.Is(err, ringbuf.ErrClosed) {
 				return
 			}
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
@@ -300,7 +351,7 @@ func (b *BPF) handleNetDeviceChangeEvents(ctx context.Context, reader *perf.Read
 
 		record, err := reader.Read()
 		if err != nil {
-			if errors.Is(err, perf.ErrClosed) {
+			if errors.Is(err, perf.ErrClosed) || errors.Is(err, ringbuf.ErrClosed) {
 				return
 			}
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
@@ -369,7 +420,7 @@ func (b *BPF) handleMountEvents(ctx context.Context, reader *perf.Reader, ch cha
 
 		record, err := reader.Read()
 		if err != nil {
-			if errors.Is(err, perf.ErrClosed) {
+			if errors.Is(err, perf.ErrClosed) || errors.Is(err, ringbuf.ErrClosed) {
 				return
 			}
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
@@ -418,30 +469,44 @@ func parseExecEvent(rawSample []byte) (*BpfExecEventT, error) {
 }
 
 func (b *BPF) PullExitEvents(ctx context.Context, chanSize int) (<-chan BpfExitEventT, error) {
-	pageSize := os.Getpagesize()
-	log.Infof("pagesize is %d", pageSize)
-	perCPUBuffer := pageSize * 4
-	eventSize := int(unsafe.Sizeof(BpfExitEventT{}))
-	if eventSize >= perCPUBuffer {
-		perCPUBuffer = perCPUBuffer * (1 + (eventSize / perCPUBuffer))
-	}
-	log.Infof("use %d as perCPUBuffer", perCPUBuffer)
+	var reader EventReader
+	if b.supportRingBuf {
+		log.Info("use ringbuf for exit events")
+		ringbufReader, err := ringbuf.NewReader(b.objs.ExitEventsRingbuf)
+		if err != nil {
+			return nil, fmt.Errorf(": %w", err)
+		}
+		reader.ringbufReader = ringbufReader
+	} else {
+		log.Info("use perf for exit events")
 
-	reader, err := perf.NewReader(b.objs.ExitEvents, perCPUBuffer)
-	if err != nil {
-		return nil, fmt.Errorf(": %w", err)
+		pageSize := os.Getpagesize()
+		log.Infof("pagesize is %d", pageSize)
+		perCPUBuffer := pageSize * 4
+		eventSize := int(unsafe.Sizeof(BpfExitEventT{}))
+		if eventSize >= perCPUBuffer {
+			perCPUBuffer = perCPUBuffer * (1 + (eventSize / perCPUBuffer))
+		}
+		log.Infof("use %d as perCPUBuffer", perCPUBuffer)
+
+		preader, err := perf.NewReader(b.objs.ExitEvents, perCPUBuffer)
+		if err != nil {
+			return nil, fmt.Errorf(": %w", err)
+		}
+		reader.perfReader = preader
 	}
+
 	ch := make(chan BpfExitEventT, chanSize)
 	go func() {
 		defer close(ch)
 		defer reader.Close()
-		b.handleExitEvents(ctx, reader, ch)
+		b.handleExitEvents(ctx, &reader, ch)
 	}()
 
 	return ch, nil
 }
 
-func (b *BPF) handleExitEvents(ctx context.Context, reader *perf.Reader, ch chan<- BpfExitEventT) {
+func (b *BPF) handleExitEvents(ctx context.Context, reader *EventReader, ch chan<- BpfExitEventT) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -451,7 +516,7 @@ func (b *BPF) handleExitEvents(ctx context.Context, reader *perf.Reader, ch chan
 
 		record, err := reader.Read()
 		if err != nil {
-			if errors.Is(err, perf.ErrClosed) {
+			if errors.Is(err, perf.ErrClosed) || errors.Is(err, ringbuf.ErrClosed) {
 				return
 			}
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
@@ -479,4 +544,45 @@ func parseExitEvent(rawSample []byte) (*BpfExitEventT, error) {
 		return nil, fmt.Errorf("parse event: %w", err)
 	}
 	return &event, nil
+}
+
+func NewEventReader(perfReader *perf.Reader, ringbufReader *ringbuf.Reader) *EventReader {
+	return &EventReader{
+		perfReader:    perfReader,
+		ringbufReader: ringbufReader,
+	}
+}
+
+func (r *EventReader) Read() (*EventRecord, error) {
+	if r.perfReader != nil {
+		record, err := r.perfReader.Read()
+		if err != nil {
+			return nil, err
+		}
+		return &EventRecord{
+			RawSample:   record.RawSample,
+			LostSamples: record.LostSamples,
+		}, nil
+	}
+	if r.ringbufReader != nil {
+		record, err := r.ringbufReader.Read()
+		if err != nil {
+			return nil, err
+		}
+		return &EventRecord{
+			RawSample:   record.RawSample,
+			LostSamples: 0,
+		}, nil
+	}
+	return nil, errors.New("no reader")
+}
+
+func (r *EventReader) Close() error {
+	if r.perfReader != nil {
+		return r.perfReader.Close()
+	}
+	if r.ringbufReader != nil {
+		return r.ringbufReader.Close()
+	}
+	return nil
 }

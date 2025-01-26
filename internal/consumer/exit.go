@@ -2,6 +2,7 @@ package consumer
 
 import (
 	"context"
+	"github.com/mozillazg/ptcpdump/internal/log"
 	"sync"
 
 	"github.com/mozillazg/ptcpdump/bpf"
@@ -44,6 +45,7 @@ func (c *ExitEventConsumer) worker(ctx context.Context, ch <-chan bpf.BpfExitEve
 }
 
 func (c *ExitEventConsumer) handleExitEvent(et bpf.BpfExitEventT) {
+	log.Infof("new exit event: pid: %d", et.Pid)
 	c.pcache.MarkDead(int(et.Pid))
 }
 

@@ -23,7 +23,7 @@ var defaultLogger = log.Logger{
 var debugLogger = log.Logger{
 	Level:      log.WarnLevel,
 	Caller:     2,
-	TimeFormat: time.DateTime,
+	TimeFormat: time.RFC3339Nano,
 	Writer: &log.ConsoleWriter{
 		Formatter: func(w io.Writer, a *log.FormatterArgs) (int, error) {
 			suffix := ""

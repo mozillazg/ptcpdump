@@ -33,10 +33,12 @@ type BPF struct {
 	opts       Options
 	closeFuncs []func()
 
-	skipAttachCgroup bool
-	skipTcx          bool
-	isLegacyKernel   bool
-	report           *types.CountReport
+	skipAttachCgroup    bool
+	skipTcx             bool
+	isLegacyKernel      bool
+	supportRingBuf      bool
+	useRingBufSubmitSkb bool
+	report              *types.CountReport
 }
 
 type Options struct {
@@ -87,12 +89,14 @@ func NewBPF() (*BPF, error) {
 	}
 
 	bf := &BPF{
-		spec:             spec,
-		objs:             &BpfObjects{},
-		report:           &types.CountReport{},
-		isLegacyKernel:   legacyKernel,
-		skipAttachCgroup: skipAttachCgroup,
-		skipTcx:          !supportTcx(),
+		spec:                spec,
+		objs:                &BpfObjects{},
+		report:              &types.CountReport{},
+		isLegacyKernel:      legacyKernel,
+		skipAttachCgroup:    skipAttachCgroup,
+		skipTcx:             !supportTcx(),
+		supportRingBuf:      !legacyKernel && supportRingBuf(),
+		useRingBufSubmitSkb: canUseRingBufSubmitSkb(),
 	}
 
 	return bf, nil
@@ -112,6 +116,9 @@ func (b *BPF) Load(opts Options) error {
 	}
 	if len(opts.ifindexes) > 0 {
 		config.FilterIfindexEnable = 1
+	}
+	if b.useRingBufSubmitSkb {
+		config.UseRingbufSubmitSkb = 1
 	}
 	if opts.backend != types.NetHookBackendCgroupSkb {
 		b.disableCgroupSkb()
@@ -142,6 +149,7 @@ load:
 		IgnoreUnknownProgram:      true,
 		IgnoreNotSupportedProgram: true,
 		IgnoreUnknownVariable:     true,
+		IgnoreInvalidMap:          true,
 	})
 	if err != nil {
 		log.Infof("load and assign failed: %+v", err)
@@ -323,6 +331,7 @@ func (b *BPF) attachTcxHooks(ifindex int, egress, ingress bool) ([]func(), error
 	}
 
 	if egress {
+		log.Infof("attach tcx/egress hooks to ifindex %d", ifindex)
 		lk, err := link.AttachTCX(link.TCXOptions{
 			Interface: ifindex,
 			Program:   b.objs.TcxEgress,
@@ -337,6 +346,7 @@ func (b *BPF) attachTcxHooks(ifindex int, egress, ingress bool) ([]func(), error
 	}
 
 	if ingress {
+		log.Infof("attach tcx/ingress hooks to ifindex %d", ifindex)
 		lk, err := link.AttachTCX(link.TCXOptions{
 			Interface: ifindex,
 			Program:   b.objs.TcxIngress,

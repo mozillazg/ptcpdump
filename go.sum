@@ -183,8 +183,8 @@ github.com/mozillazg/cri-api v0.32.0-alpha.1.0.20241019013855-3dc36f8743df h1:90
 github.com/mozillazg/cri-api v0.32.0-alpha.1.0.20241019013855-3dc36f8743df/go.mod h1:ca9lKDUa9PmUGVDSSetDQqgf0dyk/NW8u+MpJo7JaYA=
 github.com/mozillazg/cri-client v0.31.0-alpha.0.0.20241019023238-87687176fd67 h1:M4+V89TNUGmRgSJZcH2nvotyqnFkmDl+MGApFoZbJY0=
 github.com/mozillazg/cri-client v0.31.0-alpha.0.0.20241019023238-87687176fd67/go.mod h1:pFm23AAi/gIlW9FGrWPTPnGe1xsyGHPFFO/zezc4w90=
-github.com/mozillazg/ebpf v0.17.2-0.20250118135027-62b13edacbea h1:s8OLenj15Oz0UbrFwwJrTUuQD+U0j4glAsybRufNN8s=
-github.com/mozillazg/ebpf v0.17.2-0.20250118135027-62b13edacbea/go.mod h1:vay2FaYSmIlv3r8dNACd4mW/OCaZLJKJOo+IHBvCIO8=
+github.com/mozillazg/ebpf v0.17.2-0.20250125052608-c310b16eb51c h1:pl6FQF4q0BF8KNYPrnuBuSRqtx8RbXK4lr4gq/lZdRE=
+github.com/mozillazg/ebpf v0.17.2-0.20250125052608-c310b16eb51c/go.mod h1:vay2FaYSmIlv3r8dNACd4mW/OCaZLJKJOo+IHBvCIO8=
 github.com/mozillazg/gopacket v0.0.0-20241026043817-048341de5231 h1:uvhf0oGPfJ24Lc5/N2ysh9sQc71Pog67zxKiLVS4/Qg=
 github.com/mozillazg/gopacket v0.0.0-20241026043817-048341de5231/go.mod h1:WnFrU1Xkf5lWKV38uKNR9+yYtppn+ZYzOyNqMeH4oNE=
 github.com/mozillazg/pktdump v0.0.9-0.20241102131745-63c34f34f0d1 h1:kVgiW9P9tfqPXrIU/ZKC8XwkhHkri3s439D+RqSpF6g=

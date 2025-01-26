@@ -2,6 +2,7 @@ package consumer
 
 import (
 	"context"
+	"github.com/mozillazg/ptcpdump/internal/utils"
 	"sync"
 
 	"github.com/mozillazg/ptcpdump/bpf"
@@ -46,6 +47,7 @@ func (c *ExecEventConsumer) worker(ctx context.Context, ch <-chan bpf.BpfExecEve
 }
 
 func (c *ExecEventConsumer) handleExecEvent(et bpf.BpfExecEventT) {
+	log.Infof("new exec event: pid: %d, comm: %s", et.Meta.Pid, utils.GoString(et.Filename[:]))
 	e, err := event.ParseProcessExecEvent(et)
 	if err != nil {
 		log.Errorf("[ExecEventConsumer] parse event failed: %s", err)

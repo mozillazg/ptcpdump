@@ -42,7 +42,7 @@ github.com/Microsoft/hcsshim/internal/wclayer
 github.com/Microsoft/hcsshim/internal/winapi
 github.com/Microsoft/hcsshim/osversion
 github.com/Microsoft/hcsshim/pkg/ociwclayer
-# github.com/cilium/ebpf v0.16.0 => github.com/mozillazg/ebpf v0.17.2-0.20250118135027-62b13edacbea
+# github.com/cilium/ebpf v0.16.0 => github.com/mozillazg/ebpf v0.17.2-0.20250125052608-c310b16eb51c
 ## explicit; go 1.22
 github.com/cilium/ebpf
 github.com/cilium/ebpf/asm
@@ -63,6 +63,7 @@ github.com/cilium/ebpf/internal/tracefs
 github.com/cilium/ebpf/internal/unix
 github.com/cilium/ebpf/link
 github.com/cilium/ebpf/perf
+github.com/cilium/ebpf/ringbuf
 github.com/cilium/ebpf/rlimit
 # github.com/cloudflare/cbpfc v0.0.0-20230809125630-31aa294050ff
 ## explicit; go 1.19
@@ -601,7 +602,7 @@ k8s.io/utils/exec
 ## explicit; go 1.12
 rsc.io/binaryregexp
 rsc.io/binaryregexp/syntax
-# github.com/cilium/ebpf => github.com/mozillazg/ebpf v0.17.2-0.20250118135027-62b13edacbea
+# github.com/cilium/ebpf => github.com/mozillazg/ebpf v0.17.2-0.20250125052608-c310b16eb51c
 # github.com/gopacket/gopacket => github.com/mozillazg/gopacket v0.0.0-20241026043817-048341de5231
 # github.com/x-way/pktdump => github.com/mozillazg/pktdump v0.0.9-0.20241102131745-63c34f34f0d1
 # k8s.io/cri-api => github.com/mozillazg/cri-api v0.32.0-alpha.1.0.20241019013855-3dc36f8743df

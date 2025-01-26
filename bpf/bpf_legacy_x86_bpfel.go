@@ -87,7 +87,10 @@ type bpf_legacyMapSpecs struct {
 	EnterMountBufs        *ebpf.MapSpec `ebpf:"enter_mount_bufs"`
 	ExecEventStack        *ebpf.MapSpec `ebpf:"exec_event_stack"`
 	ExecEvents            *ebpf.MapSpec `ebpf:"exec_events"`
+	ExecEventsRingbuf     *ebpf.MapSpec `ebpf:"exec_events_ringbuf"`
+	ExitEventTmp          *ebpf.MapSpec `ebpf:"exit_event_tmp"`
 	ExitEvents            *ebpf.MapSpec `ebpf:"exit_events"`
+	ExitEventsRingbuf     *ebpf.MapSpec `ebpf:"exit_events_ringbuf"`
 	FilterByKernelCount   *ebpf.MapSpec `ebpf:"filter_by_kernel_count"`
 	FilterIfindexMap      *ebpf.MapSpec `ebpf:"filter_ifindex_map"`
 	FilterMntnsMap        *ebpf.MapSpec `ebpf:"filter_mntns_map"`
@@ -97,7 +100,9 @@ type bpf_legacyMapSpecs struct {
 	FilterUidMap          *ebpf.MapSpec `ebpf:"filter_uid_map"`
 	FlowPidMap            *ebpf.MapSpec `ebpf:"flow_pid_map"`
 	GoKeylogBufStorage    *ebpf.MapSpec `ebpf:"go_keylog_buf_storage"`
+	GoKeylogEventTmp      *ebpf.MapSpec `ebpf:"go_keylog_event_tmp"`
 	GoKeylogEvents        *ebpf.MapSpec `ebpf:"go_keylog_events"`
+	GoKeylogEventsRingbuf *ebpf.MapSpec `ebpf:"go_keylog_events_ringbuf"`
 	MountEventStack       *ebpf.MapSpec `ebpf:"mount_event_stack"`
 	MountEvents           *ebpf.MapSpec `ebpf:"mount_events"`
 	NatFlowMap            *ebpf.MapSpec `ebpf:"nat_flow_map"`
@@ -106,6 +111,7 @@ type bpf_legacyMapSpecs struct {
 	NewNetdeviceEvents    *ebpf.MapSpec `ebpf:"new_netdevice_events"`
 	PacketEventStack      *ebpf.MapSpec `ebpf:"packet_event_stack"`
 	PacketEvents          *ebpf.MapSpec `ebpf:"packet_events"`
+	PacketEventsRingbuf   *ebpf.MapSpec `ebpf:"packet_events_ringbuf"`
 	SockCookiePidMap      *ebpf.MapSpec `ebpf:"sock_cookie_pid_map"`
 	TidNetdeviceMap       *ebpf.MapSpec `ebpf:"tid_netdevice_map"`
 }
@@ -149,7 +155,10 @@ type bpf_legacyMaps struct {
 	EnterMountBufs        *ebpf.Map `ebpf:"enter_mount_bufs"`
 	ExecEventStack        *ebpf.Map `ebpf:"exec_event_stack"`
 	ExecEvents            *ebpf.Map `ebpf:"exec_events"`
+	ExecEventsRingbuf     *ebpf.Map `ebpf:"exec_events_ringbuf"`
+	ExitEventTmp          *ebpf.Map `ebpf:"exit_event_tmp"`
 	ExitEvents            *ebpf.Map `ebpf:"exit_events"`
+	ExitEventsRingbuf     *ebpf.Map `ebpf:"exit_events_ringbuf"`
 	FilterByKernelCount   *ebpf.Map `ebpf:"filter_by_kernel_count"`
 	FilterIfindexMap      *ebpf.Map `ebpf:"filter_ifindex_map"`
 	FilterMntnsMap        *ebpf.Map `ebpf:"filter_mntns_map"`
@@ -159,7 +168,9 @@ type bpf_legacyMaps struct {
 	FilterUidMap          *ebpf.Map `ebpf:"filter_uid_map"`
 	FlowPidMap            *ebpf.Map `ebpf:"flow_pid_map"`
 	GoKeylogBufStorage    *ebpf.Map `ebpf:"go_keylog_buf_storage"`
+	GoKeylogEventTmp      *ebpf.Map `ebpf:"go_keylog_event_tmp"`
 	GoKeylogEvents        *ebpf.Map `ebpf:"go_keylog_events"`
+	GoKeylogEventsRingbuf *ebpf.Map `ebpf:"go_keylog_events_ringbuf"`
 	MountEventStack       *ebpf.Map `ebpf:"mount_event_stack"`
 	MountEvents           *ebpf.Map `ebpf:"mount_events"`
 	NatFlowMap            *ebpf.Map `ebpf:"nat_flow_map"`
@@ -168,6 +179,7 @@ type bpf_legacyMaps struct {
 	NewNetdeviceEvents    *ebpf.Map `ebpf:"new_netdevice_events"`
 	PacketEventStack      *ebpf.Map `ebpf:"packet_event_stack"`
 	PacketEvents          *ebpf.Map `ebpf:"packet_events"`
+	PacketEventsRingbuf   *ebpf.Map `ebpf:"packet_events_ringbuf"`
 	SockCookiePidMap      *ebpf.Map `ebpf:"sock_cookie_pid_map"`
 	TidNetdeviceMap       *ebpf.Map `ebpf:"tid_netdevice_map"`
 }
@@ -178,7 +190,10 @@ func (m *bpf_legacyMaps) Close() error {
 		m.EnterMountBufs,
 		m.ExecEventStack,
 		m.ExecEvents,
+		m.ExecEventsRingbuf,
+		m.ExitEventTmp,
 		m.ExitEvents,
+		m.ExitEventsRingbuf,
 		m.FilterByKernelCount,
 		m.FilterIfindexMap,
 		m.FilterMntnsMap,
@@ -188,7 +203,9 @@ func (m *bpf_legacyMaps) Close() error {
 		m.FilterUidMap,
 		m.FlowPidMap,
 		m.GoKeylogBufStorage,
+		m.GoKeylogEventTmp,
 		m.GoKeylogEvents,
+		m.GoKeylogEventsRingbuf,
 		m.MountEventStack,
 		m.MountEvents,
 		m.NatFlowMap,
@@ -197,6 +214,7 @@ func (m *bpf_legacyMaps) Close() error {
 		m.NewNetdeviceEvents,
 		m.PacketEventStack,
 		m.PacketEvents,
+		m.PacketEventsRingbuf,
 		m.SockCookiePidMap,
 		m.TidNetdeviceMap,
 	)
