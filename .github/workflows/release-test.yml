@@ -21,7 +21,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a # v5
         with:
-          go-version: '1.23.2'
+          go-version: '1.23.6'
 
       - name: Install govulncheck
         run: go install golang.org/x/vuln/cmd/govulncheck@latest
