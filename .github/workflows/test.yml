@@ -73,13 +73,21 @@ jobs:
           cd kernel-5.14.0
           tar xf linux-5.14.0-427.42.1.el9_4.tar.xz
           cd linux-5.14.0-427.42.1.el9_4
+
           patch -p1 < /home/runner/work/ptcpdump/ptcpdump/.github/workflows/almalinux.patch
+          export EXTRA_CFLAGS="-w"
+
           vng -v -b --config /home/runner/work/ptcpdump/ptcpdump/.github/workflows/kernel-x86_64-rhel.config \
                  CONFIG_NET_9P=n CONFIG_NET_9P_VIRTIO=n CONFIG_NET_9P_XEN=n \
                  CONFIG_NET_9P_RDMA=n CONFIG_NET_9P_DEBUG=n CONFIG_9P_FS=n CONFIG_9P_FS_POSIX_ACL=n CONFIG_9P_FS_SECURITY=n \
                  CONFIG_DRM=n CONFIG_FB=n CONFIG_DRM_AMDGPU=n CONFIG_DRM_NOUVEAU=n CONFIG_DRM_I915=n \
                  CONFIG_DRM_VIRTIO_GPU=n CONFIG_VGA_CONSOLE=n CONFIG_USB_SUPPORT=n CONFIG_DEBUG_INFO=y \
-                 CONFIG_KASAN=n CONFIG_UBSAN=n CONFIG_LOCKDEP=n CONFIG_EXPERIMENTAL=n
+                 CONFIG_KASAN=n CONFIG_UBSAN=n CONFIG_LOCKDEP=n CONFIG_EXPERIMENTAL=n \
+                 'KBUILD_CFLAGS += -Wno-array-bounds' \
+                 'KBUILD_CFLAGS += -Wno-incompatible-pointer-types' \
+                 'KBUILD_CFLAGS += -Wno-error' \
+                 'KBUILD_CFLAGS += -Wno-error=overflow' \
+                 'KBUILD_CFLAGS += -w'
 
           vng -v --net user --ssh --rwdir=/host=/tmp -- /host/ptcpdump --version
 
