@@ -47,13 +47,18 @@ jobs:
       - name: build AlmaLinux
         run: |
           set -x
-          sudo apt install -y virtme-ng alien
+          sudo apt install -y virtme-ng alien qemu-kvm \
+            libncurses-dev gawk flex bison openssl libssl-dev dkms libelf-dev \
+            libudev-dev libpci-dev libiberty-dev autoconf llvm
+
           mkdir linux && cd linux
-          wget https://raw.repo.almalinux.org/vault/9.4/BaseOS/Source/Packages/kernel-5.14.0-427.42.1.el9_4.src.rpm
-          alien --scripts --generate kernel-5.14.0-427.42.1.el9_4.src.rpm
+          wget https://dl.rockylinux.org/pub/rocky/9/BaseOS/source/tree/Packages/k/kernel-5.14.0-503.22.1.el9_5.src.rpm
+          alien --scripts --generate kernel-5.14.0-503.22.1.el9_5.src.rpm
           cd kernel-5.14.0
+          tar xf linux-5.14.0-503.22.1.el9_5.tar.xz
+          cd linux-5.14.0-503.22.1.el9_5
           vng -v -b --config ../kernel-x86_64-rhel.config
-          vng --net user --ssh --rwdir=/tmp=/tmp
+          vng --net user --ssh --rwdir=/host=/tmp
 
       - name: Retrieve stored ptcpdump executable
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4
@@ -66,12 +71,12 @@ jobs:
           set -ex
           chmod +x ./ptcpdump/ptcpdump
           cp ./ptcpdump/ptcpdump /tmp/ptcpdump
-          cd linux/kernel-5.14.0
-          ssh -p 2222 -o "StrictHostKeyChecking=no" root@localhost "cd /tmp && ./ptcpdump --version"
+          ssh -p 2222 -o "StrictHostKeyChecking=no" root@localhost "/host/ptcpdump --version"
 
 
   run-with-docker:
     runs-on: ubuntu-latest
+    needs: test-almaLinux
     timeout-minutes: 5
 
     steps:
@@ -83,7 +88,7 @@ jobs:
 
   test-backend:
     runs-on: ubuntu-latest
-    needs: build
+    needs: test-almaLinux
     timeout-minutes: 5
 
     steps:
@@ -104,7 +109,7 @@ jobs:
 
   e2e-test:
     name: e2e-test
-    needs: build
+    needs: test-almaLinux
     strategy:
       fail-fast: false
       matrix:
