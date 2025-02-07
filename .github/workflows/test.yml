@@ -36,6 +36,40 @@ jobs:
         name: ptcpdump
         path: ptcpdump
 
+
+  test-almaLinux:
+    runs-on: ubuntu-latest
+    needs: build
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - name: build AlmaLinux
+        run: |
+          set -x
+          sudo apt install -y virtme-ng alien
+          mkdir linux && cd linux
+          wget https://raw.repo.almalinux.org/vault/9.4/BaseOS/Source/Packages/kernel-5.14.0-427.42.1.el9_4.src.rpm
+          alien --scripts --generate kernel-5.14.0-427.42.1.el9_4.src.rpm
+          cd kernel-5.14.0
+          vng -v -b --config ../kernel-x86_64-rhel.config
+          vng --net user --ssh --rwdir=/tmp=/tmp
+
+      - name: Retrieve stored ptcpdump executable
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4
+        with:
+          name: ptcpdump
+          path: ptcpdump
+
+      - name: test
+        run: |
+          set -ex
+          chmod +x ./ptcpdump/ptcpdump
+          cp ./ptcpdump/ptcpdump /tmp/ptcpdump
+          cd linux/kernel-5.14.0
+          ssh -p 2222 -o "StrictHostKeyChecking=no" root@localhost "cd /tmp && ./ptcpdump --version"
+
+
   run-with-docker:
     runs-on: ubuntu-latest
     timeout-minutes: 5
