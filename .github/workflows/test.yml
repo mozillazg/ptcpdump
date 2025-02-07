@@ -49,7 +49,10 @@ jobs:
           set -x
           sudo apt install -y virtme-ng alien qemu-kvm \
             libncurses-dev gawk flex bison openssl libssl-dev dkms libelf-dev \
-            libudev-dev libpci-dev libiberty-dev autoconf llvm
+            libudev-dev libpci-dev libiberty-dev autoconf llvm ccache
+          
+          export CC="ccache gcc"
+          export CXX="ccache g++"
 
           mkdir linux && cd linux
           wget https://raw.repo.almalinux.org/vault/9.4/BaseOS/Source/Packages/kernel-5.14.0-427.42.1.el9_4.src.rpm
