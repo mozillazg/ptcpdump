@@ -3,18 +3,18 @@ module github.com/mozillazg/ptcpdump
 go 1.23.0
 
 require (
-	github.com/cilium/ebpf v0.16.0
+	github.com/cilium/ebpf v0.17.2
 	github.com/containerd/containerd v1.7.25
 	github.com/containerd/typeurl/v2 v2.2.3
-	github.com/docker/docker v27.4.1+incompatible
+	github.com/docker/docker v27.5.1+incompatible
 	github.com/florianl/go-tc v0.4.4
 	github.com/gopacket/gopacket v1.3.1
 	github.com/jschwinger233/elibpcap v1.0.0
 	github.com/phuslu/log v1.0.113
-	github.com/shirou/gopsutil/v4 v4.24.12
+	github.com/shirou/gopsutil/v4 v4.25.1
 	github.com/spf13/cobra v1.8.1
 	github.com/x-way/pktdump v0.0.6
-	golang.org/x/sys v0.28.0
+	golang.org/x/sys v0.30.0
 )
 
 require (
@@ -26,9 +26,9 @@ require (
 	github.com/smira/go-xz v0.1.0
 	github.com/stretchr/testify v1.10.0
 	github.com/vishvananda/netns v0.0.5
-	golang.org/x/arch v0.11.0
-	k8s.io/cri-api v0.31.5
-	k8s.io/cri-client v0.31.5
+	golang.org/x/arch v0.14.0
+	k8s.io/cri-api v0.32.1
+	k8s.io/cri-client v0.32.1
 	k8s.io/klog/v2 v2.130.1
 )
 
@@ -49,7 +49,7 @@ require (
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-events v0.0.0-20190806004212-e31b211e4f1c // indirect
 	github.com/docker/go-units v0.5.0 // indirect
-	github.com/ebitengine/purego v0.8.1 // indirect
+	github.com/ebitengine/purego v0.8.2 // indirect
 	github.com/elliotchance/orderedmap v1.4.0 // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -105,7 +105,7 @@ require (
 )
 
 replace (
-	github.com/cilium/ebpf => github.com/mozillazg/ebpf v0.17.2-0.20250125052608-c310b16eb51c
+	github.com/cilium/ebpf => github.com/mozillazg/ebpf v0.17.3-0.20250207013525-5746abfb2b20
 	// github.com/cilium/ebpf => ../../cilium/ebpf
 	github.com/gopacket/gopacket => github.com/mozillazg/gopacket v0.0.0-20241026043817-048341de5231
 	// github.com/gopacket/gopacket => ../../gopacket/gopacket
