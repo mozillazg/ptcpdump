@@ -57,6 +57,7 @@ jobs:
           cd kernel-5.14.0
           tar xf linux-5.14.0-427.42.1.el9_4.tar.xz
           cd linux-5.14.0-427.42.1.el9_4
+          patch -p1 < /home/runner/work/ptcpdump/ptcpdump/.github/workflows/overlayfs.patch
           vng -v -b --config /home/runner/work/ptcpdump/ptcpdump/.github/workflows/kernel-x86_64-rhel.config
           vng --net user --ssh --rwdir=/host=/tmp
 
