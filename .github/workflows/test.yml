@@ -57,8 +57,9 @@ jobs:
           cd kernel-5.14.0
           tar xf linux-5.14.0-427.42.1.el9_4.tar.xz
           cd linux-5.14.0-427.42.1.el9_4
-          patch -p1 < /home/runner/work/ptcpdump/ptcpdump/.github/workflows/overlayfs.patch
-          vng -v -b --config /home/runner/work/ptcpdump/ptcpdump/.github/workflows/kernel-x86_64-rhel.config
+          patch -p1 < /home/runner/work/ptcpdump/ptcpdump/.github/workflows/almalinux.patch
+          vng -v -b --config /home/runner/work/ptcpdump/ptcpdump/.github/workflows/kernel-x86_64-rhel.config \
+            CONFIG_9P_FS=n CONFIG_NET_9P=n CONFIG_9P_FS_POSIX_ACL=n CONFIG_9P_FSCACHE=n CONFIG_9P_FS_SECURITY=n CONFIG_NET_9P_VIRTIO=n
           vng --net user --ssh --rwdir=/host=/tmp
 
       - name: Retrieve stored ptcpdump executable

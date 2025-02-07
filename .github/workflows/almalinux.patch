@@ -1,3 +1,16 @@
+diff --git a/fs/9p/Makefile b/fs/9p/Makefile
+index e7800a5c7..2e638ead4 100644
+--- a/fs/9p/Makefile
++++ b/fs/9p/Makefile
+@@ -1,6 +1,8 @@
+ # SPDX-License-Identifier: GPL-2.0
+ obj-$(CONFIG_9P_FS) := 9p.o
+ 
++ccflags-y += -Wno-incompatible-pointer-types
++
+ 9p-objs := \
+ 	vfs_super.o \
+ 	vfs_inode.o \
 diff --git a/fs/overlayfs/Makefile b/fs/overlayfs/Makefile
 index 408d8f5e0..3fecd2e4c 100644
 --- a/fs/overlayfs/Makefile
