@@ -44,6 +44,19 @@ jobs:
 
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Retrieve stored ptcpdump executable
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4
+        with:
+          name: ptcpdump
+          path: ptcpdump
+
+      - name: test
+        run: |
+          set -ex
+          chmod +x ./ptcpdump/ptcpdump
+          cp ./ptcpdump/ptcpdump /tmp/ptcpdump
+
       - name: build AlmaLinux
         run: |
           set -x
@@ -61,21 +74,22 @@ jobs:
           tar xf linux-5.14.0-427.42.1.el9_4.tar.xz
           cd linux-5.14.0-427.42.1.el9_4
           patch -p1 < /home/runner/work/ptcpdump/ptcpdump/.github/workflows/almalinux.patch
-          vng -v -b --config /home/runner/work/ptcpdump/ptcpdump/.github/workflows/kernel-x86_64-rhel.config
-          vng --net user --ssh --rwdir=/host=/tmp
+          vng -v -b --config /home/runner/work/ptcpdump/ptcpdump/.github/workflows/kernel-x86_64-rhel.config \
+                 CONFIG_NET_9P=n CONFIG_NET_9P_VIRTIO=n CONFIG_NET_9P_XEN=n \
+                 CONFIG_NET_9P_RDMA=n CONFIG_NET_9P_DEBUG=n CONFIG_9P_FS=n CONFIG_9P_FS_POSIX_ACL=n CONFIG_9P_FS_SECURITY=n \
+                 CONFIG_DRM=n CONFIG_FB=n CONFIG_DRM_AMDGPU=n CONFIG_DRM_NOUVEAU=n CONFIG_DRM_I915=n \
+                 CONFIG_DRM_VIRTIO_GPU=n CONFIG_VGA_CONSOLE=n CONFIG_USB_SUPPORT=n CONFIG_DEBUG_INFO=y \
+                 CONFIG_KASAN=n CONFIG_UBSAN=n CONFIG_LOCKDEP=n CONFIG_EXPERIMENTAL=n
 
-      - name: Retrieve stored ptcpdump executable
-        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4
-        with:
-          name: ptcpdump
-          path: ptcpdump
+          vng -v --net user --ssh --rwdir=/host=/tmp -- /host/ptcpdump --version
 
-      - name: test
-        run: |
-          set -ex
-          chmod +x ./ptcpdump/ptcpdump
-          cp ./ptcpdump/ptcpdump /tmp/ptcpdump
-          ssh -p 2222 -o "StrictHostKeyChecking=no" root@localhost "/host/ptcpdump --version"
+      #
+      # - name: test
+      #   run: |
+      #     set -ex
+      #     chmod +x ./ptcpdump/ptcpdump
+      #     cp ./ptcpdump/ptcpdump /tmp/ptcpdump
+      #     ssh -p 2222 -o "StrictHostKeyChecking=no" root@localhost "/host/ptcpdump --version"
 
 
   run-with-docker:
