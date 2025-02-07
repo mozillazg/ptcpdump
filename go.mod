@@ -105,7 +105,7 @@ require (
 )
 
 replace (
-	github.com/cilium/ebpf => github.com/mozillazg/ebpf v0.17.2-0.20250125052608-c310b16eb51c
+	github.com/cilium/ebpf => github.com/mozillazg/ebpf v0.17.3-0.20250207013525-5746abfb2b20
 	// github.com/cilium/ebpf => ../../cilium/ebpf
 	github.com/gopacket/gopacket => github.com/mozillazg/gopacket v0.0.0-20241026043817-048341de5231
 	// github.com/gopacket/gopacket => ../../gopacket/gopacket
