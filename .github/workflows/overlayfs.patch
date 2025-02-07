@@ -1,0 +1,13 @@
+diff --git a/fs/overlayfs/Makefile b/fs/overlayfs/Makefile
+index 408d8f5e0..3fecd2e4c 100644
+--- a/fs/overlayfs/Makefile
++++ b/fs/overlayfs/Makefile
+@@ -3,6 +3,8 @@
+ # Makefile for the overlay filesystem.
+ #
+ 
++ccflags-y += -Wno-array-bounds
++
+ obj-$(CONFIG_OVERLAY_FS) += overlay.o
+ 
+ overlay-objs := super.o namei.o util.o inode.o file.o dir.o readdir.o \
