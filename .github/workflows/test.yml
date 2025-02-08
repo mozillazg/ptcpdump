@@ -83,7 +83,7 @@ jobs:
                  CONFIG_DRM=n CONFIG_FB=n CONFIG_DRM_AMDGPU=n CONFIG_DRM_NOUVEAU=n CONFIG_DRM_I915=n \
                  CONFIG_DRM_VIRTIO_GPU=n CONFIG_VGA_CONSOLE=n CONFIG_USB_SUPPORT=n CONFIG_DEBUG_INFO=y \
                  CONFIG_KASAN=n CONFIG_UBSAN=n CONFIG_LOCKDEP=n CONFIG_EXPERIMENTAL=n \
-                 KBUILD_CFLAGS=-w
+                 CONFIG_INTEL_TDX_GUEST=n KBUILD_CFLAGS=-w
 
           vng -v --net user --ssh --rwdir=/host=/tmp -- /host/ptcpdump --version
 
