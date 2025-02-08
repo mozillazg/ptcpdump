@@ -64,8 +64,8 @@ jobs:
             libncurses-dev gawk flex bison openssl libssl-dev dkms libelf-dev \
             libudev-dev libpci-dev libiberty-dev autoconf llvm ccache
           
-          export CC="ccache gcc"
-          export CXX="ccache g++"
+          # export CC="ccache gcc"
+          # export CXX="ccache g++"
 
           mkdir linux && cd linux
           wget https://raw.repo.almalinux.org/vault/9.4/BaseOS/Source/Packages/kernel-5.14.0-427.42.1.el9_4.src.rpm
@@ -83,7 +83,8 @@ jobs:
                  CONFIG_DRM=n CONFIG_FB=n CONFIG_DRM_AMDGPU=n CONFIG_DRM_NOUVEAU=n CONFIG_DRM_I915=n \
                  CONFIG_DRM_VIRTIO_GPU=n CONFIG_VGA_CONSOLE=n CONFIG_USB_SUPPORT=n CONFIG_DEBUG_INFO=y \
                  CONFIG_KASAN=n CONFIG_UBSAN=n CONFIG_LOCKDEP=n CONFIG_EXPERIMENTAL=n \
-                 CONFIG_INTEL_TDX_GUEST=n KBUILD_CFLAGS=-w
+                 CONFIG_INTEL_TDX_GUEST=n CONFIG_TDX_GUEST_DRIVER=n CONFIG_EFI_COCO_SECRET=n \
+                 KBUILD_CFLAGS=-w
 
           vng -v --net user --ssh --rwdir=/host=/tmp -- /host/ptcpdump --version
 
