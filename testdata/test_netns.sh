@@ -30,7 +30,7 @@ function setup_netns() {
 
 function test_ptcpdump_normal() {
   local LNAME="${LNAME}.normal"
-  timeout 30s ${CMD} -c 4 -i any --netns ${NETNS1} --netns ${NETNS2} -v --print -w "${FNAME}" \
+  timeout 30s ${CMD} -c 4 -i any ${PTCPDUMP_EXTRA_ARGS} --netns ${NETNS1} --netns ${NETNS2} -v --print -w "${FNAME}" \
       'icmp and host 192.168.64.2' | tee "${LNAME}" &
   sleep 10
   ping -c 2 1.1.1.1 &>/dev/null || true &

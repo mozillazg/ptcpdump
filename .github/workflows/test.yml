@@ -47,33 +47,15 @@ jobs:
         run: |
             bash testdata/test_run_with_docker.sh "quay.io/ptcpdump/ptcpdump:latest"
 
-  test-backend:
-    runs-on: ubuntu-latest
-    needs: build
-    timeout-minutes: 5
-
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-      - name: Retrieve stored ptcpdump executable
-        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4
-        with:
-          name: ptcpdump
-          path: ptcpdump
-
-      - name: test cgroup-skb
-        run: |
-          set -ex
-          chmod +x ./ptcpdump/ptcpdump
-          sudo bash testdata/test_cgroup_skb_base_pcap.sh ./ptcpdump/ptcpdump
-          sudo bash testdata/test_cgroup_skb_base_pcapng.sh ./ptcpdump/ptcpdump
-          sudo bash testdata/test_cgroup_skb_filter_ifindex.sh ./ptcpdump/ptcpdump
-
   e2e-test:
     name: e2e-test
     needs: build
     strategy:
       fail-fast: false
       matrix:
+        backend:
+          - 'tc'
+          - 'cgroup-skb'
         kernel:
           # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
           - '4.19-20241031.113911'
@@ -97,6 +79,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - run: |
+          if [ "${{ matrix.backend }}" = "tc" ]; then
+            PTCPDUMP_EXTRA_ARGS=''
+          else
+            PTCPDUMP_EXTRA_ARGS='--backend cgroup-skb'
+          fi
+          echo "PTCPDUMP_EXTRA_ARGS=${PTCPDUMP_EXTRA_ARGS}" >> $GITHUB_ENV
 
       - name: Retrieve stored ptcpdump executable
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4
@@ -144,58 +134,58 @@ jobs:
             # btf_file=$(find /host/ -path "*btf*" -type f)
             # sudo cp $btf_file /var/lib/ptcpdump/btf/vmlinux
 
-      - name: Test default
+      - name: Test default (ping)
         uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
+        if: ${{ !startsWith(matrix.backend, 'cgroup-skb') }}
         with:
           provision: 'false'
           cmd: |
             set -ex
-            uname -a
-            cat /etc/issue
+            export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
 
             bash /host/testdata/test_default.sh /host/ptcpdump/ptcpdump
 
-      - name: Test base
+      - name: Test base (curl)
         uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
+        if: ${{ ( !( (startsWith(matrix.backend, 'cgroup-skb') && (startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) ) ) ) }}
         with:
           provision: 'false'
           cmd: |
             set -ex
-            uname -a
-            cat /etc/issue
+            export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
 
             bash /host/testdata/test_base.sh /host/ptcpdump/ptcpdump
 
       - name: Test parent info
         uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
+        if: ${{ ( !( (startsWith(matrix.backend, 'cgroup-skb') && (startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) ) ) ) }}
         with:
           provision: 'false'
           cmd: |
             set -ex
-            uname -a
-            cat /etc/issue
+            export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
 
             bash /host/testdata/test_parent_info.sh /host/ptcpdump/ptcpdump
 
       - name: Test filter by process name
         uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
+        if: ${{ ( !( (startsWith(matrix.backend, 'cgroup-skb') && (startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) ) ) ) }}
         with:
           provision: 'false'
           cmd: |
             set -ex
-            uname -a
-            cat /etc/issue
+            export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
 
             bash /host/testdata/test_pname_filter.sh /host/ptcpdump/ptcpdump
 
       - name: Test filter by process id
         uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
+        if: ${{ ( !( (startsWith(matrix.backend, 'cgroup-skb') && (startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) ) ) ) }}
         with:
           provision: 'false'
           cmd: |
             set -ex
-            uname -a
-            cat /etc/issue
+            export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
 
             bash /host/testdata/test_pid_filter.sh /host/ptcpdump/ptcpdump
 
@@ -205,8 +195,7 @@ jobs:
           provision: 'false'
           cmd: |
             set -ex
-            uname -a
-            cat /etc/issue
+            export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
 
             bash /host/testdata/test_read_pcap.sh /host/ptcpdump/ptcpdump
 
@@ -216,8 +205,7 @@ jobs:
           provision: 'false'
           cmd: |
             set -ex
-            uname -a
-            cat /etc/issue
+            export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
 
             bash /host/testdata/test_write_pcap.sh /host/ptcpdump/ptcpdump
 
@@ -227,74 +215,76 @@ jobs:
           provision: 'false'
           cmd: |
             set -ex
-            uname -a
-            cat /etc/issue
+            export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
 
             bash /host/testdata/test_write_stdout.sh /host/ptcpdump/ptcpdump
 
       - name: Test exist connections
         uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
+        if: ${{ ( !( (startsWith(matrix.backend, 'cgroup-skb') && (startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) ) ) ) }}
         with:
           provision: 'false'
           cmd: |
             set -ex
-            uname -a
-            cat /etc/issue
+            export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
 
             bash /host/testdata/test_exist_connection.sh /host/ptcpdump/ptcpdump
 
       - name: Test arp and icmp
-        if: ${{ (!startsWith(matrix.kernel, '5.4')) && (!startsWith(matrix.kernel, '4.')) }}
+        if: ${{ (!startsWith(matrix.kernel, '5.4')) && (!startsWith(matrix.kernel, '4.')) && (!startsWith(matrix.backend, 'cgroup-skb')) }}
         uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
         with:
           provision: 'false'
           cmd: |
             set -ex
-            uname -a
-            cat /etc/issue
+            export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
 
             bash /host/testdata/test_arp.sh /host/ptcpdump/ptcpdump
             bash /host/testdata/test_icmp.sh /host/ptcpdump/ptcpdump
 
       - name: Test netns
-        # if: ${{ (!startsWith(matrix.kernel, '5.4')) && (!startsWith(matrix.kernel, '4.')) }}
+        if: ${{ !startsWith(matrix.backend, 'cgroup-skb') }}
         uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
         with:
           provision: 'false'
           cmd: |
             set -ex
+            export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
+            
             bash /host/testdata/test_netns.sh /host/ptcpdump/ptcpdump
 
       - name: Test netns newly
-        # if: ${{ (!startsWith(matrix.kernel, '5.4')) && (!startsWith(matrix.kernel, '4.')) }}
+        if: ${{ !startsWith(matrix.backend, 'cgroup-skb') }}
         uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
         with:
           provision: 'false'
           cmd: |
             set -ex
+            export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
+            
             bash /host/testdata/test_netns_newly_normal.sh /host/ptcpdump/ptcpdump
             bash /host/testdata/test_netns_newly_exec.sh /host/ptcpdump/ptcpdump
 
       - name: Test run sub program
         uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
+        if: ${{ ( !( (startsWith(matrix.backend, 'cgroup-skb') && (startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) ) ) ) }}
         with:
           provision: 'false'
           cmd: |
             set -ex
-            uname -a
-            cat /etc/issue
+            export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
 
             bash /host/testdata/test_sub_program.sh /host/ptcpdump/ptcpdump
             bash /host/testdata/test_sub_curl_domain_program.sh /host/ptcpdump/ptcpdump
 
       - name: Test NAT
         uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
+        if: ${{ !startsWith(matrix.backend, 'cgroup-skb') }}
         with:
           provision: 'false'
           cmd: |
             set -ex
-            uname -a
-            cat /etc/issue
+            export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
 
             for i in {1..10}; do
               bash /host/testdata/test_nat.sh /host/ptcpdump/ptcpdump && exit 0 || sleep 1
@@ -313,8 +303,7 @@ jobs:
           provision: 'false'
           cmd: |
             set -ex
-            uname -a
-            cat /etc/issue
+            export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
 
             ls -lh /host/testdata/gohttpapp
 
@@ -332,8 +321,7 @@ jobs:
           provision: 'false'
           cmd: |
             set -ex
-            uname -a
-            cat /etc/issue
+            export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
 
             ls -lh /host/testdata/gohttpapp
 
@@ -351,8 +339,7 @@ jobs:
           provision: 'false'
           cmd: |
             set -ex
-            uname -a
-            cat /etc/issue
+            export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
 
             ls -lh /host/testdata/gohttpapp
 
@@ -370,8 +357,7 @@ jobs:
           provision: 'false'
           cmd: |
             set -ex
-            uname -a
-            cat /etc/issue
+            export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
 
             ls -lh /host/testdata/gohttpapp
 

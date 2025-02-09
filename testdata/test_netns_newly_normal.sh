@@ -39,7 +39,7 @@ trap cleanup EXIT
 
 function test_ptcpdump_normal() {
   local LNAME="${LNAME}.normal"
-  timeout 30s ${CMD} -c 4 -i any --netns newly -v --print -w "${FNAME}" \
+  timeout 30s ${CMD} -c 4 -i any ${PTCPDUMP_EXTRA_ARGS} --netns newly -v --print -w "${FNAME}" \
       'icmp' | tee "${LNAME}" &
   sleep 10
   setup_netns

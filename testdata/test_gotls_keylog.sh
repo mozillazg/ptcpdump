@@ -13,13 +13,13 @@ PCAP_FILE="${FILE_PREFIX}_keylog_${FILE_SUFFIX}.pcap"
 PCAPNG_FILE="${FILE_PREFIX}_keylog_${FILE_SUFFIX}.pcapng"
 
 function test_keylog_to_file() {
-    ${CMD} -i any --write-keylog-file ${KEYLOG_PATH} -w ${PCAP_FILE} -- ${APP}
+    ${CMD} -i any ${PTCPDUMP_EXTRA_ARGS} --write-keylog-file ${KEYLOG_PATH} -w ${PCAP_FILE} -- ${APP}
     cat ${KEYLOG_PATH}
     tshark -r ${PCAP_FILE} -o tls.keylog_file:${KEYLOG_PATH} | grep "GET /foo/bar HTTP/1.1"
 }
 
 function test_keylog_to_pcapng() {
-    ${CMD} -i any --embed-keylog-to-pcapng -w ${PCAPNG_FILE} -- ${APP}
+    ${CMD} -i any ${PTCPDUMP_EXTRA_ARGS} --embed-keylog-to-pcapng -w ${PCAPNG_FILE} -- ${APP}
     tshark -r ${PCAPNG_FILE} | grep "GET /foo/bar HTTP/1.1"
 }
 

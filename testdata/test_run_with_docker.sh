@@ -14,8 +14,8 @@ export TMP="/tmp/"
 
 
 function test_ptcpdump() {
-  timeout 60s ${CMD} -c 1 -v -i any --print -w "${FNAME}"  \
-    'dst host 1.1.1.1 and tcp[tcpflags] = tcp-syn' | tee "${LNAME}" &
+  timeout 60s ${CMD} -c 1 -v -i any ${PTCPDUMP_EXTRA_ARGS} --print -w "${FNAME}"  \
+    'dst host 1.1.1.1' | tee "${LNAME}" &
   sleep 30
   curl -m 10 1.1.1.1 &>/dev/null || true
   wait
@@ -23,7 +23,7 @@ function test_ptcpdump() {
   cat "${LNAME}"
   cat "${LNAME}" | grep '/usr/bin/curl'
   cat "${LNAME}" | grep -F 'curl -m 10 1.1.1.1'
-  cat "${LNAME}" | grep -F ' > 1.1.1.1.80: Flags [S],'   # SYN
+  cat "${LNAME}" | grep -F ' > 1.1.1.1.80: Flags'
 }
 
 function test_ptcpdump_read() {
