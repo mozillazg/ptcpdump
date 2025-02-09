@@ -240,10 +240,10 @@ docker run --privileged --rm -t --net=host --pid=host \
 ptcpdump supports specifying a particular eBPF technology for packet capture through the
 `--backend` flag.
 
-| --backend    | eBPF Program Type          | Include the Layer 2 data |
-|--------------|----------------------------|--------------------------|
-| `tc`         | `BPF_PROG_TYPE_SCHED_ACT`  | ✅                        |
-| `cgroup-skb` | `BPF_PROG_TYPE_CGROUP_SKB` | ❌                        |
+| --backend    | eBPF Program Type          | Include L2 data |
+|--------------|----------------------------|-----------------|
+| `tc`         | `BPF_PROG_TYPE_SCHED_CLS`  | ✅               |
+| `cgroup-skb` | `BPF_PROG_TYPE_CGROUP_SKB` | ❌               |
 
 
 If this flag isn't specified, it defaults to `tc`.

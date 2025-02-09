@@ -243,7 +243,7 @@ ptcpdump 支持通过 --backend 参数指定使用特定的 eBPF 技术进行抓
 
 | --backend    | eBPF Program Type          | 结果包含 L2 链路层数据 |
 |--------------|----------------------------|---------------|
-| `tc`         | `BPF_PROG_TYPE_SCHED_ACT`  | ✅             |
+| `tc`         | `BPF_PROG_TYPE_SCHED_CLS`  | ✅             |
 | `cgroup-skb` | `BPF_PROG_TYPE_CGROUP_SKB` | ❌             |
 
 

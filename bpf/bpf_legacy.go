@@ -35,30 +35,33 @@ func kernelVersion(a, b, c int) uint32 {
 }
 
 // map .rodata: map create: read- and write-only maps not supported (requires >= 5.2)
-func isLegacyKernel() (bool, error) {
-	versionCode, err := features.LinuxVersionCode()
-	if err != nil {
-		return false, fmt.Errorf(": %w", err)
+func isLegacyKernel() bool {
+	if ok := kernelVersionEqOrGreaterThan(5, 2, 0); ok {
+		return false
 	}
-	if versionCode < kernelVersion(5, 2, 0) {
-		return true, nil
-	}
-	return false, nil
+	return true
 }
 
 func supportTcx() bool {
-	versionCode, _ := features.LinuxVersionCode()
-	if versionCode <= 0 {
+	prog, err := ebpf.NewProgram(&ebpf.ProgramSpec{
+		Type:    ebpf.SchedCLS,
+		License: "MIT",
+		Instructions: asm.Instructions{
+			asm.Mov.Imm(asm.R0, 0),
+			asm.Return(),
+		},
+	})
+	if err != nil {
+		log.Infof("%+v", err)
 		return false
 	}
-	return versionCode >= kernelVersion(6, 6, 0)
+	defer prog.Close()
+
+	return true
 }
 
 func supportRingBuf() bool {
 	log.Info("Checking ringbuf support")
-	if ok := kernelVersionEqOrGreaterThan(5, 8, 0); !ok {
-		return false
-	}
 	if err := features.HaveMapType(ebpf.RingBuf); err != nil {
 		log.Infof("%+v", err)
 		return false

@@ -61,13 +61,8 @@ type Options struct {
 }
 
 func NewBPF() (*BPF, error) {
-	var legacyKernel bool
 	var skipAttachCgroup bool
-	if ok, err := isLegacyKernel(); err != nil {
-		log.Warnf("%s", err)
-	} else {
-		legacyKernel = ok
-	}
+	legacyKernel := isLegacyKernel()
 	if !supportCgroupSock() {
 		skipAttachCgroup = true
 		legacyKernel = true
