@@ -297,9 +297,10 @@ jobs:
           name: test cgroup-skb
           command: |
             set -ex
-            sudo bash testdata/test_cgroup_skb_base_pcap.sh ./ptcpdump
-            sudo bash testdata/test_cgroup_skb_base_pcapng.sh ./ptcpdump
-            sudo bash testdata/test_cgroup_skb_filter_ifindex.sh ./ptcpdump
+
+            sudo PTCPDUMP_EXTRA_ARGS='--backend cgroup-skb' bash testdata/test_pid_filter.sh ./ptcpdump
+            sudo PTCPDUMP_EXTRA_ARGS='--backend cgroup-skb' bash testdata/test_pname_filter.sh ./ptcpdump
+            sudo PTCPDUMP_EXTRA_ARGS='--backend cgroup-skb' bash testdata/test_sub_program.sh ./ptcpdump
 
 workflows:
   e2e:

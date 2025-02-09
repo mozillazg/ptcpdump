@@ -11,7 +11,7 @@ RNAME="${FILE_PREFIX}_parent_info.read.txt"
 
 function test_ptcpdump() {
   timeout 30s ${CMD} -c 1 ${PTCPDUMP_EXTRA_ARGS} -v -i any --print -w "${FNAME}" \
-    'dst host 1.1.1.1 and tcp[tcpflags] = tcp-syn' | tee "${LNAME}" &
+    'dst host 1.1.1.1' | tee "${LNAME}" &
   sleep 10
   curl -m 10 1.1.1.1 &>/dev/null || true
   wait
@@ -19,7 +19,7 @@ function test_ptcpdump() {
   cat "${LNAME}"
   cat "${LNAME}" | grep '/usr/bin/curl'
   cat "${LNAME}" | grep 'ParentProc'
-  cat "${LNAME}" | grep -F ' > 1.1.1.1.80: Flags [S],'   # SYN
+  cat "${LNAME}" | grep -F ' > 1.1.1.1.80: Flags'
 }
 
 

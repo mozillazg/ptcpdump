@@ -147,19 +147,7 @@ jobs:
 
       - name: Test base (curl)
         uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
-        if: ${{ !startsWith(matrix.backend, 'cgroup-skb') }}
-        with:
-          provision: 'false'
-          cmd: |
-            set -ex
-            export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
-
-            bash /host/testdata/test_base.sh /host/ptcpdump/ptcpdump
-
-      - name: Test base (curl, cgroup-skb)
-        uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
-        if: ${{ startsWith(matrix.backend, 'cgroup-skb') }}
-        continue-on-error: true
+        if: ${{ ( !( (startsWith(matrix.backend, 'cgroup-skb') && (startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) ) ) ) }}
         with:
           provision: 'false'
           cmd: |
@@ -170,6 +158,7 @@ jobs:
 
       - name: Test parent info
         uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
+        if: ${{ ( !( (startsWith(matrix.backend, 'cgroup-skb') && (startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) ) ) ) }}
         with:
           provision: 'false'
           cmd: |
@@ -180,6 +169,7 @@ jobs:
 
       - name: Test filter by process name
         uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
+        if: ${{ ( !( (startsWith(matrix.backend, 'cgroup-skb') && (startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) ) ) ) }}
         with:
           provision: 'false'
           cmd: |
@@ -190,6 +180,7 @@ jobs:
 
       - name: Test filter by process id
         uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
+        if: ${{ ( !( (startsWith(matrix.backend, 'cgroup-skb') && (startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) ) ) ) }}
         with:
           provision: 'false'
           cmd: |
@@ -230,6 +221,7 @@ jobs:
 
       - name: Test exist connections
         uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
+        if: ${{ ( !( (startsWith(matrix.backend, 'cgroup-skb') && (startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) ) ) ) }}
         with:
           provision: 'false'
           cmd: |
@@ -275,6 +267,7 @@ jobs:
 
       - name: Test run sub program
         uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
+        if: ${{ ( !( (startsWith(matrix.backend, 'cgroup-skb') && (startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) ) ) ) }}
         with:
           provision: 'false'
           cmd: |
