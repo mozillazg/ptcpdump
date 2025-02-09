@@ -17,7 +17,7 @@ function test_ptcpdump() {
   export cid1
   echo $cid1
 
-  timeout 120s ${CMD} -i any -c 10 --print -w "${FNAME}" -v --oneline  \
+  timeout 120s ${CMD} -i any ${PTCPDUMP_EXTRA_ARGS} -c 10 --print -w "${FNAME}" -v --oneline  \
     --container-name=${cname} -w "${FNAME}" | tee "${LNAME}"
 
   cat "${LNAME}"

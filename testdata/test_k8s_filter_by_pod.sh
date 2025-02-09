@@ -17,7 +17,7 @@ function test_ptcpdump() {
   kubectl -n test-ns wait --for condition=Ready pod/test-ptcpdump
   cid=$(kubectl get pod test-ptcpdump -o yaml |grep -i containerID | head -n 1 | awk -F '//' '{print $2}')
 
-  timeout 120s ${CMD} -i any -c 5 --print -w "${FNAME}" --oneline -v \
+  timeout 120s ${CMD} -i any ${PTCPDUMP_EXTRA_ARGS} -c 5 --print -w "${FNAME}" --oneline -v \
     --pod-name "test-ptcpdump.test-ns" -w "${FNAME}" | tee "${LNAME}"
 
   wait

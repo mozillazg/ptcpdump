@@ -10,7 +10,7 @@ RNAME="${FILE_PREFIX}_parent_info.read.txt"
 
 
 function test_ptcpdump() {
-  timeout 30s ${CMD} -c 1 -v -i any --print -w "${FNAME}" \
+  timeout 30s ${CMD} -c 1 ${PTCPDUMP_EXTRA_ARGS} -v -i any --print -w "${FNAME}" \
     'dst host 1.1.1.1 and tcp[tcpflags] = tcp-syn' | tee "${LNAME}" &
   sleep 10
   curl -m 10 1.1.1.1 &>/dev/null || true

@@ -10,7 +10,7 @@ RNAME="${FILE_PREFIX}_sub_program_curl.read.txt"
 
 
 function test_ptcpdump() {
-  timeout 60s ${CMD} -i any -v --print -w "${FNAME}"  \
+  timeout 60s ${CMD} -i any ${PTCPDUMP_EXTRA_ARGS} -v --print -w "${FNAME}"  \
 	  -- curl -m 10 ubuntu.com | tee "${LNAME}"
 
   cat "${LNAME}"

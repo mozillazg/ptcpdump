@@ -303,6 +303,11 @@ static __always_inline int fill_packet_event_meta(struct __sk_buff *skb, bool cg
     if (cgroup_skb && egress) {
         struct task_struct *task = (struct task_struct *)bpf_get_current_task();
         if (task && !is_kernel_thread(task)) {
+            if (parent_process_filter(task) < 0) {
+                if (process_filter(task) < 0) {
+                    goto outer;
+                }
+            }
             event_meta->l3_protocol = bpf_ntohs(skb->protocol);
             fill_process_meta_with_thread(task, pid_meta);
             if (pid_meta->pid > 0) {
@@ -310,6 +315,8 @@ static __always_inline int fill_packet_event_meta(struct __sk_buff *skb, bool cg
                 return 0;
             }
         }
+    outer:
+        (void)0;
         // debug_log("[ptcpdump][cgroup_sk] get_current_task failed\n");
     }
 

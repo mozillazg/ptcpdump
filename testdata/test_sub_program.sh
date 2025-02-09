@@ -8,9 +8,8 @@ FNAME="${FILE_PREFIX}_sub_program.pcapng"
 LNAME="${FILE_PREFIX}_sub_program.log"
 RNAME="${FILE_PREFIX}_sub_program.read.txt"
 
-
 function test_ptcpdump() {
-  timeout 30s ${CMD} -c 10 -i any -v --print -w "${FNAME}" \
+  timeout 30s ${CMD} -c 10 -i any ${PTCPDUMP_EXTRA_ARGS} -v --print -w "${FNAME}" \
 	  -- curl -m 10 1.1.1.1 | tee "${LNAME}"
 
   cat "${LNAME}"

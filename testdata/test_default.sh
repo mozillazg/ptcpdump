@@ -10,7 +10,7 @@ RNAME="${FILE_PREFIX}_default.read.txt"
 
 
 function test_ptcpdump() {
-  timeout 30s ${CMD} -c 2 -i lo -v --print -w "${FNAME}" \
+  timeout 30s ${CMD} -c 2 -i lo ${PTCPDUMP_EXTRA_ARGS} -v --print -w "${FNAME}" \
       'icmp and host 127.0.0.1' | tee "${LNAME}" &
   sleep 10
   ping -c 1 127.0.0.1 &>/dev/null || true
