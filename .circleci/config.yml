@@ -315,4 +315,4 @@ workflows:
       - docker-e2e
       - containerd-e2e
       - k8s-1-30-e2e
-      - test-backend
+      - arm64-test-backend
