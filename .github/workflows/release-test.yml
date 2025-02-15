@@ -21,6 +21,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5
         with:
+          # renovate: datasource=golang-version depName=golang
           go-version: '1.23.6'
 
       - name: Install govulncheck
@@ -59,3 +60,39 @@ jobs:
         with:
           name: ptcpdump_v0.0.0-next_linux_arm64.tar.gz
           path: dist/ptcpdump_v0.0.0-next_linux_arm64.tar.gz
+
+  artifact-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ['ubuntu-latest', 'ubuntu-24.04-arm']
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 5
+    needs: release-test
+    steps:
+      - name: Retrieve stored artifact (amd64)
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4
+        if: ${{ !contains(matrix.os, 'arm') }}
+        with:
+          name: ptcpdump_v0.0.0-next_linux_amd64.tar.gz
+      - name: Retrieve stored artifact (arm64)
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4
+        if: ${{ contains(matrix.os, 'arm') }}
+        with:
+          name: ptcpdump_v0.0.0-next_linux_arm64.tar.gz
+
+      - name: untar artifact
+        run: |
+          if uname -a |grep x86_64; then
+            ARCH=amd64
+          else
+            ARCH=arm64
+          fi
+          tar zxvf ptcpdump_v0.0.0-next_linux_${ARCH}.tar.gz
+
+      - name: Test binary
+        run: |
+          set -xe
+          uname -a
+          ./ptcpdump --version
+          sudo ./ptcpdump -i any -c 2

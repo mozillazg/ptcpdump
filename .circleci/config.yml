@@ -277,10 +277,10 @@ jobs:
           command: |
             sudo bash testdata/run_test_k8s_filter_by_pod_2.sh
 
-  test-backend:
+  arm64-test-backend:
     machine:
       image: ubuntu-2204:2024.04.4
-    resource_class: medium
+    resource_class: arm.medium
     steps:
       - checkout
 
@@ -315,4 +315,4 @@ workflows:
       - docker-e2e
       - containerd-e2e
       - k8s-1-30-e2e
-      - test-backend
+      - arm64-test-backend
