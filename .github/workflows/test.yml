@@ -29,7 +29,7 @@ jobs:
       run: make build-via-docker COVERAGE_FLAG='-cover'
 
     - name: Test
-      run: make test COVERAGE_FLAG='-cover -coverprofile=ut.coverage.txt'
+      run: make test COVERAGE_FLAG='-cover -coverprofile=coverage.ut.out'
 
     - name: Store executable
       uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4
@@ -40,8 +40,8 @@ jobs:
     - name: Store coverage
       uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4
       with:
-        name: ut.coverage.txt
-        path: ut.coverage.txt
+        name: coverage.ut.out
+        path: coverage.ut.out
 
   run-with-docker:
     runs-on: ubuntu-latest
@@ -97,8 +97,6 @@ jobs:
           fi
           echo "PTCPDUMP_EXTRA_ARGS=${PTCPDUMP_EXTRA_ARGS}" >> $GITHUB_ENV
           mkdir $GOCOVERDIR
-          echo "GOCOVERDIR=/host/${GOCOVERDIR}" >> $GITHUB_ENV
-
       - name: Retrieve stored ptcpdump executable
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4
         with:
@@ -153,7 +151,7 @@ jobs:
           cmd: |
             set -ex
             export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
-            export GOCOVERDIR="${{ env.GOCOVERDIR }}"
+            export GOCOVERDIR="/host/${{ env.GOCOVERDIR }}"
 
             bash /host/testdata/test_default.sh /host/ptcpdump/ptcpdump
 
@@ -165,7 +163,7 @@ jobs:
           cmd: |
             set -ex
             export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
-            export GOCOVERDIR="${{ env.GOCOVERDIR }}"
+            export GOCOVERDIR="/host/${{ env.GOCOVERDIR }}"
 
             bash /host/testdata/test_base.sh /host/ptcpdump/ptcpdump
 
@@ -177,7 +175,7 @@ jobs:
           cmd: |
             set -ex
             export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
-            export GOCOVERDIR="${{ env.GOCOVERDIR }}"
+            export GOCOVERDIR="/host/${{ env.GOCOVERDIR }}"
 
             bash /host/testdata/test_parent_info.sh /host/ptcpdump/ptcpdump
 
@@ -189,7 +187,7 @@ jobs:
           cmd: |
             set -ex
             export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
-            export GOCOVERDIR="${{ env.GOCOVERDIR }}"
+            export GOCOVERDIR="/host/${{ env.GOCOVERDIR }}"
 
             bash /host/testdata/test_pname_filter.sh /host/ptcpdump/ptcpdump
 
@@ -201,7 +199,7 @@ jobs:
           cmd: |
             set -ex
             export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
-            export GOCOVERDIR="${{ env.GOCOVERDIR }}"
+            export GOCOVERDIR="/host/${{ env.GOCOVERDIR }}"
 
             bash /host/testdata/test_pid_filter.sh /host/ptcpdump/ptcpdump
 
@@ -212,7 +210,7 @@ jobs:
           cmd: |
             set -ex
             export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
-            export GOCOVERDIR="${{ env.GOCOVERDIR }}"
+            export GOCOVERDIR="/host/${{ env.GOCOVERDIR }}"
 
             bash /host/testdata/test_read_pcap.sh /host/ptcpdump/ptcpdump
 
@@ -223,7 +221,7 @@ jobs:
           cmd: |
             set -ex
             export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
-            export GOCOVERDIR="${{ env.GOCOVERDIR }}"
+            export GOCOVERDIR="/host/${{ env.GOCOVERDIR }}"
 
             bash /host/testdata/test_write_pcap.sh /host/ptcpdump/ptcpdump
 
@@ -234,7 +232,7 @@ jobs:
           cmd: |
             set -ex
             export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
-            export GOCOVERDIR="${{ env.GOCOVERDIR }}"
+            export GOCOVERDIR="/host/${{ env.GOCOVERDIR }}"
 
             bash /host/testdata/test_write_stdout.sh /host/ptcpdump/ptcpdump
 
@@ -246,7 +244,7 @@ jobs:
           cmd: |
             set -ex
             export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
-            export GOCOVERDIR="${{ env.GOCOVERDIR }}"
+            export GOCOVERDIR="/host/${{ env.GOCOVERDIR }}"
 
             bash /host/testdata/test_exist_connection.sh /host/ptcpdump/ptcpdump
 
@@ -258,7 +256,7 @@ jobs:
           cmd: |
             set -ex
             export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
-            export GOCOVERDIR="${{ env.GOCOVERDIR }}"
+            export GOCOVERDIR="/host/${{ env.GOCOVERDIR }}"
 
             bash /host/testdata/test_arp.sh /host/ptcpdump/ptcpdump
             bash /host/testdata/test_icmp.sh /host/ptcpdump/ptcpdump
@@ -271,7 +269,7 @@ jobs:
           cmd: |
             set -ex
             export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
-            export GOCOVERDIR="${{ env.GOCOVERDIR }}"
+            export GOCOVERDIR="/host/${{ env.GOCOVERDIR }}"
             
             bash /host/testdata/test_netns.sh /host/ptcpdump/ptcpdump
 
@@ -283,7 +281,7 @@ jobs:
           cmd: |
             set -ex
             export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
-            export GOCOVERDIR="${{ env.GOCOVERDIR }}"
+            export GOCOVERDIR="/host/${{ env.GOCOVERDIR }}"
             
             bash /host/testdata/test_netns_newly_normal.sh /host/ptcpdump/ptcpdump
             bash /host/testdata/test_netns_newly_exec.sh /host/ptcpdump/ptcpdump
@@ -296,7 +294,7 @@ jobs:
           cmd: |
             set -ex
             export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
-            export GOCOVERDIR="${{ env.GOCOVERDIR }}"
+            export GOCOVERDIR="/host/${{ env.GOCOVERDIR }}"
 
             bash /host/testdata/test_sub_program.sh /host/ptcpdump/ptcpdump
             bash /host/testdata/test_sub_curl_domain_program.sh /host/ptcpdump/ptcpdump
@@ -309,7 +307,7 @@ jobs:
           cmd: |
             set -ex
             export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
-            export GOCOVERDIR="${{ env.GOCOVERDIR }}"
+            export GOCOVERDIR="/host/${{ env.GOCOVERDIR }}"
 
             for i in {1..10}; do
               bash /host/testdata/test_nat.sh /host/ptcpdump/ptcpdump && exit 0 || sleep 1
@@ -329,7 +327,7 @@ jobs:
           cmd: |
             set -ex
             export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
-            export GOCOVERDIR="${{ env.GOCOVERDIR }}"
+            export GOCOVERDIR="/host/${{ env.GOCOVERDIR }}"
 
             ls -lh /host/testdata/gohttpapp
 
@@ -348,7 +346,7 @@ jobs:
           cmd: |
             set -ex
             export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
-            export GOCOVERDIR="${{ env.GOCOVERDIR }}"
+            export GOCOVERDIR="/host/${{ env.GOCOVERDIR }}"
 
             ls -lh /host/testdata/gohttpapp
 
@@ -367,7 +365,7 @@ jobs:
           cmd: |
             set -ex
             export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
-            export GOCOVERDIR="${{ env.GOCOVERDIR }}"
+            export GOCOVERDIR="/host/${{ env.GOCOVERDIR }}"
 
             ls -lh /host/testdata/gohttpapp
 
@@ -386,7 +384,7 @@ jobs:
           cmd: |
             set -ex
             export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
-            export GOCOVERDIR="${{ env.GOCOVERDIR }}"
+            export GOCOVERDIR="/host/${{ env.GOCOVERDIR }}"
 
             ls -lh /host/testdata/gohttpapp
 
@@ -398,14 +396,17 @@ jobs:
             exit 1
 
       - name: merge coverage
+        if: ${{ ( !( (startsWith(matrix.backend, 'cgroup-skb') && (startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) ) ) ) }}
         run: |
             set -ex
-            go tool covdata textfmt -i=$GOCOVERDIR -o e2e.coverage.txt
-            ls *.txt
+            go tool covdata textfmt -i=$GOCOVERDIR -o coverage.e2e.${{ matrix.backend }}.${{ matrix.kernel }}.out
+            ls *.out
       - name: upload coverage
         uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4
+        if: ${{ ( !( (startsWith(matrix.backend, 'cgroup-skb') && (startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) ) ) ) }}
         with:
-          name: e2e.coverage.txt
+          name: coverage.e2e.${{ matrix.backend }}.${{ matrix.kernel }}.out
+          path: coverage.e2e.${{ matrix.backend }}.${{ matrix.kernel }}.out
 
   coverage:
     timeout-minutes: 5
@@ -417,10 +418,13 @@ jobs:
       - name: download coverage
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4
         with:
-          pattern: '*.coverage.txt'
+          pattern: 'coverage.*.out'
           merge-multiple: true
+          path: coverage
+      - run: |
+          ls -l coverage/
       - name: upload coverage to Coveralls
         uses: coverallsapp/github-action@v2
         with:
-          files: 'ut.coverage.txt e2e.coverage.txt'
+          base-path: 'coverage'
           format: 'golang'
