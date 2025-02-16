@@ -407,17 +407,20 @@ jobs:
         with:
           name: e2e.coverage.txt
 
-    coverage:
-      timeout-minutes: 5
-      runs-on: ubuntu-latest
-      steps:
-        - name: download coverage
-          uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4
-          with:
-            pattern: '*.coverage.txt'
-            merge-multiple: true
-        - name: upload coverage to Coveralls
-          uses: coverallsapp/github-action@v2
-          with:
-            files: 'ut.coverage.txt e2e.coverage.txt'
-            format: 'golang'
+  coverage:
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    needs:
+      - build
+      - e2e-test
+    steps:
+      - name: download coverage
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4
+        with:
+          pattern: '*.coverage.txt'
+          merge-multiple: true
+      - name: upload coverage to Coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          files: 'ut.coverage.txt e2e.coverage.txt'
+          format: 'golang'

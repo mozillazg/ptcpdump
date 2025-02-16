@@ -83,7 +83,7 @@ build-bpf-via-docker:
 
 .PHONY: build-via-docker
 build-via-docker:
-	docker run --rm -v `pwd`:/app $(IMAGE_DEV) make build
+	docker run --rm -v `pwd`:/app $(IMAGE_DEV) make build COVERAGE_FLAG=$(COVERAGE_FLAG)
 
 
 .PHONY: lint
