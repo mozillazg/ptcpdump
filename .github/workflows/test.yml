@@ -415,6 +415,8 @@ jobs:
       - build
       - e2e-test
     steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
       - name: download coverage
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4
         with:
@@ -424,6 +426,7 @@ jobs:
       - name: merge coverage
         run: |
           set -ex
+          ls -l coverage/
           go tool covdata textfmt -i=coverage -o coverage.out
           ls *.out
       - name: upload coverage to Coveralls
