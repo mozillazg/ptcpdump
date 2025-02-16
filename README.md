@@ -67,6 +67,7 @@ Filter like tcpdump:
 ```
 sudo ptcpdump -i eth0 tcp
 sudo ptcpdump -i eth0 -A -s 0 -n -v tcp and port 80 and host 10.10.1.1
+sudo ptcpdump -i any -s 0 -n -v -C 100MB -W 3 'tcp and port 80 and host 10.10.1.1'
 sudo ptcpdump -i eth0 'tcp[tcpflags] & (tcp-syn|tcp-fin) != 0'
 ```
 
@@ -343,7 +344,6 @@ Flags:
 | --pod-name *pod_name.namespace*                   |         | ✅                        |
 | -f, --follow-forks                                |         | ✅                        |
 | -- *command [args]*                               |         | ✅                        |
-| --oneline                                         |         | ✅                        |
 | --netns *path_to_net_ns*                          |         | ✅                        |
 | --print                                           | ✅       | ✅                        |
 | -c *count*                                        | ✅       | ✅                        |
@@ -359,7 +359,7 @@ Flags:
 | -vvv                                              | ✅       | ⭕                        |
 | -B *bufer_size*, --buffer-size=*buffer_size*      | ✅       |                          |
 | --count                                           | ✅       | ✅                        |
-| -C *file_size                                     | ✅       |                          |
+| -C *file_size                                     | ✅       | ✅                        |
 | -d                                                | ✅       |                          |
 | -dd                                               | ✅       |                          |
 | -ddd                                              | ✅       |                          |
@@ -398,7 +398,7 @@ Flags:
 | -u                                                | ✅       |                          |
 | -U, --packet-buffered                             | ✅       |                          |
 | -V *file*                                         | ✅       |                          |
-| -W *filecont*                                     | ✅       |                          |
+| -W *filecont*                                     | ✅       | ✅                        |
 | -y *datalinktype*, --linktype=*datalinktype*      | ✅       |                          |
 | -z *postrotate-command*                           | ✅       |                          |
 | -Z *user*, --relinquish-privileges=*user*         | ✅       |                          |

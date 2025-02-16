@@ -138,6 +138,15 @@ func init() {
 			fmt.Sprintf("Possible values are %q and %q",
 				types.NetHookBackendTc, types.NetHookBackendCgroupSkb))
 
+	rootCmd.Flags().VarP(&opts.fileSize, "file-size", "C",
+		"Before writing a raw packet to a savefile, check whether the file is currently larger than file_size and, "+
+			"if so, close the current savefile and open a new one. Savefiles after the first savefile "+
+			"will have the name specified with the -w flag, "+
+			"with a number after it, starting at 1 and continuing upward.")
+	rootCmd.Flags().UintVarP(&opts.fileCount, "file-count", "W", 0,
+		"Used in conjunction with the -C option, this will limit the number of files created to the specified number, "+
+			"and begin overwriting files from the beginning, thus creating a 'rotating' buffer.")
+
 	silenceKlog()
 }
 

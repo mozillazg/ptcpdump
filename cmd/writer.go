@@ -16,14 +16,14 @@ import (
 
 func getWriters(opts *Options, pcache *metadata.ProcessCache) ([]writer.PacketWriter, func() error, error) {
 	var writers []writer.PacketWriter
-	var pcapFile *os.File
+	var rr writer.Rotator
 	var err error
 
 	if opts.WritePath() != "" {
 		ext := filepath.Ext(opts.WritePath())
 		switch {
 		case opts.WritePath() == "-":
-			w, err := newPcapNgWriter(os.Stdout, pcache, opts)
+			w, err := newPcapNgWriter(writer.NewStdoutRotator(), pcache, opts)
 			if err != nil {
 				return nil, nil, fmt.Errorf(": %w", err)
 			}
@@ -31,24 +31,24 @@ func getWriters(opts *Options, pcache *metadata.ProcessCache) ([]writer.PacketWr
 			writers = append(writers, w)
 			break
 		case ext == extPcap:
-			pcapFile, err = os.Create(opts.WritePath())
+			rr, err = writer.NewFileRotator(opts.WritePath(), opts.rotatorOption())
 			if err != nil {
 				return nil, nil, fmt.Errorf(": %w", err)
 			}
-			w, err := newPcapWriter(pcapFile)
+			w, err := newPcapWriter(rr)
 			if err != nil {
-				return nil, pcapFile.Close, fmt.Errorf(": %w", err)
+				return nil, rr.Close, fmt.Errorf(": %w", err)
 			}
 			writers = append(writers, w)
 			break
 		default:
-			pcapFile, err = os.Create(opts.WritePath())
+			rr, err = writer.NewFileRotator(opts.WritePath(), opts.rotatorOption())
 			if err != nil {
 				return nil, nil, fmt.Errorf(": %w", err)
 			}
-			w, err := newPcapNgWriter(pcapFile, pcache, opts)
+			w, err := newPcapNgWriter(rr, pcache, opts)
 			if err != nil {
-				return nil, pcapFile.Close, fmt.Errorf(": %w", err)
+				return nil, rr.Close, fmt.Errorf(": %w", err)
 			}
 			writers = append(writers, w)
 		}
@@ -60,9 +60,9 @@ func getWriters(opts *Options, pcache *metadata.ProcessCache) ([]writer.PacketWr
 	}
 
 	closer := func() error {
-		if pcapFile != nil {
-			pcapFile.Sync()
-			return pcapFile.Close()
+		if rr != nil {
+			rr.Flush()
+			return rr.Close()
 		}
 		return nil
 	}
@@ -70,7 +70,7 @@ func getWriters(opts *Options, pcache *metadata.ProcessCache) ([]writer.PacketWr
 	return writers, closer, nil
 }
 
-func newPcapNgWriter(w io.Writer, pcache *metadata.ProcessCache, opts *Options) (*writer.PcapNGWriter, error) {
+func newPcapNgWriter(rr writer.Rotator, pcache *metadata.ProcessCache, opts *Options) (*writer.PcapNGWriter, error) {
 	devices, err := opts.GetDevices()
 	if err != nil {
 		return nil, fmt.Errorf(": %w", err)
@@ -85,39 +85,46 @@ func newPcapNgWriter(w io.Writer, pcache *metadata.ProcessCache, opts *Options) 
 		interfaceIds[dev.Key()] = index
 	}
 
-	pcapNgWriter, err := pcapgo.NewNgWriterInterface(w, interfaces[0], pcapgo.NgWriterOptions{
-		SectionInfo: pcapgo.NgSectionInfo{
-			Hardware:    runtime.GOARCH,
-			OS:          runtime.GOOS,
-			Application: fmt.Sprintf("ptcpdump %s", internal.Version),
-			Comment:     "ptcpdump: https://github.com/mozillazg/ptcpdump",
-		},
-	})
-	if err != nil {
-		return nil, fmt.Errorf(": %w", err)
-	}
-	for _, ifc := range interfaces[1:] {
-		_, err := pcapNgWriter.AddInterface(ifc)
+	f := func(w io.Writer) (*pcapgo.NgWriter, error) {
+		pcapNgWriter, err := pcapgo.NewNgWriterInterface(w, interfaces[0], pcapgo.NgWriterOptions{
+			SectionInfo: pcapgo.NgSectionInfo{
+				Hardware:    runtime.GOARCH,
+				OS:          runtime.GOOS,
+				Application: fmt.Sprintf("ptcpdump %s", internal.Version),
+				Comment:     "ptcpdump: https://github.com/mozillazg/ptcpdump",
+			},
+		})
 		if err != nil {
 			return nil, fmt.Errorf(": %w", err)
 		}
+		for _, ifc := range interfaces[1:] {
+			_, err := pcapNgWriter.AddInterface(ifc)
+			if err != nil {
+				return nil, fmt.Errorf(": %w", err)
+			}
+		}
+		return pcapNgWriter, nil
 	}
 
-	if err := pcapNgWriter.Flush(); err != nil {
-		return nil, fmt.Errorf("writing pcapNg header: %w", err)
+	wt, err := writer.NewPcapNGWriter(rr, f, pcache, interfaceIds)
+	if err != nil {
+		return nil, fmt.Errorf(": %w", err)
 	}
-
-	wt := writer.NewPcapNGWriter(pcapNgWriter, pcache, interfaceIds).WithPcapFilter(opts.pcapFilter)
+	wt.WithPcapFilter(opts.pcapFilter)
 	wt.WithEnhancedContext(opts.enhancedContext)
 	return wt, nil
 }
 
-func newPcapWriter(w io.Writer) (*writer.PcapWriter, error) {
-	pcapWriter := pcapgo.NewWriterNanos(w)
+func newPcapWriter(rr writer.Rotator) (*writer.PcapWriter, error) {
 
-	if err := pcapWriter.WriteFileHeader(65536, layers.LinkTypeEthernet); err != nil {
-		return nil, fmt.Errorf("writing pcap header: %w", err)
+	f := func(w io.Writer) (*pcapgo.Writer, error) {
+		pcapWriter := pcapgo.NewWriterNanos(w)
+
+		if err := pcapWriter.WriteFileHeader(65536, layers.LinkTypeEthernet); err != nil {
+			return nil, fmt.Errorf("writing pcap header: %w", err)
+		}
+		return pcapWriter, nil
 	}
 
-	return writer.NewPcapWriter(pcapWriter), nil
+	return writer.NewPcapWriter(rr, f)
 }

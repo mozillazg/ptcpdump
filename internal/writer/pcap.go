@@ -2,6 +2,9 @@ package writer
 
 import (
 	"fmt"
+	"io"
+	"sync"
+	"unsafe"
 
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/pcapgo"
@@ -9,11 +12,25 @@ import (
 )
 
 type PcapWriter struct {
-	pw *pcapgo.Writer
+	rr   Rotator
+	pw   *pcapgo.Writer
+	lock sync.Mutex
+
+	newWriter func(io.Writer) (*pcapgo.Writer, error)
 }
 
-func NewPcapWriter(pw *pcapgo.Writer) *PcapWriter {
-	return &PcapWriter{pw: pw}
+func NewPcapWriter(rr Rotator, newWriter func(io.Writer) (*pcapgo.Writer, error)) (*PcapWriter, error) {
+	pw, err := newWriter(rr)
+	if err != nil {
+		return nil, err
+	}
+
+	return &PcapWriter{
+		rr:        rr,
+		pw:        pw,
+		lock:      sync.Mutex{},
+		newWriter: newWriter,
+	}, nil
 }
 
 func (w *PcapWriter) Write(e *event.Packet) error {
@@ -24,6 +41,20 @@ func (w *PcapWriter) Write(e *event.Packet) error {
 		Length:         e.Len,
 		InterfaceIndex: e.Device.Ifindex,
 	}
+	w.lock.Lock()
+	defer w.lock.Unlock()
+
+	if w.rr.ShouldRotate(int(unsafe.Sizeof(info)) + len(e.Data)) {
+		if err := w.rr.Rotate(); err != nil {
+			return fmt.Errorf("rotating file: %w", err)
+		}
+		pw, err := w.newWriter(w.rr)
+		if err != nil {
+			return fmt.Errorf("creating new pcap writer: %w", err)
+		}
+		w.pw = pw
+	}
+
 	if err := w.pw.WritePacket(info, e.Data); err != nil {
 		return fmt.Errorf("writing packet: %w", err)
 	}

@@ -46,6 +46,11 @@ type Options struct {
 	direction      string
 	oneLine        bool
 
+	noBuffer      bool
+	fileCount     uint
+	fileSize      types.FlagTypeFileSize
+	fileSizeBytes int64
+
 	printPacketNumber   bool
 	dontPrintTimestamp  bool
 	onlyPrintCount      bool
@@ -184,6 +189,7 @@ func prepareOptions(opts *Options, rawArgs []string, args []string) {
 		opts.backend = string(types.NetHookBackendTc)
 	}
 
+	opts.fileSizeBytes = opts.fileSize.Bytes()
 }
 
 func getPodNameFilter(raw string) (name, ns string) {
@@ -382,4 +388,11 @@ func (o *Options) enableContainerContext() bool {
 
 func (o *Options) enablePodContext() bool {
 	return o.enhancedContext.PodContext()
+}
+
+func (o *Options) rotatorOption() writer.RotatorOption {
+	return writer.RotatorOption{
+		MaxFileNumber:    int(o.fileCount),
+		MaxFileSizeBytes: o.fileSizeBytes,
+	}
 }
