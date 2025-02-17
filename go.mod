@@ -3,7 +3,7 @@ module github.com/mozillazg/ptcpdump
 go 1.23.0
 
 require (
-	github.com/cilium/ebpf v0.17.2
+	github.com/cilium/ebpf v0.17.3
 	github.com/containerd/containerd v1.7.25
 	github.com/containerd/typeurl/v2 v2.2.3
 	github.com/docker/docker v27.5.1+incompatible
@@ -27,8 +27,8 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/vishvananda/netns v0.0.5
 	golang.org/x/arch v0.14.0
-	k8s.io/cri-api v0.32.1
-	k8s.io/cri-client v0.32.1
+	k8s.io/cri-api v0.32.2
+	k8s.io/cri-client v0.32.2
 	k8s.io/klog/v2 v2.130.1
 )
 
