@@ -33,6 +33,9 @@ function test_ptcpdump_read() {
     timeout 30s ${CMD} -v -r "${FNAME}" |tee "${RNAME}"
     cat "${RNAME}" | grep '/usr/bin/curl'
     cat "${RNAME}" | grep -F ' > 1.1.1.1.80: Flags [S],'   # SYN
+
+    cat "${FNAME}" | ${CMD} -v -r - |grep '/usr/bin/curl'
+    cat "${FNAME}" | ${CMD} -v -r - |grep -F ' > 1.1.1.1.80: Flags [S],'   # SYN
 }
 
 function main() {

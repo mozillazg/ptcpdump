@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -10,18 +11,22 @@ import (
 	"github.com/mozillazg/ptcpdump/internal/log"
 	"github.com/mozillazg/ptcpdump/internal/metadata"
 	"github.com/mozillazg/ptcpdump/internal/parser"
+	"github.com/mozillazg/ptcpdump/internal/types"
+	"github.com/mozillazg/ptcpdump/internal/utils"
 	"github.com/mozillazg/ptcpdump/internal/writer"
 )
 
 func read(ctx context.Context, opts *Options) error {
 	fpath := opts.ReadPath()
-	log.Warnf("reading from file %s", fpath)
-
-	f, err := os.Open(fpath)
+	f, err := getReader(opts)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
+	dataType, err := utils.DetectPcapDataType(f)
+	if err != nil {
+		return err
+	}
 
 	var p parser.Parser
 	pcache := metadata.NewProcessCache()
@@ -29,9 +34,16 @@ func read(ctx context.Context, opts *Options) error {
 	opts.applyToStdoutWriter(stdoutWriter)
 
 	ext := filepath.Ext(fpath)
-	switch ext {
-	case extPcap:
-		pr, err := parser.NewPcapParser(f)
+	switch {
+	case ext == extPcap, dataType == types.PcapDataTypePcap:
+		r, ok, err := f.File()
+		if !ok {
+			if err != nil {
+				log.Infof("%v", err)
+			}
+			return errors.New("unsupported data source for the pcap format")
+		}
+		pr, err := parser.NewPcapParser(r)
 		if err != nil {
 			return err
 		}
@@ -67,4 +79,25 @@ func read(ctx context.Context, opts *Options) error {
 	}
 
 	return nil
+}
+
+func getReader(opts *Options) (*types.ReadBuffer, error) {
+	fpath := opts.ReadPath()
+	log.Warnf("reading from file %s", fpath)
+
+	var r *types.ReadBuffer
+
+	switch fpath {
+	case "-":
+		r = types.NewReadBuffer(io.NopCloser(os.Stdin))
+		break
+	default:
+		f, err := os.Open(fpath)
+		if err != nil {
+			return nil, err
+		}
+		r = types.NewReadBuffer(f)
+	}
+
+	return r, nil
 }
