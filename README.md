@@ -4,6 +4,7 @@
 
 [![amd64-e2e](https://img.shields.io/github/actions/workflow/status/mozillazg/ptcpdump/test.yml?label=x86_64%20(amd64)%20e2e)](https://github.com/mozillazg/ptcpdump/actions/workflows/test.yml)
 [![arm64-e2e](https://img.shields.io/circleci/build/gh/mozillazg/ptcpdump/master?label=aarch64%20(arm64)%20e2e)](https://app.circleci.com/pipelines/github/mozillazg/ptcpdump?branch=master)
+[![Release](https://img.shields.io/github/v/release/mozillazg/ptcpdump)](https://github.com/mozillazg/ptcpdump/releases)
 English | [中文](README.zh-CN.md)
 
 

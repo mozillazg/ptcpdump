@@ -17,7 +17,7 @@ function test_ptcpdump() {
   ls -lh ${FNAME}*
   test $(ls ${FNAME}* | wc -l) == 3
   for f in $(ls ${FNAME}* | head); do
-    ptcpdump -r $f >/dev/null
+    ${CMD} -r $f >/dev/null
   done
 }
 
