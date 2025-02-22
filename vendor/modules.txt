@@ -42,7 +42,7 @@ github.com/Microsoft/hcsshim/internal/wclayer
 github.com/Microsoft/hcsshim/internal/winapi
 github.com/Microsoft/hcsshim/osversion
 github.com/Microsoft/hcsshim/pkg/ociwclayer
-# github.com/cilium/ebpf v0.17.2 => github.com/mozillazg/ebpf v0.17.3-0.20250207013525-5746abfb2b20
+# github.com/cilium/ebpf v0.17.3 => github.com/mozillazg/ebpf v0.17.3-0.20250207013525-5746abfb2b20
 ## explicit; go 1.22
 github.com/cilium/ebpf
 github.com/cilium/ebpf/asm
@@ -579,12 +579,12 @@ gopkg.in/yaml.v3
 # k8s.io/component-base v0.26.2
 ## explicit; go 1.19
 k8s.io/component-base/logs/logreduction
-# k8s.io/cri-api v0.32.1 => github.com/mozillazg/cri-api v0.32.0-alpha.1.0.20241019013855-3dc36f8743df
+# k8s.io/cri-api v0.32.2 => github.com/mozillazg/cri-api v0.32.0-alpha.1.0.20241019013855-3dc36f8743df
 ## explicit; go 1.23.0
 k8s.io/cri-api/pkg/apis
 k8s.io/cri-api/pkg/apis/runtime/v1
 k8s.io/cri-api/pkg/apis/runtime/v1alpha2
-# k8s.io/cri-client v0.32.1 => github.com/mozillazg/cri-client v0.31.0-alpha.0.0.20241019023238-87687176fd67
+# k8s.io/cri-client v0.32.2 => github.com/mozillazg/cri-client v0.31.0-alpha.0.0.20241019023238-87687176fd67
 ## explicit; go 1.23.0
 k8s.io/cri-client/pkg
 k8s.io/cri-client/pkg/util
