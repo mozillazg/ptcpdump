@@ -334,7 +334,7 @@ Flags:
 | -w *x.pcap*                                       | ✅       | ✅ (without process info) |
 | -w *-*                                            | ✅       | ✅                        |
 | -r *x.pcapng*, -r *x.pcap*                        | ✅       | ✅                        |
-| -r *-*                                            | ✅       |                          |
+| -r *-*                                            | ✅       | ✅                        |
 | --pid *process_id*                                |         | ✅                        |
 | --pname *process_name*                            |         | ✅                        |
 | --uid *user_id*                                   |         | ✅                        |
@@ -343,7 +343,6 @@ Flags:
 | --pod-name *pod_name.namespace*                   |         | ✅                        |
 | -f, --follow-forks                                |         | ✅                        |
 | -- *command [args]*                               |         | ✅                        |
-| --oneline                                         |         | ✅                        |
 | --netns *path_to_net_ns*                          |         | ✅                        |
 | --print                                           | ✅       | ✅                        |
 | -c *count*                                        | ✅       | ✅                        |

@@ -24,6 +24,13 @@ func TestFormat(t *testing.T) {
 			expectedOutFile: "../testdata/format/tcp.pcapng.out.txt",
 		},
 		{
+			name: "pcapng file detect",
+			opts: &Options{
+				readFilePath: "../testdata/format/tcp.pcapng.unknown",
+			},
+			expectedOutFile: "../testdata/format/tcp.pcapng.out.txt",
+		},
+		{
 			name: "tcp -c",
 			opts: &Options{
 				readFilePath:   "../testdata/format/tcp.pcapng",
@@ -114,6 +121,13 @@ func TestFormat(t *testing.T) {
 			name: "udp",
 			opts: &Options{
 				readFilePath: "../testdata/format/udp.pcap",
+			},
+			expectedOutFile: "../testdata/format/udp.pcap.out.txt",
+		},
+		{
+			name: "pcap file detect",
+			opts: &Options{
+				readFilePath: "../testdata/format/udp.pcap.unknown",
 			},
 			expectedOutFile: "../testdata/format/udp.pcap.out.txt",
 		},
