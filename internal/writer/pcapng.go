@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/mozillazg/ptcpdump/internal/types"
+	"io"
 	"strings"
 	"sync"
+	"unsafe"
 
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/pcapgo"
@@ -15,21 +17,37 @@ import (
 )
 
 type PcapNGWriter struct {
-	pw           *pcapgo.NgWriter
-	pcache       *metadata.ProcessCache
-	interfaceIds map[string]int
-	pcapFilter   string
+	rr            Rotator
+	pw            *pcapgo.NgWriter
+	pcache        *metadata.ProcessCache
+	interfaceIds  map[string]int
+	newInterfaces []pcapgo.NgInterface
+	pcapFilter    string
 
 	noBuffer bool
 	lock     sync.RWMutex
 	keylogs  bytes.Buffer
 
 	enhancedContext types.EnhancedContext
+	newWriter       func(io.Writer) (*pcapgo.NgWriter, error)
 }
 
-func NewPcapNGWriter(pw *pcapgo.NgWriter, pcache *metadata.ProcessCache,
-	interfaceIds map[string]int) *PcapNGWriter {
-	return &PcapNGWriter{pw: pw, pcache: pcache, interfaceIds: interfaceIds, lock: sync.RWMutex{}}
+func NewPcapNGWriter(rr Rotator, newWriter func(io.Writer) (*pcapgo.NgWriter, error),
+	pcache *metadata.ProcessCache, interfaceIds map[string]int) (*PcapNGWriter, error) {
+	pw, err := newWriter(rr)
+	if err != nil {
+		return nil, err
+	}
+
+	return &PcapNGWriter{
+		rr:            rr,
+		newWriter:     newWriter,
+		pw:            pw,
+		pcache:        pcache,
+		interfaceIds:  interfaceIds,
+		newInterfaces: []pcapgo.NgInterface{},
+		lock:          sync.RWMutex{},
+	}, nil
 }
 
 func (w *PcapNGWriter) WithEnhancedContext(c types.EnhancedContext) *PcapNGWriter {
@@ -101,11 +119,38 @@ func (w *PcapNGWriter) Write(e *event.Packet) error {
 		return err
 	}
 
-	if err := w.pw.WritePacketWithOptions(info, e.Data, opts); err != nil {
-		return fmt.Errorf("writing packet: %w", err)
+	if err := w.writePacket(info, e.Data, opts); err != nil {
+		return err
 	}
 	if w.noBuffer {
 		w.pw.Flush()
+	}
+
+	return nil
+}
+
+func (w *PcapNGWriter) writePacket(ci gopacket.CaptureInfo, data []byte, opts pcapgo.NgPacketOptions) error {
+	w.lock.Lock()
+	defer w.lock.Unlock()
+
+	if w.rr.ShouldRotate(int(unsafe.Sizeof(ci)) + len(data) + int(unsafe.Sizeof(opts))) {
+		if err := w.rr.Rotate(); err != nil {
+			return fmt.Errorf("rotating file: %w", err)
+		}
+		pw, err := w.newWriter(w.rr)
+		if err != nil {
+			return fmt.Errorf("creating new pcapng writer: %w", err)
+		}
+		for _, intf := range w.newInterfaces {
+			if _, err := pw.AddInterface(intf); err != nil {
+				log.Errorf("error adding interface %s: %+v", intf.Name, err)
+			}
+		}
+		w.pw = pw
+	}
+
+	if err := w.pw.WritePacketWithOptions(ci, data, opts); err != nil {
+		return fmt.Errorf("writing packet: %w", err)
 	}
 
 	return nil
@@ -156,6 +201,7 @@ func (w *PcapNGWriter) AddDev(dev types.Device) {
 		log.Errorf("error adding interface %s: %+v", intf.Name, err)
 	}
 
+	w.newInterfaces = append(w.newInterfaces, intf)
 	w.interfaceIds[key] = index
 }
 
@@ -184,8 +230,8 @@ func (w *PcapNGWriter) WithPcapFilter(filter string) *PcapNGWriter {
 }
 
 func (w *PcapNGWriter) Flush() error {
-	w.lock.RLock()
-	defer w.lock.RUnlock()
+	w.lock.Lock()
+	defer w.lock.Unlock()
 
 	return w.pw.Flush()
 }

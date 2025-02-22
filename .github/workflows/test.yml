@@ -319,6 +319,18 @@ jobs:
             done
             exit 1
 
+      - name: Test rotate
+        uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
+        if: ${{ (!startsWith(matrix.backend, 'cgroup-skb')) && (contains(matrix.kernel, 'next')) }} # no need test for all kernels
+        with:
+          provision: 'false'
+          cmd: |
+            set -ex
+            export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
+
+            bash /host/testdata/test_rotate_filesize.sh /host/ptcpdump/ptcpdump
+            bash /host/testdata/test_rotate_filesize_with_count.sh /host/ptcpdump/ptcpdump
+
       - name: build demo app
         if: ${{ (!startsWith(matrix.kernel, '5.4')) && (!startsWith(matrix.kernel, '4.')) }}
         run: |
