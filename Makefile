@@ -23,6 +23,8 @@ GOOS ?= $(shell go env GOOS)
 LDFLAGS := -linkmode "external" -extldflags "-static"
 LDFLAGS += -X github.com/mozillazg/ptcpdump/internal.Version=$(VERSION)
 LDFLAGS += -X github.com/mozillazg/ptcpdump/internal.GitCommit=$(GIT_COMMIT)
+COVERAGE_FLAG ?= ''
+COVERAGE_ARGS ?= ''
 
 CARCH ?= $(shell uname -m)
 LIBPCAP_ARCH = $(CARCH)-unknown-linux-gnu
@@ -58,13 +60,13 @@ $(OUTPUT):
 build: libpcap
 	CGO_CFLAGS=$(CGO_CFLAGS_STATIC) \
 	CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) \
-	CGO_ENABLED=1 go build -tags static -ldflags "$(LDFLAGS)"
+	CGO_ENABLED=1 go build -tags static -ldflags "$(LDFLAGS)" $(COVERAGE_FLAG)
 
 .PHONY: test
 test:
 	CGO_CFLAGS=$(CGO_CFLAGS_STATIC) \
 	CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) \
-	CGO_ENABLED=1 go test -v ./...
+	CGO_ENABLED=1 go test $(COVERAGE_FLAG) -v ./... $(COVERAGE_ARGS)
 
 .PHONY: generate
 generate: build-bpf
@@ -82,7 +84,7 @@ build-bpf-via-docker:
 
 .PHONY: build-via-docker
 build-via-docker:
-	docker run --rm -v `pwd`:/app $(IMAGE_DEV) make build
+	docker run --rm -v `pwd`:/app $(IMAGE_DEV) make build COVERAGE_FLAG=$(COVERAGE_FLAG)
 
 
 .PHONY: lint

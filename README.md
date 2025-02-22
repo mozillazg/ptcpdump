@@ -335,7 +335,7 @@ Flags:
 | -w *x.pcap*                                       | ✅       | ✅ (without process info) |
 | -w *-*                                            | ✅       | ✅                        |
 | -r *x.pcapng*, -r *x.pcap*                        | ✅       | ✅                        |
-| -r *-*                                            | ✅       |                          |
+| -r *-*                                            | ✅       | ✅                        |
 | --pid *process_id*                                |         | ✅                        |
 | --pname *process_name*                            |         | ✅                        |
 | --uid *user_id*                                   |         | ✅                        |
