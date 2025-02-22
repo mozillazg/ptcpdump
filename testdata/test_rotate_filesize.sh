@@ -16,6 +16,9 @@ function test_ptcpdump() {
   wait
   ls -lh ${FNAME}*
   test $(ls ${FNAME}* | wc -l) -gt 3
+  for f in $(ls ${FNAME}* | head) ; do
+    ptcpdump -r $f >/dev/null
+  done
 }
 
 
