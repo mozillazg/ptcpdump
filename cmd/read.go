@@ -20,12 +20,12 @@ func read(ctx context.Context, opts *Options) error {
 	fpath := opts.ReadPath()
 	f, err := getReader(opts)
 	if err != nil {
-		return err
+		return fmt.Errorf("open file: %w", err)
 	}
 	defer f.Close()
 	dataType, err := utils.DetectPcapDataType(f)
 	if err != nil {
-		return err
+		return fmt.Errorf("detect pcap data type: %w", err)
 	}
 
 	var p parser.Parser
@@ -39,13 +39,13 @@ func read(ctx context.Context, opts *Options) error {
 		r, ok, err := f.File()
 		if !ok {
 			if err != nil {
-				log.Infof("%v", err)
+				log.Infof("%+v", err)
 			}
 			return errors.New("unsupported data source for the pcap format")
 		}
 		pr, err := parser.NewPcapParser(r)
 		if err != nil {
-			return err
+			return fmt.Errorf("create pcap parser: %w", err)
 		}
 		stdoutWriter.Decoder = pr.Decoder()
 		p = pr
@@ -53,7 +53,7 @@ func read(ctx context.Context, opts *Options) error {
 	default:
 		p, err = parser.NewPcapNGParser(f, pcache)
 		if err != nil {
-			return err
+			return fmt.Errorf("create pcapng parser: %w", err)
 		}
 	}
 
@@ -61,13 +61,16 @@ func read(ctx context.Context, opts *Options) error {
 	for {
 		e, err := p.Parse()
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
-			return err
+			return fmt.Errorf("parse packet: %w", err)
 		}
 		if err := stdoutWriter.Write(e); err != nil {
-			return err
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			return fmt.Errorf("write packet: %w", err)
 		}
 		n++
 		if opts.maxPacketCount > 0 && opts.maxPacketCount <= n {
