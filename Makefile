@@ -23,8 +23,10 @@ GOOS ?= $(shell go env GOOS)
 LDFLAGS := -linkmode "external" -extldflags "-static"
 LDFLAGS += -X github.com/mozillazg/ptcpdump/internal.Version=$(VERSION)
 LDFLAGS += -X github.com/mozillazg/ptcpdump/internal.GitCommit=$(GIT_COMMIT)
-COVERAGE_FLAG ?= ''
-COVERAGE_ARGS ?= ''
+LDFLAGS_DYNAMIC := -X github.com/mozillazg/ptcpdump/internal.Version=$(VERSION)
+LDFLAGS_DYNAMIC += -X github.com/mozillazg/ptcpdump/internal.GitCommit=$(GIT_COMMIT)
+COVERAGE_FLAG ?=
+COVERAGE_ARGS ?=
 
 CARCH ?= $(shell uname -m)
 LIBPCAP_ARCH = $(CARCH)-unknown-linux-gnu
@@ -61,6 +63,11 @@ build: libpcap
 	CGO_CFLAGS=$(CGO_CFLAGS_STATIC) \
 	CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) \
 	CGO_ENABLED=1 go build -tags static -ldflags "$(LDFLAGS)" $(COVERAGE_FLAG)
+
+
+.PHONY: build-dynamic-link
+build-dynamic-link:
+	CGO_ENABLED=1 go build -tags dynamic -ldflags "$(LDFLAGS_DYNAMIC)" $(COVERAGE_FLAG)
 
 .PHONY: test
 test:
