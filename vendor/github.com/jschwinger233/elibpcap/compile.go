@@ -10,7 +10,7 @@ import (
 )
 
 /*
-#cgo LDFLAGS: -L/usr/local/lib -lpcap -static
+#cgo LDFLAGS: -L/usr/local/lib -lpcap
 #include <stdlib.h>
 #include <pcap.h>
 */
