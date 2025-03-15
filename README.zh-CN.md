@@ -281,7 +281,7 @@ Flags:
       --container-id string                          Filter by container id (only TCP and UDP packets are supported)
       --container-name string                        Filter by container name (only TCP and UDP packets are supported)
       --containerd-address string                    Address of containerd service (default "/run/containerd/containerd.sock")
-      --context strings                              Specify which context information to include in the output (default [process,parentproc,container,pod])
+      --context strings                              Specify which context information to include in the output (default [process,thread,parentproc,user,container,pod])
       --count                                        Print only on stdout the packet count when reading capture file instead of parsing/printing the packets
       --cri-runtime-address string                   Address of CRI container runtime service (default: uses in order the first successful one of [/var/run/dockershim.sock, /var/run/cri-dockerd.sock, /run/crio/crio.sock, /run/containerd/containerd.sock])
       --delay-before-handle-packet-events duration   Delay some durations before handle packet events
@@ -290,6 +290,9 @@ Flags:
       --embed-keylog-to-pcapng -- CMD [ARGS]         Write TLS Key Log file to this path (experimental: only support unstripped Go binary and must combined with -- CMD [ARGS])
       --event-chan-size uint                         Size of event chan (default 20)
       --exec-events-worker-number uint               Number of worker to handle exec events (default 50)
+  -F, --expression-file string                       Use file as input for the filter expression. An additional expression given on the command line is ignored.
+  -W, --file-count uint                              Used in conjunction with the -C option, this will limit the number of files created to the specified number, and begin overwriting files from the beginning, thus creating a 'rotating' buffer.
+  -C, --file-size fileSize                           Before writing a raw packet to a savefile, check whether the file is currently larger than file_size and, if so, close the current savefile and open a new one. Savefiles after the first savefile will have the name specified with the -w flag, with a number after it, starting at 1 and continuing upward.
   -f, --follow-forks                                 Trace child processes as they are created by currently traced processes when filter by process
   -h, --help                                         help for ptcpdump
   -i, --interface strings                            Interfaces to capture (default [lo])
@@ -315,6 +318,7 @@ Flags:
   -c, --receive-count uint                           Exit after receiving count packets
   -s, --snapshot-length uint32                       Snarf snaplen bytes of data from each packet rather than the default of 262144 bytes (default 262144)
       --time-stamp-precision string                  When capturing, set the time stamp precision for the capture to the format (default "micro")
+      --uid uints                                    Filter by user IDs (only TCP and UDP packets are supported) (default [])
   -v, --verbose count                                When parsing and printing, produce (slightly more) verbose output
       --version                                      Print the ptcpdump and libpcap version strings and exit
   -w, --write-file string                            Write the raw packets to file rather than parsing and printing them out. They can later be printed with the -r option. Standard output is used if file is '-'. e.g. ptcpdump.pcapng
@@ -367,7 +371,7 @@ Flags:
 | -ddd                                              | ✅       |                          |
 | -e                                                | ✅       |                          |
 | -f                                                | ✅       | ⛔                        |
-| -F *file*                                         | ✅       |                          |
+| -F *file*                                         | ✅       | ✅                        |
 | -G *rotate_seconds*                               | ✅       |                          |
 | -h, --help                                        | ✅       | ✅                        |
 | --version                                         | ✅       | ✅                        |

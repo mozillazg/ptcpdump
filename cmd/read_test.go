@@ -195,9 +195,10 @@ func TestFormat(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			output := bytes.Buffer{}
 			tt.opts.stdout = &output
-			prepareOptions(tt.opts, nil, nil)
+			err := prepareOptions(tt.opts, nil, nil)
+			assert.NoError(t, err)
 
-			err := read(context.TODO(), tt.opts)
+			err = read(context.TODO(), tt.opts)
 			assert.NoError(t, err)
 
 			expected, err := os.ReadFile(tt.expectedOutFile)

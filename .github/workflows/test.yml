@@ -327,6 +327,7 @@ jobs:
           cmd: |
             set -ex
             export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
+            export GOCOVERDIR="/host/${{ env.GOCOVERDIR }}"
 
             bash /host/testdata/test_rotate_filesize.sh /host/ptcpdump/ptcpdump
             bash /host/testdata/test_rotate_filesize_with_count.sh /host/ptcpdump/ptcpdump

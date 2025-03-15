@@ -8,8 +8,8 @@
 English | [中文](README.zh-CN.md)
 
 
-ptcpdump is an eBPF-based implementation of tcpdump that includes an additional feature:
-it adds process information as comments for each packet when available.
+ptcpdump is a tcpdump-compatible packet analyzer powered by eBPF,
+automatically annotating packets with process/container/pod metadata when detectable.
 Inspired by [jschwinger233/skbdump](https://github.com/jschwinger233/skbdump).
 
 ![](./docs/wireshark.png)
@@ -34,17 +34,16 @@ Table of Contents
 
 ## Features
 
-* Process-aware
-  * Aware of the process information associated with the packets.
-  * Supports filtering packets by process ID and process name.
-* Container-aware and Kubernetes-aware
-  * Aware of the container and pod information associated with the packets.
-  * Supports multiple container runtimes: Docker Engine and containerd
-  * Supports filtering packets by container ID, container name and pod name.
-* Supports using pcap-filter(7) syntax for filtering packets.
-* Directly applies filters in the kernel space.
-* Supports saving captured packets in the PcapNG format for offline analysis with third-party tools such as Wireshark/tshark/tcpdump.
-* Supports packet capture for network interfaces under the specified network namespace.
+🔍 Process/container/pod-aware packet capture.
+📦 Filter by: `--pid` (process), `--pname` (process name), `--container-id` (container), `--pod-name` (pod).
+🎯 tcpdump-compatible flags (`-i`, `-w`, `-c`, `-s`, `-n`, `-C`, `-W`, `-A`, and more).
+📜 Supports `pcap-filter(7)` syntax like tcpdump.
+🌳 tcpdump-like output + process/container/pod context.
+📑 Verbose mode shows detailed metadata for processes and containers/pods.
+💾 PcapNG with embedded metadata (Wireshark-ready).
+🌐 Cross-namespace capture (`--netns`).
+🚀 Kernel-space BPF filtering (low overhead, reduces CPU usage).
+⚡ Container runtime integration (Docker, containerd).
 
 
 ## Installation
@@ -290,6 +289,9 @@ Flags:
       --embed-keylog-to-pcapng -- CMD [ARGS]         Write TLS Key Log file to this path (experimental: only support unstripped Go binary and must combined with -- CMD [ARGS])
       --event-chan-size uint                         Size of event chan (default 20)
       --exec-events-worker-number uint               Number of worker to handle exec events (default 50)
+  -F, --expression-file string                       Use file as input for the filter expression. An additional expression given on the command line is ignored.
+  -W, --file-count uint                              Used in conjunction with the -C option, this will limit the number of files created to the specified number, and begin overwriting files from the beginning, thus creating a 'rotating' buffer.
+  -C, --file-size fileSize                           Before writing a raw packet to a savefile, check whether the file is currently larger than file_size and, if so, close the current savefile and open a new one. Savefiles after the first savefile will have the name specified with the -w flag, with a number after it, starting at 1 and continuing upward.
   -f, --follow-forks                                 Trace child processes as they are created by currently traced processes when filter by process
   -h, --help                                         help for ptcpdump
   -i, --interface strings                            Interfaces to capture (default [lo])
@@ -347,35 +349,26 @@ Flags:
 | -- *command [args]*                               |         | ✅                        |
 | --netns *path_to_net_ns*                          |         | ✅                        |
 | --print                                           | ✅       | ✅                        |
-| -c *count*                                        | ✅       | ✅                        |
-| -Q *direction*, --direction=*direction*           | ✅       | ✅                        |
-| -D, --list-interfaces                             | ✅       | ✅                        |
 | -A                                                | ✅       | ✅                        |
-| -x                                                | ✅       | ✅                        |
-| -xx                                               | ✅       | ✅                        |
-| -X                                                | ✅       | ✅                        |
-| -XX                                               | ✅       | ✅                        |
-| -v                                                | ✅       | ✅                        |
-| -vv                                               | ✅       | ⭕                        |
-| -vvv                                              | ✅       | ⭕                        |
 | -B *bufer_size*, --buffer-size=*buffer_size*      | ✅       |                          |
+| -c *count*                                        | ✅       | ✅                        |
 | --count                                           | ✅       | ✅                        |
 | -C *file_size                                     | ✅       | ✅                        |
 | -d                                                | ✅       |                          |
 | -dd                                               | ✅       |                          |
 | -ddd                                              | ✅       |                          |
+| -D, --list-interfaces                             | ✅       | ✅                        |
 | -e                                                | ✅       |                          |
 | -f                                                | ✅       | ⛔                        |
-| -F *file*                                         | ✅       |                          |
+| -F *file*                                         | ✅       | ✅                        |
 | -G *rotate_seconds*                               | ✅       |                          |
 | -h, --help                                        | ✅       | ✅                        |
-| --version                                         | ✅       | ✅                        |
 | -H                                                | ✅       |                          |
-| -l, --monitor-mode                                | ✅       |                          |
+| -I, --monitor-mode                                | ✅       |                          |
 | --immediate-mode                                  | ✅       |                          |
 | -j *tstamp_type*, --time-stamp-type=*tstamp_type* | ✅       |                          |
-| -J, --list-time-stamp-types                       | ✅       |                          |
 | --time-stamp-precision=*tstamp_precision*         | ✅       | ✅                        |
+| -J, --list-time-stamp-types                       | ✅       |                          |
 | --micro                                           | ✅       | ✅                        |
 | --nano                                            | ✅       | ✅                        |
 | -K, --dont-verify-checksums                       | ✅       |                          |
@@ -389,6 +382,7 @@ Flags:
 | -O, --no-optimize                                 | ✅       |                          |
 | -p, --no-promiscuous-mode                         | ✅       | ⛔                        |
 | -q                                                | ✅       | ✅                        |
+| -Q *direction*, --direction=*direction*           | ✅       | ✅                        |
 | -S, --absolute-tcp-sequence-numbers               | ✅       |                          |
 | -s *snaplen*, --snapshot-length=*snaplen*         | ✅       | ✅                        |
 | -T *type*                                         | ✅       |                          |
@@ -398,9 +392,17 @@ Flags:
 | -tttt                                             | ✅       | ⭕                        |
 | -u                                                | ✅       |                          |
 | -U, --packet-buffered                             | ✅       |                          |
-| -V *file*                                         | ✅       |                          |
-| -W *filecont*                                     | ✅       | ✅                        |
 | -y *datalinktype*, --linktype=*datalinktype*      | ✅       |                          |
+| -v                                                | ✅       | ✅                        |
+| -vv                                               | ✅       | ⭕                        |
+| -vvv                                              | ✅       | ⭕                        |
+| -V *file*                                         | ✅       |                          |
+| --version                                         | ✅       | ✅                        |
+| -W *filecont*                                     | ✅       | ✅                        |
+| -x                                                | ✅       | ✅                        |
+| -xx                                               | ✅       | ✅                        |
+| -X                                                | ✅       | ✅                        |
+| -XX                                               | ✅       | ✅                        |
 | -z *postrotate-command*                           | ✅       |                          |
 | -Z *user*, --relinquish-privileges=*user*         | ✅       |                          |
 

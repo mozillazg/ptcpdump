@@ -1,6 +1,11 @@
 package cmd
 
-import "testing"
+import (
+	"github.com/stretchr/testify/assert"
+	"os"
+	"path"
+	"testing"
+)
 
 func Test_getPodNameFilter(t *testing.T) {
 	type args struct {
@@ -48,4 +53,32 @@ func Test_getPodNameFilter(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_prepareOptions_exp(t *testing.T) {
+	t.Run("exp arg", func(t *testing.T) {
+		opts := &Options{}
+		err := prepareOptions(opts, []string{"--", "curl", "1.1.1.1"},
+			[]string{"port 8080", "and host 127.0.0.1"})
+		assert.NoError(t, err)
+		assert.Equal(t, "port 8080 and host 127.0.0.1", opts.pcapFilter)
+	})
+
+	t.Run("exp file", func(t *testing.T) {
+		dir, err := os.MkdirTemp("", "exp")
+		assert.NoError(t, err)
+		defer os.Remove(dir)
+		fp := path.Join(dir, "test.exp")
+		defer os.Remove(fp)
+		err = os.WriteFile(fp, []byte("  port 8081 and tcp  \n"), 0644)
+		assert.NoError(t, err)
+
+		opts := &Options{
+			expressionFile: fp,
+		}
+		err = prepareOptions(opts, []string{"-i", "any", "host 127.0.0.1 and port 8080"},
+			[]string{"port 8080", "and host 127.0.0.1"})
+		assert.NoError(t, err)
+		assert.Equal(t, "port 8081 and tcp", opts.pcapFilter)
+	})
 }
