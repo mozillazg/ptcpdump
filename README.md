@@ -347,35 +347,26 @@ Flags:
 | -- *command [args]*                               |         | ✅                        |
 | --netns *path_to_net_ns*                          |         | ✅                        |
 | --print                                           | ✅       | ✅                        |
-| -c *count*                                        | ✅       | ✅                        |
-| -Q *direction*, --direction=*direction*           | ✅       | ✅                        |
-| -D, --list-interfaces                             | ✅       | ✅                        |
 | -A                                                | ✅       | ✅                        |
-| -x                                                | ✅       | ✅                        |
-| -xx                                               | ✅       | ✅                        |
-| -X                                                | ✅       | ✅                        |
-| -XX                                               | ✅       | ✅                        |
-| -v                                                | ✅       | ✅                        |
-| -vv                                               | ✅       | ⭕                        |
-| -vvv                                              | ✅       | ⭕                        |
 | -B *bufer_size*, --buffer-size=*buffer_size*      | ✅       |                          |
+| -c *count*                                        | ✅       | ✅                        |
 | --count                                           | ✅       | ✅                        |
 | -C *file_size                                     | ✅       | ✅                        |
 | -d                                                | ✅       |                          |
 | -dd                                               | ✅       |                          |
 | -ddd                                              | ✅       |                          |
+| -D, --list-interfaces                             | ✅       | ✅                        |
 | -e                                                | ✅       |                          |
 | -f                                                | ✅       | ⛔                        |
 | -F *file*                                         | ✅       |                          |
 | -G *rotate_seconds*                               | ✅       |                          |
 | -h, --help                                        | ✅       | ✅                        |
-| --version                                         | ✅       | ✅                        |
 | -H                                                | ✅       |                          |
-| -l, --monitor-mode                                | ✅       |                          |
+| -I, --monitor-mode                                | ✅       |                          |
 | --immediate-mode                                  | ✅       |                          |
 | -j *tstamp_type*, --time-stamp-type=*tstamp_type* | ✅       |                          |
-| -J, --list-time-stamp-types                       | ✅       |                          |
 | --time-stamp-precision=*tstamp_precision*         | ✅       | ✅                        |
+| -J, --list-time-stamp-types                       | ✅       |                          |
 | --micro                                           | ✅       | ✅                        |
 | --nano                                            | ✅       | ✅                        |
 | -K, --dont-verify-checksums                       | ✅       |                          |
@@ -389,6 +380,7 @@ Flags:
 | -O, --no-optimize                                 | ✅       |                          |
 | -p, --no-promiscuous-mode                         | ✅       | ⛔                        |
 | -q                                                | ✅       | ✅                        |
+| -Q *direction*, --direction=*direction*           | ✅       | ✅                        |
 | -S, --absolute-tcp-sequence-numbers               | ✅       |                          |
 | -s *snaplen*, --snapshot-length=*snaplen*         | ✅       | ✅                        |
 | -T *type*                                         | ✅       |                          |
@@ -398,9 +390,17 @@ Flags:
 | -tttt                                             | ✅       | ⭕                        |
 | -u                                                | ✅       |                          |
 | -U, --packet-buffered                             | ✅       |                          |
-| -V *file*                                         | ✅       |                          |
-| -W *filecont*                                     | ✅       | ✅                        |
 | -y *datalinktype*, --linktype=*datalinktype*      | ✅       |                          |
+| -v                                                | ✅       | ✅                        |
+| -vv                                               | ✅       | ⭕                        |
+| -vvv                                              | ✅       | ⭕                        |
+| -V *file*                                         | ✅       |                          |
+| --version                                         | ✅       | ✅                        |
+| -W *filecont*                                     | ✅       | ✅                        |
+| -x                                                | ✅       | ✅                        |
+| -xx                                               | ✅       | ✅                        |
+| -X                                                | ✅       | ✅                        |
+| -XX                                               | ✅       | ✅                        |
 | -z *postrotate-command*                           | ✅       |                          |
 | -Z *user*, --relinquish-privileges=*user*         | ✅       |                          |
 
