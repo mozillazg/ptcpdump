@@ -8,8 +8,8 @@
 English | [中文](README.zh-CN.md)
 
 
-ptcpdump is an eBPF-based implementation of tcpdump that includes an additional feature:
-it adds process information as comments for each packet when available.
+ptcpdump is a tcpdump-compatible packet analyzer powered by eBPF,
+automatically annotating packets with process/container/pod metadata when detectable.
 Inspired by [jschwinger233/skbdump](https://github.com/jschwinger233/skbdump).
 
 ![](./docs/wireshark.png)
@@ -34,17 +34,16 @@ Table of Contents
 
 ## Features
 
-* Process-aware
-  * Aware of the process information associated with the packets.
-  * Supports filtering packets by process ID and process name.
-* Container-aware and Kubernetes-aware
-  * Aware of the container and pod information associated with the packets.
-  * Supports multiple container runtimes: Docker Engine and containerd
-  * Supports filtering packets by container ID, container name and pod name.
-* Supports using pcap-filter(7) syntax for filtering packets.
-* Directly applies filters in the kernel space.
-* Supports saving captured packets in the PcapNG format for offline analysis with third-party tools such as Wireshark/tshark/tcpdump.
-* Supports packet capture for network interfaces under the specified network namespace.
+🔍 Process/container/pod-aware packet capture.
+📦 Filter by: `--pid` (process), `--pname` (process name), `--container-id` (container), `--pod-name` (pod).
+🎯 tcpdump-compatible flags (`-i`, `-w`, `-c`, `-s`, `-n`, `-C`, `-W`, `-A`, and more).
+📜 Supports `pcap-filter(7)` syntax like tcpdump.
+🌳 tcpdump-like output + process/container/pod context.
+📑 Verbose mode shows detailed metadata for processes and containers/pods.
+💾 PcapNG with embedded metadata (Wireshark-ready).
+🌐 Cross-namespace capture (`--netns`).
+🚀 Kernel-space BPF filtering (low overhead, reduces CPU usage).
+⚡ Container runtime integration (Docker, containerd).
 
 
 ## Installation
