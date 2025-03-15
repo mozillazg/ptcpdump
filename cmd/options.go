@@ -39,6 +39,7 @@ type Options struct {
 	writeFilePath  string
 	readFilePath   string
 	pcapFilter     string
+	expressionFile string
 	listInterfaces bool
 	version        bool
 	print          bool
@@ -133,12 +134,19 @@ func (o Options) TimeStampAsNano() bool {
 	return o.timeStampNano || o.timeStampPrecision == "nano"
 }
 
-func prepareOptions(opts *Options, rawArgs []string, args []string) {
+func prepareOptions(opts *Options, rawArgs []string, args []string) error {
 	subProgArgs := getSubProgArgs(rawArgs)
 	opts.pcapFilter = strings.Join(args, " ")
 	if len(subProgArgs) > 0 {
 		opts.subProgArgs = subProgArgs
 		opts.pcapFilter = strings.TrimSuffix(opts.pcapFilter, strings.Join(subProgArgs, " "))
+	}
+	if opts.expressionFile != "" {
+		data, err := os.ReadFile(opts.expressionFile)
+		if err != nil {
+			return fmt.Errorf("read expression file: %w", err)
+		}
+		opts.pcapFilter = string(data)
 	}
 	opts.pcapFilter = strings.TrimSpace(opts.pcapFilter)
 
@@ -190,6 +198,7 @@ func prepareOptions(opts *Options, rawArgs []string, args []string) {
 	}
 
 	opts.fileSizeBytes = opts.fileSize.Bytes()
+	return nil
 }
 
 func getPodNameFilter(raw string) (name, ns string) {

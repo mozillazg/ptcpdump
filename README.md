@@ -289,6 +289,9 @@ Flags:
       --embed-keylog-to-pcapng -- CMD [ARGS]         Write TLS Key Log file to this path (experimental: only support unstripped Go binary and must combined with -- CMD [ARGS])
       --event-chan-size uint                         Size of event chan (default 20)
       --exec-events-worker-number uint               Number of worker to handle exec events (default 50)
+  -F, --expression-file string                       Use file as input for the filter expression. An additional expression given on the command line is ignored.
+  -W, --file-count uint                              Used in conjunction with the -C option, this will limit the number of files created to the specified number, and begin overwriting files from the beginning, thus creating a 'rotating' buffer.
+  -C, --file-size fileSize                           Before writing a raw packet to a savefile, check whether the file is currently larger than file_size and, if so, close the current savefile and open a new one. Savefiles after the first savefile will have the name specified with the -w flag, with a number after it, starting at 1 and continuing upward.
   -f, --follow-forks                                 Trace child processes as they are created by currently traced processes when filter by process
   -h, --help                                         help for ptcpdump
   -i, --interface strings                            Interfaces to capture (default [lo])
@@ -357,7 +360,7 @@ Flags:
 | -D, --list-interfaces                             | ✅       | ✅                        |
 | -e                                                | ✅       |                          |
 | -f                                                | ✅       | ⛔                        |
-| -F *file*                                         | ✅       |                          |
+| -F *file*                                         | ✅       | ✅                        |
 | -G *rotate_seconds*                               | ✅       |                          |
 | -h, --help                                        | ✅       | ✅                        |
 | -H                                                | ✅       |                          |

@@ -127,6 +127,7 @@ func (b *BPF) Load(opts Options) error {
 	}
 
 	if opts.pcapFilter != "" {
+		log.Infof("pcap filter: %s", opts.pcapFilter)
 		if err := b.injectPcapFilter(); err != nil {
 			return fmt.Errorf(": %w", err)
 		}

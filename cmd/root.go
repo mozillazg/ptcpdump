@@ -33,11 +33,13 @@ Examples:
 
 Expression: see "man 7 pcap-filter"`,
 	DisableFlagsInUseLine: true,
-	Short: "ptcpdump is an eBPF-based implementation of tcpdump that includes an additional feature:\n" +
-		" it adds process information as comments for each packet when available.\n" +
+	Short: "ptcpdump is a tcpdump-compatible packet analyzer powered by eBPF,\n" +
+		" automatically annotating packets with process/container/pod metadata when detectable.\n" +
 		" More info: https://github.com/mozillazg/ptcpdump",
 	Run: func(cmd *cobra.Command, args []string) {
-		prepareOptions(opts, os.Args, args)
+		if err := prepareOptions(opts, os.Args, args); err != nil {
+			logFatal(err)
+		}
 		setupLogger(opts)
 
 		err := run(opts)
@@ -146,6 +148,8 @@ func init() {
 	rootCmd.Flags().UintVarP(&opts.fileCount, "file-count", "W", 0,
 		"Used in conjunction with the -C option, this will limit the number of files created to the specified number, "+
 			"and begin overwriting files from the beginning, thus creating a 'rotating' buffer.")
+	rootCmd.Flags().StringVarP(&opts.expressionFile, "expression-file", "F", "",
+		"Use file as input for the filter expression. An additional expression given on the command line is ignored.")
 
 	silenceKlog()
 }
