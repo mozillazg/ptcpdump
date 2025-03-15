@@ -80,8 +80,8 @@ func init() {
 		"Print parsed packet output in a single line")
 	rootCmd.Flags().BoolVarP(&opts.printPacketNumber, "number", "#", false,
 		"Print an optional packet number at the beginning of the line")
-	rootCmd.Flags().BoolVarP(&opts.dontPrintTimestamp, "no-timestamp", "t", false,
-		"Don't print a timestamp on each dump line")
+	rootCmd.Flags().CountVarP(&opts.printTimestamp, "print-timestamp", "t",
+		"control the format of the timestamp printed in the output")
 	rootCmd.Flags().BoolVar(&opts.onlyPrintCount, "count", false,
 		"Print only on stdout the packet count when reading capture file instead of parsing/printing the packets")
 	rootCmd.Flags().CountVarP(&opts.dontConvertAddr, "no-convert-addr", "n",

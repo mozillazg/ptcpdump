@@ -303,7 +303,6 @@ Flags:
       --nano                                         Shorthands for --time-stamp-precision=nano
       --netns strings                                Path to an network namespace file or name (default [/proc/self/ns/net])
   -n, --no-convert-addr count                        Don't convert addresses (i.e., host addresses, port numbers, etc.) to names
-  -t, --no-timestamp                                 Don't print a timestamp on each dump line
   -#, --number                                       Print an optional packet number at the beginning of the line
       --oneline                                      Print parsed packet output in a single line
       --pid uints                                    Filter by process IDs (only TCP and UDP packets are supported) (default [])
@@ -313,6 +312,7 @@ Flags:
   -A, --print-data-in-ascii                          Print each packet (minus its link level header) in ASCII
   -x, --print-data-in-hex count                      When parsing and printing, in addition to printing the headers of each packet, print the data of each packet in hex
   -X, --print-data-in-hex-ascii count                When parsing and printing, in addition to printing the headers of each packet, print the data of each packet in hex and ASCII
+  -t, --print-timestamp count
   -q, --quiet                                        Quiet output. Print less protocol information so output lines are shorter
   -r, --read-file string                             Read packets from file (which was created with the -w option). e.g. ptcpdump.pcapng
   -c, --receive-count uint                           Exit after receiving count packets
@@ -398,9 +398,10 @@ Flags:
 | -s *snaplen*, --snapshot-length=*snaplen*         | ✅       | ✅                        |
 | -T *type*                                         | ✅       |                          |
 | -t                                                | ✅       | ✅                        |
-| -tt                                               | ✅       | ⭕                        |
-| -ttt                                              | ✅       | ⭕                        |
-| -tttt                                             | ✅       | ⭕                        |
+| -tt                                               | ✅       | ✅                        |
+| -ttt                                              | ✅       | ✅                        |
+| -tttt                                             | ✅       | ✅                        |
+| -ttttt                                            | ✅       | ✅                        |
 | -u                                                | ✅       |                          |
 | -U, --packet-buffered                             | ✅       |                          |
 | -V *file*                                         | ✅       |                          |

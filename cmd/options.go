@@ -54,6 +54,8 @@ type Options struct {
 
 	printPacketNumber   bool
 	dontPrintTimestamp  bool
+	printTimestamp      int
+	timestampN          int
 	onlyPrintCount      bool
 	printDataAsHex      int
 	printDataAsHexASCII int
@@ -149,6 +151,10 @@ func prepareOptions(opts *Options, rawArgs []string, args []string) error {
 		opts.pcapFilter = string(data)
 	}
 	opts.pcapFilter = strings.TrimSpace(opts.pcapFilter)
+	opts.timestampN = opts.printTimestamp
+	if opts.printTimestamp == 1 {
+		opts.dontPrintTimestamp = true
+	}
 
 	if opts.dockerEndpoint != "" {
 		opts.dockerEndpoint = getEndpoint(opts.dockerEndpoint)
@@ -231,6 +237,7 @@ func (opts *Options) applyToStdoutWriter(w *writer.StdoutWriter) {
 	w.OneLine = opts.oneLine
 	w.PrintNumber = opts.printPacketNumber
 	w.NoTimestamp = opts.dontPrintTimestamp
+	w.TimestampN = opts.timestampN
 	w.TimestampNano = opts.TimeStampAsNano()
 	w.Quiet = opts.quiet
 	if opts.onlyPrintCount {
