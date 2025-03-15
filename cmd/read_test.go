@@ -31,6 +31,82 @@ func TestFormat(t *testing.T) {
 			expectedOutFile: "../testdata/format/tcp.pcapng.out.txt",
 		},
 		{
+			name: "tcp -t",
+			opts: &Options{
+				readFilePath:   "../testdata/format/tcp.pcapng",
+				printTimestamp: 1,
+			},
+			expectedOutFile: "../testdata/format/tcp.pcapng.-t.out.txt",
+		},
+		{
+			name: "tcp -tt",
+			opts: &Options{
+				readFilePath:   "../testdata/format/tcp.pcapng",
+				printTimestamp: 2,
+			},
+			expectedOutFile: "../testdata/format/tcp.pcapng.-tt.out.txt",
+		},
+		{
+			name: "tcp -tt --time-stamp-precision=nano",
+			opts: &Options{
+				readFilePath:       "../testdata/format/tcp.pcapng",
+				printTimestamp:     2,
+				timeStampPrecision: "nano",
+			},
+			expectedOutFile: "../testdata/format/tcp.pcapng.-tt.nano.out.txt",
+		},
+		{
+			name: "tcp -ttt",
+			opts: &Options{
+				readFilePath:   "../testdata/format/tcp.pcapng",
+				printTimestamp: 3,
+			},
+			expectedOutFile: "../testdata/format/tcp.pcapng.-ttt.out.txt",
+		},
+		{
+			name: "tcp -ttt --time-stamp-precision=nano",
+			opts: &Options{
+				readFilePath:       "../testdata/format/tcp.pcapng",
+				printTimestamp:     3,
+				timeStampPrecision: "nano",
+			},
+			expectedOutFile: "../testdata/format/tcp.pcapng.-ttt.nano.out.txt",
+		},
+		{
+			name: "tcp -tttt",
+			opts: &Options{
+				readFilePath:   "../testdata/format/tcp.pcapng",
+				printTimestamp: 4,
+			},
+			expectedOutFile: "../testdata/format/tcp.pcapng.-tttt.out.txt",
+		},
+		{
+			name: "tcp -tttt --time-stamp-precision=nano",
+			opts: &Options{
+				readFilePath:       "../testdata/format/tcp.pcapng",
+				printTimestamp:     4,
+				timeStampPrecision: "nano",
+			},
+			expectedOutFile: "../testdata/format/tcp.pcapng.-tttt.nano.out.txt",
+		},
+		{
+			name: "tcp -ttttt",
+			opts: &Options{
+				readFilePath:   "../testdata/format/tcp.pcapng",
+				printTimestamp: 5,
+			},
+			expectedOutFile: "../testdata/format/tcp.pcapng.-ttttt.out.txt",
+		},
+		{
+			name: "tcp -ttttt --time-stamp-precision=nano",
+			opts: &Options{
+				readFilePath:       "../testdata/format/tcp.pcapng",
+				printTimestamp:     5,
+				timeStampPrecision: "nano",
+			},
+			expectedOutFile: "../testdata/format/tcp.pcapng.-ttttt.nano.out.txt",
+		},
+		{
 			name: "tcp -c",
 			opts: &Options{
 				readFilePath:   "../testdata/format/tcp.pcapng",

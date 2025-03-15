@@ -6,6 +6,7 @@ import (
 	"github.com/mozillazg/ptcpdump/internal/types"
 	"io"
 	"strings"
+	"time"
 
 	"github.com/gopacket/gopacket"
 	"github.com/mozillazg/ptcpdump/internal/event"
@@ -22,6 +23,7 @@ type StdoutWriter struct {
 	PrintNumber   bool
 	NoTimestamp   bool
 	TimestampNano bool
+	TimestampN    int
 	DoNothing     bool
 	Quiet         bool
 	FormatStyle   pktdump.FormatStyle
@@ -29,6 +31,8 @@ type StdoutWriter struct {
 
 	enhancedContext types.EnhancedContext
 	n               int64
+	preTime         time.Time
+	firstTime       time.Time
 }
 
 func NewStdoutWriter(writer io.Writer, pcache *metadata.ProcessCache) *StdoutWriter {
@@ -133,11 +137,11 @@ func (w *StdoutWriter) Write(e *event.Packet) error {
 	}
 
 	if !w.NoTimestamp {
-		layout := "15:04:05.000000"
-		if w.TimestampNano {
-			layout = "15:04:05.000000000"
+		builder.WriteString(fmt.Sprintf("%s ", w.formatTimestamp(e.Time.Local())))
+		w.preTime = e.Time.Local()
+		if w.firstTime.IsZero() {
+			w.firstTime = e.Time.Local()
 		}
-		builder.WriteString(fmt.Sprintf("%s ", e.Time.Local().Format(layout)))
 	}
 
 	if ifName != "" {
@@ -225,4 +229,47 @@ func (w *StdoutWriter) Flush() error {
 
 func (w *StdoutWriter) Close() error {
 	return nil
+}
+
+func (w *StdoutWriter) formatTimestamp(t time.Time) string {
+	layout := ""
+
+	switch w.TimestampN {
+	case 2:
+		ts := t.Unix()
+		switch {
+		case w.TimestampNano:
+			return fmt.Sprintf("%d.%09d", ts, t.Nanosecond())
+		default:
+			return fmt.Sprintf("%d.%06d", ts, t.Nanosecond()/1000)
+		}
+	case 3, 5:
+		pre := w.preTime
+		if w.TimestampN == 5 {
+			pre = w.firstTime
+		}
+		dt := t.Sub(pre)
+		if pre.IsZero() {
+			dt = 0
+		}
+		switch {
+		case w.TimestampNano:
+			return fmt.Sprintf("%02d:%02d:%02d.%09d", int(dt.Hours()), int(dt.Minutes()),
+				int(dt.Seconds()), int(dt.Nanoseconds()))
+		default:
+			return fmt.Sprintf("%02d:%02d:%02d.%06d", int(dt.Hours()), int(dt.Minutes()),
+				int(dt.Seconds()), int(dt.Nanoseconds()/1000))
+		}
+	case 4:
+		layout = "2006-01-02 "
+	}
+
+	layout += "15:04:05.000000"
+	switch {
+	case w.TimestampNano:
+		layout = "15:04:05.000000000"
+		return t.Format(layout)
+	default:
+		return t.Format(layout)
+	}
 }
