@@ -248,6 +248,12 @@ jobs:
         run: |
           sudo GOCOVERDIR=${{ env.GOCOVERDIR }} bash testdata/run_test_k8s_filter_by_pod_2.sh
 
+      - name: post test
+        run: |
+          if [ -d ${{ env.GOCOVERDIR }}/coverage ]; then
+            sudo mv ${{ env.GOCOVERDIR }}/coverage/* ${{ env.GOCOVERDIR }}/
+          fi
+
       - name: Store coverage
         uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4
         with:

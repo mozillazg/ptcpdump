@@ -14,7 +14,7 @@ function test_ptcpdump() {
     'port 80 and host lax-ca-us-ping.vultr.com' &
   curl -m 30 --retry 2 --retry-all-errors http://lax-ca-us-ping.vultr.com/vultr.com.100MB.bin &>/dev/null || true
   wait
-  ls -lh ${FNAME}*
+  ls -lh ${FNAME}* |head
   test $(ls ${FNAME}* | wc -l) == 3
   for f in $(ls ${FNAME}* | head); do
     ${CMD} -r $f >/dev/null
