@@ -4,7 +4,7 @@ go 1.23.0
 
 require (
 	github.com/cilium/ebpf v0.17.2
-	github.com/containerd/containerd v1.7.25
+	github.com/containerd/containerd v1.7.27
 	github.com/containerd/typeurl/v2 v2.2.3
 	github.com/docker/docker v27.5.1+incompatible
 	github.com/florianl/go-tc v0.4.4
@@ -43,7 +43,7 @@ require (
 	github.com/containerd/fifo v1.1.0 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/containerd/platforms v0.2.1 // indirect
-	github.com/containerd/ttrpc v1.2.5 // indirect
+	github.com/containerd/ttrpc v1.2.7 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
