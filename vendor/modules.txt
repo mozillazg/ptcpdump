@@ -71,7 +71,7 @@ github.com/cloudflare/cbpfc
 # github.com/containerd/cgroups v1.1.0
 ## explicit; go 1.17
 github.com/containerd/cgroups/stats/v1
-# github.com/containerd/containerd v1.7.25
+# github.com/containerd/containerd v1.7.27
 ## explicit; go 1.21
 github.com/containerd/containerd
 github.com/containerd/containerd/archive
@@ -171,7 +171,7 @@ github.com/containerd/log
 # github.com/containerd/platforms v0.2.1
 ## explicit; go 1.20
 github.com/containerd/platforms
-# github.com/containerd/ttrpc v1.2.5
+# github.com/containerd/ttrpc v1.2.7
 ## explicit; go 1.19
 github.com/containerd/ttrpc
 # github.com/containerd/typeurl/v2 v2.2.3
