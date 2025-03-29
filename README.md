@@ -91,16 +91,11 @@ Capture by process via run target program:
 sudo ptcpdump -i any -- curl ubuntu.com
 ```
 
-Filter by container:
+Filter by container or pod:
 
 ```
 sudo ptcpdump -i any --container-id 36f0310403b1
 sudo ptcpdump -i any --container-name test
-```
-
-Filter by Pod:
-
-```
 sudo ptcpdump -i any --pod-name test.default
 ```
 

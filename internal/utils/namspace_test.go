@@ -1,6 +1,8 @@
 package utils
 
-import "testing"
+import (
+	"testing"
+)
 
 func Test_getNamespaceId(t *testing.T) {
 	type args struct {

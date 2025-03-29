@@ -25,6 +25,8 @@ function test_tcpdump_read() {
   which tcpdump || (apt update || true && apt install -y tcpdump)
   tcpdump -nr "${FNAME}"
   tcpdump -nr "${FNAME}" | grep -F ' > 1.1.1.1.80: Flags [S],'   # SYN
+
+  timeout 30s ${CMD} -i any -c 2 -w - | tcpdump -n -r -
 }
 
 function test_ptcpdump_read() {

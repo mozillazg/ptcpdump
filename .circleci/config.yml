@@ -312,7 +312,4 @@ workflows:
                 - ubuntu-20-04
                 - ubuntu-22-04
                 - ubuntu-24-04
-      - docker-e2e
-      - containerd-e2e
-      - k8s-1-30-e2e
       - arm64-test-backend

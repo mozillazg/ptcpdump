@@ -42,8 +42,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    env:
-      GOCOVERDIR: '${{ github.workspace }}/coverage'
 
     steps:
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
@@ -57,23 +55,11 @@ jobs:
     - name: Build
       run: make build-via-docker COVERAGE_FLAG='-cover'
 
-    - name: Test
-      run: |
-        mkdir ${{ env.GOCOVERDIR }}
-        make test COVERAGE_FLAG='-cover' COVERAGE_ARGS='-args -test.gocoverdir=${{ env.GOCOVERDIR }}'
-
     - name: Store executable
       uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4
       with:
         name: ptcpdump
         path: ptcpdump
-
-    - name: Store coverage
-      uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4
-      with:
-        name: coverage.ut.out
-        path: |
-          ${{ env.GOCOVERDIR }}/*
 
   run-with-docker:
     runs-on: ubuntu-latest
@@ -85,6 +71,196 @@ jobs:
       - name: test running with docker
         run: |
             bash testdata/test_run_with_docker.sh "quay.io/ptcpdump/ptcpdump:latest"
+
+  unit-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GOCOVERDIR: '${{ github.workspace }}/coverage'
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Set up Go
+        uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5
+        with:
+          # renovate: datasource=golang-version depName=golang
+          go-version: '1.23.6'
+
+      - name: Install Deps
+        run: |
+          sudo apt-get install -y gcc flex bison make libelf-dev autoconf libpcap-dev
+          make build
+
+      - name: Test
+        run: |
+          mkdir ${{ env.GOCOVERDIR }}
+          make test COVERAGE_FLAG='-cover' COVERAGE_ARGS='-args -test.gocoverdir=${{ env.GOCOVERDIR }}'
+
+      - name: Store coverage
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4
+        with:
+          name: coverage.ut.out
+          path: |
+            ${{ env.GOCOVERDIR }}/*
+
+  docker-integration-test:
+    runs-on: ubuntu-latest
+    needs: build
+    timeout-minutes: 10
+    env:
+      GOCOVERDIR: '${{ github.workspace }}/coverage'
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Retrieve stored ptcpdump executable
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4
+        with:
+          name: ptcpdump
+          path: ./
+
+      - name: prepare
+        run: |
+          mkdir -p ${{ env.GOCOVERDIR }}
+          chmod +x ./ptcpdump
+
+      - name: test docker
+        run: |
+          sudo GOCOVERDIR=${{ env.GOCOVERDIR }} bash testdata/test_docker.sh ./ptcpdump
+
+      - name: test filter by container id
+        run: |
+          sudo GOCOVERDIR=${{ env.GOCOVERDIR }} bash testdata/test_docker_container_id_filter.sh ./ptcpdump
+
+      - name: test docker filter by container name
+        run: |
+          sudo GOCOVERDIR=${{ env.GOCOVERDIR }} bash testdata/test_docker_container_name_filter.sh ./ptcpdump
+
+      - name: Store coverage
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4
+        with:
+          name: coverage.docker.out
+          path: |
+            ${{ env.GOCOVERDIR }}/*
+
+  containerd-integration-test:
+    runs-on: ubuntu-latest
+    needs: build
+    timeout-minutes: 10
+    env:
+      GOCOVERDIR: '${{ github.workspace }}/coverage'
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Retrieve stored ptcpdump executable
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4
+        with:
+          name: ptcpdump
+          path: ./
+
+      - name: ensure containerd
+        run: |
+          wget https://github.com/containerd/nerdctl/releases/download/v1.7.6/nerdctl-1.7.6-linux-amd64.tar.gz
+          sudo tar Cxzvvf /usr/local/bin nerdctl-1.7.6-linux-amd64.tar.gz
+          
+          wget https://github.com/containernetworking/plugins/releases/download/v1.5.0/cni-plugins-linux-amd64-v1.5.0.tgz
+          sudo mkdir -p /opt/cni/bin
+          sudo tar Cxzvvf /opt/cni/bin cni-plugins-linux-amd64-v1.5.0.tgz
+
+      - name: prepare
+        run: |
+          mkdir -p ${{ env.GOCOVERDIR }}
+          chmod +x ./ptcpdump
+
+      - name: test containerd
+        run: |
+          sudo GOCOVERDIR=${{ env.GOCOVERDIR }} bash testdata/test_containerd.sh ./ptcpdump
+
+      - name: test filter by container id
+        run: |
+          sudo GOCOVERDIR=${{ env.GOCOVERDIR }} bash testdata/test_containerd_container_id_filter.sh ./ptcpdump
+
+      - name: test docker filter by container name
+        run: |
+          sudo GOCOVERDIR=${{ env.GOCOVERDIR }} bash testdata/test_containerd_container_name_filter.sh ./ptcpdump
+
+      - name: Store coverage
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4
+        with:
+          name: coverage.containerd.out
+          path: |
+            ${{ env.GOCOVERDIR }}/*
+
+  k8s-integration-test:
+    runs-on: ubuntu-latest
+    needs: build
+    timeout-minutes: 15
+    env:
+      GOCOVERDIR: '${{ github.workspace }}/coverage'
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Retrieve stored ptcpdump executable
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4
+        with:
+          name: ptcpdump
+          path: ./
+
+      - name: setup kind
+        run: |
+          wget https://github.com/kubernetes-sigs/kind/releases/download/v0.23.0/kind-linux-amd64
+          chmod +x kind-linux-amd64
+          sudo cp ./kind-linux-amd64 /usr/local/bin/kind
+          
+          IMG=kindest/node:v1.30.0@sha256:047357ac0cfea04663786a612ba1eaba9702bef25227a794b52890dd8bcd692e
+          sudo docker pull "${IMG}"
+          sudo docker pull alpine:3.18
+          sudo docker pull busybox:1
+          
+          sudo kind create cluster
+          sudo kind load docker-image alpine:3.18
+          sudo kind load docker-image busybox:1
+          sudo kind export kubeconfig
+          sleep 30
+          sudo kubectl get sa default
+
+      - name: prepare
+        run: |
+          mkdir -p ${{ env.GOCOVERDIR }}
+          chmod +x ./ptcpdump
+
+      - name: test k8s
+        run: |
+          sudo GOCOVERDIR=${{ env.GOCOVERDIR }} bash testdata/run_test_k8s.sh
+
+      - name: test k8s filter by container id
+        run: |
+          sudo GOCOVERDIR=${{ env.GOCOVERDIR }} bash testdata/run_test_k8s_filter_by_container.sh
+
+      - name: test k8s filter by pod name
+        run: |
+          sudo GOCOVERDIR=${{ env.GOCOVERDIR }} bash testdata/run_test_k8s_filter_by_pod.sh
+
+      - name: test k8s filter by pod name with multiple containers
+        run: |
+          sudo GOCOVERDIR=${{ env.GOCOVERDIR }} bash testdata/run_test_k8s_filter_by_pod_2.sh
+
+      - name: post test
+        run: |
+          if [ -d ${{ env.GOCOVERDIR }}/coverage ]; then
+            sudo mv ${{ env.GOCOVERDIR }}/coverage/* ${{ env.GOCOVERDIR }}/
+          fi
+
+      - name: Store coverage
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4
+        with:
+          name: coverage.k8s.out
+          path: |
+            ${{ env.GOCOVERDIR }}/*
+
 
   e2e-test:
     name: e2e-test
@@ -357,6 +533,7 @@ jobs:
             export GOCOVERDIR="/host/${{ env.GOCOVERDIR }}"
 
             bash /host/testdata/test_rotate_filesize.sh /host/ptcpdump/ptcpdump
+            sleep 30
             bash /host/testdata/test_rotate_filesize_with_count.sh /host/ptcpdump/ptcpdump
 
       - name: build demo app
@@ -452,8 +629,11 @@ jobs:
     timeout-minutes: 5
     runs-on: ubuntu-latest
     needs:
-      - build
+      - unit-test
       - e2e-test
+      - docker-integration-test
+      - containerd-integration-test
+      - k8s-integration-test
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 

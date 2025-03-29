@@ -1,6 +1,7 @@
 package types
 
 import (
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -31,6 +32,14 @@ func TestFlagTypeFileSize_Set(t *testing.T) {
 		{"zero value", "0", 0, false},
 		{"whitespace around value", " 1k ", 0, true},
 		{"uppercase suffix", "1K", 1 * 1024, false},
+		{"error 1", "ak", 0, true},
+		{"error 2", "akb", 0, true},
+		{"error 3", "am", 0, true},
+		{"error 4", "amb", 0, true},
+		{"error 5", "ag", 0, true},
+		{"error 6", "agb", 0, true},
+		{"error 7", "at", 0, true},
+		{"error 8", "atb", 0, true},
 	}
 
 	for _, tt := range tests {
@@ -44,6 +53,11 @@ func TestFlagTypeFileSize_Set(t *testing.T) {
 			if s.n != tt.want {
 				t.Errorf("Set() = %v, want %v", s.n, tt.want)
 			}
+			if s.Bytes() != int64(tt.want) {
+				t.Errorf("Bytes() = %v, want %v", s.Bytes(), tt.want)
+			}
+			assert.Equal(t, s.Type(), "fileSize")
+			assert.Equal(t, s.String(), s.val)
 		})
 	}
 }
