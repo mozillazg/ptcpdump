@@ -5,14 +5,17 @@ import (
 	"context"
 	"github.com/stretchr/testify/assert"
 	"os"
+	"path"
+	"strings"
 	"testing"
 )
 
 func TestFormat(t *testing.T) {
 	type args struct {
-		name            string
-		opts            *Options
-		expectedOutFile string
+		name              string
+		opts              *Options
+		expectedOutFile   string
+		expectedWriteFile string
 	}
 
 	tests := []args{
@@ -22,6 +25,14 @@ func TestFormat(t *testing.T) {
 				readFilePath: "../testdata/format/tcp.pcapng",
 			},
 			expectedOutFile: "../testdata/format/tcp.pcapng.out.txt",
+		},
+		{
+			name: "tcp -w x.json",
+			opts: &Options{
+				readFilePath: "../testdata/format/tcp.pcapng",
+			},
+			expectedOutFile:   "../testdata/format/tcp.pcapng.out.txt",
+			expectedWriteFile: "../testdata/format/tcp.pcapng.out.json",
 		},
 		{
 			name: "pcapng file detect",
@@ -201,6 +212,14 @@ func TestFormat(t *testing.T) {
 			expectedOutFile: "../testdata/format/udp.pcap.out.txt",
 		},
 		{
+			name: "udp -w x.json",
+			opts: &Options{
+				readFilePath: "../testdata/format/udp.pcap",
+			},
+			expectedOutFile:   "../testdata/format/udp.pcap.out.txt",
+			expectedWriteFile: "../testdata/format/udp.pcap.out.json",
+		},
+		{
 			name: "pcap file detect",
 			opts: &Options{
 				readFilePath: "../testdata/format/udp.pcap.unknown",
@@ -230,11 +249,27 @@ func TestFormat(t *testing.T) {
 			expectedOutFile: "../testdata/format/arp.pcapng.out.txt",
 		},
 		{
+			name: "arp -w x.json",
+			opts: &Options{
+				readFilePath: "../testdata/format/arp.pcapng",
+			},
+			expectedOutFile:   "../testdata/format/arp.pcapng.out.txt",
+			expectedWriteFile: "../testdata/format/arp.pcapng.out.json",
+		},
+		{
 			name: "icmp",
 			opts: &Options{
 				readFilePath: "../testdata/format/icmp.pcapng",
 			},
 			expectedOutFile: "../testdata/format/icmp.pcapng.out.txt",
+		},
+		{
+			name: "icmp -w x.json",
+			opts: &Options{
+				readFilePath: "../testdata/format/icmp.pcapng",
+			},
+			expectedOutFile:   "../testdata/format/icmp.pcapng.out.txt",
+			expectedWriteFile: "../testdata/format/icmp.pcapng.out.json",
 		},
 		{
 			name: "thread",
@@ -271,6 +306,15 @@ func TestFormat(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			output := bytes.Buffer{}
 			tt.opts.stdout = &output
+
+			if tt.expectedWriteFile != "" {
+				wf, err := os.MkdirTemp(os.TempDir(), "test-ptcpdump")
+				assert.NoError(t, err)
+				p := path.Join(wf, "test.json")
+				defer os.Remove(p)
+				tt.opts.writeFilePath = p
+			}
+
 			err := prepareOptions(tt.opts, nil, nil)
 			assert.NoError(t, err)
 
@@ -280,6 +324,15 @@ func TestFormat(t *testing.T) {
 			expected, err := os.ReadFile(tt.expectedOutFile)
 			assert.NoError(t, err)
 			assert.Equal(t, string(expected), output.String())
+
+			if tt.expectedWriteFile != "" {
+				expected, err := os.ReadFile(tt.expectedWriteFile)
+				assert.NoError(t, err)
+				actual, err := os.ReadFile(tt.opts.writeFilePath)
+				assert.NoError(t, err)
+				assert.Equal(t, strings.TrimSpace(string(expected)), strings.TrimSpace(string(actual)))
+			}
+
 		})
 	}
 }

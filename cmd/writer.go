@@ -41,6 +41,13 @@ func getWriters(opts *Options, pcache *metadata.ProcessCache) ([]writer.PacketWr
 			}
 			writers = append(writers, w)
 			break
+		case ext == extJSON:
+			rr, err = writer.NewFileRotator(opts.WritePath(), opts.rotatorOption())
+			if err != nil {
+				return nil, nil, fmt.Errorf(": %w", err)
+			}
+			w := writer.NewJSONWriter(rr, pcache)
+			writers = append(writers, w)
 		default:
 			rr, err = writer.NewFileRotator(opts.WritePath(), opts.rotatorOption())
 			if err != nil {

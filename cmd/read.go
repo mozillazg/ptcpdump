@@ -29,9 +29,17 @@ func read(ctx context.Context, opts *Options) error {
 	}
 
 	var p parser.Parser
+	var jsonWriter *writer.JSONWriter
 	pcache := metadata.NewProcessCache()
 	stdoutWriter := writer.NewStdoutWriter(opts.getStdout(), pcache)
 	opts.applyToStdoutWriter(stdoutWriter)
+	if filepath.Ext(opts.WritePath()) == extJSON {
+		f, err := os.Create(opts.WritePath())
+		if err != nil {
+			return fmt.Errorf("open file %s: %w", opts.WritePath(), err)
+		}
+		jsonWriter = writer.NewJSONWriter(f, pcache)
+	}
 
 	ext := filepath.Ext(fpath)
 	switch {
@@ -48,6 +56,9 @@ func read(ctx context.Context, opts *Options) error {
 			return fmt.Errorf("create pcap parser: %w", err)
 		}
 		stdoutWriter.Decoder = pr.Decoder()
+		if jsonWriter != nil {
+			jsonWriter.Decoder = pr.Decoder()
+		}
 		p = pr
 		break
 	default:
@@ -71,6 +82,14 @@ func read(ctx context.Context, opts *Options) error {
 				break
 			}
 			return fmt.Errorf("write packet: %w", err)
+		}
+		if jsonWriter != nil {
+			if err := jsonWriter.Write(e); err != nil {
+				if errors.Is(err, io.EOF) {
+					break
+				}
+				return fmt.Errorf("write json: %w", err)
+			}
 		}
 		n++
 		if opts.maxPacketCount > 0 && opts.maxPacketCount <= n {

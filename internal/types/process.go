@@ -6,21 +6,21 @@ import (
 )
 
 type ProcessBase struct {
-	Pid          int
-	Cmd          string
-	CmdTruncated bool
-	Tid          int
-	TName        string
-	UserId       int
+	Pid          int    `json:"pid"`
+	Cmd          string `json:"cmd"`
+	CmdTruncated bool   `json:"-"`
+	Tid          int    `json:"tid,omitempty"`
+	TName        string `json:"threadName,omitempty"`
+	UserId       int    `json:"userId,omitempty"`
 
-	Args          []string
-	ArgsTruncated bool
+	Args          []string `json:"args"`
+	ArgsTruncated bool     `json:"-"`
 }
 
 type ProcessNamespace struct {
-	PidNamespaceId   int64
-	MountNamespaceId int64
-	NetNamespaceId   int64
+	PidNamespaceId   int64 `json:"pidNSId,omitempty"`
+	MountNamespaceId int64 `json:"mountNSId,omitempty"`
+	NetNamespaceId   int64 `json:"netNSId,omitempty"`
 }
 
 type Process struct {

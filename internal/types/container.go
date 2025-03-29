@@ -6,19 +6,19 @@ import (
 )
 
 type Container struct {
-	Id     string
-	Name   string
-	Labels map[string]string
+	Id     string            `json:"id,omitempty"`
+	Name   string            `json:"name,omitempty"`
+	Labels map[string]string `json:"labels,omitempty"`
 
-	RootPid          int
-	PidNamespace     int64
-	MountNamespace   int64
-	NetworkNamespace int64
+	RootPid          int   `json:"-"`
+	PidNamespace     int64 `json:"-"`
+	MountNamespace   int64 `json:"-"`
+	NetworkNamespace int64 `json:"-"`
 
-	Image       string
-	ImageDigest string
+	Image       string `json:"image,omitempty"`
+	ImageDigest string `json:"imageDigest,omitempty"`
 
-	p Pod
+	p Pod `json:"-"`
 }
 
 func (c *Container) IsNull() bool {

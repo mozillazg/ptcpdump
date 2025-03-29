@@ -22,6 +22,7 @@ import (
 const (
 	extPcap   = ".pcap"
 	extPcapNG = ".pcapng"
+	extJSON   = ".json"
 
 	contextUser       = "user"
 	contextProcess    = "process"

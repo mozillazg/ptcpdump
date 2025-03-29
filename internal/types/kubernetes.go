@@ -11,11 +11,11 @@ const (
 )
 
 type Pod struct {
-	Name        string
-	Namespace   string
-	Uid         string
-	Labels      map[string]string
-	Annotations map[string]string
+	Name        string            `json:"name,omitempty"`
+	Namespace   string            `json:"namespace,omitempty"`
+	Uid         string            `json:"uid,omitempty"`
+	Labels      map[string]string `json:"labels,omitempty"`
+	Annotations map[string]string `json:"annotations,omitempty"`
 }
 
 func (p *Pod) LoadFromContainer(c Container) {
