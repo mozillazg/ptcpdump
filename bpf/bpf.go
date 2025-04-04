@@ -159,7 +159,7 @@ load:
 	if b.isLegacyKernel {
 		log.Infof("update config map with %+v", config)
 		key := uint32(0)
-		if err := b.objs.BpfMaps.ConfigMap.Update(key, config, ebpf.UpdateAny); err != nil {
+		if err := b.objs.BpfMaps.PtcpdumpConfigMap.Update(key, config, ebpf.UpdateAny); err != nil {
 			return fmt.Errorf(": %w", err)
 		}
 	}
@@ -172,8 +172,9 @@ load:
 
 func (b *BPF) injectPcapFilter() error {
 	var err error
-	for _, progName := range []string{"tc_ingress", "tc_egress", "tcx_ingress", "tcx_egress",
-		"cgroup_skb__ingress", "cgroup_skb__egress"} {
+	for _, progName := range []string{"ptcpdump_tc_ingress", "ptcpdump_tc_egress",
+		"ptcpdump_tcx_ingress", "ptcpdump_tcx_egress",
+		"ptcpdump_cgroup_skb__ingress", "ptcpdump_cgroup_skb__egress"} {
 		prog, ok := b.spec.Programs[progName]
 		if !ok {
 			log.Infof("program %s not found", progName)
@@ -224,7 +225,7 @@ func (b *BPF) Close() {
 
 func (b *BPF) UpdateFlowPidMapValues(data map[*BpfFlowPidKeyT]BpfProcessMetaT) error {
 	for k, v := range data {
-		err := b.objs.BpfMaps.FlowPidMap.Update(*k, v, ebpf.UpdateNoExist)
+		err := b.objs.BpfMaps.PtcpdumpFlowPidMap.Update(*k, v, ebpf.UpdateNoExist)
 		if err != nil {
 			if err == ebpf.ErrKeyExist || strings.Contains(err.Error(), "key already exists") {
 				continue
@@ -237,7 +238,7 @@ func (b *BPF) UpdateFlowPidMapValues(data map[*BpfFlowPidKeyT]BpfProcessMetaT) e
 
 func (b *BPF) AttachKprobes() error {
 	if err := b.attachFentryOrKprobe("security_sk_classify_flow",
-		b.objs.FentrySecuritySkClassifyFlow, b.objs.KprobeSecuritySkClassifyFlow); err != nil {
+		b.objs.PtcpdumpFentrySecuritySkClassifyFlow, b.objs.PtcpdumpKprobeSecuritySkClassifyFlow); err != nil {
 		if isProbeNotSupportErr(err) { // some systems do not support this kprobe, e.g. openwrt
 			log.Warnf("%+v", err)
 		} else {
@@ -245,13 +246,13 @@ func (b *BPF) AttachKprobes() error {
 		}
 	}
 
-	if err := b.attachFentryOrKprobe("tcp_sendmsg", b.objs.FentryTcpSendmsg, b.objs.KprobeTcpSendmsg); err != nil {
+	if err := b.attachFentryOrKprobe("tcp_sendmsg", b.objs.PtcpdumpFentryTcpSendmsg, b.objs.PtcpdumpKprobeTcpSendmsg); err != nil {
 		return fmt.Errorf(": %w", err)
 	}
-	if err := b.attachFentryOrKprobe("udp_send_skb", b.objs.FentryUdpSendSkb, b.objs.KprobeUdpSendSkb); err != nil {
+	if err := b.attachFentryOrKprobe("udp_send_skb", b.objs.PtcpdumpFentryUdpSendSkb, b.objs.PtcpdumpKprobeUdpSendSkb); err != nil {
 		log.Infof("%+v", err)
 		if isProbeNotSupportErr(err) {
-			err = b.attachFentryOrKprobe("udp_sendmsg", b.objs.FentryUdpSendmsg, b.objs.KprobeUdpSendmsg)
+			err = b.attachFentryOrKprobe("udp_sendmsg", b.objs.PtcpdumpFentryUdpSendmsg, b.objs.PtcpdumpKprobeUdpSendmsg)
 			if err != nil {
 				return fmt.Errorf(": %w", err)
 			}
@@ -269,14 +270,14 @@ func (b *BPF) AttachKprobes() error {
 
 func (b *BPF) AttachTracepoints() error {
 	err := b.attachBTFTracepointOrRawTP("sched_process_exec",
-		b.objs.TpBtfSchedProcessExec, b.objs.RawTracepointSchedProcessExec,
+		b.objs.PtcpdumpTpBtfSchedProcessExec, b.objs.PtcpdumpRawTracepointSchedProcessExec,
 	)
 	if err != nil {
 		return fmt.Errorf(": %w", err)
 	}
 
 	err = b.attachBTFTracepointOrRawTP("sched_process_exit",
-		b.objs.TpBtfSchedProcessExit, b.objs.RawTracepointSchedProcessExit,
+		b.objs.PtcpdumpTpBtfSchedProcessExit, b.objs.PtcpdumpRawTracepointSchedProcessExit,
 	)
 	if err != nil {
 		return fmt.Errorf(": %w", err)
@@ -284,7 +285,7 @@ func (b *BPF) AttachTracepoints() error {
 
 	if b.opts.attachForks() {
 		err := b.attachBTFTracepointOrRawTP("sched_process_fork",
-			b.objs.TpBtfSchedProcessFork, b.objs.RawTracepointSchedProcessFork,
+			b.objs.PtcpdumpTpBtfSchedProcessFork, b.objs.PtcpdumpRawTracepointSchedProcessFork,
 		)
 		if err != nil {
 			return fmt.Errorf(": %w", err)
@@ -293,13 +294,13 @@ func (b *BPF) AttachTracepoints() error {
 
 	if b.opts.hookMount {
 		log.Info("attaching tracepoint/syscalls/sys_enter_mount")
-		lk, err := link.Tracepoint("syscalls", "sys_enter_mount", b.objs.TracepointSyscallsSysEnterMount, &link.TracepointOptions{})
+		lk, err := link.Tracepoint("syscalls", "sys_enter_mount", b.objs.PtcpdumpTracepointSyscallsSysEnterMount, &link.TracepointOptions{})
 		if err != nil {
 			return fmt.Errorf("attach tracepoint/syscalls/sys_enter_mount: %w", err)
 		}
 		b.links = append(b.links, lk)
 		log.Info("attaching tracepoint/syscalls/sys_exit_mount")
-		lk, err = link.Tracepoint("syscalls", "sys_exit_mount", b.objs.TracepointSyscallsSysExitMount, &link.TracepointOptions{})
+		lk, err = link.Tracepoint("syscalls", "sys_exit_mount", b.objs.PtcpdumpTracepointSyscallsSysExitMount, &link.TracepointOptions{})
 		if err != nil {
 			return fmt.Errorf("attach tracepoint/syscalls/sys_exit_mount: %w", err)
 		}
@@ -322,7 +323,7 @@ func (b *BPF) AttachTcHooks(ifindex int, egress, ingress bool) ([]func(), error)
 func (b *BPF) attachTcxHooks(ifindex int, egress, ingress bool) ([]func(), error) {
 	var closeFuncs []func()
 
-	if b.skipTcx || b.objs.TcxEgress == nil || b.objs.TcxIngress == nil {
+	if b.skipTcx || b.objs.PtcpdumpTcxEgress == nil || b.objs.PtcpdumpTcxIngress == nil {
 		return closeFuncs, errors.New("tcx programs not found")
 	}
 
@@ -330,7 +331,7 @@ func (b *BPF) attachTcxHooks(ifindex int, egress, ingress bool) ([]func(), error
 		log.Infof("attach tcx/egress hooks to ifindex %d", ifindex)
 		lk, err := link.AttachTCX(link.TCXOptions{
 			Interface: ifindex,
-			Program:   b.objs.TcxEgress,
+			Program:   b.objs.PtcpdumpTcxEgress,
 			Attach:    ebpf.AttachTCXEgress,
 		})
 		if err != nil {
@@ -345,7 +346,7 @@ func (b *BPF) attachTcxHooks(ifindex int, egress, ingress bool) ([]func(), error
 		log.Infof("attach tcx/ingress hooks to ifindex %d", ifindex)
 		lk, err := link.AttachTCX(link.TCXOptions{
 			Interface: ifindex,
-			Program:   b.objs.TcxIngress,
+			Program:   b.objs.PtcpdumpTcxIngress,
 			Attach:    ebpf.AttachTCXIngress,
 		})
 		if err != nil {
@@ -368,7 +369,7 @@ func (b *BPF) attachTcHooks(ifindex int, egress, ingress bool) ([]func(), error)
 	}
 
 	if egress {
-		c1, err := attachTcHook(ifindex, b.objs.TcEgress, false)
+		c1, err := attachTcHook(ifindex, b.objs.PtcpdumpTcEgress, false)
 		if err != nil {
 			closeFuncs = append(closeFuncs, c1)
 			return closeFuncs, fmt.Errorf("attach tc hooks: %w", err)
@@ -377,7 +378,7 @@ func (b *BPF) attachTcHooks(ifindex int, egress, ingress bool) ([]func(), error)
 	}
 
 	if ingress {
-		c2, err := attachTcHook(ifindex, b.objs.TcIngress, true)
+		c2, err := attachTcHook(ifindex, b.objs.PtcpdumpTcIngress, true)
 		if err != nil {
 			closeFuncs = append(closeFuncs, c2)
 			return closeFuncs, fmt.Errorf("attach tc hooks: %w", err)
@@ -519,7 +520,7 @@ func (b *BPF) applyFilters() error {
 	log.Infof("start to update FilterPidMap with %+v", opts.pids)
 	for _, pid := range opts.pids {
 		pid := pid
-		if err := b.objs.BpfMaps.FilterPidMap.Update(pid, value, ebpf.UpdateAny); err != nil {
+		if err := b.objs.BpfMaps.PtcpdumpFilterPidMap.Update(pid, value, ebpf.UpdateAny); err != nil {
 			return fmt.Errorf("update FilterPidMap: %w", err)
 		}
 	}
@@ -527,7 +528,7 @@ func (b *BPF) applyFilters() error {
 	log.Infof("start to update FilterUidMap with %+v", opts.pids)
 	for _, uid := range opts.uids {
 		uid := uid
-		if err := b.objs.BpfMaps.FilterUidMap.Update(uid, value, ebpf.UpdateAny); err != nil {
+		if err := b.objs.BpfMaps.PtcpdumpFilterUidMap.Update(uid, value, ebpf.UpdateAny); err != nil {
 			return fmt.Errorf("update FilterUidMap: %w", err)
 		}
 	}
@@ -535,7 +536,7 @@ func (b *BPF) applyFilters() error {
 	log.Infof("start to update FilterPidnsMap with %+v", opts.pidnsIds)
 	for _, id := range opts.pidnsIds {
 		id := id
-		if err := b.objs.BpfMaps.FilterPidnsMap.Update(id, value, ebpf.UpdateAny); err != nil {
+		if err := b.objs.BpfMaps.PtcpdumpFilterPidnsMap.Update(id, value, ebpf.UpdateAny); err != nil {
 			return fmt.Errorf("update FilterPidnsMap: %w", err)
 		}
 	}
@@ -543,7 +544,7 @@ func (b *BPF) applyFilters() error {
 	log.Infof("start to update FilterMntnsMap with %+v", opts.mntnsIds)
 	for _, id := range opts.mntnsIds {
 		id := id
-		if err := b.objs.BpfMaps.FilterMntnsMap.Update(id, value, ebpf.UpdateAny); err != nil {
+		if err := b.objs.BpfMaps.PtcpdumpFilterMntnsMap.Update(id, value, ebpf.UpdateAny); err != nil {
 			return fmt.Errorf("update FilterMntnsMap: %w", err)
 		}
 	}
@@ -551,7 +552,7 @@ func (b *BPF) applyFilters() error {
 	log.Infof("start to update FilterNetnsMap with %+v", opts.netnsIds)
 	for _, id := range opts.netnsIds {
 		id := id
-		if err := b.objs.BpfMaps.FilterNetnsMap.Update(id, value, ebpf.UpdateAny); err != nil {
+		if err := b.objs.BpfMaps.PtcpdumpFilterNetnsMap.Update(id, value, ebpf.UpdateAny); err != nil {
 			return fmt.Errorf("update FilterNetnsMap: %w", err)
 		}
 	}
@@ -559,7 +560,7 @@ func (b *BPF) applyFilters() error {
 	log.Infof("start to update FilterIfindexMap with %+v", opts.ifindexes)
 	for _, id := range opts.ifindexes {
 		id := id
-		if err := b.objs.BpfMaps.FilterIfindexMap.Update(id, value, ebpf.UpdateAny); err != nil {
+		if err := b.objs.BpfMaps.PtcpdumpFilterIfindexMap.Update(id, value, ebpf.UpdateAny); err != nil {
 			return fmt.Errorf("update FilterIfindexMap: %w", err)
 		}
 	}

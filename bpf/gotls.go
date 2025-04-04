@@ -8,7 +8,7 @@ import (
 
 func (b *BPF) AttachGoTLSUprobeHooks(exec *link.Executable, symbol string,
 	funcAddr uint64, retOffset uint64, pid int) error {
-	lk, err := exec.Uprobe(symbol, b.objs.UprobeGoBuiltinTlsWriteKeyLog,
+	lk, err := exec.Uprobe(symbol, b.objs.PtcpdumpUprobeGoBuiltinTlsWriteKeyLog,
 		&link.UprobeOptions{
 			PID:     pid,
 			Address: funcAddr,
@@ -20,7 +20,7 @@ func (b *BPF) AttachGoTLSUprobeHooks(exec *link.Executable, symbol string,
 	}
 	b.links = append(b.links, lk)
 
-	lk, err = exec.Uprobe(symbol, b.objs.UprobeGoBuiltinTlsWriteKeyLogRet,
+	lk, err = exec.Uprobe(symbol, b.objs.PtcpdumpUprobeGoBuiltinTlsWriteKeyLogRet,
 		&link.UprobeOptions{
 			PID:     pid,
 			Address: funcAddr,

@@ -10,19 +10,19 @@ func (b *BPF) attachNetDevHooks() error {
 	}
 
 	err := b.attachFexitOrKprobe("register_netdevice",
-		nil, b.objs.KprobeRegisterNetdevice, b.objs.KretprobeRegisterNetdevice)
+		nil, b.objs.PtcpdumpKprobeRegisterNetdevice, b.objs.PtcpdumpKretprobeRegisterNetdevice)
 	if err != nil {
 		return err
 	}
 
 	// TODO: refine
 	err = b.attachFexitOrKprobe("__dev_get_by_index",
-		nil, nil, b.objs.KretprobeDevGetByIndex)
+		nil, nil, b.objs.PtcpdumpKretprobeDevGetByIndex)
 	if err != nil {
 		log.Infof("%+v", err)
 		if isProbeNotSupportErr(err) {
 			err = b.attachFexitOrKprobe("dev_get_by_index",
-				nil, nil, b.objs.KretprobeDevGetByIndexLegacy)
+				nil, nil, b.objs.PtcpdumpKretprobeDevGetByIndexLegacy)
 			if err != nil {
 				return err
 			}
@@ -32,12 +32,12 @@ func (b *BPF) attachNetDevHooks() error {
 	}
 
 	err = b.attachFentryOrKprobe("__dev_change_net_namespace",
-		nil, b.objs.KprobeDevChangeNetNamespace)
+		nil, b.objs.PtcpdumpKprobeDevChangeNetNamespace)
 	if err != nil {
 		log.Infof("%+v", err)
 		if isProbeNotSupportErr(err) {
 			err = b.attachFentryOrKprobe("dev_change_net_namespace",
-				nil, b.objs.KprobeDevChangeNetNamespaceLegacy)
+				nil, b.objs.PtcpdumpKprobeDevChangeNetNamespaceLegacy)
 			if err != nil {
 				return err
 			}
@@ -47,12 +47,12 @@ func (b *BPF) attachNetDevHooks() error {
 	}
 
 	err = b.attachFexitOrKprobe("__dev_change_net_namespace",
-		nil, nil, b.objs.KretprobeDevChangeNetNamespace)
+		nil, nil, b.objs.PtcpdumpKretprobeDevChangeNetNamespace)
 	if err != nil {
 		log.Infof("%+v", err)
 		if isProbeNotSupportErr(err) {
 			err = b.attachFexitOrKprobe("dev_change_net_namespace",
-				nil, nil, b.objs.KretprobeDevChangeNetNamespaceLegacy)
+				nil, nil, b.objs.PtcpdumpKretprobeDevChangeNetNamespaceLegacy)
 			if err != nil {
 				return err
 			}

@@ -45,78 +45,78 @@ struct {
     __uint(max_entries, 1);
     __type(key, u32);
     __type(value, struct gconfig_t);
-} config_map SEC(".maps");
+} ptcpdump_config_map SEC(".maps");
 
 struct {
     __uint(type, BPF_MAP_TYPE_HASH);
     __uint(max_entries, 10);
     __type(key, u32);
     __type(value, u8);
-} filter_mntns_map SEC(".maps");
+} ptcpdump_filter_mntns_map SEC(".maps");
 
 struct {
     __uint(type, BPF_MAP_TYPE_HASH);
     __uint(max_entries, 10);
     __type(key, u32);
     __type(value, u8);
-} filter_pidns_map SEC(".maps");
+} ptcpdump_filter_pidns_map SEC(".maps");
 
 struct {
     __uint(type, BPF_MAP_TYPE_HASH);
     __uint(max_entries, 10);
     __type(key, u32);
     __type(value, u8);
-} filter_netns_map SEC(".maps");
+} ptcpdump_filter_netns_map SEC(".maps");
 
 struct {
     __uint(type, BPF_MAP_TYPE_HASH);
     __uint(max_entries, 100);
     __type(key, u32);
     __type(value, u8);
-} filter_pid_map SEC(".maps");
+} ptcpdump_filter_pid_map SEC(".maps");
 
 struct {
     __uint(type, BPF_MAP_TYPE_HASH);
     __uint(max_entries, 10);
     __type(key, u32);
     __type(value, u8);
-} filter_uid_map SEC(".maps");
+} ptcpdump_filter_uid_map SEC(".maps");
 
 struct {
     __uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
     __uint(max_entries, 1);
     __type(key, u32);
     __type(value, struct exec_event_t);
-} exec_event_stack SEC(".maps");
+} ptcpdump_exec_event_stack SEC(".maps");
 
 struct {
     __uint(type, BPF_MAP_TYPE_RINGBUF);
     __uint(max_entries, 1 << 24);
-} exec_events_ringbuf SEC(".maps");
+} ptcpdump_ptcpdump_exec_events_ringbuf SEC(".maps");
 
 struct {
     __uint(type, BPF_MAP_TYPE_PERF_EVENT_ARRAY);
     __uint(key_size, sizeof(u32));
     __uint(value_size, sizeof(u32));
-} exec_events SEC(".maps");
+} ptcpdump_exec_events SEC(".maps");
 
 struct {
     __uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
     __uint(max_entries, 1);
     __type(key, u32);
     __type(value, struct exit_event_t);
-} exit_event_tmp SEC(".maps");
+} ptcpdump_exit_event_tmp SEC(".maps");
 
 struct {
     __uint(type, BPF_MAP_TYPE_PERF_EVENT_ARRAY);
     __uint(key_size, sizeof(u32));
     __uint(value_size, sizeof(u32));
-} exit_events SEC(".maps");
+} ptcpdump_exit_events SEC(".maps");
 
 struct {
     __uint(type, BPF_MAP_TYPE_RINGBUF);
     __uint(max_entries, 1 << 17);
-} exit_events_ringbuf SEC(".maps");
+} ptcpdump_exit_events_ringbuf SEC(".maps");
 
 const struct exec_event_t *unused2 __attribute__((unused));
 const struct process_meta_t *unused4 __attribute__((unused));
@@ -129,35 +129,35 @@ static __always_inline bool have_pid_filter_rules() {
 }
 
 static __always_inline int filter_pid(u32 pid) {
-    if (bpf_map_lookup_elem(&filter_pid_map, &pid)) {
+    if (bpf_map_lookup_elem(&ptcpdump_filter_pid_map, &pid)) {
         return 0;
     }
     return -1;
 }
 
 static __always_inline int filter_uid(u32 uid) {
-    if (bpf_map_lookup_elem(&filter_uid_map, &uid)) {
+    if (bpf_map_lookup_elem(&ptcpdump_filter_uid_map, &uid)) {
         return 0;
     }
     return -1;
 }
 
 static __always_inline int filter_mntns(u32 ns) {
-    if (bpf_map_lookup_elem(&filter_mntns_map, &ns)) {
+    if (bpf_map_lookup_elem(&ptcpdump_filter_mntns_map, &ns)) {
         return 0;
     }
     return -1;
 }
 
 static __always_inline int filter_pidns(u32 ns) {
-    if (bpf_map_lookup_elem(&filter_pidns_map, &ns)) {
+    if (bpf_map_lookup_elem(&ptcpdump_filter_pidns_map, &ns)) {
         return 0;
     }
     return -1;
 }
 
 static __always_inline int filter_netns(u32 ns) {
-    if (bpf_map_lookup_elem(&filter_netns_map, &ns)) {
+    if (bpf_map_lookup_elem(&ptcpdump_filter_netns_map, &ns)) {
         return 0;
     }
     return -1;
@@ -205,7 +205,7 @@ static __always_inline int process_filter(struct task_struct *task) {
     }
 
     if (should_filter) {
-        bpf_map_update_elem(&filter_pid_map, &pid, &u8_zero, BPF_NOEXIST);
+        bpf_map_update_elem(&ptcpdump_filter_pid_map, &pid, &u8_zero, BPF_NOEXIST);
         return 0;
     }
 
@@ -235,7 +235,7 @@ static __always_inline int parent_process_filter(struct task_struct *current) {
     }
     if (process_filter(parent) == 0) {
         u32 child_pid = BPF_CORE_READ(current, tgid);
-        bpf_map_update_elem(&filter_pid_map, &child_pid, &u8_zero, BPF_NOEXIST);
+        bpf_map_update_elem(&ptcpdump_filter_pid_map, &child_pid, &u8_zero, BPF_NOEXIST);
         return 0;
     }
 
@@ -255,7 +255,7 @@ static __always_inline void handle_fork(struct task_struct *parent, struct task_
     u32 child_pid = BPF_CORE_READ(child, tgid);
 
     if (process_filter(parent) == 0) {
-        bpf_map_update_elem(&filter_pid_map, &child_pid, &u8_zero, BPF_NOEXIST);
+        bpf_map_update_elem(&ptcpdump_filter_pid_map, &child_pid, &u8_zero, BPF_NOEXIST);
         return;
     }
     if (process_filter(child) == 0) {
@@ -265,14 +265,14 @@ static __always_inline void handle_fork(struct task_struct *parent, struct task_
 }
 
 SEC("raw_tracepoint/sched_process_fork")
-int BPF_PROG(raw_tracepoint__sched_process_fork, struct task_struct *parent, struct task_struct *child) {
+int BPF_PROG(ptcpdump_raw_tracepoint__sched_process_fork, struct task_struct *parent, struct task_struct *child) {
     handle_fork(parent, child);
     return 0;
 }
 
 #ifndef NO_TRACING
 SEC("tp_btf/sched_process_fork")
-int BPF_PROG(tp_btf__sched_process_fork, struct task_struct *parent, struct task_struct *child) {
+int BPF_PROG(ptcpdump_tp_btf__sched_process_fork, struct task_struct *parent, struct task_struct *child) {
     handle_fork(parent, child);
     return 0;
 }
@@ -311,13 +311,13 @@ static __always_inline void handle_exec(void *ctx, struct task_struct *task, pid
 #endif
 
     if (ringbuf_available()) {
-        event = bpf_ringbuf_reserve(&exec_events_ringbuf, sizeof(*event), 0);
+        event = bpf_ringbuf_reserve(&ptcpdump_ptcpdump_exec_events_ringbuf, sizeof(*event), 0);
         use_ringbuf = true;
     } else {
-        event = bpf_map_lookup_elem(&exec_event_stack, &u32_zero);
+        event = bpf_map_lookup_elem(&ptcpdump_exec_event_stack, &u32_zero);
     }
     if (!event) {
-        // debug_log("[ptcpdump] exec_event_stack failed\n");
+        // debug_log("[ptcpdump] ptcpdump_exec_event_stack failed\n");
         return;
     }
     __builtin_memset(&event->meta, 0, sizeof(event->meta));
@@ -350,9 +350,9 @@ static __always_inline void handle_exec(void *ctx, struct task_struct *task, pid
     if (use_ringbuf) {
         bpf_ringbuf_submit(event, 0);
     } else {
-        int event_ret = bpf_perf_event_output(ctx, &exec_events, BPF_F_CURRENT_CPU, event, sizeof(*event));
+        int event_ret = bpf_perf_event_output(ctx, &ptcpdump_exec_events, BPF_F_CURRENT_CPU, event, sizeof(*event));
         if (event_ret != 0) {
-            // debug_log("[ptcpdump] bpf_perf_event_output exec_events failed: %d\n", event_ret);
+            // debug_log("[ptcpdump] bpf_perf_event_output ptcpdump_exec_events failed: %d\n", event_ret);
         }
     }
     return;
@@ -365,18 +365,18 @@ static __always_inline void handle_exit(void *ctx, struct task_struct *task) {
     }
 
     u32 pid = BPF_CORE_READ(task, tgid);
-    if (bpf_map_lookup_elem(&filter_pid_map, &pid)) {
-        bpf_map_delete_elem(&filter_pid_map, &pid);
+    if (bpf_map_lookup_elem(&ptcpdump_filter_pid_map, &pid)) {
+        bpf_map_delete_elem(&ptcpdump_filter_pid_map, &pid);
     }
 
     struct exit_event_t *event;
     bool use_ringbuf = false;
 
     if (ringbuf_available()) {
-        event = bpf_ringbuf_reserve(&exit_events_ringbuf, sizeof(*event), 0);
+        event = bpf_ringbuf_reserve(&ptcpdump_exit_events_ringbuf, sizeof(*event), 0);
         use_ringbuf = true;
     } else {
-        event = bpf_map_lookup_elem(&exit_event_tmp, &pid);
+        event = bpf_map_lookup_elem(&ptcpdump_exit_event_tmp, &pid);
     }
     if (!event) {
         return;
@@ -387,9 +387,9 @@ static __always_inline void handle_exit(void *ctx, struct task_struct *task) {
     if (use_ringbuf) {
         bpf_ringbuf_submit(event, 0);
     } else {
-        int event_ret = bpf_perf_event_output(ctx, &exit_events, BPF_F_CURRENT_CPU, event, sizeof(*event));
+        int event_ret = bpf_perf_event_output(ctx, &ptcpdump_exit_events, BPF_F_CURRENT_CPU, event, sizeof(*event));
         if (event_ret != 0) {
-            // debug_log("[ptcpdump] bpf_perf_event_output exit_events failed: %d\n", event_ret);
+            // debug_log("[ptcpdump] bpf_perf_event_output ptcpdump_exit_events failed: %d\n", event_ret);
         }
     }
 
@@ -397,28 +397,29 @@ static __always_inline void handle_exit(void *ctx, struct task_struct *task) {
 }
 
 SEC("raw_tracepoint/sched_process_exec")
-int BPF_PROG(raw_tracepoint__sched_process_exec, struct task_struct *task, pid_t old_pid, struct linux_binprm *bprm) {
+int BPF_PROG(ptcpdump_raw_tracepoint__sched_process_exec, struct task_struct *task, pid_t old_pid,
+             struct linux_binprm *bprm) {
     handle_exec(ctx, task, old_pid, bprm);
     return 0;
 }
 
 #ifndef NO_TRACING
 SEC("tp_btf/sched_process_exec")
-int BPF_PROG(tp_btf__sched_process_exec, struct task_struct *task, pid_t old_pid, struct linux_binprm *bprm) {
+int BPF_PROG(ptcpdump_tp_btf__sched_process_exec, struct task_struct *task, pid_t old_pid, struct linux_binprm *bprm) {
     handle_exec(ctx, task, old_pid, bprm);
     return 0;
 }
 #endif
 
 SEC("raw_tracepoint/sched_process_exit")
-int BPF_PROG(raw_tracepoint__sched_process_exit, struct task_struct *task) {
+int BPF_PROG(ptcpdump_raw_tracepoint__sched_process_exit, struct task_struct *task) {
     handle_exit(ctx, task);
     return 0;
 }
 
 #ifndef NO_TRACING
 SEC("tp_btf/sched_process_exit")
-int BPF_PROG(tp_btf__sched_process_exit, struct task_struct *task) {
+int BPF_PROG(ptcpdump_tp_btf__sched_process_exit, struct task_struct *task) {
     handle_exit(ctx, task);
     return 0;
 }

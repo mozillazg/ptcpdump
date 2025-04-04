@@ -47,34 +47,34 @@ struct {
     __uint(max_entries, 100);
     __type(key, u32);
     __type(value, u8);
-} filter_ifindex_map SEC(".maps");
+} ptcpdump_filter_ifindex_map SEC(".maps");
 
 struct {
     __uint(type, BPF_MAP_TYPE_LRU_HASH);
     __uint(max_entries, 65536);
     __type(key, struct flow_pid_key_t);
     __type(value, struct process_meta_t);
-} flow_pid_map SEC(".maps");
+} ptcpdump_flow_pid_map SEC(".maps");
 
 struct {
     __uint(type, BPF_MAP_TYPE_LRU_HASH);
     __uint(max_entries, 65536);
     __type(key, u64);
     __type(value, struct process_meta_t);
-} sock_cookie_pid_map SEC(".maps");
+} ptcpdump_sock_cookie_pid_map SEC(".maps");
 
 struct {
     __uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
     __uint(max_entries, 1);
     __type(key, u32);
     __type(value, struct packet_event_t);
-} packet_event_stack SEC(".maps");
+} ptcpdump_packet_event_stack SEC(".maps");
 
 struct {
     __uint(type, BPF_MAP_TYPE_PERF_EVENT_ARRAY);
     __uint(key_size, sizeof(u32));
     __uint(value_size, sizeof(u32));
-} packet_events SEC(".maps");
+} ptcpdump_packet_events SEC(".maps");
 
 struct skb_data_t {
     u8 data[1 << 18];
@@ -83,14 +83,14 @@ struct skb_data_t {
 struct {
     __uint(type, BPF_MAP_TYPE_RINGBUF);
     __uint(max_entries, 1 << 25);
-} packet_events_ringbuf SEC(".maps");
+} ptcpdump_packet_events_ringbuf SEC(".maps");
 
 struct {
     __uint(type, BPF_MAP_TYPE_HASH);
     __uint(max_entries, 1);
     __type(key, u32);
     __type(value, u32);
-} filter_by_kernel_count SEC(".maps");
+} ptcpdump_filter_by_kernel_count SEC(".maps");
 
 // force emitting struct into the ELF.
 // the `-type` flag of bpf2go need this
@@ -100,7 +100,7 @@ const struct gconfig_t *unused6 __attribute__((unused));
 
 #ifndef NO_CGROUP_PROG
 SEC("cgroup/sock_create")
-int cgroup__sock_create(void *ctx) {
+int ptcpdump_cgroup__sock_create(void *ctx) {
     if (!bpf_core_enum_value_exists(enum bpf_func_id, BPF_FUNC_get_socket_cookie)) {
         return 1;
     }
@@ -121,9 +121,9 @@ int cgroup__sock_create(void *ctx) {
     struct process_meta_t meta = {0};
     fill_process_meta(task, &meta);
 
-    int ret = bpf_map_update_elem(&sock_cookie_pid_map, &cookie, &meta, BPF_ANY);
+    int ret = bpf_map_update_elem(&ptcpdump_sock_cookie_pid_map, &cookie, &meta, BPF_ANY);
     if (ret != 0) {
-        // debug_log("[ptcpdump] bpf_map_update_elem sock_cookie_pid_map failed: %d\n", ret);
+        // debug_log("[ptcpdump] bpf_map_update_elem ptcpdump_sock_cookie_pid_map failed: %d\n", ret);
     }
 
     return 1;
@@ -132,7 +132,7 @@ int cgroup__sock_create(void *ctx) {
 
 #ifndef NO_CGROUP_PROG
 SEC("cgroup/sock_release")
-int cgroup__sock_release(void *ctx) {
+int ptcpdump_cgroup__sock_release(void *ctx) {
     if (!bpf_core_enum_value_exists(enum bpf_func_id, BPF_FUNC_get_socket_cookie)) {
         return 1;
     }
@@ -141,7 +141,7 @@ int cgroup__sock_release(void *ctx) {
         return 1;
     }
 
-    bpf_map_delete_elem(&sock_cookie_pid_map, &cookie);
+    bpf_map_delete_elem(&ptcpdump_sock_cookie_pid_map, &cookie);
     return 1;
 }
 #endif
@@ -167,22 +167,22 @@ static __always_inline int handle_security_sk_classify_flow(struct sock *sk) {
 
     // debug_log("[ptcpdump] flow key: %pI4 %d\n", &key.saddr[0], key.sport);
 
-    int ret = bpf_map_update_elem(&flow_pid_map, &key, &value, BPF_ANY);
+    int ret = bpf_map_update_elem(&ptcpdump_flow_pid_map, &key, &value, BPF_ANY);
     if (ret != 0) {
-        // debug_log("bpf_map_update_elem flow_pid_map failed: %d\n", ret);
+        // debug_log("bpf_map_update_elem ptcpdump_flow_pid_map failed: %d\n", ret);
     }
     return 0;
 }
 
 SEC("kprobe/security_sk_classify_flow")
-int BPF_KPROBE(kprobe__security_sk_classify_flow, struct sock *sk) {
+int BPF_KPROBE(ptcpdump_kprobe__security_sk_classify_flow, struct sock *sk) {
     handle_security_sk_classify_flow(sk);
     return 0;
 }
 
 #ifndef NO_TRACING
 SEC("fentry/security_sk_classify_flow")
-int BPF_PROG(fentry__security_sk_classify_flow, struct sock *sk) {
+int BPF_PROG(ptcpdump_fentry__security_sk_classify_flow, struct sock *sk) {
     handle_security_sk_classify_flow(sk);
     return 0;
 }
@@ -201,7 +201,7 @@ static __always_inline void handle_sendmsg(struct sock *sk) {
     // debug_log("sendmsg match\n");
 
     fill_sk_meta(sk, &key);
-    if (bpf_map_lookup_elem(&flow_pid_map, &key)) {
+    if (bpf_map_lookup_elem(&ptcpdump_flow_pid_map, &key)) {
         return;
     }
 
@@ -210,43 +210,43 @@ static __always_inline void handle_sendmsg(struct sock *sk) {
         return;
     }
     // debug_log("[ptcpdump][sendmsg] flow key: %pI4 %d\n", &key.saddr[0], key.sport);
-    int ret = bpf_map_update_elem(&flow_pid_map, &key, &value, BPF_NOEXIST);
+    int ret = bpf_map_update_elem(&ptcpdump_flow_pid_map, &key, &value, BPF_NOEXIST);
     if (ret != 0) {
-        // debug_log("[handle_tcp_sendmsg] bpf_map_update_elem flow_pid_map failed: %d\n", ret);
+        // debug_log("[handle_tcp_sendmsg] bpf_map_update_elem ptcpdump_flow_pid_map failed: %d\n", ret);
     }
     return;
 }
 
 SEC("kprobe/tcp_sendmsg")
-int BPF_KPROBE(kprobe__tcp_sendmsg, struct sock *sk) {
+int BPF_KPROBE(ptcpdump_kprobe__tcp_sendmsg, struct sock *sk) {
     handle_sendmsg(sk);
     return 0;
 }
 
 #ifndef NO_TRACING
 SEC("fentry/tcp_sendmsg")
-int BPF_PROG(fentry__tcp_sendmsg, struct sock *sk) {
+int BPF_PROG(ptcpdump_fentry__tcp_sendmsg, struct sock *sk) {
     handle_sendmsg(sk);
     return 0;
 }
 #endif
 
 SEC("kprobe/udp_sendmsg")
-int BPF_KPROBE(kprobe__udp_sendmsg, struct sock *sk) {
+int BPF_KPROBE(ptcpdump_kprobe__udp_sendmsg, struct sock *sk) {
     handle_sendmsg(sk);
     return 0;
 }
 
 #ifndef NO_TRACING
 SEC("fentry/udp_sendmsg")
-int BPF_PROG(fentry__udp_sendmsg, struct sock *sk) {
+int BPF_PROG(ptcpdump_fentry__udp_sendmsg, struct sock *sk) {
     handle_sendmsg(sk);
     return 0;
 }
 #endif
 
 SEC("kprobe/udp_send_skb")
-int BPF_KPROBE(kprobe__udp_send_skb, struct sk_buff *skb) {
+int BPF_KPROBE(ptcpdump_kprobe__udp_send_skb, struct sk_buff *skb) {
     struct sock *sk = BPF_CORE_READ(skb, sk);
     handle_sendmsg(sk);
     return 0;
@@ -254,7 +254,7 @@ int BPF_KPROBE(kprobe__udp_send_skb, struct sk_buff *skb) {
 
 #ifndef NO_TRACING
 SEC("fentry/udp_send_skb")
-int BPF_PROG(fentry__udp_send_skb, struct sk_buff *skb) {
+int BPF_PROG(ptcpdump_fentry__udp_send_skb, struct sk_buff *skb) {
     struct sock *sk = BPF_CORE_READ(skb, sk);
     handle_sendmsg(sk);
     return 0;
@@ -278,7 +278,7 @@ static __always_inline void route_packet(struct packet_meta_t *packet_meta, stru
     struct nat_flow_t tmp_flow = *flow;
 #pragma unroll
     for (int i = 0; i < 10; i++) {
-        struct nat_flow_t *translated_flow = bpf_map_lookup_elem(&nat_flow_map, &tmp_flow);
+        struct nat_flow_t *translated_flow = bpf_map_lookup_elem(&ptcpdump_nat_flow_map, &tmp_flow);
         if (translated_flow == NULL) {
             // debug_log("[ptcpdump]: no router %pI4:%d %pI4:%d\n",
             // 		&tmp_flow.saddr[0], tmp_flow.sport, &tmp_flow.daddr[0],
@@ -336,7 +336,7 @@ static __always_inline int fill_packet_event_meta(struct __sk_buff *skb, bool cg
     if (bpf_core_enum_value_exists(enum bpf_func_id, BPF_FUNC_get_socket_cookie)) {
         u64 cookie = bpf_get_socket_cookie(skb);
         if (cookie > 0) {
-            struct process_meta_t *value = bpf_map_lookup_elem(&sock_cookie_pid_map, &cookie);
+            struct process_meta_t *value = bpf_map_lookup_elem(&ptcpdump_sock_cookie_pid_map, &cookie);
             if (value) {
                 clone_process_meta(value, pid_meta);
                 return 0;
@@ -379,15 +379,16 @@ static __always_inline int fill_packet_event_meta(struct __sk_buff *skb, bool cg
         // debug_log("[tc] check %pI4 %d\n", &key.saddr[0], key.sport);
         if (key.sport > 0) {
             // debug_log("[tc] check %pI4 %d\n", &key.saddr[0], key.sport);
-            struct process_meta_t *value = bpf_map_lookup_elem(&flow_pid_map, &key);
+            struct process_meta_t *value = bpf_map_lookup_elem(&ptcpdump_flow_pid_map, &key);
             if (value) {
                 // debug_log("[tc] got %pI4 %d -> %pI4\n", &flow.saddr[0],
                 // flow.sport, &flow.daddr[0]);
                 clone_process_meta(value, pid_meta);
                 return 0;
             } else if (have_pid_filter) {
-                // debug_log("tc, flow_pid_map is empty\n");
-                // debug_log("[tc] %pI4 %d bpf_map_lookup_elem flow_pid_map is empty\n", &key.saddr[0], key.sport);
+                // debug_log("tc, ptcpdump_flow_pid_map is empty\n");
+                // debug_log("[tc] %pI4 %d bpf_map_lookup_elem ptcpdump_flow_pid_map is empty\n", &key.saddr[0],
+                // key.sport);
             }
         }
         egress = !egress;
@@ -395,7 +396,7 @@ static __always_inline int fill_packet_event_meta(struct __sk_buff *skb, bool cg
 
     if (have_pid_filter) {
         // debug_log("[tc] check %pI4 %d -> %pI4\n", &flow.saddr[0], flow.sport, &flow.daddr[0]);
-        // debug_log("tc, not found pid from flow_pid_map");
+        // debug_log("tc, not found pid from ptcpdump_flow_pid_map");
         return -1;
     }
 
@@ -418,18 +419,18 @@ static __always_inline void handle_tc(bool cgroup_skb, struct __sk_buff *skb, bo
     bool use_ringbuf = false;
 
     if (g.use_ringbuf_submit_skb && ringbuf_available()) {
-        ringbuf = bpf_ringbuf_reserve(&packet_events_ringbuf, sizeof(*event) + g.max_payload_size, 0);
+        ringbuf = bpf_ringbuf_reserve(&ptcpdump_packet_events_ringbuf, sizeof(*event) + g.max_payload_size, 0);
         if (!ringbuf) {
             return;
         }
         event = (struct packet_event_t *)ringbuf;
         use_ringbuf = true;
     } else {
-        event = bpf_map_lookup_elem(&packet_event_stack, &u32_zero);
+        event = bpf_map_lookup_elem(&ptcpdump_packet_event_stack, &u32_zero);
     }
 
     if (!event) {
-        // debug_log("[ptcpdump] packet_event_stack failed\n");
+        // debug_log("[ptcpdump] ptcpdump_packet_event_stack failed\n");
         return;
     }
 
@@ -450,7 +451,7 @@ static __always_inline void handle_tc(bool cgroup_skb, struct __sk_buff *skb, bo
     // };
 
     u32 *count;
-    count = bpf_map_lookup_or_try_init(&filter_by_kernel_count, &u32_zero, &u32_zero);
+    count = bpf_map_lookup_or_try_init(&ptcpdump_filter_by_kernel_count, &u32_zero, &u32_zero);
     if (count) {
         __sync_fetch_and_add(count, 1);
     }
@@ -482,8 +483,8 @@ static __always_inline void handle_tc(bool cgroup_skb, struct __sk_buff *skb, bo
         }
         bpf_ringbuf_submit(ringbuf, 0);
     } else {
-        int event_ret = bpf_perf_event_output(skb, &packet_events, BPF_F_CURRENT_CPU | (payload_len << 32), event,
-                                              sizeof(struct packet_event_t));
+        int event_ret = bpf_perf_event_output(skb, &ptcpdump_packet_events, BPF_F_CURRENT_CPU | (payload_len << 32),
+                                              event, sizeof(struct packet_event_t));
         if (event_ret != 0) {
             // debug_log("[ptcpdump] bpf_perf_event_output exec_events failed: %d\n", event_ret);
         }
@@ -493,7 +494,7 @@ static __always_inline void handle_tc(bool cgroup_skb, struct __sk_buff *skb, bo
 }
 
 SEC("tc")
-int tc_ingress(struct __sk_buff *skb) {
+int ptcpdump_tc_ingress(struct __sk_buff *skb) {
     bpf_skb_pull_data(skb, 0);
     handle_tc(false, skb, false);
     return TC_ACT_UNSPEC;
@@ -501,7 +502,7 @@ int tc_ingress(struct __sk_buff *skb) {
 
 #ifndef NO_TCX
 SEC("tcx/ingress")
-int tcx_ingress(struct __sk_buff *skb) {
+int ptcpdump_tcx_ingress(struct __sk_buff *skb) {
     bpf_skb_pull_data(skb, 0);
     handle_tc(false, skb, false);
     return TCX_NEXT;
@@ -509,7 +510,7 @@ int tcx_ingress(struct __sk_buff *skb) {
 #endif
 
 SEC("tc")
-int tc_egress(struct __sk_buff *skb) {
+int ptcpdump_tc_egress(struct __sk_buff *skb) {
     bpf_skb_pull_data(skb, 0);
     handle_tc(false, skb, true);
     return TC_ACT_UNSPEC;
@@ -517,7 +518,7 @@ int tc_egress(struct __sk_buff *skb) {
 
 #ifndef NO_TCX
 SEC("tcx/egress")
-int tcx_egress(struct __sk_buff *skb) {
+int ptcpdump_tcx_egress(struct __sk_buff *skb) {
     bpf_skb_pull_data(skb, 0);
     handle_tc(false, skb, true);
     return TCX_NEXT;
@@ -533,7 +534,7 @@ static __always_inline void handle_cgroup_skb(struct __sk_buff *skb, bool egress
         if (ifindex == 0) {
             return;
         }
-        if (!bpf_map_lookup_elem(&filter_ifindex_map, &ifindex)) {
+        if (!bpf_map_lookup_elem(&ptcpdump_filter_ifindex_map, &ifindex)) {
             return;
         }
     }
@@ -542,13 +543,13 @@ static __always_inline void handle_cgroup_skb(struct __sk_buff *skb, bool egress
 }
 
 SEC("cgroup_skb/ingress")
-int cgroup_skb__ingress(struct __sk_buff *skb) {
+int ptcpdump_cgroup_skb__ingress(struct __sk_buff *skb) {
     handle_cgroup_skb(skb, false);
     return 1;
 }
 
 SEC("cgroup_skb/egress")
-int cgroup_skb__egress(struct __sk_buff *skb) {
+int ptcpdump_cgroup_skb__egress(struct __sk_buff *skb) {
     handle_cgroup_skb(skb, true);
     return 1;
 }

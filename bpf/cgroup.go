@@ -20,7 +20,7 @@ func (b *BPF) AttachCgroups(cgroupPath string) error {
 	lk, err := link.AttachCgroup(link.CgroupOptions{
 		Path:    cgroupPath,
 		Attach:  ebpf.AttachCGroupInetSockCreate,
-		Program: b.objs.CgroupSockCreate,
+		Program: b.objs.PtcpdumpCgroupSockCreate,
 	})
 	if err != nil {
 		return fmt.Errorf("attach cgroup/sock_create: %w", err)
@@ -31,7 +31,7 @@ func (b *BPF) AttachCgroups(cgroupPath string) error {
 	lk, err = link.AttachCgroup(link.CgroupOptions{
 		Path:    cgroupPath,
 		Attach:  ebpf.AttachCgroupInetSockRelease,
-		Program: b.objs.CgroupSockRelease,
+		Program: b.objs.PtcpdumpCgroupSockRelease,
 	})
 	if err != nil {
 		return fmt.Errorf("attach cgroup/sock_release: %w", err)
@@ -62,7 +62,7 @@ func (b *BPF) AttachCgroupSkb(cgroupPath string, egress, ingress bool) error {
 		lk, err := link.AttachCgroup(link.CgroupOptions{
 			Path:    cgroupPath,
 			Attach:  ebpf.AttachCGroupInetIngress,
-			Program: b.objs.CgroupSkbIngress,
+			Program: b.objs.PtcpdumpCgroupSkbIngress,
 		})
 		if err != nil {
 			return fmt.Errorf("attach cgroup_skb/ingress: %w", err)
@@ -74,7 +74,7 @@ func (b *BPF) AttachCgroupSkb(cgroupPath string, egress, ingress bool) error {
 		lk, err := link.AttachCgroup(link.CgroupOptions{
 			Path:    cgroupPath,
 			Attach:  ebpf.AttachCGroupInetEgress,
-			Program: b.objs.CgroupSkbEgress,
+			Program: b.objs.PtcpdumpCgroupSkbEgress,
 		})
 		if err != nil {
 			return fmt.Errorf("attach cgroup_skb/egress: %w", err)

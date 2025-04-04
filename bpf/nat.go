@@ -7,7 +7,7 @@ import (
 
 func (b *BPF) attachNatHooks() error {
 	err := b.attachFentryOrKprobe("nf_nat_packet",
-		b.objs.FentryNfNatPacket, b.objs.KprobeNfNatPacket)
+		b.objs.PtcpdumpFentryNfNatPacket, b.objs.PtcpdumpKprobeNfNatPacket)
 	if err != nil {
 		log.Infof("%+v", err)
 		if isProbeNotSupportErr(err) {
@@ -18,7 +18,7 @@ func (b *BPF) attachNatHooks() error {
 	}
 
 	err = b.attachFentryOrKprobe("nf_nat_manip_pkt",
-		b.objs.FentryNfNatManipPkt, b.objs.KprobeNfNatManipPkt)
+		b.objs.PtcpdumpFentryNfNatManipPkt, b.objs.PtcpdumpKprobeNfNatManipPkt)
 	if err != nil {
 		log.Infof("%+v", err)
 		if isProbeNotSupportErr(err) {

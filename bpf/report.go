@@ -11,7 +11,7 @@ import (
 func (b *BPF) CountReport() types.CountReport {
 	zero := uint32(0)
 	var value uint32
-	if err := b.objs.FilterByKernelCount.Lookup(&zero, &value); err != nil {
+	if err := b.objs.PtcpdumpFilterByKernelCount.Lookup(&zero, &value); err != nil {
 		if !errors.Is(err, ebpf.ErrKeyNotExist) {
 			log.Errorf("get value of filter_by_kernel_count failed: %s", err)
 		}
