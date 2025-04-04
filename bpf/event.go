@@ -36,7 +36,7 @@ func (b *BPF) PullPacketEvents(ctx context.Context, chanSize int, maxPacketSize 
 	var reader EventReader
 	if b.supportRingBuf && b.useRingBufSubmitSkb {
 		log.Info("use ringbuf for packet events")
-		ringbufReader, err := ringbuf.NewReader(b.objs.PacketEventsRingbuf)
+		ringbufReader, err := ringbuf.NewReader(b.objs.PtcpdumpPacketEventsRingbuf)
 		if err != nil {
 			return nil, fmt.Errorf(": %w", err)
 		}
@@ -52,7 +52,7 @@ func (b *BPF) PullPacketEvents(ctx context.Context, chanSize int, maxPacketSize 
 		}
 		log.Infof("use %d as perCPUBuffer", perCPUBuffer)
 
-		preader, err := perf.NewReader(b.objs.PacketEvents, perCPUBuffer)
+		preader, err := perf.NewReader(b.objs.PtcpdumpPacketEvents, perCPUBuffer)
 		if err != nil {
 			return nil, fmt.Errorf(": %w", err)
 		}
@@ -116,7 +116,7 @@ func (b *BPF) PullExecEvents(ctx context.Context, chanSize int) (<-chan BpfExecE
 
 	if b.supportRingBuf {
 		log.Info("use ringbuf for exec events")
-		ringbufReader, err := ringbuf.NewReader(b.objs.ExecEventsRingbuf)
+		ringbufReader, err := ringbuf.NewReader(b.objs.PtcpdumpPtcpdumpExecEventsRingbuf)
 		if err != nil {
 			return nil, fmt.Errorf(": %w", err)
 		}
@@ -132,7 +132,7 @@ func (b *BPF) PullExecEvents(ctx context.Context, chanSize int) (<-chan BpfExecE
 		}
 		log.Infof("use %d as perCPUBuffer", perCPUBuffer)
 
-		preader, err := perf.NewReader(b.objs.ExecEvents, perCPUBuffer)
+		preader, err := perf.NewReader(b.objs.PtcpdumpExecEvents, perCPUBuffer)
 		if err != nil {
 			return nil, fmt.Errorf(": %w", err)
 		}
@@ -185,7 +185,7 @@ func (b *BPF) PullGoKeyLogEvents(ctx context.Context, chanSize int) (<-chan BpfG
 
 	if b.supportRingBuf {
 		log.Info("use ringbuf for go keylog events")
-		ringbufReader, err := ringbuf.NewReader(b.objs.GoKeylogEventsRingbuf)
+		ringbufReader, err := ringbuf.NewReader(b.objs.PtcpdumpGoKeylogEventsRingbuf)
 		if err != nil {
 			return nil, fmt.Errorf(": %w", err)
 		}
@@ -201,7 +201,7 @@ func (b *BPF) PullGoKeyLogEvents(ctx context.Context, chanSize int) (<-chan BpfG
 		}
 		log.Infof("use %d as perCPUBuffer", perCPUBuffer)
 
-		preader, err := perf.NewReader(b.objs.GoKeylogEvents, perCPUBuffer)
+		preader, err := perf.NewReader(b.objs.PtcpdumpGoKeylogEvents, perCPUBuffer)
 		if err != nil {
 			return nil, fmt.Errorf(": %w", err)
 		}
@@ -260,7 +260,7 @@ func (b *BPF) PullNewNetDeviceEvents(ctx context.Context, chanSize int) (<-chan 
 	}
 	log.Infof("use %d as perCPUBuffer", perCPUBuffer)
 
-	reader, err := perf.NewReader(b.objs.NewNetdeviceEvents, perCPUBuffer)
+	reader, err := perf.NewReader(b.objs.PtcpdumpNewNetdeviceEvents, perCPUBuffer)
 	if err != nil {
 		return nil, fmt.Errorf(": %w", err)
 	}
@@ -327,7 +327,7 @@ func (b *BPF) PullNetDeviceChangeEvents(ctx context.Context, chanSize int) (<-ch
 	}
 	log.Infof("use %d as perCPUBuffer", perCPUBuffer)
 
-	reader, err := perf.NewReader(b.objs.NetdeviceChangeEvents, perCPUBuffer)
+	reader, err := perf.NewReader(b.objs.PtcpdumpNetdeviceChangeEvents, perCPUBuffer)
 	if err != nil {
 		return nil, fmt.Errorf(": %w", err)
 	}
@@ -396,7 +396,7 @@ func (b *BPF) PullMountEventEvents(ctx context.Context, chanSize int) (<-chan Bp
 	}
 	log.Infof("use %d as perCPUBuffer", perCPUBuffer)
 
-	reader, err := perf.NewReader(b.objs.MountEvents, perCPUBuffer)
+	reader, err := perf.NewReader(b.objs.PtcpdumpMountEvents, perCPUBuffer)
 	if err != nil {
 		return nil, fmt.Errorf(": %w", err)
 	}
@@ -472,7 +472,7 @@ func (b *BPF) PullExitEvents(ctx context.Context, chanSize int) (<-chan BpfExitE
 	var reader EventReader
 	if b.supportRingBuf {
 		log.Info("use ringbuf for exit events")
-		ringbufReader, err := ringbuf.NewReader(b.objs.ExitEventsRingbuf)
+		ringbufReader, err := ringbuf.NewReader(b.objs.PtcpdumpExitEventsRingbuf)
 		if err != nil {
 			return nil, fmt.Errorf(": %w", err)
 		}
@@ -489,7 +489,7 @@ func (b *BPF) PullExitEvents(ctx context.Context, chanSize int) (<-chan BpfExitE
 		}
 		log.Infof("use %d as perCPUBuffer", perCPUBuffer)
 
-		preader, err := perf.NewReader(b.objs.ExitEvents, perCPUBuffer)
+		preader, err := perf.NewReader(b.objs.PtcpdumpExitEvents, perCPUBuffer)
 		if err != nil {
 			return nil, fmt.Errorf(": %w", err)
 		}

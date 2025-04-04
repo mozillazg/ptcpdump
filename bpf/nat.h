@@ -19,7 +19,7 @@ struct {
     __uint(max_entries, 65536);
     __type(key, struct nat_flow_t);
     __type(value, struct nat_flow_t);
-} nat_flow_map SEC(".maps");
+} ptcpdump_nat_flow_map SEC(".maps");
 
 static __always_inline void parse_conntrack_tuple(struct nf_conntrack_tuple *tuple, struct nat_flow_t *flow) {
     BPF_CORE_READ_INTO(&flow->saddr, tuple, src.u3.all);
@@ -70,7 +70,7 @@ static __always_inline void handle_nat(struct nf_conn *ct) {
     // debug_log("[ptcpdump]                               -> %pI4:%d %pI4:%d\n",
     // 		&reversed_orig.saddr[0], reversed_orig.sport,
     // 		&reversed_orig.saddr[0], reversed_orig.dport);
-    bpf_map_update_elem(&nat_flow_map, &reply, &reversed_orig, BPF_ANY);
+    bpf_map_update_elem(&ptcpdump_nat_flow_map, &reply, &reversed_orig, BPF_ANY);
 
     struct nat_flow_t reversed_reply = {0};
     reverse_flow(&reply, &reversed_reply);
@@ -80,32 +80,32 @@ static __always_inline void handle_nat(struct nf_conn *ct) {
     // debug_log("[ptcpdump]                               -> %pI4:%d %pI4:%d\n",
     // 		&orig.saddr[0], orig.sport,
     // 		&orig.saddr[0], orig.dport);
-    bpf_map_update_elem(&nat_flow_map, &reversed_reply, &orig, BPF_ANY);
+    bpf_map_update_elem(&ptcpdump_nat_flow_map, &reversed_reply, &orig, BPF_ANY);
 }
 
 SEC("kprobe/nf_nat_packet")
-int BPF_KPROBE(kprobe__nf_nat_packet, struct nf_conn *ct) {
+int BPF_KPROBE(ptcpdump_kprobe__nf_nat_packet, struct nf_conn *ct) {
     handle_nat(ct);
     return 0;
 }
 
 #ifndef NO_TRACING
 SEC("fentry/nf_nat_packet")
-int BPF_PROG(fentry__nf_nat_packet, struct nf_conn *ct) {
+int BPF_PROG(ptcpdump_fentry__nf_nat_packet, struct nf_conn *ct) {
     handle_nat(ct);
     return 0;
 }
 #endif
 
 SEC("kprobe/nf_nat_manip_pkt")
-int BPF_KPROBE(kprobe__nf_nat_manip_pkt, void *_, struct nf_conn *ct) {
+int BPF_KPROBE(ptcpdump_kprobe__nf_nat_manip_pkt, void *_, struct nf_conn *ct) {
     handle_nat(ct);
     return 0;
 }
 
 #ifndef NO_TRACING
 SEC("fentry/nf_nat_manip_pkt")
-int BPF_PROG(fentry__nf_nat_manip_pkt, void *_, struct nf_conn *ct) {
+int BPF_PROG(ptcpdump_fentry__nf_nat_manip_pkt, void *_, struct nf_conn *ct) {
     handle_nat(ct);
     return 0;
 }

@@ -34,7 +34,7 @@ static const u32 u32_zero = 0;
 #define GET_CONFIG()                                                                                                   \
     struct gconfig_t g = {0};                                                                                          \
     u32 configk = 0;                                                                                                   \
-    struct gconfig_t *configv = bpf_map_lookup_elem(&config_map, &configk);                                            \
+    struct gconfig_t *configv = bpf_map_lookup_elem(&ptcpdump_config_map, &configk);                                   \
     if (configv) {                                                                                                     \
         g = *configv;                                                                                                  \
     }

@@ -165,81 +165,81 @@ type BpfSpecs struct {
 //
 // It can be passed ebpf.CollectionSpec.Assign.
 type BpfProgramSpecs struct {
-	CgroupSockCreate                     *ebpf.ProgramSpec `ebpf:"cgroup__sock_create"`
-	CgroupSockRelease                    *ebpf.ProgramSpec `ebpf:"cgroup__sock_release"`
-	CgroupSkbEgress                      *ebpf.ProgramSpec `ebpf:"cgroup_skb__egress"`
-	CgroupSkbIngress                     *ebpf.ProgramSpec `ebpf:"cgroup_skb__ingress"`
-	FentryNfNatManipPkt                  *ebpf.ProgramSpec `ebpf:"fentry__nf_nat_manip_pkt"`
-	FentryNfNatPacket                    *ebpf.ProgramSpec `ebpf:"fentry__nf_nat_packet"`
-	FentrySecuritySkClassifyFlow         *ebpf.ProgramSpec `ebpf:"fentry__security_sk_classify_flow"`
-	FentryTcpSendmsg                     *ebpf.ProgramSpec `ebpf:"fentry__tcp_sendmsg"`
-	FentryUdpSendSkb                     *ebpf.ProgramSpec `ebpf:"fentry__udp_send_skb"`
-	FentryUdpSendmsg                     *ebpf.ProgramSpec `ebpf:"fentry__udp_sendmsg"`
-	KprobeDevChangeNetNamespace          *ebpf.ProgramSpec `ebpf:"kprobe__dev_change_net_namespace"`
-	KprobeDevChangeNetNamespaceLegacy    *ebpf.ProgramSpec `ebpf:"kprobe__dev_change_net_namespace_legacy"`
-	KprobeNfNatManipPkt                  *ebpf.ProgramSpec `ebpf:"kprobe__nf_nat_manip_pkt"`
-	KprobeNfNatPacket                    *ebpf.ProgramSpec `ebpf:"kprobe__nf_nat_packet"`
-	KprobeRegisterNetdevice              *ebpf.ProgramSpec `ebpf:"kprobe__register_netdevice"`
-	KprobeSecuritySkClassifyFlow         *ebpf.ProgramSpec `ebpf:"kprobe__security_sk_classify_flow"`
-	KprobeTcpSendmsg                     *ebpf.ProgramSpec `ebpf:"kprobe__tcp_sendmsg"`
-	KprobeUdpSendSkb                     *ebpf.ProgramSpec `ebpf:"kprobe__udp_send_skb"`
-	KprobeUdpSendmsg                     *ebpf.ProgramSpec `ebpf:"kprobe__udp_sendmsg"`
-	KretprobeDevChangeNetNamespace       *ebpf.ProgramSpec `ebpf:"kretprobe__dev_change_net_namespace"`
-	KretprobeDevChangeNetNamespaceLegacy *ebpf.ProgramSpec `ebpf:"kretprobe__dev_change_net_namespace_legacy"`
-	KretprobeDevGetByIndex               *ebpf.ProgramSpec `ebpf:"kretprobe__dev_get_by_index"`
-	KretprobeDevGetByIndexLegacy         *ebpf.ProgramSpec `ebpf:"kretprobe__dev_get_by_index_legacy"`
-	KretprobeRegisterNetdevice           *ebpf.ProgramSpec `ebpf:"kretprobe__register_netdevice"`
-	RawTracepointSchedProcessExec        *ebpf.ProgramSpec `ebpf:"raw_tracepoint__sched_process_exec"`
-	RawTracepointSchedProcessExit        *ebpf.ProgramSpec `ebpf:"raw_tracepoint__sched_process_exit"`
-	RawTracepointSchedProcessFork        *ebpf.ProgramSpec `ebpf:"raw_tracepoint__sched_process_fork"`
-	TcEgress                             *ebpf.ProgramSpec `ebpf:"tc_egress"`
-	TcIngress                            *ebpf.ProgramSpec `ebpf:"tc_ingress"`
-	TcxEgress                            *ebpf.ProgramSpec `ebpf:"tcx_egress"`
-	TcxIngress                           *ebpf.ProgramSpec `ebpf:"tcx_ingress"`
-	TpBtfSchedProcessExec                *ebpf.ProgramSpec `ebpf:"tp_btf__sched_process_exec"`
-	TpBtfSchedProcessExit                *ebpf.ProgramSpec `ebpf:"tp_btf__sched_process_exit"`
-	TpBtfSchedProcessFork                *ebpf.ProgramSpec `ebpf:"tp_btf__sched_process_fork"`
-	TracepointSyscallsSysEnterMount      *ebpf.ProgramSpec `ebpf:"tracepoint__syscalls__sys_enter_mount"`
-	TracepointSyscallsSysExitMount       *ebpf.ProgramSpec `ebpf:"tracepoint__syscalls__sys_exit_mount"`
-	UprobeGoBuiltinTlsWriteKeyLog        *ebpf.ProgramSpec `ebpf:"uprobe__go_builtin__tls__write_key_log"`
-	UprobeGoBuiltinTlsWriteKeyLogRet     *ebpf.ProgramSpec `ebpf:"uprobe__go_builtin__tls__write_key_log__ret"`
+	PtcpdumpCgroupSockCreate                     *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup__sock_create"`
+	PtcpdumpCgroupSockRelease                    *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup__sock_release"`
+	PtcpdumpCgroupSkbEgress                      *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup_skb__egress"`
+	PtcpdumpCgroupSkbIngress                     *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup_skb__ingress"`
+	PtcpdumpFentryNfNatManipPkt                  *ebpf.ProgramSpec `ebpf:"ptcpdump_fentry__nf_nat_manip_pkt"`
+	PtcpdumpFentryNfNatPacket                    *ebpf.ProgramSpec `ebpf:"ptcpdump_fentry__nf_nat_packet"`
+	PtcpdumpFentrySecuritySkClassifyFlow         *ebpf.ProgramSpec `ebpf:"ptcpdump_fentry__security_sk_classify_flow"`
+	PtcpdumpFentryTcpSendmsg                     *ebpf.ProgramSpec `ebpf:"ptcpdump_fentry__tcp_sendmsg"`
+	PtcpdumpFentryUdpSendSkb                     *ebpf.ProgramSpec `ebpf:"ptcpdump_fentry__udp_send_skb"`
+	PtcpdumpFentryUdpSendmsg                     *ebpf.ProgramSpec `ebpf:"ptcpdump_fentry__udp_sendmsg"`
+	PtcpdumpKprobeDevChangeNetNamespace          *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__dev_change_net_namespace"`
+	PtcpdumpKprobeDevChangeNetNamespaceLegacy    *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__dev_change_net_namespace_legacy"`
+	PtcpdumpKprobeNfNatManipPkt                  *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__nf_nat_manip_pkt"`
+	PtcpdumpKprobeNfNatPacket                    *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__nf_nat_packet"`
+	PtcpdumpKprobeRegisterNetdevice              *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__register_netdevice"`
+	PtcpdumpKprobeSecuritySkClassifyFlow         *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__security_sk_classify_flow"`
+	PtcpdumpKprobeTcpSendmsg                     *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__tcp_sendmsg"`
+	PtcpdumpKprobeUdpSendSkb                     *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__udp_send_skb"`
+	PtcpdumpKprobeUdpSendmsg                     *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__udp_sendmsg"`
+	PtcpdumpKretprobeDevChangeNetNamespace       *ebpf.ProgramSpec `ebpf:"ptcpdump_kretprobe__dev_change_net_namespace"`
+	PtcpdumpKretprobeDevChangeNetNamespaceLegacy *ebpf.ProgramSpec `ebpf:"ptcpdump_kretprobe__dev_change_net_namespace_legacy"`
+	PtcpdumpKretprobeDevGetByIndex               *ebpf.ProgramSpec `ebpf:"ptcpdump_kretprobe__dev_get_by_index"`
+	PtcpdumpKretprobeDevGetByIndexLegacy         *ebpf.ProgramSpec `ebpf:"ptcpdump_kretprobe__dev_get_by_index_legacy"`
+	PtcpdumpKretprobeRegisterNetdevice           *ebpf.ProgramSpec `ebpf:"ptcpdump_kretprobe__register_netdevice"`
+	PtcpdumpRawTracepointSchedProcessExec        *ebpf.ProgramSpec `ebpf:"ptcpdump_raw_tracepoint__sched_process_exec"`
+	PtcpdumpRawTracepointSchedProcessExit        *ebpf.ProgramSpec `ebpf:"ptcpdump_raw_tracepoint__sched_process_exit"`
+	PtcpdumpRawTracepointSchedProcessFork        *ebpf.ProgramSpec `ebpf:"ptcpdump_raw_tracepoint__sched_process_fork"`
+	PtcpdumpTcEgress                             *ebpf.ProgramSpec `ebpf:"ptcpdump_tc_egress"`
+	PtcpdumpTcIngress                            *ebpf.ProgramSpec `ebpf:"ptcpdump_tc_ingress"`
+	PtcpdumpTcxEgress                            *ebpf.ProgramSpec `ebpf:"ptcpdump_tcx_egress"`
+	PtcpdumpTcxIngress                           *ebpf.ProgramSpec `ebpf:"ptcpdump_tcx_ingress"`
+	PtcpdumpTpBtfSchedProcessExec                *ebpf.ProgramSpec `ebpf:"ptcpdump_tp_btf__sched_process_exec"`
+	PtcpdumpTpBtfSchedProcessExit                *ebpf.ProgramSpec `ebpf:"ptcpdump_tp_btf__sched_process_exit"`
+	PtcpdumpTpBtfSchedProcessFork                *ebpf.ProgramSpec `ebpf:"ptcpdump_tp_btf__sched_process_fork"`
+	PtcpdumpTracepointSyscallsSysEnterMount      *ebpf.ProgramSpec `ebpf:"ptcpdump_tracepoint__syscalls__sys_enter_mount"`
+	PtcpdumpTracepointSyscallsSysExitMount       *ebpf.ProgramSpec `ebpf:"ptcpdump_tracepoint__syscalls__sys_exit_mount"`
+	PtcpdumpUprobeGoBuiltinTlsWriteKeyLog        *ebpf.ProgramSpec `ebpf:"ptcpdump_uprobe__go_builtin__tls__write_key_log"`
+	PtcpdumpUprobeGoBuiltinTlsWriteKeyLogRet     *ebpf.ProgramSpec `ebpf:"ptcpdump_uprobe__go_builtin__tls__write_key_log__ret"`
 }
 
 // BpfMapSpecs contains maps before they are loaded into the kernel.
 //
 // It can be passed ebpf.CollectionSpec.Assign.
 type BpfMapSpecs struct {
-	ConfigMap             *ebpf.MapSpec `ebpf:"config_map"`
-	EnterMountBufs        *ebpf.MapSpec `ebpf:"enter_mount_bufs"`
-	ExecEventStack        *ebpf.MapSpec `ebpf:"exec_event_stack"`
-	ExecEvents            *ebpf.MapSpec `ebpf:"exec_events"`
-	ExecEventsRingbuf     *ebpf.MapSpec `ebpf:"exec_events_ringbuf"`
-	ExitEventTmp          *ebpf.MapSpec `ebpf:"exit_event_tmp"`
-	ExitEvents            *ebpf.MapSpec `ebpf:"exit_events"`
-	ExitEventsRingbuf     *ebpf.MapSpec `ebpf:"exit_events_ringbuf"`
-	FilterByKernelCount   *ebpf.MapSpec `ebpf:"filter_by_kernel_count"`
-	FilterIfindexMap      *ebpf.MapSpec `ebpf:"filter_ifindex_map"`
-	FilterMntnsMap        *ebpf.MapSpec `ebpf:"filter_mntns_map"`
-	FilterNetnsMap        *ebpf.MapSpec `ebpf:"filter_netns_map"`
-	FilterPidMap          *ebpf.MapSpec `ebpf:"filter_pid_map"`
-	FilterPidnsMap        *ebpf.MapSpec `ebpf:"filter_pidns_map"`
-	FilterUidMap          *ebpf.MapSpec `ebpf:"filter_uid_map"`
-	FlowPidMap            *ebpf.MapSpec `ebpf:"flow_pid_map"`
-	GoKeylogBufStorage    *ebpf.MapSpec `ebpf:"go_keylog_buf_storage"`
-	GoKeylogEventTmp      *ebpf.MapSpec `ebpf:"go_keylog_event_tmp"`
-	GoKeylogEvents        *ebpf.MapSpec `ebpf:"go_keylog_events"`
-	GoKeylogEventsRingbuf *ebpf.MapSpec `ebpf:"go_keylog_events_ringbuf"`
-	MountEventStack       *ebpf.MapSpec `ebpf:"mount_event_stack"`
-	MountEvents           *ebpf.MapSpec `ebpf:"mount_events"`
-	NatFlowMap            *ebpf.MapSpec `ebpf:"nat_flow_map"`
-	NetdeviceBufs         *ebpf.MapSpec `ebpf:"netdevice_bufs"`
-	NetdeviceChangeEvents *ebpf.MapSpec `ebpf:"netdevice_change_events"`
-	NewNetdeviceEvents    *ebpf.MapSpec `ebpf:"new_netdevice_events"`
-	PacketEventStack      *ebpf.MapSpec `ebpf:"packet_event_stack"`
-	PacketEvents          *ebpf.MapSpec `ebpf:"packet_events"`
-	PacketEventsRingbuf   *ebpf.MapSpec `ebpf:"packet_events_ringbuf"`
-	SockCookiePidMap      *ebpf.MapSpec `ebpf:"sock_cookie_pid_map"`
-	TidNetdeviceMap       *ebpf.MapSpec `ebpf:"tid_netdevice_map"`
+	PtcpdumpConfigMap                 *ebpf.MapSpec `ebpf:"ptcpdump_config_map"`
+	PtcpdumpEnterMountBufs            *ebpf.MapSpec `ebpf:"ptcpdump_enter_mount_bufs"`
+	PtcpdumpExecEventStack            *ebpf.MapSpec `ebpf:"ptcpdump_exec_event_stack"`
+	PtcpdumpExecEvents                *ebpf.MapSpec `ebpf:"ptcpdump_exec_events"`
+	PtcpdumpExitEventTmp              *ebpf.MapSpec `ebpf:"ptcpdump_exit_event_tmp"`
+	PtcpdumpExitEvents                *ebpf.MapSpec `ebpf:"ptcpdump_exit_events"`
+	PtcpdumpExitEventsRingbuf         *ebpf.MapSpec `ebpf:"ptcpdump_exit_events_ringbuf"`
+	PtcpdumpFilterByKernelCount       *ebpf.MapSpec `ebpf:"ptcpdump_filter_by_kernel_count"`
+	PtcpdumpFilterIfindexMap          *ebpf.MapSpec `ebpf:"ptcpdump_filter_ifindex_map"`
+	PtcpdumpFilterMntnsMap            *ebpf.MapSpec `ebpf:"ptcpdump_filter_mntns_map"`
+	PtcpdumpFilterNetnsMap            *ebpf.MapSpec `ebpf:"ptcpdump_filter_netns_map"`
+	PtcpdumpFilterPidMap              *ebpf.MapSpec `ebpf:"ptcpdump_filter_pid_map"`
+	PtcpdumpFilterPidnsMap            *ebpf.MapSpec `ebpf:"ptcpdump_filter_pidns_map"`
+	PtcpdumpFilterUidMap              *ebpf.MapSpec `ebpf:"ptcpdump_filter_uid_map"`
+	PtcpdumpFlowPidMap                *ebpf.MapSpec `ebpf:"ptcpdump_flow_pid_map"`
+	PtcpdumpGoKeylogBufStorage        *ebpf.MapSpec `ebpf:"ptcpdump_go_keylog_buf_storage"`
+	PtcpdumpGoKeylogEventTmp          *ebpf.MapSpec `ebpf:"ptcpdump_go_keylog_event_tmp"`
+	PtcpdumpGoKeylogEvents            *ebpf.MapSpec `ebpf:"ptcpdump_go_keylog_events"`
+	PtcpdumpGoKeylogEventsRingbuf     *ebpf.MapSpec `ebpf:"ptcpdump_go_keylog_events_ringbuf"`
+	PtcpdumpMountEventStack           *ebpf.MapSpec `ebpf:"ptcpdump_mount_event_stack"`
+	PtcpdumpMountEvents               *ebpf.MapSpec `ebpf:"ptcpdump_mount_events"`
+	PtcpdumpNatFlowMap                *ebpf.MapSpec `ebpf:"ptcpdump_nat_flow_map"`
+	PtcpdumpNetdeviceBufs             *ebpf.MapSpec `ebpf:"ptcpdump_netdevice_bufs"`
+	PtcpdumpNetdeviceChangeEvents     *ebpf.MapSpec `ebpf:"ptcpdump_netdevice_change_events"`
+	PtcpdumpNewNetdeviceEvents        *ebpf.MapSpec `ebpf:"ptcpdump_new_netdevice_events"`
+	PtcpdumpPacketEventStack          *ebpf.MapSpec `ebpf:"ptcpdump_packet_event_stack"`
+	PtcpdumpPacketEvents              *ebpf.MapSpec `ebpf:"ptcpdump_packet_events"`
+	PtcpdumpPacketEventsRingbuf       *ebpf.MapSpec `ebpf:"ptcpdump_packet_events_ringbuf"`
+	PtcpdumpPtcpdumpExecEventsRingbuf *ebpf.MapSpec `ebpf:"ptcpdump_ptcpdump_exec_events_ringbuf"`
+	PtcpdumpSockCookiePidMap          *ebpf.MapSpec `ebpf:"ptcpdump_sock_cookie_pid_map"`
+	PtcpdumpTidNetdeviceMap           *ebpf.MapSpec `ebpf:"ptcpdump_tid_netdevice_map"`
 }
 
 // BpfVariableSpecs contains global variables before they are loaded into the kernel.
@@ -278,72 +278,72 @@ func (o *BpfObjects) Close() error {
 //
 // It can be passed to LoadBpfObjects or ebpf.CollectionSpec.LoadAndAssign.
 type BpfMaps struct {
-	ConfigMap             *ebpf.Map `ebpf:"config_map"`
-	EnterMountBufs        *ebpf.Map `ebpf:"enter_mount_bufs"`
-	ExecEventStack        *ebpf.Map `ebpf:"exec_event_stack"`
-	ExecEvents            *ebpf.Map `ebpf:"exec_events"`
-	ExecEventsRingbuf     *ebpf.Map `ebpf:"exec_events_ringbuf"`
-	ExitEventTmp          *ebpf.Map `ebpf:"exit_event_tmp"`
-	ExitEvents            *ebpf.Map `ebpf:"exit_events"`
-	ExitEventsRingbuf     *ebpf.Map `ebpf:"exit_events_ringbuf"`
-	FilterByKernelCount   *ebpf.Map `ebpf:"filter_by_kernel_count"`
-	FilterIfindexMap      *ebpf.Map `ebpf:"filter_ifindex_map"`
-	FilterMntnsMap        *ebpf.Map `ebpf:"filter_mntns_map"`
-	FilterNetnsMap        *ebpf.Map `ebpf:"filter_netns_map"`
-	FilterPidMap          *ebpf.Map `ebpf:"filter_pid_map"`
-	FilterPidnsMap        *ebpf.Map `ebpf:"filter_pidns_map"`
-	FilterUidMap          *ebpf.Map `ebpf:"filter_uid_map"`
-	FlowPidMap            *ebpf.Map `ebpf:"flow_pid_map"`
-	GoKeylogBufStorage    *ebpf.Map `ebpf:"go_keylog_buf_storage"`
-	GoKeylogEventTmp      *ebpf.Map `ebpf:"go_keylog_event_tmp"`
-	GoKeylogEvents        *ebpf.Map `ebpf:"go_keylog_events"`
-	GoKeylogEventsRingbuf *ebpf.Map `ebpf:"go_keylog_events_ringbuf"`
-	MountEventStack       *ebpf.Map `ebpf:"mount_event_stack"`
-	MountEvents           *ebpf.Map `ebpf:"mount_events"`
-	NatFlowMap            *ebpf.Map `ebpf:"nat_flow_map"`
-	NetdeviceBufs         *ebpf.Map `ebpf:"netdevice_bufs"`
-	NetdeviceChangeEvents *ebpf.Map `ebpf:"netdevice_change_events"`
-	NewNetdeviceEvents    *ebpf.Map `ebpf:"new_netdevice_events"`
-	PacketEventStack      *ebpf.Map `ebpf:"packet_event_stack"`
-	PacketEvents          *ebpf.Map `ebpf:"packet_events"`
-	PacketEventsRingbuf   *ebpf.Map `ebpf:"packet_events_ringbuf"`
-	SockCookiePidMap      *ebpf.Map `ebpf:"sock_cookie_pid_map"`
-	TidNetdeviceMap       *ebpf.Map `ebpf:"tid_netdevice_map"`
+	PtcpdumpConfigMap                 *ebpf.Map `ebpf:"ptcpdump_config_map"`
+	PtcpdumpEnterMountBufs            *ebpf.Map `ebpf:"ptcpdump_enter_mount_bufs"`
+	PtcpdumpExecEventStack            *ebpf.Map `ebpf:"ptcpdump_exec_event_stack"`
+	PtcpdumpExecEvents                *ebpf.Map `ebpf:"ptcpdump_exec_events"`
+	PtcpdumpExitEventTmp              *ebpf.Map `ebpf:"ptcpdump_exit_event_tmp"`
+	PtcpdumpExitEvents                *ebpf.Map `ebpf:"ptcpdump_exit_events"`
+	PtcpdumpExitEventsRingbuf         *ebpf.Map `ebpf:"ptcpdump_exit_events_ringbuf"`
+	PtcpdumpFilterByKernelCount       *ebpf.Map `ebpf:"ptcpdump_filter_by_kernel_count"`
+	PtcpdumpFilterIfindexMap          *ebpf.Map `ebpf:"ptcpdump_filter_ifindex_map"`
+	PtcpdumpFilterMntnsMap            *ebpf.Map `ebpf:"ptcpdump_filter_mntns_map"`
+	PtcpdumpFilterNetnsMap            *ebpf.Map `ebpf:"ptcpdump_filter_netns_map"`
+	PtcpdumpFilterPidMap              *ebpf.Map `ebpf:"ptcpdump_filter_pid_map"`
+	PtcpdumpFilterPidnsMap            *ebpf.Map `ebpf:"ptcpdump_filter_pidns_map"`
+	PtcpdumpFilterUidMap              *ebpf.Map `ebpf:"ptcpdump_filter_uid_map"`
+	PtcpdumpFlowPidMap                *ebpf.Map `ebpf:"ptcpdump_flow_pid_map"`
+	PtcpdumpGoKeylogBufStorage        *ebpf.Map `ebpf:"ptcpdump_go_keylog_buf_storage"`
+	PtcpdumpGoKeylogEventTmp          *ebpf.Map `ebpf:"ptcpdump_go_keylog_event_tmp"`
+	PtcpdumpGoKeylogEvents            *ebpf.Map `ebpf:"ptcpdump_go_keylog_events"`
+	PtcpdumpGoKeylogEventsRingbuf     *ebpf.Map `ebpf:"ptcpdump_go_keylog_events_ringbuf"`
+	PtcpdumpMountEventStack           *ebpf.Map `ebpf:"ptcpdump_mount_event_stack"`
+	PtcpdumpMountEvents               *ebpf.Map `ebpf:"ptcpdump_mount_events"`
+	PtcpdumpNatFlowMap                *ebpf.Map `ebpf:"ptcpdump_nat_flow_map"`
+	PtcpdumpNetdeviceBufs             *ebpf.Map `ebpf:"ptcpdump_netdevice_bufs"`
+	PtcpdumpNetdeviceChangeEvents     *ebpf.Map `ebpf:"ptcpdump_netdevice_change_events"`
+	PtcpdumpNewNetdeviceEvents        *ebpf.Map `ebpf:"ptcpdump_new_netdevice_events"`
+	PtcpdumpPacketEventStack          *ebpf.Map `ebpf:"ptcpdump_packet_event_stack"`
+	PtcpdumpPacketEvents              *ebpf.Map `ebpf:"ptcpdump_packet_events"`
+	PtcpdumpPacketEventsRingbuf       *ebpf.Map `ebpf:"ptcpdump_packet_events_ringbuf"`
+	PtcpdumpPtcpdumpExecEventsRingbuf *ebpf.Map `ebpf:"ptcpdump_ptcpdump_exec_events_ringbuf"`
+	PtcpdumpSockCookiePidMap          *ebpf.Map `ebpf:"ptcpdump_sock_cookie_pid_map"`
+	PtcpdumpTidNetdeviceMap           *ebpf.Map `ebpf:"ptcpdump_tid_netdevice_map"`
 }
 
 func (m *BpfMaps) Close() error {
 	return _BpfClose(
-		m.ConfigMap,
-		m.EnterMountBufs,
-		m.ExecEventStack,
-		m.ExecEvents,
-		m.ExecEventsRingbuf,
-		m.ExitEventTmp,
-		m.ExitEvents,
-		m.ExitEventsRingbuf,
-		m.FilterByKernelCount,
-		m.FilterIfindexMap,
-		m.FilterMntnsMap,
-		m.FilterNetnsMap,
-		m.FilterPidMap,
-		m.FilterPidnsMap,
-		m.FilterUidMap,
-		m.FlowPidMap,
-		m.GoKeylogBufStorage,
-		m.GoKeylogEventTmp,
-		m.GoKeylogEvents,
-		m.GoKeylogEventsRingbuf,
-		m.MountEventStack,
-		m.MountEvents,
-		m.NatFlowMap,
-		m.NetdeviceBufs,
-		m.NetdeviceChangeEvents,
-		m.NewNetdeviceEvents,
-		m.PacketEventStack,
-		m.PacketEvents,
-		m.PacketEventsRingbuf,
-		m.SockCookiePidMap,
-		m.TidNetdeviceMap,
+		m.PtcpdumpConfigMap,
+		m.PtcpdumpEnterMountBufs,
+		m.PtcpdumpExecEventStack,
+		m.PtcpdumpExecEvents,
+		m.PtcpdumpExitEventTmp,
+		m.PtcpdumpExitEvents,
+		m.PtcpdumpExitEventsRingbuf,
+		m.PtcpdumpFilterByKernelCount,
+		m.PtcpdumpFilterIfindexMap,
+		m.PtcpdumpFilterMntnsMap,
+		m.PtcpdumpFilterNetnsMap,
+		m.PtcpdumpFilterPidMap,
+		m.PtcpdumpFilterPidnsMap,
+		m.PtcpdumpFilterUidMap,
+		m.PtcpdumpFlowPidMap,
+		m.PtcpdumpGoKeylogBufStorage,
+		m.PtcpdumpGoKeylogEventTmp,
+		m.PtcpdumpGoKeylogEvents,
+		m.PtcpdumpGoKeylogEventsRingbuf,
+		m.PtcpdumpMountEventStack,
+		m.PtcpdumpMountEvents,
+		m.PtcpdumpNatFlowMap,
+		m.PtcpdumpNetdeviceBufs,
+		m.PtcpdumpNetdeviceChangeEvents,
+		m.PtcpdumpNewNetdeviceEvents,
+		m.PtcpdumpPacketEventStack,
+		m.PtcpdumpPacketEvents,
+		m.PtcpdumpPacketEventsRingbuf,
+		m.PtcpdumpPtcpdumpExecEventsRingbuf,
+		m.PtcpdumpSockCookiePidMap,
+		m.PtcpdumpTidNetdeviceMap,
 	)
 }
 
@@ -367,86 +367,86 @@ type BpfVariables struct {
 //
 // It can be passed to LoadBpfObjects or ebpf.CollectionSpec.LoadAndAssign.
 type BpfPrograms struct {
-	CgroupSockCreate                     *ebpf.Program `ebpf:"cgroup__sock_create"`
-	CgroupSockRelease                    *ebpf.Program `ebpf:"cgroup__sock_release"`
-	CgroupSkbEgress                      *ebpf.Program `ebpf:"cgroup_skb__egress"`
-	CgroupSkbIngress                     *ebpf.Program `ebpf:"cgroup_skb__ingress"`
-	FentryNfNatManipPkt                  *ebpf.Program `ebpf:"fentry__nf_nat_manip_pkt"`
-	FentryNfNatPacket                    *ebpf.Program `ebpf:"fentry__nf_nat_packet"`
-	FentrySecuritySkClassifyFlow         *ebpf.Program `ebpf:"fentry__security_sk_classify_flow"`
-	FentryTcpSendmsg                     *ebpf.Program `ebpf:"fentry__tcp_sendmsg"`
-	FentryUdpSendSkb                     *ebpf.Program `ebpf:"fentry__udp_send_skb"`
-	FentryUdpSendmsg                     *ebpf.Program `ebpf:"fentry__udp_sendmsg"`
-	KprobeDevChangeNetNamespace          *ebpf.Program `ebpf:"kprobe__dev_change_net_namespace"`
-	KprobeDevChangeNetNamespaceLegacy    *ebpf.Program `ebpf:"kprobe__dev_change_net_namespace_legacy"`
-	KprobeNfNatManipPkt                  *ebpf.Program `ebpf:"kprobe__nf_nat_manip_pkt"`
-	KprobeNfNatPacket                    *ebpf.Program `ebpf:"kprobe__nf_nat_packet"`
-	KprobeRegisterNetdevice              *ebpf.Program `ebpf:"kprobe__register_netdevice"`
-	KprobeSecuritySkClassifyFlow         *ebpf.Program `ebpf:"kprobe__security_sk_classify_flow"`
-	KprobeTcpSendmsg                     *ebpf.Program `ebpf:"kprobe__tcp_sendmsg"`
-	KprobeUdpSendSkb                     *ebpf.Program `ebpf:"kprobe__udp_send_skb"`
-	KprobeUdpSendmsg                     *ebpf.Program `ebpf:"kprobe__udp_sendmsg"`
-	KretprobeDevChangeNetNamespace       *ebpf.Program `ebpf:"kretprobe__dev_change_net_namespace"`
-	KretprobeDevChangeNetNamespaceLegacy *ebpf.Program `ebpf:"kretprobe__dev_change_net_namespace_legacy"`
-	KretprobeDevGetByIndex               *ebpf.Program `ebpf:"kretprobe__dev_get_by_index"`
-	KretprobeDevGetByIndexLegacy         *ebpf.Program `ebpf:"kretprobe__dev_get_by_index_legacy"`
-	KretprobeRegisterNetdevice           *ebpf.Program `ebpf:"kretprobe__register_netdevice"`
-	RawTracepointSchedProcessExec        *ebpf.Program `ebpf:"raw_tracepoint__sched_process_exec"`
-	RawTracepointSchedProcessExit        *ebpf.Program `ebpf:"raw_tracepoint__sched_process_exit"`
-	RawTracepointSchedProcessFork        *ebpf.Program `ebpf:"raw_tracepoint__sched_process_fork"`
-	TcEgress                             *ebpf.Program `ebpf:"tc_egress"`
-	TcIngress                            *ebpf.Program `ebpf:"tc_ingress"`
-	TcxEgress                            *ebpf.Program `ebpf:"tcx_egress"`
-	TcxIngress                           *ebpf.Program `ebpf:"tcx_ingress"`
-	TpBtfSchedProcessExec                *ebpf.Program `ebpf:"tp_btf__sched_process_exec"`
-	TpBtfSchedProcessExit                *ebpf.Program `ebpf:"tp_btf__sched_process_exit"`
-	TpBtfSchedProcessFork                *ebpf.Program `ebpf:"tp_btf__sched_process_fork"`
-	TracepointSyscallsSysEnterMount      *ebpf.Program `ebpf:"tracepoint__syscalls__sys_enter_mount"`
-	TracepointSyscallsSysExitMount       *ebpf.Program `ebpf:"tracepoint__syscalls__sys_exit_mount"`
-	UprobeGoBuiltinTlsWriteKeyLog        *ebpf.Program `ebpf:"uprobe__go_builtin__tls__write_key_log"`
-	UprobeGoBuiltinTlsWriteKeyLogRet     *ebpf.Program `ebpf:"uprobe__go_builtin__tls__write_key_log__ret"`
+	PtcpdumpCgroupSockCreate                     *ebpf.Program `ebpf:"ptcpdump_cgroup__sock_create"`
+	PtcpdumpCgroupSockRelease                    *ebpf.Program `ebpf:"ptcpdump_cgroup__sock_release"`
+	PtcpdumpCgroupSkbEgress                      *ebpf.Program `ebpf:"ptcpdump_cgroup_skb__egress"`
+	PtcpdumpCgroupSkbIngress                     *ebpf.Program `ebpf:"ptcpdump_cgroup_skb__ingress"`
+	PtcpdumpFentryNfNatManipPkt                  *ebpf.Program `ebpf:"ptcpdump_fentry__nf_nat_manip_pkt"`
+	PtcpdumpFentryNfNatPacket                    *ebpf.Program `ebpf:"ptcpdump_fentry__nf_nat_packet"`
+	PtcpdumpFentrySecuritySkClassifyFlow         *ebpf.Program `ebpf:"ptcpdump_fentry__security_sk_classify_flow"`
+	PtcpdumpFentryTcpSendmsg                     *ebpf.Program `ebpf:"ptcpdump_fentry__tcp_sendmsg"`
+	PtcpdumpFentryUdpSendSkb                     *ebpf.Program `ebpf:"ptcpdump_fentry__udp_send_skb"`
+	PtcpdumpFentryUdpSendmsg                     *ebpf.Program `ebpf:"ptcpdump_fentry__udp_sendmsg"`
+	PtcpdumpKprobeDevChangeNetNamespace          *ebpf.Program `ebpf:"ptcpdump_kprobe__dev_change_net_namespace"`
+	PtcpdumpKprobeDevChangeNetNamespaceLegacy    *ebpf.Program `ebpf:"ptcpdump_kprobe__dev_change_net_namespace_legacy"`
+	PtcpdumpKprobeNfNatManipPkt                  *ebpf.Program `ebpf:"ptcpdump_kprobe__nf_nat_manip_pkt"`
+	PtcpdumpKprobeNfNatPacket                    *ebpf.Program `ebpf:"ptcpdump_kprobe__nf_nat_packet"`
+	PtcpdumpKprobeRegisterNetdevice              *ebpf.Program `ebpf:"ptcpdump_kprobe__register_netdevice"`
+	PtcpdumpKprobeSecuritySkClassifyFlow         *ebpf.Program `ebpf:"ptcpdump_kprobe__security_sk_classify_flow"`
+	PtcpdumpKprobeTcpSendmsg                     *ebpf.Program `ebpf:"ptcpdump_kprobe__tcp_sendmsg"`
+	PtcpdumpKprobeUdpSendSkb                     *ebpf.Program `ebpf:"ptcpdump_kprobe__udp_send_skb"`
+	PtcpdumpKprobeUdpSendmsg                     *ebpf.Program `ebpf:"ptcpdump_kprobe__udp_sendmsg"`
+	PtcpdumpKretprobeDevChangeNetNamespace       *ebpf.Program `ebpf:"ptcpdump_kretprobe__dev_change_net_namespace"`
+	PtcpdumpKretprobeDevChangeNetNamespaceLegacy *ebpf.Program `ebpf:"ptcpdump_kretprobe__dev_change_net_namespace_legacy"`
+	PtcpdumpKretprobeDevGetByIndex               *ebpf.Program `ebpf:"ptcpdump_kretprobe__dev_get_by_index"`
+	PtcpdumpKretprobeDevGetByIndexLegacy         *ebpf.Program `ebpf:"ptcpdump_kretprobe__dev_get_by_index_legacy"`
+	PtcpdumpKretprobeRegisterNetdevice           *ebpf.Program `ebpf:"ptcpdump_kretprobe__register_netdevice"`
+	PtcpdumpRawTracepointSchedProcessExec        *ebpf.Program `ebpf:"ptcpdump_raw_tracepoint__sched_process_exec"`
+	PtcpdumpRawTracepointSchedProcessExit        *ebpf.Program `ebpf:"ptcpdump_raw_tracepoint__sched_process_exit"`
+	PtcpdumpRawTracepointSchedProcessFork        *ebpf.Program `ebpf:"ptcpdump_raw_tracepoint__sched_process_fork"`
+	PtcpdumpTcEgress                             *ebpf.Program `ebpf:"ptcpdump_tc_egress"`
+	PtcpdumpTcIngress                            *ebpf.Program `ebpf:"ptcpdump_tc_ingress"`
+	PtcpdumpTcxEgress                            *ebpf.Program `ebpf:"ptcpdump_tcx_egress"`
+	PtcpdumpTcxIngress                           *ebpf.Program `ebpf:"ptcpdump_tcx_ingress"`
+	PtcpdumpTpBtfSchedProcessExec                *ebpf.Program `ebpf:"ptcpdump_tp_btf__sched_process_exec"`
+	PtcpdumpTpBtfSchedProcessExit                *ebpf.Program `ebpf:"ptcpdump_tp_btf__sched_process_exit"`
+	PtcpdumpTpBtfSchedProcessFork                *ebpf.Program `ebpf:"ptcpdump_tp_btf__sched_process_fork"`
+	PtcpdumpTracepointSyscallsSysEnterMount      *ebpf.Program `ebpf:"ptcpdump_tracepoint__syscalls__sys_enter_mount"`
+	PtcpdumpTracepointSyscallsSysExitMount       *ebpf.Program `ebpf:"ptcpdump_tracepoint__syscalls__sys_exit_mount"`
+	PtcpdumpUprobeGoBuiltinTlsWriteKeyLog        *ebpf.Program `ebpf:"ptcpdump_uprobe__go_builtin__tls__write_key_log"`
+	PtcpdumpUprobeGoBuiltinTlsWriteKeyLogRet     *ebpf.Program `ebpf:"ptcpdump_uprobe__go_builtin__tls__write_key_log__ret"`
 }
 
 func (p *BpfPrograms) Close() error {
 	return _BpfClose(
-		p.CgroupSockCreate,
-		p.CgroupSockRelease,
-		p.CgroupSkbEgress,
-		p.CgroupSkbIngress,
-		p.FentryNfNatManipPkt,
-		p.FentryNfNatPacket,
-		p.FentrySecuritySkClassifyFlow,
-		p.FentryTcpSendmsg,
-		p.FentryUdpSendSkb,
-		p.FentryUdpSendmsg,
-		p.KprobeDevChangeNetNamespace,
-		p.KprobeDevChangeNetNamespaceLegacy,
-		p.KprobeNfNatManipPkt,
-		p.KprobeNfNatPacket,
-		p.KprobeRegisterNetdevice,
-		p.KprobeSecuritySkClassifyFlow,
-		p.KprobeTcpSendmsg,
-		p.KprobeUdpSendSkb,
-		p.KprobeUdpSendmsg,
-		p.KretprobeDevChangeNetNamespace,
-		p.KretprobeDevChangeNetNamespaceLegacy,
-		p.KretprobeDevGetByIndex,
-		p.KretprobeDevGetByIndexLegacy,
-		p.KretprobeRegisterNetdevice,
-		p.RawTracepointSchedProcessExec,
-		p.RawTracepointSchedProcessExit,
-		p.RawTracepointSchedProcessFork,
-		p.TcEgress,
-		p.TcIngress,
-		p.TcxEgress,
-		p.TcxIngress,
-		p.TpBtfSchedProcessExec,
-		p.TpBtfSchedProcessExit,
-		p.TpBtfSchedProcessFork,
-		p.TracepointSyscallsSysEnterMount,
-		p.TracepointSyscallsSysExitMount,
-		p.UprobeGoBuiltinTlsWriteKeyLog,
-		p.UprobeGoBuiltinTlsWriteKeyLogRet,
+		p.PtcpdumpCgroupSockCreate,
+		p.PtcpdumpCgroupSockRelease,
+		p.PtcpdumpCgroupSkbEgress,
+		p.PtcpdumpCgroupSkbIngress,
+		p.PtcpdumpFentryNfNatManipPkt,
+		p.PtcpdumpFentryNfNatPacket,
+		p.PtcpdumpFentrySecuritySkClassifyFlow,
+		p.PtcpdumpFentryTcpSendmsg,
+		p.PtcpdumpFentryUdpSendSkb,
+		p.PtcpdumpFentryUdpSendmsg,
+		p.PtcpdumpKprobeDevChangeNetNamespace,
+		p.PtcpdumpKprobeDevChangeNetNamespaceLegacy,
+		p.PtcpdumpKprobeNfNatManipPkt,
+		p.PtcpdumpKprobeNfNatPacket,
+		p.PtcpdumpKprobeRegisterNetdevice,
+		p.PtcpdumpKprobeSecuritySkClassifyFlow,
+		p.PtcpdumpKprobeTcpSendmsg,
+		p.PtcpdumpKprobeUdpSendSkb,
+		p.PtcpdumpKprobeUdpSendmsg,
+		p.PtcpdumpKretprobeDevChangeNetNamespace,
+		p.PtcpdumpKretprobeDevChangeNetNamespaceLegacy,
+		p.PtcpdumpKretprobeDevGetByIndex,
+		p.PtcpdumpKretprobeDevGetByIndexLegacy,
+		p.PtcpdumpKretprobeRegisterNetdevice,
+		p.PtcpdumpRawTracepointSchedProcessExec,
+		p.PtcpdumpRawTracepointSchedProcessExit,
+		p.PtcpdumpRawTracepointSchedProcessFork,
+		p.PtcpdumpTcEgress,
+		p.PtcpdumpTcIngress,
+		p.PtcpdumpTcxEgress,
+		p.PtcpdumpTcxIngress,
+		p.PtcpdumpTpBtfSchedProcessExec,
+		p.PtcpdumpTpBtfSchedProcessExit,
+		p.PtcpdumpTpBtfSchedProcessFork,
+		p.PtcpdumpTracepointSyscallsSysEnterMount,
+		p.PtcpdumpTracepointSyscallsSysExitMount,
+		p.PtcpdumpUprobeGoBuiltinTlsWriteKeyLog,
+		p.PtcpdumpUprobeGoBuiltinTlsWriteKeyLogRet,
 	)
 }
 

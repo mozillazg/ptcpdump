@@ -36,30 +36,30 @@ struct {
     __uint(max_entries, 10);
     __type(key, u32);
     __type(value, struct go_keylog_buf_t);
-} go_keylog_buf_storage SEC(".maps");
+} ptcpdump_go_keylog_buf_storage SEC(".maps");
 
 struct {
     __uint(type, BPF_MAP_TYPE_PERF_EVENT_ARRAY);
     __uint(key_size, sizeof(u32));
     __uint(value_size, sizeof(u32));
-} go_keylog_events SEC(".maps");
+} ptcpdump_go_keylog_events SEC(".maps");
 
 struct {
     __uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
     __uint(max_entries, 1);
     __uint(key_size, sizeof(u32));
     __uint(value_size, sizeof(struct go_keylog_event_t));
-} go_keylog_event_tmp SEC(".maps");
+} ptcpdump_go_keylog_event_tmp SEC(".maps");
 
 struct {
     __uint(type, BPF_MAP_TYPE_RINGBUF);
     __uint(max_entries, 1 << 24);
-} go_keylog_events_ringbuf SEC(".maps");
+} ptcpdump_go_keylog_events_ringbuf SEC(".maps");
 
 const struct go_keylog_event_t *unused7 __attribute__((unused));
 
 SEC("uprobe/go:crypto/tls.(*Config).writeKeyLog")
-int uprobe__go_builtin__tls__write_key_log(struct pt_regs *ctx) {
+int ptcpdump_uprobe__go_builtin__tls__write_key_log(struct pt_regs *ctx) {
     struct go_keylog_buf_t buf = {0};
     u32 smp_id = bpf_get_smp_processor_id();
 
@@ -71,13 +71,13 @@ int uprobe__go_builtin__tls__write_key_log(struct pt_regs *ctx) {
     read_go_arg_into(&buf.random_ptr, ctx, 4);
     read_go_arg_into(&buf.secret_ptr, ctx, 7);
 
-    bpf_map_update_elem(&go_keylog_buf_storage, &smp_id, &buf, BPF_ANY);
+    bpf_map_update_elem(&ptcpdump_go_keylog_buf_storage, &smp_id, &buf, BPF_ANY);
 
     return 0;
 }
 
 SEC("uprobe/go:crypto/tls.(*Config).writeKeyLog/ret")
-int uprobe__go_builtin__tls__write_key_log__ret(struct pt_regs *ctx) {
+int ptcpdump_uprobe__go_builtin__tls__write_key_log__ret(struct pt_regs *ctx) {
     struct go_keylog_buf_t *buf;
     struct go_keylog_event_t *event;
     int ret;
@@ -85,17 +85,17 @@ int uprobe__go_builtin__tls__write_key_log__ret(struct pt_regs *ctx) {
     bool use_ringbuf = false;
 
     u32 smp_id = bpf_get_smp_processor_id();
-    buf = bpf_map_lookup_elem(&go_keylog_buf_storage, &smp_id);
+    buf = bpf_map_lookup_elem(&ptcpdump_go_keylog_buf_storage, &smp_id);
     if (!buf) {
         //        debug_log("no buf");
         return 0;
     }
 
     if (ringbuf_available()) {
-        event = bpf_ringbuf_reserve(&go_keylog_events_ringbuf, sizeof(*event), 0);
+        event = bpf_ringbuf_reserve(&ptcpdump_go_keylog_events_ringbuf, sizeof(*event), 0);
         use_ringbuf = true;
     } else {
-        event = bpf_map_lookup_elem(&go_keylog_event_tmp, &u32_zero);
+        event = bpf_map_lookup_elem(&ptcpdump_go_keylog_event_tmp, &u32_zero);
     }
     if (!event) {
         return 0;
@@ -133,7 +133,7 @@ int uprobe__go_builtin__tls__write_key_log__ret(struct pt_regs *ctx) {
     if (use_ringbuf) {
         bpf_ringbuf_submit(event, 0);
     } else {
-        ret = bpf_perf_event_output(ctx, &go_keylog_events, BPF_F_CURRENT_CPU, event, sizeof(*event));
+        ret = bpf_perf_event_output(ctx, &ptcpdump_go_keylog_events, BPF_F_CURRENT_CPU, event, sizeof(*event));
     }
     if (ret < 0) {
         //                debug_log("go tls: per event failed, %d", ret);
