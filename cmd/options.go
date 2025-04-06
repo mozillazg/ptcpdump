@@ -31,6 +31,8 @@ const (
 	contextPod        = "pod"
 )
 
+const defaultSnapShotLength uint32 = 262144
+
 type Options struct {
 	ifaces         []string
 	pids           []uint
@@ -154,6 +156,9 @@ func prepareOptions(opts *Options, rawArgs []string, args []string) error {
 	opts.timestampN = opts.printTimestamp
 	if opts.printTimestamp == 1 {
 		opts.dontPrintTimestamp = true
+	}
+	if opts.snapshotLength <= 0 {
+		opts.snapshotLength = defaultSnapShotLength
 	}
 
 	if opts.dockerEndpoint != "" {

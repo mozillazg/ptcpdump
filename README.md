@@ -67,7 +67,7 @@ Filter like tcpdump:
 ```
 sudo ptcpdump -i eth0 tcp
 sudo ptcpdump -i eth0 -A -s 0 -n -v tcp and port 80 and host 10.10.1.1
-sudo ptcpdump -i any -s 0 -n -v -C 100MB -W 3 'tcp and port 80 and host 10.10.1.1'
+sudo ptcpdump -i any -s 0 -n -v -C 100MB -W 3 -w test.pcapng 'tcp and port 80 and host 10.10.1.1'
 sudo ptcpdump -i eth0 'tcp[tcpflags] & (tcp-syn|tcp-fin) != 0'
 ```
 

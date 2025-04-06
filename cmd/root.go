@@ -100,7 +100,7 @@ func init() {
 		"Address of CRI container runtime service "+
 			fmt.Sprintf("(default: uses in order the first successful one of [%s])",
 				strings.Join(getDefaultCriRuntimeEndpoint(), ", ")))
-	rootCmd.Flags().Uint32VarP(&opts.snapshotLength, "snapshot-length", "s", 262144,
+	rootCmd.Flags().Uint32VarP(&opts.snapshotLength, "snapshot-length", "s", defaultSnapShotLength,
 		"Snarf snaplen bytes of data from each packet rather than the default of 262144 bytes")
 	rootCmd.Flags().StringVar(&opts.btfPath, "kernel-btf", "",
 		fmt.Sprintf("specify kernel BTF file (default: uses in order the first successful one of [%s]",
