@@ -184,7 +184,13 @@ func (c *ProcessCache) AddItemWithContext(exec types.ProcessExec, rawCtx types.P
 	if rawCtx.Process.Parent.Pid != 0 {
 		parent = rawCtx.Process.Parent
 	} else {
-		parent = c.getProcessBase(exec.PPid)
+		parent = c.GetByPid(exec.PPid).ProcessBase
+		if parent.Pid == 0 {
+			parent = c.getProcessBase(exec.PPid)
+		}
+	}
+	if exec.IsClone {
+		exec.Filename = parent.Cmd
 	}
 
 	pctx := &types.PacketContext{
@@ -276,7 +282,7 @@ func (c *ProcessCache) getContainer(ctx types.PacketContext, cgroupName string) 
 	return cr
 }
 
-func (c *ProcessCache) Get(pid int, mntNs, netNs int, cgroupName string) types.PacketContext {
+func (c *ProcessCache) GetByPid(pid int) types.PacketContext {
 	ret, ok := c.pids.Load(pid)
 
 	if ret == nil || !ok {
@@ -286,10 +292,21 @@ func (c *ProcessCache) Get(pid int, mntNs, netNs int, cgroupName string) types.P
 	if ppx == nil || !ok {
 		return types.PacketContext{}
 	}
+	return *ppx
+}
 
-	pctx := *ppx
-	pctx.MountNamespaceId = int64(mntNs) // TODO: remove ??
-	pctx.NetNamespaceId = int64(netNs)   // TODO: remove ??
+func (c *ProcessCache) Get(pid int, mntNs, netNs int, cgroupName string) types.PacketContext {
+	pctx := c.GetByPid(pid)
+	if pctx.Pid == 0 {
+		return pctx
+	}
+
+	if mntNs != 0 {
+		pctx.MountNamespaceId = int64(mntNs) // TODO: remove ??
+	}
+	if netNs != 0 {
+		pctx.NetNamespaceId = int64(netNs) // TODO: remove ??
+	}
 
 	log.Debugf("get %#v", pctx)
 

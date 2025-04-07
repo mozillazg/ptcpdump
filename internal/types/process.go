@@ -49,6 +49,8 @@ type ProcessExec struct {
 	MntNs      int64
 	Netns      int64
 	CgroupName string
+
+	IsClone bool
 }
 
 func (p ProcessBase) MatchComm(name string) bool {
@@ -69,7 +71,9 @@ func (p ProcessBase) FormatArgs() string {
 
 func (p ProcessBase) Comm() string {
 	// openwrt case: pid 13055, cmd /dev/fd/5, args /usr/sbin/dropbear -F -P /var/run/dropbear.1.pid -p 22 -K 300
-	if strings.HasPrefix(p.Cmd, "/dev/fd/") {
+	if p.Cmd == "" ||
+		strings.HasPrefix(p.Cmd, "/dev/fd/") ||
+		strings.HasPrefix(p.Cmd, "/proc/self/fd/") {
 		if len(p.Args) > 0 {
 			return filepath.Base(p.Args[0])
 		}

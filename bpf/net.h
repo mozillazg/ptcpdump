@@ -25,8 +25,8 @@ struct l2_t {
 
 struct l3_t {
     u8 protocol; /* next layer protocol */
-    u64 saddr[2];
-    u64 daddr[2];
+    u32 saddr[4];
+    u32 daddr[4];
 };
 
 struct l4_t {
@@ -45,7 +45,7 @@ struct packet_meta_t {
 };
 
 struct flow_pid_key_t {
-    u64 saddr[2];
+    u32 saddr[4];
     u16 sport;
 };
 

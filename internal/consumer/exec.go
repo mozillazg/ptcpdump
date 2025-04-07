@@ -47,11 +47,16 @@ func (c *ExecEventConsumer) worker(ctx context.Context, ch <-chan bpf.BpfExecEve
 }
 
 func (c *ExecEventConsumer) handleExecEvent(et bpf.BpfExecEventT) {
-	log.Infof("new exec event: pid: %d, comm: %s", et.Meta.Pid, utils.GoString(et.Filename[:]))
+	log.Infof("new exec event, ppid: %d, pid: %d, comm: %s, args: %s",
+		et.Meta.Ppid, et.Meta.Pid, utils.GoString(et.Filename[:]),
+		utils.GoString(et.Args[:]))
 	e, err := event.ParseProcessExecEvent(et)
 	if err != nil {
 		log.Errorf("[ExecEventConsumer] parse event failed: %s", err)
 		return
+	}
+	if et.IsClone == 1 {
+		e.IsClone = true
 	}
 	c.pcache.AddItem(*e)
 }

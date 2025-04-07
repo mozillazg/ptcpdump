@@ -20,9 +20,10 @@ type BpfEnterMountBufT struct {
 
 type BpfExecEventT struct {
 	Meta              BpfProcessMetaT
+	IsClone           uint8
 	FilenameTruncated uint8
 	ArgsTruncated     uint8
-	_                 [2]byte
+	_                 [1]byte
 	ArgsSize          uint32
 	Filename          [512]int8
 	Args              [4096]int8
@@ -31,9 +32,9 @@ type BpfExecEventT struct {
 type BpfExitEventT struct{ Pid uint32 }
 
 type BpfFlowPidKeyT struct {
-	Saddr [2]uint64
+	Saddr [4]uint32
 	Sport uint16
-	_     [6]byte
+	_     [2]byte
 }
 
 type BpfGconfigT struct {
@@ -72,11 +73,10 @@ type BpfMountEventT struct {
 }
 
 type BpfNatFlowT struct {
-	Saddr [2]uint64
-	Daddr [2]uint64
+	Saddr [4]uint32
+	Daddr [4]uint32
 	Sport uint16
 	Dport uint16
-	_     [4]byte
 }
 
 type BpfNetdeviceBufT struct {
@@ -192,6 +192,7 @@ type BpfProgramSpecs struct {
 	PtcpdumpRawTracepointSchedProcessExec        *ebpf.ProgramSpec `ebpf:"ptcpdump_raw_tracepoint__sched_process_exec"`
 	PtcpdumpRawTracepointSchedProcessExit        *ebpf.ProgramSpec `ebpf:"ptcpdump_raw_tracepoint__sched_process_exit"`
 	PtcpdumpRawTracepointSchedProcessFork        *ebpf.ProgramSpec `ebpf:"ptcpdump_raw_tracepoint__sched_process_fork"`
+	PtcpdumpRawTracepointTaskNewtask             *ebpf.ProgramSpec `ebpf:"ptcpdump_raw_tracepoint__task_newtask"`
 	PtcpdumpTcEgress                             *ebpf.ProgramSpec `ebpf:"ptcpdump_tc_egress"`
 	PtcpdumpTcIngress                            *ebpf.ProgramSpec `ebpf:"ptcpdump_tc_ingress"`
 	PtcpdumpTcxEgress                            *ebpf.ProgramSpec `ebpf:"ptcpdump_tcx_egress"`
@@ -199,6 +200,7 @@ type BpfProgramSpecs struct {
 	PtcpdumpTpBtfSchedProcessExec                *ebpf.ProgramSpec `ebpf:"ptcpdump_tp_btf__sched_process_exec"`
 	PtcpdumpTpBtfSchedProcessExit                *ebpf.ProgramSpec `ebpf:"ptcpdump_tp_btf__sched_process_exit"`
 	PtcpdumpTpBtfSchedProcessFork                *ebpf.ProgramSpec `ebpf:"ptcpdump_tp_btf__sched_process_fork"`
+	PtcpdumpTpBtfTaskNewtask                     *ebpf.ProgramSpec `ebpf:"ptcpdump_tp_btf__task_newtask"`
 	PtcpdumpTracepointSyscallsSysEnterMount      *ebpf.ProgramSpec `ebpf:"ptcpdump_tracepoint__syscalls__sys_enter_mount"`
 	PtcpdumpTracepointSyscallsSysExitMount       *ebpf.ProgramSpec `ebpf:"ptcpdump_tracepoint__syscalls__sys_exit_mount"`
 	PtcpdumpUprobeGoBuiltinTlsWriteKeyLog        *ebpf.ProgramSpec `ebpf:"ptcpdump_uprobe__go_builtin__tls__write_key_log"`
@@ -394,6 +396,7 @@ type BpfPrograms struct {
 	PtcpdumpRawTracepointSchedProcessExec        *ebpf.Program `ebpf:"ptcpdump_raw_tracepoint__sched_process_exec"`
 	PtcpdumpRawTracepointSchedProcessExit        *ebpf.Program `ebpf:"ptcpdump_raw_tracepoint__sched_process_exit"`
 	PtcpdumpRawTracepointSchedProcessFork        *ebpf.Program `ebpf:"ptcpdump_raw_tracepoint__sched_process_fork"`
+	PtcpdumpRawTracepointTaskNewtask             *ebpf.Program `ebpf:"ptcpdump_raw_tracepoint__task_newtask"`
 	PtcpdumpTcEgress                             *ebpf.Program `ebpf:"ptcpdump_tc_egress"`
 	PtcpdumpTcIngress                            *ebpf.Program `ebpf:"ptcpdump_tc_ingress"`
 	PtcpdumpTcxEgress                            *ebpf.Program `ebpf:"ptcpdump_tcx_egress"`
@@ -401,6 +404,7 @@ type BpfPrograms struct {
 	PtcpdumpTpBtfSchedProcessExec                *ebpf.Program `ebpf:"ptcpdump_tp_btf__sched_process_exec"`
 	PtcpdumpTpBtfSchedProcessExit                *ebpf.Program `ebpf:"ptcpdump_tp_btf__sched_process_exit"`
 	PtcpdumpTpBtfSchedProcessFork                *ebpf.Program `ebpf:"ptcpdump_tp_btf__sched_process_fork"`
+	PtcpdumpTpBtfTaskNewtask                     *ebpf.Program `ebpf:"ptcpdump_tp_btf__task_newtask"`
 	PtcpdumpTracepointSyscallsSysEnterMount      *ebpf.Program `ebpf:"ptcpdump_tracepoint__syscalls__sys_enter_mount"`
 	PtcpdumpTracepointSyscallsSysExitMount       *ebpf.Program `ebpf:"ptcpdump_tracepoint__syscalls__sys_exit_mount"`
 	PtcpdumpUprobeGoBuiltinTlsWriteKeyLog        *ebpf.Program `ebpf:"ptcpdump_uprobe__go_builtin__tls__write_key_log"`
@@ -436,6 +440,7 @@ func (p *BpfPrograms) Close() error {
 		p.PtcpdumpRawTracepointSchedProcessExec,
 		p.PtcpdumpRawTracepointSchedProcessExit,
 		p.PtcpdumpRawTracepointSchedProcessFork,
+		p.PtcpdumpRawTracepointTaskNewtask,
 		p.PtcpdumpTcEgress,
 		p.PtcpdumpTcIngress,
 		p.PtcpdumpTcxEgress,
@@ -443,6 +448,7 @@ func (p *BpfPrograms) Close() error {
 		p.PtcpdumpTpBtfSchedProcessExec,
 		p.PtcpdumpTpBtfSchedProcessExit,
 		p.PtcpdumpTpBtfSchedProcessFork,
+		p.PtcpdumpTpBtfTaskNewtask,
 		p.PtcpdumpTracepointSyscallsSysEnterMount,
 		p.PtcpdumpTracepointSyscallsSysExitMount,
 		p.PtcpdumpUprobeGoBuiltinTlsWriteKeyLog,

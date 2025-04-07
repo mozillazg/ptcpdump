@@ -8,8 +8,8 @@
 #include <bpf/bpf_tracing.h>
 
 struct nat_flow_t {
-    u64 saddr[2];
-    u64 daddr[2];
+    u32 saddr[4];
+    u32 daddr[4];
     u16 sport;
     u16 dport;
 };
@@ -32,9 +32,13 @@ static __always_inline void parse_conntrack_tuple(struct nf_conntrack_tuple *tup
 static __always_inline void reverse_flow(struct nat_flow_t *orig_flow, struct nat_flow_t *new_flow) {
     new_flow->saddr[0] = orig_flow->daddr[0];
     new_flow->saddr[1] = orig_flow->daddr[1];
+    new_flow->saddr[2] = orig_flow->daddr[2];
+    new_flow->saddr[3] = orig_flow->daddr[3];
 
     new_flow->daddr[0] = orig_flow->saddr[0];
     new_flow->daddr[1] = orig_flow->saddr[1];
+    new_flow->daddr[2] = orig_flow->saddr[2];
+    new_flow->daddr[3] = orig_flow->saddr[3];
 
     new_flow->sport = orig_flow->dport;
     new_flow->dport = orig_flow->sport;
@@ -114,9 +118,13 @@ int BPF_PROG(ptcpdump_fentry__nf_nat_manip_pkt, void *_, struct nf_conn *ct) {
 static __always_inline void clone_flow(struct nat_flow_t *orig, struct nat_flow_t *new_flow) {
     new_flow->saddr[0] = orig->saddr[0];
     new_flow->saddr[1] = orig->saddr[1];
+    new_flow->saddr[2] = orig->saddr[2];
+    new_flow->saddr[3] = orig->saddr[3];
 
     new_flow->daddr[0] = orig->daddr[0];
     new_flow->daddr[1] = orig->daddr[1];
+    new_flow->daddr[2] = orig->daddr[2];
+    new_flow->daddr[3] = orig->daddr[3];
 
     new_flow->sport = orig->sport;
     new_flow->dport = orig->dport;

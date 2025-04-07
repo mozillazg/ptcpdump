@@ -13,6 +13,7 @@ import (
 type Connection struct {
 	LocalIP   netip.Addr
 	LocalPort int
+	PPid      int
 	Pid       int
 	Uid       int
 	MntNs     int64

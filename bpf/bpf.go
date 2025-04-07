@@ -227,7 +227,8 @@ func (b *BPF) UpdateFlowPidMapValues(data map[*BpfFlowPidKeyT]BpfProcessMetaT) e
 	for k, v := range data {
 		err := b.objs.BpfMaps.PtcpdumpFlowPidMap.Update(*k, v, ebpf.UpdateNoExist)
 		if err != nil {
-			if err == ebpf.ErrKeyExist || strings.Contains(err.Error(), "key already exists") {
+			if errors.Is(err, ebpf.ErrKeyExist) ||
+				strings.Contains(err.Error(), "key already exists") {
 				continue
 			}
 			return fmt.Errorf(": %w", err)
@@ -281,6 +282,12 @@ func (b *BPF) AttachTracepoints() error {
 	)
 	if err != nil {
 		return fmt.Errorf(": %w", err)
+	}
+
+	if err := b.attachBTFTracepointOrRawTP("task_newtask",
+		b.objs.PtcpdumpTpBtfTaskNewtask, b.objs.PtcpdumpRawTracepointTaskNewtask,
+	); err != nil {
+		log.Infof("%+v", err)
 	}
 
 	if b.opts.attachForks() {

@@ -519,6 +519,7 @@ func updateFlowPidMapValues(bf *bpf.BPF, conns []metadata.Connection) error {
 			Sport: uint16(conn.LocalPort),
 		}
 		v := bpf.BpfProcessMetaT{
+			Ppid:    uint32(conn.PPid),
 			Pid:     uint32(conn.Pid),
 			Uid:     uint32(conn.Uid),
 			MntnsId: uint32(conn.MntNs),

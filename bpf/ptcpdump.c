@@ -35,6 +35,7 @@ struct packet_event_meta_t {
     u64 payload_len;
     u64 packet_size;
 
+    // TODO: use needed fields not all fields
     struct process_meta_t process;
 };
 
@@ -111,6 +112,9 @@ int ptcpdump_cgroup__sock_create(void *ctx) {
     }
 
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
+    if (is_kernel_thread(task)) {
+        goto out;
+    }
     if (parent_process_filter(task) < 0) {
         if (process_filter(task) < 0) {
             return 1;
@@ -126,11 +130,10 @@ int ptcpdump_cgroup__sock_create(void *ctx) {
         // debug_log("[ptcpdump] bpf_map_update_elem ptcpdump_sock_cookie_pid_map failed: %d\n", ret);
     }
 
+out:
     return 1;
 }
-#endif
 
-#ifndef NO_CGROUP_PROG
 SEC("cgroup/sock_release")
 int ptcpdump_cgroup__sock_release(void *ctx) {
     if (!bpf_core_enum_value_exists(enum bpf_func_id, BPF_FUNC_get_socket_cookie)) {
@@ -151,6 +154,9 @@ static __always_inline int handle_security_sk_classify_flow(struct sock *sk) {
     struct process_meta_t value = {0};
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
 
+    if (is_kernel_thread(task)) {
+        goto out;
+    }
     if (parent_process_filter(task) < 0) {
         if (process_filter(task) < 0) {
             return 0;
@@ -161,16 +167,18 @@ static __always_inline int handle_security_sk_classify_flow(struct sock *sk) {
     fill_sk_meta(sk, &key);
     fill_process_meta(task, &value);
 
-    if (key.sport == 0) {
+    if (key.sport == 0 || key.saddr[0] == 0) {
         return 0;
     }
 
-    // debug_log("[ptcpdump] flow key: %pI4 %d\n", &key.saddr[0], key.sport);
+    //    debug_log("[ptcpdump][security_sk_classify_flow] flow key: %pI4 %d\n", &key.saddr[0], key.sport);
 
     int ret = bpf_map_update_elem(&ptcpdump_flow_pid_map, &key, &value, BPF_ANY);
     if (ret != 0) {
         // debug_log("bpf_map_update_elem ptcpdump_flow_pid_map failed: %d\n", ret);
     }
+
+out:
     return 0;
 }
 
@@ -193,6 +201,9 @@ static __always_inline void handle_sendmsg(struct sock *sk) {
     struct process_meta_t value = {0};
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
 
+    if (is_kernel_thread(task)) {
+        return;
+    }
     if (parent_process_filter(task) < 0) {
         if (process_filter(task) < 0) {
             return;
@@ -206,7 +217,7 @@ static __always_inline void handle_sendmsg(struct sock *sk) {
     }
 
     fill_process_meta(task, &value);
-    if (key.sport == 0) {
+    if (key.sport == 0 || key.saddr[0] == 0) {
         return;
     }
     // debug_log("[ptcpdump][sendmsg] flow key: %pI4 %d\n", &key.saddr[0], key.sport);
@@ -268,9 +279,13 @@ static __noinline bool pcap_filter(void *_skb, void *__skb, void *___skb, void *
 static __always_inline void route_packet(struct packet_meta_t *packet_meta, struct nat_flow_t *flow) {
     flow->saddr[0] = packet_meta->l3.saddr[0];
     flow->saddr[1] = packet_meta->l3.saddr[1];
+    flow->saddr[2] = packet_meta->l3.saddr[2];
+    flow->saddr[3] = packet_meta->l3.saddr[3];
 
     flow->daddr[0] = packet_meta->l3.daddr[0];
     flow->daddr[1] = packet_meta->l3.daddr[1];
+    flow->daddr[2] = packet_meta->l3.daddr[2];
+    flow->daddr[3] = packet_meta->l3.daddr[3];
 
     flow->sport = packet_meta->l4.sport;
     flow->dport = packet_meta->l4.dport;
@@ -331,6 +346,8 @@ static __always_inline int fill_packet_event_meta(struct __sk_buff *skb, bool cg
     }
     event_meta->l3_protocol = packet_meta.l2.h_protocol;
     // debug_log("l3_protocol: %d\n", event_meta->l3_protocol);
+    //    debug_log("[ptcpdump] parse skb meta success: %pI4, %d ", &packet_meta.l3.saddr[0], packet_meta.l3.saddr[1]);
+    //    debug_log("        %d, %d, %d\n", packet_meta.l3.saddr[2], packet_meta.l3.saddr[3], packet_meta.l4.sport);
 
 #ifndef LEGACY_KERNEL
     if (bpf_core_enum_value_exists(enum bpf_func_id, BPF_FUNC_get_socket_cookie)) {
@@ -362,10 +379,14 @@ static __always_inline int fill_packet_event_meta(struct __sk_buff *skb, bool cg
         if (egress) {
             key.saddr[0] = flow.saddr[0];
             key.saddr[1] = flow.saddr[1];
+            key.saddr[2] = flow.saddr[2];
+            key.saddr[3] = flow.saddr[3];
             key.sport = flow.sport;
         } else {
             key.saddr[0] = flow.daddr[0];
             key.saddr[1] = flow.daddr[1];
+            key.saddr[2] = flow.daddr[2];
+            key.saddr[3] = flow.daddr[3];
             key.sport = flow.dport;
         }
 

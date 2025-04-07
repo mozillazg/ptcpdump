@@ -205,20 +205,28 @@ func getCurrentConnects(ctx context.Context, pcache *metadata.ProcessCache, opts
 	}
 	pids = utils.GetUniqInts(pids)
 
+	var cs []metadata.Connection
+	var err error
 	if filterPid {
 		if len(pids) == 0 {
 			return nil
 		}
-		cs, err := metadata.GetCurrentConnects(ctx, pids, false)
+		cs, err = metadata.GetCurrentConnects(ctx, pids, false)
 		if err != nil {
 			log.Errorf("get current connects failed: %s", err)
 		}
-		return cs
+	} else {
+		cs, err = metadata.GetCurrentConnects(ctx, nil, true)
+		if err != nil {
+			log.Errorf("get current connects failed: %s", err)
+		}
 	}
 
-	cs, err := metadata.GetCurrentConnects(ctx, nil, true)
-	if err != nil {
-		log.Errorf("get current connects failed: %s", err)
+	for i, c := range cs {
+		if c.PPid == 0 {
+			cs[i].PPid = pcache.GetByPid(c.Pid).Parent.Pid
+		}
 	}
+
 	return cs
 }

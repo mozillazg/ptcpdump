@@ -13,6 +13,8 @@
 #define EXEC_ARGS_LEN 4096
 #define MIN_CGROUP_NAME_LEN 64 + 1
 #define MAX_CGROUP_NAME_LEN 128
+// https://elixir.bootlin.com/linux/v5.13/source/include/uapi/linux/sched.h#L19
+#define CLONE_THREAD 0x00010000 /* Same thread group? */
 
 struct process_meta_t {
     u32 ppid;
@@ -29,6 +31,7 @@ struct process_meta_t {
 struct exec_event_t {
     struct process_meta_t meta;
 
+    u8 is_clone;
     u8 filename_truncated;
     u8 args_truncated;
     unsigned int args_size;
@@ -299,7 +302,8 @@ static __always_inline void fill_process_meta_with_thread(struct task_struct *ta
     BPF_CORE_READ_STR_INTO(&meta->tname, task, comm);
 }
 
-static __always_inline void handle_exec(void *ctx, struct task_struct *task, pid_t old_pid, struct linux_binprm *bprm) {
+static __always_inline void handle_exec(void *ctx, struct task_struct *task, pid_t old_pid, struct linux_binprm *bprm,
+                                        u8 is_clone) {
     //    if (process_filter(task) < 0) {
     //        return;
     //    }
@@ -320,6 +324,7 @@ static __always_inline void handle_exec(void *ctx, struct task_struct *task, pid
         // debug_log("[ptcpdump] ptcpdump_exec_event_stack failed\n");
         return;
     }
+    event->is_clone = is_clone;
     __builtin_memset(&event->meta, 0, sizeof(event->meta));
 
     fill_process_meta(task, &event->meta);
@@ -399,14 +404,14 @@ static __always_inline void handle_exit(void *ctx, struct task_struct *task) {
 SEC("raw_tracepoint/sched_process_exec")
 int BPF_PROG(ptcpdump_raw_tracepoint__sched_process_exec, struct task_struct *task, pid_t old_pid,
              struct linux_binprm *bprm) {
-    handle_exec(ctx, task, old_pid, bprm);
+    handle_exec(ctx, task, old_pid, bprm, 0);
     return 0;
 }
 
 #ifndef NO_TRACING
 SEC("tp_btf/sched_process_exec")
 int BPF_PROG(ptcpdump_tp_btf__sched_process_exec, struct task_struct *task, pid_t old_pid, struct linux_binprm *bprm) {
-    handle_exec(ctx, task, old_pid, bprm);
+    handle_exec(ctx, task, old_pid, bprm, 0);
     return 0;
 }
 #endif
@@ -421,6 +426,30 @@ int BPF_PROG(ptcpdump_raw_tracepoint__sched_process_exit, struct task_struct *ta
 SEC("tp_btf/sched_process_exit")
 int BPF_PROG(ptcpdump_tp_btf__sched_process_exit, struct task_struct *task) {
     handle_exit(ctx, task);
+    return 0;
+}
+#endif
+
+static __always_inline void handle_newtask(void *ctx, struct task_struct *task, unsigned long clone_flags) {
+    if (clone_flags & CLONE_THREAD) { // thread creation
+        return;
+    }
+
+    handle_exec(ctx, task, 0, NULL, 1);
+
+    return;
+}
+
+SEC("raw_tracepoint/task_newtask")
+int BPF_PROG(ptcpdump_raw_tracepoint__task_newtask, struct task_struct *task, unsigned long clone_flags) {
+    handle_newtask(ctx, task, clone_flags);
+    return 0;
+}
+
+#ifndef NO_TRACING
+SEC("tp_btf/task_newtask")
+int BPF_PROG(ptcpdump_tp_btf__task_newtask, struct task_struct *task, unsigned long clone_flags) {
+    handle_newtask(ctx, task, clone_flags);
     return 0;
 }
 #endif
