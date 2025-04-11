@@ -61,7 +61,7 @@
       groupName: 'all github action dependencies',
       groupSlug: 'all-github-action',
       extends: [
-        'schedule:monthly',
+        'schedule:weekly',
       ],
       matchFileNames: [
         '.github/workflows/**',
@@ -79,7 +79,7 @@
       groupName: 'all go dependencies master',
       groupSlug: 'all-go-deps-master',
       extends: [
-        'schedule:monthly',
+        'schedule:weekly',
       ],
       matchFileNames: [
         'go.mod',
@@ -104,7 +104,7 @@
     {
       groupName: 'Go',
       extends: [
-        'schedule:monthly',
+        'schedule:weekly',
       ],
       matchDepNames: [
         'go',
