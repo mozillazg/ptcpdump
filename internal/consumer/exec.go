@@ -55,9 +55,6 @@ func (c *ExecEventConsumer) handleExecEvent(et bpf.BpfExecEventT) {
 		log.Errorf("[ExecEventConsumer] parse event failed: %s", err)
 		return
 	}
-	if et.IsClone == 1 {
-		e.IsClone = true
-	}
 	c.pcache.AddItem(*e)
 }
 

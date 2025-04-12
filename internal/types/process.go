@@ -5,6 +5,13 @@ import (
 	"strings"
 )
 
+type EventType int
+
+const (
+	ExecEvent EventType = iota + 1
+	NewTaskEvent
+)
+
 type ProcessBase struct {
 	Pid          int
 	Cmd          string
@@ -50,7 +57,7 @@ type ProcessExec struct {
 	Netns      int64
 	CgroupName string
 
-	IsClone bool
+	EventType EventType
 }
 
 func (p ProcessBase) MatchComm(name string) bool {

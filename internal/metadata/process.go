@@ -169,16 +169,11 @@ func (c *ProcessCache) AddItemWithContext(exec types.ProcessExec, rawCtx types.P
 	if pid == 0 {
 		return
 	}
-
-	// if exec.CgroupName == "" ||
-	// 	strings.HasSuffix(exec.CgroupName, ".slice") ||
-	// 	strings.HasSuffix(exec.CgroupName, ".service") ||
-	// 	strings.HasSuffix(exec.CgroupName, "init.scope") {
-	// 	return
-	// }
-	// if !strings.Contains(exec.Filename, "sleep") {
-	// 	return
-	// }
+	if exec.EventType == types.NewTaskEvent {
+		if c.GetByPid(exec.Pid).Pid > 0 {
+			return
+		}
+	}
 
 	var parent types.ProcessBase
 	if rawCtx.Process.Parent.Pid != 0 {
@@ -189,7 +184,7 @@ func (c *ProcessCache) AddItemWithContext(exec types.ProcessExec, rawCtx types.P
 			parent = c.getProcessBase(exec.PPid)
 		}
 	}
-	if exec.IsClone {
+	if exec.EventType == types.NewTaskEvent && exec.Filename == "" {
 		exec.Filename = parent.Cmd
 	}
 

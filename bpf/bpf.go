@@ -284,10 +284,12 @@ func (b *BPF) AttachTracepoints() error {
 		return fmt.Errorf(": %w", err)
 	}
 
-	if err := b.attachBTFTracepointOrRawTP("task_newtask",
-		b.objs.PtcpdumpTpBtfTaskNewtask, b.objs.PtcpdumpRawTracepointTaskNewtask,
-	); err != nil {
-		log.Infof("%+v", err)
+	if b.supportRingBuf {
+		if err := b.attachBTFTracepointOrRawTP("task_newtask",
+			b.objs.PtcpdumpTpBtfTaskNewtask, b.objs.PtcpdumpRawTracepointTaskNewtask,
+		); err != nil {
+			log.Infof("%+v", err)
+		}
 	}
 
 	if b.opts.attachForks() {

@@ -20,7 +20,7 @@ type BpfEnterMountBufT struct {
 
 type BpfExecEventT struct {
 	Meta              BpfProcessMetaT
-	IsClone           uint8
+	EventType         uint8
 	FilenameTruncated uint8
 	ArgsTruncated     uint8
 	_                 [1]byte

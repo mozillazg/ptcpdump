@@ -38,6 +38,7 @@ func ParseProcessExecEvent(event bpf.BpfExecEventT) (*types.ProcessExec, error) 
 
 	p.Filename = utils.GoString(event.Filename[:])
 	p.CgroupName = utils.GoString(event.Meta.CgroupName[:])
+	p.EventType = types.EventType(event.EventType)
 
 	return &p, nil
 }
@@ -62,6 +63,7 @@ func FromPacketOptions(opts pcapgo.NgPacketOptions) (types.ProcessExec, types.Pa
 	p.FilenameTruncated = pctx.CmdTruncated
 	p.Args = pctx.Args
 	p.ArgsTruncated = pctx.ArgsTruncated
+	p.EventType = types.ExecEvent
 
 	log.Debugf("new packet: %#v, %#v", *p, *pctx)
 
