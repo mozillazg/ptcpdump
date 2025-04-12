@@ -84,23 +84,12 @@ func GetKernelVersion() (string, error) {
 	return kernelVersionInfo.version, kernelVersionInfo.err
 }
 
-var bootTimeInfo struct {
-	once sync.Once
-	ts   int64
-	err  error
-}
-
 func GetBootTimeNs() (int64, error) {
-	bootTimeInfo.once.Do(func() {
-		var ts unix.Timespec
-		err := unix.ClockGettime(unix.CLOCK_MONOTONIC, &ts)
-		if err != nil {
-			bootTimeInfo.err = fmt.Errorf("could not get time: %w", err)
-		} else {
+	var ts unix.Timespec
+	err := unix.ClockGettime(unix.CLOCK_MONOTONIC, &ts)
+	if err != nil {
+		return 0, fmt.Errorf("could not get time: %w", err)
+	}
 
-			bootTimeInfo.ts = unix.TimespecToNsec(ts)
-		}
-	})
-
-	return bootTimeInfo.ts, bootTimeInfo.err
+	return unix.TimespecToNsec(ts), nil
 }
