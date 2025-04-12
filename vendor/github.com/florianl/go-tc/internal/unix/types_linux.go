@@ -51,3 +51,9 @@ const (
 	RTM_DELACTION = linux.RTM_DELACTION
 	RTM_GETACTION = linux.RTM_GETACTION
 )
+
+// For tests:
+const (
+	ETH_P_IP  = linux.ETH_P_IP
+	ETH_P_ALL = linux.ETH_P_ALL
+)

@@ -2,7 +2,6 @@ package tc
 
 import (
 	"errors"
-	"log"
 )
 
 // Various errors
@@ -27,9 +26,6 @@ var (
 type Config struct {
 	// NetNS defines the network namespace
 	NetNS int
-
-	// Interface to log internals
-	Logger *log.Logger
 }
 
 // Constants to define the direction

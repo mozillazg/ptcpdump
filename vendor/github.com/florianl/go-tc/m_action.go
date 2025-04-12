@@ -60,6 +60,7 @@ type Action struct {
 	ConnMark  *Connmark
 	CSum      *Csum
 	Ct        *Ct
+	CtInfo    *CtInfo
 	Defact    *Defact
 	Gact      *Gact
 	Gate      *Gate
@@ -73,6 +74,7 @@ type Action struct {
 	TunnelKey *TunnelKey
 	MPLS      *MPLS
 	SkbEdit   *SkbEdit
+	SkbMod    *SkbMod
 }
 
 func unmarshalActions(data []byte, actions *[]*Action) error {
@@ -166,86 +168,59 @@ func marshalAction(cmd int, info *Action, actOption uint16) ([]byte, error) {
 	if len(info.Kind) == 0 {
 		return []byte{}, fmt.Errorf("kind is missing")
 	}
-	var multiError error
+	var err error
+	var data []byte
 
 	// TODO: improve logic and check combinations
 	switch info.Kind {
 	case "bpf":
-		data, err := marshalActBpf(info.Bpf)
-		multiError = concatError(multiError, err)
-		options = append(options, tcOption{Interpretation: vtBytes, Type: actOption, Data: data})
+		data, err = marshalActBpf(info.Bpf)
 	case "connmark":
-		data, err := marshalConnmark(info.ConnMark)
-		multiError = concatError(multiError, err)
-		options = append(options, tcOption{Interpretation: vtBytes, Type: actOption, Data: data})
+		data, err = marshalConnmark(info.ConnMark)
 	case "csum":
-		data, err := marshalCsum(info.CSum)
-		multiError = concatError(multiError, err)
-		options = append(options, tcOption{Interpretation: vtBytes, Type: actOption, Data: data})
+		data, err = marshalCsum(info.CSum)
 	case "ct":
-		data, err := marshalCt(info.Ct)
-		multiError = concatError(multiError, err)
-		options = append(options, tcOption{Interpretation: vtBytes, Type: actOption, Data: data})
+		data, err = marshalCt(info.Ct)
+	case "ctinfo":
+		data, err = marshalCtInfo(info.CtInfo)
 	case "defact":
-		data, err := marshalDefact(info.Defact)
-		multiError = concatError(multiError, err)
-		options = append(options, tcOption{Interpretation: vtBytes, Type: actOption, Data: data})
+		data, err = marshalDefact(info.Defact)
 	case "gact":
-		data, err := marshalGact(info.Gact)
-		multiError = concatError(multiError, err)
-		options = append(options, tcOption{Interpretation: vtBytes, Type: actOption, Data: data})
+		data, err = marshalGact(info.Gact)
 	case "gate":
-		data, err := marshalGate(info.Gate)
-		multiError = concatError(multiError, err)
-		options = append(options, tcOption{Interpretation: vtBytes, Type: actOption, Data: data})
+		data, err = marshalGate(info.Gate)
 	case "ife":
-		data, err := marshalIfe(info.Ife)
-		multiError = concatError(multiError, err)
-		options = append(options, tcOption{Interpretation: vtBytes, Type: actOption, Data: data})
+		data, err = marshalIfe(info.Ife)
 	case "ipt":
-		data, err := marshalIpt(info.Ipt)
-		multiError = concatError(multiError, err)
-		options = append(options, tcOption{Interpretation: vtBytes, Type: actOption, Data: data})
+		data, err = marshalIpt(info.Ipt)
 	case "mirred":
-		data, err := marshalMirred(info.Mirred)
-		multiError = concatError(multiError, err)
-		options = append(options, tcOption{Interpretation: vtBytes, Type: actOption, Data: data})
+		data, err = marshalMirred(info.Mirred)
 	case "nat":
-		data, err := marshalNat(info.Nat)
-		multiError = concatError(multiError, err)
-		options = append(options, tcOption{Interpretation: vtBytes, Type: actOption, Data: data})
+		data, err = marshalNat(info.Nat)
 	case "sample":
-		data, err := marshalSample(info.Sample)
-		multiError = concatError(multiError, err)
-		options = append(options, tcOption{Interpretation: vtBytes, Type: actOption, Data: data})
+		data, err = marshalSample(info.Sample)
 	case "vlan":
-		data, err := marshalVlan(info.VLan)
-		multiError = concatError(multiError, err)
-		options = append(options, tcOption{Interpretation: vtBytes, Type: actOption, Data: data})
+		data, err = marshalVlan(info.VLan)
 	case "police":
-		data, err := marshalPolice(info.Police)
-		multiError = concatError(multiError, err)
-		options = append(options, tcOption{Interpretation: vtBytes, Type: actOption, Data: data})
+		data, err = marshalPolice(info.Police)
 	case "tunnel_key":
-		data, err := marshalTunnelKey(info.TunnelKey)
-		multiError = concatError(multiError, err)
-		options = append(options, tcOption{Interpretation: vtBytes, Type: actOption, Data: data})
+		data, err = marshalTunnelKey(info.TunnelKey)
 	case "mpls":
-		data, err := marshalMPLS(info.MPLS)
-		multiError = concatError(multiError, err)
-		options = append(options, tcOption{Interpretation: vtBytes, Type: actOption, Data: data})
+		data, err = marshalMPLS(info.MPLS)
 	case "skbedit":
-		data, err := marshalSkbEdit(info.SkbEdit)
-		multiError = concatError(multiError, err)
-		options = append(options, tcOption{Interpretation: vtBytes, Type: actOption, Data: data})
+		data, err = marshalSkbEdit(info.SkbEdit)
+	case "skbmod":
+		data, err = marshalSkbMod(info.SkbMod)
 	default:
 		return []byte{}, fmt.Errorf("unknown kind '%s'", info.Kind)
 	}
-	options = append(options, tcOption{Interpretation: vtString, Type: tcaActKind, Data: info.Kind})
 
-	if multiError != nil && !errors.Is(multiError, ErrNoArg) && cmd != unix.RTM_DELACTION {
-		return []byte{}, multiError
+	if err != nil && !errors.Is(err, ErrNoArg) && cmd != unix.RTM_DELACTION {
+		return []byte{}, err
 	}
+
+	options = append(options, tcOption{Interpretation: vtBytes, Type: actOption, Data: data})
+	options = append(options, tcOption{Interpretation: vtString, Type: tcaActKind, Data: info.Kind})
 
 	if info.Index != 0 {
 		options = append(options, tcOption{Interpretation: vtUint32, Type: tcaActIndex, Data: info.Index})
@@ -260,101 +235,94 @@ func marshalAction(cmd int, info *Action, actOption uint16) ([]byte, error) {
 	if info.Cookie != nil {
 		options = append(options, tcOption{Interpretation: vtBytes, Type: tcaActCookie, Data: bytesValue(info.Cookie)})
 	}
+	if info.Flags != nil {
+		options = append(options, tcOption{Interpretation: vtUint64, Type: tcaActFlags, Data: uint64Value(info.Flags)})
+	}
 	return marshalAttributes(options)
 }
 
 func extractActOptions(data []byte, act *Action, kind string) error {
-	var multiError error
 	var err error
 	switch kind {
 	case "bpf":
 		info := &ActBpf{}
 		err = unmarshalActBpf(data, info)
-		multiError = concatError(multiError, err)
 		act.Bpf = info
 	case "connmark":
 		info := &Connmark{}
 		err = unmarshalConnmark(data, info)
-		multiError = concatError(multiError, err)
 		act.ConnMark = info
 	case "csum":
 		info := &Csum{}
 		err = unmarshalCsum(data, info)
-		multiError = concatError(multiError, err)
 		act.CSum = info
 	case "ct":
 		info := &Ct{}
 		err = unmarshalCt(data, info)
-		multiError = concatError(multiError, err)
 		act.Ct = info
+	case "ctinfo":
+		info := &CtInfo{}
+		err = unmarshalCtInfo(data, info)
+		act.CtInfo = info
 	case "defact":
 		info := &Defact{}
 		err = unmarshalDefact(data, info)
-		multiError = concatError(multiError, err)
 		act.Defact = info
 	case "gact":
 		info := &Gact{}
 		err = unmarshalGact(data, info)
-		multiError = concatError(multiError, err)
 		act.Gact = info
 	case "gate":
 		info := &Gate{}
 		err = unmarshalGate(data, info)
-		multiError = concatError(multiError, err)
 		act.Gate = info
 	case "ife":
 		info := &Ife{}
 		err = unmarshalIfe(data, info)
-		multiError = concatError(multiError, err)
 		act.Ife = info
 	case "ipt":
 		info := &Ipt{}
 		err = unmarshalIpt(data, info)
-		multiError = concatError(multiError, err)
 		act.Ipt = info
 	case "mirred":
 		info := &Mirred{}
 		err = unmarshalMirred(data, info)
-		multiError = concatError(multiError, err)
 		act.Mirred = info
 	case "nat":
 		info := &Nat{}
 		err = unmarshalNat(data, info)
-		multiError = concatError(multiError, err)
 		act.Nat = info
 	case "sample":
 		info := &Sample{}
 		err = unmarshalSample(data, info)
-		multiError = concatError(multiError, err)
 		act.Sample = info
 	case "vlan":
 		info := &VLan{}
 		err = unmarshalVLan(data, info)
-		multiError = concatError(multiError, err)
 		act.VLan = info
 	case "police":
 		info := &Police{}
 		err = unmarshalPolice(data, info)
-		multiError = concatError(multiError, err)
 		act.Police = info
 	case "tunnel_key":
 		info := &TunnelKey{}
 		err = unmarshalTunnelKey(data, info)
-		multiError = concatError(multiError, err)
 		act.TunnelKey = info
 	case "mpls":
 		info := &MPLS{}
 		err = unmarshalMPLS(data, info)
-		multiError = concatError(multiError, err)
 		act.MPLS = info
 	case "skbedit":
 		info := &SkbEdit{}
 		err = unmarshalSkbEdit(data, info)
-		multiError = concatError(multiError, err)
 		act.SkbEdit = info
+	case "skbmod":
+		info := &SkbMod{}
+		err = unmarshalSkbMod(data, info)
+		act.SkbMod = info
 	default:
 		return fmt.Errorf("extractActOptions(): unsupported kind: %s", kind)
 
 	}
-	return multiError
+	return err
 }

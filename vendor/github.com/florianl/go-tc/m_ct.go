@@ -24,20 +24,26 @@ const (
 	tcaCtNatPortMin /* be16 */
 	tcaCtNatPortMax /* be16 */
 	tcaCtPad
+	tcaCtHelperName
+	tcaCtHelperFamily
+	tcaCtHelperProto
 )
 
 // Ct contains attributes of the ct discipline
 type Ct struct {
-	Parms      *CtParms
-	Tm         *Tcft
-	Action     *uint16
-	Zone       *uint16
-	Mark       *uint32
-	MarkMask   *uint32
-	NatIPv4Min *net.IP
-	NatIPv4Max *net.IP
-	NatPortMin *uint16
-	NatPortMax *uint16
+	Parms        *CtParms
+	Tm           *Tcft
+	Action       *uint16
+	Zone         *uint16
+	Mark         *uint32
+	MarkMask     *uint32
+	NatIPv4Min   *net.IP
+	NatIPv4Max   *net.IP
+	NatPortMin   *uint16
+	NatPortMax   *uint16
+	HelperName   *string
+	HelperFamily *uint8
+	HelperProto  *uint8
 }
 
 // CtParms contains further ct attributes.
@@ -83,11 +89,19 @@ func unmarshalCt(data []byte, info *Ct) error {
 			tmp := uint32ToIP(ad.Uint32())
 			info.NatIPv4Max = &tmp
 		case tcaCtNatPortMin:
-			info.NatPortMin = uint16Ptr(ad.Uint16())
+			tmp := endianSwapUint16(ad.Uint16())
+			info.NatPortMin = &tmp
 		case tcaCtNatPortMax:
-			info.NatPortMax = uint16Ptr(ad.Uint16())
+			tmp := endianSwapUint16(ad.Uint16())
+			info.NatPortMax = &tmp
 		case tcaCtPad:
 			// padding does not contain data, we just skip it
+		case tcaCtHelperName:
+			info.HelperName = stringPtr(ad.String())
+		case tcaCtHelperFamily:
+			info.HelperFamily = uint8Ptr(ad.Uint8())
+		case tcaCtHelperProto:
+			info.HelperProto = uint8Ptr(ad.Uint8())
 		default:
 			return fmt.Errorf("UnmarshalCt()\t%d\n\t%v", ad.Type(), ad.Bytes())
 		}
@@ -139,6 +153,15 @@ func marshalCt(info *Ct) ([]byte, error) {
 	}
 	if info.NatPortMax != nil {
 		options = append(options, tcOption{Interpretation: vtUint16Be, Type: tcaCtNatPortMax, Data: uint16Value(info.NatPortMax)})
+	}
+	if info.HelperName != nil {
+		options = append(options, tcOption{Interpretation: vtString, Type: tcaCtHelperName, Data: stringValue(info.HelperName)})
+	}
+	if info.HelperFamily != nil {
+		options = append(options, tcOption{Interpretation: vtUint8, Type: tcaCtHelperFamily, Data: uint8Value(info.HelperFamily)})
+	}
+	if info.HelperProto != nil {
+		options = append(options, tcOption{Interpretation: vtUint8, Type: tcaCtHelperProto, Data: uint8Value(info.HelperProto)})
 	}
 	if multiError != nil {
 		return []byte{}, multiError

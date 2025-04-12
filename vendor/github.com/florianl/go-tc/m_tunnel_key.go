@@ -15,13 +15,14 @@ const (
 	tcaTunnelKeyEncIPv4Dst
 	tcaTunnelKeyEncIPv6Src
 	tcaTunnelKeyEncIPv6Dst
-	tcaTunnelKeyEncKeyID
+	tcaTunnelKeyEncKeyID /* be32 */
 	tcaTunnelKeyPad
-	tcaTunnelKeyEncDstPort
+	tcaTunnelKeyEncDstPort /* be16 */
 	tcaTunnelKeyNoCSUM
 	tcaTunnelKeyEncOpts
 	tcaTunnelKeyEncTOS
 	tcaTunnelKeyEncTTL
+	tcaTunnelKeyNoFrag
 )
 
 // TunnelKey contains attribute of the TunnelKey discipline
@@ -35,6 +36,7 @@ type TunnelKey struct {
 	KeyNoCSUM     *uint8
 	KeyEncTOS     *uint8
 	KeyEncTTL     *uint8
+	KeyNoFrag     *bool
 }
 
 // TunnelParms from include/uapi/linux/tc_act/tc_tunnel_key.h
@@ -100,6 +102,9 @@ func marshalTunnelKey(info *TunnelKey) ([]byte, error) {
 	if info.KeyEncTTL != nil {
 		options = append(options, tcOption{Interpretation: vtUint8, Type: tcaTunnelKeyEncTTL, Data: *info.KeyEncTTL})
 	}
+	if info.KeyNoFrag != nil {
+		options = append(options, tcOption{Interpretation: vtFlag, Type: tcaTunnelKeyNoFrag, Data: *info.KeyNoFrag})
+	}
 
 	return marshalAttributes(options)
 }
@@ -138,10 +143,10 @@ func unmarshalTunnelKey(data []byte, info *TunnelKey) error {
 			multiError = concatError(multiError, err)
 			info.KeyEncDst = &tmp
 		case tcaTunnelKeyEncKeyID:
-			tmp := ad.Uint32()
+			tmp := endianSwapUint32(ad.Uint32())
 			info.KeyEncKeyID = &tmp
 		case tcaTunnelKeyEncDstPort:
-			tmp := ad.Uint16()
+			tmp := endianSwapUint16(ad.Uint16())
 			info.KeyEncDstPort = &tmp
 		case tcaTunnelKeyNoCSUM:
 			tmp := ad.Uint8()
@@ -154,6 +159,9 @@ func unmarshalTunnelKey(data []byte, info *TunnelKey) error {
 			info.KeyEncTTL = &tmp
 		case tcaTunnelKeyPad:
 			// padding does not contain data, we just skip it
+		case tcaTunnelKeyNoFrag:
+			tmp := ad.Flag()
+			info.KeyNoFrag = &tmp
 		default:
 			return fmt.Errorf("unmarshalTunnelKey()\t%d\n\t%v", ad.Type(), ad.Bytes())
 		}
