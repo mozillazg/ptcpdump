@@ -91,6 +91,13 @@ struct {
 } ptcpdump_filter_uid_map SEC(".maps");
 
 struct {
+    __uint(type, BPF_MAP_TYPE_LRU_HASH);
+    __uint(max_entries, 200);
+    __type(key, u32);
+    __type(value, u8);
+} ptcpdump_recent_exec_event_pid_map SEC(".maps");
+
+struct {
     __uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
     __uint(max_entries, 1);
     __type(key, u32);
@@ -317,6 +324,7 @@ static __always_inline void handle_exec(void *ctx, struct task_struct *task, pid
     struct exec_event_t *event;
 #ifdef LEGACY_KERNEL
     u32 u32_zero = 0;
+    u8 u8_zero = 0;
 #endif
 
     if (ringbuf_available()) {
@@ -333,6 +341,7 @@ static __always_inline void handle_exec(void *ctx, struct task_struct *task, pid
     __builtin_memset(&event->meta, 0, sizeof(event->meta));
 
     fill_process_meta(task, &event->meta);
+    u32 pid = BPF_CORE_READ(task, tgid);
 
     const char *filename_p = BPF_CORE_READ(bprm, filename);
     int f_ret = bpf_probe_read_str(&event->filename, sizeof(event->filename), filename_p);
@@ -365,6 +374,9 @@ static __always_inline void handle_exec(void *ctx, struct task_struct *task, pid
             // debug_log("[ptcpdump] bpf_perf_event_output ptcpdump_exec_events failed: %d\n", event_ret);
         }
     }
+
+    bpf_map_update_elem(&ptcpdump_recent_exec_event_pid_map, &pid, &u8_zero, BPF_NOEXIST);
+
     return;
 }
 
@@ -375,9 +387,8 @@ static __always_inline void handle_exit(void *ctx, struct task_struct *task) {
     }
 
     u32 pid = BPF_CORE_READ(task, tgid);
-    if (bpf_map_lookup_elem(&ptcpdump_filter_pid_map, &pid)) {
-        bpf_map_delete_elem(&ptcpdump_filter_pid_map, &pid);
-    }
+    bpf_map_delete_elem(&ptcpdump_filter_pid_map, &pid);
+    bpf_map_delete_elem(&ptcpdump_recent_exec_event_pid_map, &pid);
 
     struct exit_event_t *event;
     bool use_ringbuf = false;
@@ -437,6 +448,12 @@ int BPF_PROG(ptcpdump_tp_btf__sched_process_exit, struct task_struct *task) {
 
 static __always_inline void handle_newtask(void *ctx, struct task_struct *task, unsigned long clone_flags) {
     if (clone_flags & CLONE_THREAD) { // thread creation
+        return;
+    }
+
+    u32 pid = BPF_CORE_READ(task, tgid);
+    if (bpf_map_lookup_elem(&ptcpdump_recent_exec_event_pid_map, &pid)) {
+        debug_log("[ptcpdump] newtask match recent exec event, pid: %lld\n", pid);
         return;
     }
 

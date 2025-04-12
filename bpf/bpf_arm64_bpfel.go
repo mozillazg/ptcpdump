@@ -240,6 +240,7 @@ type BpfMapSpecs struct {
 	PtcpdumpPacketEvents              *ebpf.MapSpec `ebpf:"ptcpdump_packet_events"`
 	PtcpdumpPacketEventsRingbuf       *ebpf.MapSpec `ebpf:"ptcpdump_packet_events_ringbuf"`
 	PtcpdumpPtcpdumpExecEventsRingbuf *ebpf.MapSpec `ebpf:"ptcpdump_ptcpdump_exec_events_ringbuf"`
+	PtcpdumpRecentExecEventPidMap     *ebpf.MapSpec `ebpf:"ptcpdump_recent_exec_event_pid_map"`
 	PtcpdumpSockCookiePidMap          *ebpf.MapSpec `ebpf:"ptcpdump_sock_cookie_pid_map"`
 	PtcpdumpTidNetdeviceMap           *ebpf.MapSpec `ebpf:"ptcpdump_tid_netdevice_map"`
 }
@@ -309,6 +310,7 @@ type BpfMaps struct {
 	PtcpdumpPacketEvents              *ebpf.Map `ebpf:"ptcpdump_packet_events"`
 	PtcpdumpPacketEventsRingbuf       *ebpf.Map `ebpf:"ptcpdump_packet_events_ringbuf"`
 	PtcpdumpPtcpdumpExecEventsRingbuf *ebpf.Map `ebpf:"ptcpdump_ptcpdump_exec_events_ringbuf"`
+	PtcpdumpRecentExecEventPidMap     *ebpf.Map `ebpf:"ptcpdump_recent_exec_event_pid_map"`
 	PtcpdumpSockCookiePidMap          *ebpf.Map `ebpf:"ptcpdump_sock_cookie_pid_map"`
 	PtcpdumpTidNetdeviceMap           *ebpf.Map `ebpf:"ptcpdump_tid_netdevice_map"`
 }
@@ -344,6 +346,7 @@ func (m *BpfMaps) Close() error {
 		m.PtcpdumpPacketEvents,
 		m.PtcpdumpPacketEventsRingbuf,
 		m.PtcpdumpPtcpdumpExecEventsRingbuf,
+		m.PtcpdumpRecentExecEventPidMap,
 		m.PtcpdumpSockCookiePidMap,
 		m.PtcpdumpTidNetdeviceMap,
 	)
