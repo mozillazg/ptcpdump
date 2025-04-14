@@ -12,6 +12,8 @@ const (
 	tcaBasicEmatches
 	tcaBasicAct
 	tcaBasicPolice
+	tcaBasicPCNT
+	tcaBasicPad
 )
 
 // Basic contains attributes of the basic discipline
@@ -20,6 +22,7 @@ type Basic struct {
 	Police  *Police
 	Ematch  *Ematch
 	Actions *[]*Action
+	Pcnt    *uint64
 }
 
 // unmarshalBasic parses the Basic-encoded data and stores the result in the value pointed to by info.
@@ -48,6 +51,10 @@ func unmarshalBasic(data []byte, info *Basic) error {
 			err := unmarshalActions(ad.Bytes(), actions)
 			multiError = concatError(multiError, err)
 			info.Actions = actions
+		case tcaBasicPCNT:
+			info.Pcnt = uint64Ptr(ad.Uint64())
+		case tcaBasicPad:
+			// padding does not contain data, we just skip it
 		default:
 			return fmt.Errorf("unmarshalBasic()\t%d\n\t%v", ad.Type(), ad.Bytes())
 		}
@@ -61,6 +68,9 @@ func marshalBasic(info *Basic) ([]byte, error) {
 
 	if info == nil {
 		return []byte{}, fmt.Errorf("Basic: %w", ErrNoArg)
+	}
+	if info.Pcnt != nil {
+		return []byte{}, ErrNoArgAlter
 	}
 	var multiError error
 

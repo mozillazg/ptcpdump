@@ -49,3 +49,8 @@ const (
 	RTM_DELACTION = 49
 	RTM_GETACTION = 50
 )
+
+const (
+	ETH_P_IP  = 0x800
+	ETH_P_ALL = 0x3
+)

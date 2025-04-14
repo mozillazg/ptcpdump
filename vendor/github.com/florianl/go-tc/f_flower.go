@@ -95,6 +95,31 @@ const (
 	tcaFlowerKeyEncOpts
 	tcaFlowerKeyEncOptsMask
 	tcaFlowerInHwCount
+	tcaFlowerKeyPortSrcMin
+	tcaFlowerKeyPortSrcMax
+	tcaFlowerKeyPortDstMin
+	tcaFlowerKeyPortDstMax
+	tcaFlowerKeyCtState
+	tcaFlowerKeyCtStateMask
+	tcaFlowerKeyCtZone
+	tcaFlowerKeyCtZoneMask
+	tcaFlowerKeyCtMark
+	tcaFlowerKeyCtMarkMask
+	tcaFlowerKeyCtLabels
+	tcaFlowerKeyCtLabelsMask
+	tcaFlowerKeyMplsOpts
+	tcaFlowerKeyHash
+	tcaFlowerKeyHashMask
+	tcaFlowerKeyNumOfVLANS
+	tcaFlowerKeyPppoeSID
+	tcaFlowerKeyPppProto
+	tcaFlowerKeyL2TPV3SID
+	tcaFlowerL2Miss
+	tcaFlowerKeyCFM
+	tcaFlowerKeySPI
+	tcaFlowerKeySPIMask
+	tcaFlowerKeyEncFlags
+	tcaFlowerKeyEncFlagsMask
 )
 
 // Flower contains attrobutes of the flower discipline
@@ -106,67 +131,101 @@ type Flower struct {
 	KeyEthDstMask        *net.HardwareAddr
 	KeyEthSrc            *net.HardwareAddr
 	KeyEthSrcMask        *net.HardwareAddr
-	KeyEthType           *uint16
+	KeyEthType           *uint16 /* be16 */
 	KeyIPProto           *uint8
 	KeyIPv4Src           *net.IP
 	KeyIPv4SrcMask       *net.IP
 	KeyIPv4Dst           *net.IP
 	KeyIPv4DstMask       *net.IP
-	KeyTCPSrc            *uint16
-	KeyTCPDst            *uint16
-	KeyUDPSrc            *uint16
-	KeyUDPDst            *uint16
+	KeyTCPSrc            *uint16 /* be16 */
+	KeyTCPDst            *uint16 /* be16 */
+	KeyUDPSrc            *uint16 /* be16 */
+	KeyUDPDst            *uint16 /* be16 */
 	Flags                *uint32
-	KeyVlanID            *uint16
+	KeyVlanID            *uint16 /* be16 */
 	KeyVlanPrio          *uint8
-	KeyVlanEthType       *uint16
-	KeyEncKeyID          *uint32
+	KeyVlanEthType       *uint16 /* be16 */
+	KeyEncKeyID          *uint32 /* be32 */
 	KeyEncIPv4Src        *net.IP
 	KeyEncIPv4SrcMask    *net.IP
 	KeyEncIPv4Dst        *net.IP
 	KeyEncIPv4DstMask    *net.IP
-	KeyTCPSrcMask        *uint16
-	KeyTCPDstMask        *uint16
-	KeyUDPSrcMask        *uint16
-	KeyUDPDstMask        *uint16
-	KeySctpSrc           *uint16
-	KeySctpDst           *uint16
-	KeyEncUDPSrcPort     *uint16
-	KeyEncUDPSrcPortMask *uint16
-	KeyEncUDPDstPort     *uint16
-	KeyEncUDPDstPortMask *uint16
-	KeyFlags             *uint32
-	KeyFlagsMask         *uint32
+	KeyTCPSrcMask        *uint16 /* be16 */
+	KeyTCPDstMask        *uint16 /* be16 */
+	KeyUDPSrcMask        *uint16 /* be16 */
+	KeyUDPDstMask        *uint16 /* be16 */
+	KeySctpSrc           *uint16 /* be16 */
+	KeySctpDst           *uint16 /* be16 */
+	KeyEncUDPSrcPort     *uint16 /* be16 */
+	KeyEncUDPSrcPortMask *uint16 /* be16 */
+	KeyEncUDPDstPort     *uint16 /* be16 */
+	KeyEncUDPDstPortMask *uint16 /* be16 */
+	KeyFlags             *uint32 /* be32 */
+	KeyFlagsMask         *uint32 /* be32 */
 	KeyIcmpv4Code        *uint8
 	KeyIcmpv4CodeMask    *uint8
 	KeyIcmpv4Type        *uint8
 	KeyIcmpv4TypeMask    *uint8
 	KeyIcmpv6Code        *uint8
 	KeyIcmpv6CodeMask    *uint8
-	KeyArpSIP            *uint32
-	KeyArpSIPMask        *uint32
-	KeyArpTIP            *uint32
-	KeyArpTIPMask        *uint32
+	KeyArpSIP            *uint32 /* be32 */
+	KeyArpSIPMask        *uint32 /* be32 */
+	KeyArpTIP            *uint32 /* be32 */
+	KeyArpTIPMask        *uint32 /* be32 */
 	KeyArpOp             *uint8
 	KeyArpOpMask         *uint8
 	KeyMplsTTL           *uint8
 	KeyMplsBos           *uint8
 	KeyMplsTc            *uint8
 	KeyMplsLabel         *uint32
-	KeyTCPFlags          *uint16
-	KeyTCPFlagsMask      *uint16
+	KeyTCPFlags          *uint16 /* be16 */
+	KeyTCPFlagsMask      *uint16 /* be16 */
 	KeyIPTOS             *uint8
 	KeyIPTOSMask         *uint8
 	KeyIPTTL             *uint8
 	KeyIPTTLMask         *uint8
-	KeyCVlanID           *uint16
+	KeyCVlanID           *uint16 /* be16 */
 	KeyCVlanPrio         *uint8
-	KeyCVlanEthType      *uint16
+	KeyCVlanEthType      *uint16 /* be16 */
 	KeyEncIPTOS          *uint8
 	KeyEncIPTOSMask      *uint8
 	KeyEncIPTTL          *uint8
 	KeyEncIPTTLMask      *uint8
 	InHwCount            *uint32
+	KeyPortSrcMin        *uint16 /* be16 */
+	KeyPortSrcMax        *uint16 /* be16 */
+	KeyPortDstMin        *uint16 /* be16 */
+	KeyPortDstMax        *uint16 /* be16 */
+
+	KeyCtState     *uint16 /* u16 */
+	KeyCtStateMask *uint16 /* u16 */
+	KeyCtZone      *uint16 /* u16 */
+	KeyCtZoneMask  *uint16 /* u16 */
+	KeyCtMark      *uint32 /* u32 */
+	KeyCtMarkMask  *uint32 /* u32 */
+	//KeyCtLabels,	/* u128 */
+	//KeyCtLabelsMask,	/* u128 */
+	//KeyMplsOpts,
+
+	KeyHash     *uint32 /* u32 */
+	KeyHashMask *uint32 /* u32 */
+
+	KeyNumOfVLANS *uint8 /* u8 */
+
+	KeyPppoeSID *uint16 /* be16 */
+	KeyPppProto *uint16 /* be16 */
+
+	KeyL2TPV3SID *uint32 /* be32 */
+
+	L2Miss *uint8 /* u8 */
+
+	//KeyCfm,		/* nested */
+
+	KeySpi     *uint32 /* be32 */
+	KeySpiMask *uint32 /* be32 */
+
+	KeyEncFlags     *uint32 /* be32 */
+	KeyEncFlagsMask *uint32 /* be32 */
 }
 
 // unmarshalFlower parses the Flower-encoded data and stores the result in the value pointed to by info.
@@ -202,7 +261,7 @@ func unmarshalFlower(data []byte, info *Flower) error {
 			tmp := bytesToHardwareAddr(ad.Bytes())
 			info.KeyEthSrcMask = &tmp
 		case tcaFlowerKeyEthType:
-			tmp := ad.Uint16()
+			tmp := endianSwapUint16(ad.Uint16())
 			info.KeyEthType = &tmp
 		case tcaFlowerKeyIPProto:
 			tmp := ad.Uint8()
@@ -220,31 +279,31 @@ func unmarshalFlower(data []byte, info *Flower) error {
 			tmp := uint32ToIP(ad.Uint32())
 			info.KeyIPv4DstMask = &tmp
 		case tcaFlowerKeyTCPSrc:
-			tmp := ad.Uint16()
+			tmp := endianSwapUint16(ad.Uint16())
 			info.KeyTCPSrc = &tmp
 		case tcaFlowerKeyTCPDst:
-			tmp := ad.Uint16()
+			tmp := endianSwapUint16(ad.Uint16())
 			info.KeyTCPDst = &tmp
 		case tcaFlowerKeyUDPSrc:
-			tmp := ad.Uint16()
+			tmp := endianSwapUint16(ad.Uint16())
 			info.KeyUDPSrc = &tmp
 		case tcaFlowerKeyUDPDst:
-			tmp := ad.Uint16()
+			tmp := endianSwapUint16(ad.Uint16())
 			info.KeyUDPDst = &tmp
 		case tcaFlowerFlags:
 			tmp := ad.Uint32()
 			info.Flags = &tmp
 		case tcaFlowerKeyVlanID:
-			tmp := ad.Uint16()
+			tmp := endianSwapUint16(ad.Uint16())
 			info.KeyVlanID = &tmp
 		case tcaFlowerKeyVlanPrio:
 			tmp := ad.Uint8()
 			info.KeyVlanPrio = &tmp
 		case tcaFlowerKeyVlanEthType:
-			tmp := ad.Uint16()
+			tmp := endianSwapUint16(ad.Uint16())
 			info.KeyVlanEthType = &tmp
 		case tcaFlowerKeyEncKeyID:
-			tmp := ad.Uint32()
+			tmp := endianSwapUint32(ad.Uint32())
 			info.KeyEncKeyID = &tmp
 		case tcaFlowerKeyEncIPv4Src:
 			tmp := uint32ToIP(ad.Uint32())
@@ -259,40 +318,40 @@ func unmarshalFlower(data []byte, info *Flower) error {
 			tmp := uint32ToIP(ad.Uint32())
 			info.KeyEncIPv4DstMask = &tmp
 		case tcaFlowerKeyTCPSrcMask:
-			tmp := ad.Uint16()
+			tmp := endianSwapUint16(ad.Uint16())
 			info.KeyTCPSrcMask = &tmp
 		case tcaFlowerKeyTCPDstMask:
-			tmp := ad.Uint16()
+			tmp := endianSwapUint16(ad.Uint16())
 			info.KeyTCPDstMask = &tmp
 		case tcaFlowerKeyUDPSrcMask:
-			tmp := ad.Uint16()
+			tmp := endianSwapUint16(ad.Uint16())
 			info.KeyUDPSrcMask = &tmp
 		case tcaFlowerKeyUDPDstMask:
-			tmp := ad.Uint16()
+			tmp := endianSwapUint16(ad.Uint16())
 			info.KeyUDPDstMask = &tmp
 		case tcaFlowerKeySCTPSrc:
-			tmp := ad.Uint16()
+			tmp := endianSwapUint16(ad.Uint16())
 			info.KeySctpSrc = &tmp
 		case tcaFlowerKeySCTPDst:
-			tmp := ad.Uint16()
+			tmp := endianSwapUint16(ad.Uint16())
 			info.KeySctpDst = &tmp
 		case tcaFlowerKeyEncUDPSrcPort:
-			tmp := ad.Uint16()
+			tmp := endianSwapUint16(ad.Uint16())
 			info.KeyEncUDPSrcPort = &tmp
 		case tcaFlowerKeyEncUDPSrcPortMask:
-			tmp := ad.Uint16()
+			tmp := endianSwapUint16(ad.Uint16())
 			info.KeyEncUDPSrcPortMask = &tmp
 		case tcaFlowerKeyEncUDPDstPort:
-			tmp := ad.Uint16()
+			tmp := endianSwapUint16(ad.Uint16())
 			info.KeyEncUDPDstPort = &tmp
 		case tcaFlowerKeyEncUDPDstPortMask:
-			tmp := ad.Uint16()
+			tmp := endianSwapUint16(ad.Uint16())
 			info.KeyEncUDPDstPortMask = &tmp
 		case tcaFlowerKeyFlags:
-			tmp := ad.Uint32()
+			tmp := endianSwapUint32(ad.Uint32())
 			info.KeyFlags = &tmp
 		case tcaFlowerKeyFlagsMask:
-			tmp := ad.Uint32()
+			tmp := endianSwapUint32(ad.Uint32())
 			info.KeyFlagsMask = &tmp
 		case tcaFlowerKeyIcmpv4Code:
 			tmp := ad.Uint8()
@@ -313,16 +372,16 @@ func unmarshalFlower(data []byte, info *Flower) error {
 			tmp := ad.Uint8()
 			info.KeyIcmpv6CodeMask = &tmp
 		case tcaFlowerKeyArpSIP:
-			tmp := ad.Uint32()
+			tmp := endianSwapUint32(ad.Uint32())
 			info.KeyArpSIP = &tmp
 		case tcaFlowerKeyArpSIPMask:
-			tmp := ad.Uint32()
+			tmp := endianSwapUint32(ad.Uint32())
 			info.KeyArpSIPMask = &tmp
 		case tcaFlowerKeyArpTIP:
-			tmp := ad.Uint32()
+			tmp := endianSwapUint32(ad.Uint32())
 			info.KeyArpTIP = &tmp
 		case tcaFlowerKeyArpTIPMask:
-			tmp := ad.Uint32()
+			tmp := endianSwapUint32(ad.Uint32())
 			info.KeyArpTIPMask = &tmp
 		case tcaFlowerKeyArpOp:
 			tmp := ad.Uint8()
@@ -343,10 +402,10 @@ func unmarshalFlower(data []byte, info *Flower) error {
 			tmp := ad.Uint32()
 			info.KeyMplsLabel = &tmp
 		case tcaFlowerKeyTCPFlags:
-			tmp := ad.Uint16()
+			tmp := endianSwapUint16(ad.Uint16())
 			info.KeyTCPFlags = &tmp
 		case tcaFlowerKeyTCPFlagsMask:
-			tmp := ad.Uint16()
+			tmp := endianSwapUint16(ad.Uint16())
 			info.KeyTCPFlagsMask = &tmp
 		case tcaFlowerKeyIPTOS:
 			tmp := ad.Uint8()
@@ -361,13 +420,13 @@ func unmarshalFlower(data []byte, info *Flower) error {
 			tmp := ad.Uint8()
 			info.KeyIPTTLMask = &tmp
 		case tcaFlowerKeyCVlanID:
-			tmp := ad.Uint16()
+			tmp := endianSwapUint16(ad.Uint16())
 			info.KeyCVlanID = &tmp
 		case tcaFlowerKeyCVlanPrio:
 			tmp := ad.Uint8()
 			info.KeyCVlanPrio = &tmp
 		case tcaFlowerKeyCVlanEthType:
-			tmp := ad.Uint16()
+			tmp := endianSwapUint16(ad.Uint16())
 			info.KeyCVlanEthType = &tmp
 		case tcaFlowerKeyEncIPTOS:
 			tmp := ad.Uint8()
@@ -384,6 +443,69 @@ func unmarshalFlower(data []byte, info *Flower) error {
 		case tcaFlowerInHwCount:
 			tmp := ad.Uint32()
 			info.InHwCount = &tmp
+		case tcaFlowerKeyPortSrcMin:
+			tmp := endianSwapUint16(ad.Uint16())
+			info.KeyPortSrcMin = &tmp
+		case tcaFlowerKeyPortSrcMax:
+			tmp := endianSwapUint16(ad.Uint16())
+			info.KeyPortSrcMax = &tmp
+		case tcaFlowerKeyPortDstMin:
+			tmp := endianSwapUint16(ad.Uint16())
+			info.KeyPortDstMin = &tmp
+		case tcaFlowerKeyPortDstMax:
+			tmp := endianSwapUint16(ad.Uint16())
+			info.KeyPortDstMax = &tmp
+		case tcaFlowerKeyCtState:
+			tmp := ad.Uint16()
+			info.KeyCtState = &tmp
+		case tcaFlowerKeyCtStateMask:
+			tmp := ad.Uint16()
+			info.KeyCtStateMask = &tmp
+		case tcaFlowerKeyCtZone:
+			tmp := ad.Uint16()
+			info.KeyCtZone = &tmp
+		case tcaFlowerKeyCtZoneMask:
+			tmp := ad.Uint16()
+			info.KeyCtZoneMask = &tmp
+		case tcaFlowerKeyCtMark:
+			tmp := ad.Uint32()
+			info.KeyCtMark = &tmp
+		case tcaFlowerKeyCtMarkMask:
+			tmp := ad.Uint32()
+			info.KeyCtMarkMask = &tmp
+		case tcaFlowerKeyHash:
+			tmp := ad.Uint32()
+			info.KeyHash = &tmp
+		case tcaFlowerKeyHashMask:
+			tmp := ad.Uint32()
+			info.KeyHashMask = &tmp
+		case tcaFlowerKeyNumOfVLANS:
+			tmp := ad.Uint8()
+			info.KeyNumOfVLANS = &tmp
+		case tcaFlowerKeyPppoeSID:
+			tmp := endianSwapUint16(ad.Uint16())
+			info.KeyPppoeSID = &tmp
+		case tcaFlowerKeyPppProto:
+			tmp := endianSwapUint16(ad.Uint16())
+			info.KeyPppProto = &tmp
+		case tcaFlowerKeyL2TPV3SID:
+			tmp := endianSwapUint32(ad.Uint32())
+			info.KeyL2TPV3SID = &tmp
+		case tcaFlowerL2Miss:
+			tmp := ad.Uint8()
+			info.L2Miss = &tmp
+		case tcaFlowerKeySPI:
+			tmp := endianSwapUint32(ad.Uint32())
+			info.KeySpi = &tmp
+		case tcaFlowerKeySPIMask:
+			tmp := endianSwapUint32(ad.Uint32())
+			info.KeySpiMask = &tmp
+		case tcaFlowerKeyEncFlags:
+			tmp := endianSwapUint32(ad.Uint32())
+			info.KeyEncFlags = &tmp
+		case tcaFlowerKeyEncFlagsMask:
+			tmp := endianSwapUint32(ad.Uint32())
+			info.KeyEncFlagsMask = &tmp
 		default:
 			return fmt.Errorf("unmarshalFlower()\t%d\n\t%v", ad.Type(), ad.Bytes())
 		}
@@ -469,7 +591,7 @@ func marshalFlower(info *Flower) ([]byte, error) {
 		options = append(options, tcOption{Interpretation: vtUint32, Type: tcaFlowerFlags, Data: *info.Flags})
 	}
 	if info.KeyVlanID != nil {
-		options = append(options, tcOption{Interpretation: vtUint16, Type: tcaFlowerKeyVlanID, Data: *info.KeyVlanID})
+		options = append(options, tcOption{Interpretation: vtUint16Be, Type: tcaFlowerKeyVlanID, Data: *info.KeyVlanID})
 	}
 	if info.KeyVlanPrio != nil {
 		options = append(options, tcOption{Interpretation: vtUint8, Type: tcaFlowerKeyVlanPrio, Data: *info.KeyVlanPrio})
@@ -603,7 +725,7 @@ func marshalFlower(info *Flower) ([]byte, error) {
 		options = append(options, tcOption{Interpretation: vtUint8, Type: tcaFlowerKeyIPTTLMask, Data: *info.KeyIPTTLMask})
 	}
 	if info.KeyCVlanID != nil {
-		options = append(options, tcOption{Interpretation: vtUint16, Type: tcaFlowerKeyCVlanID, Data: *info.KeyCVlanID})
+		options = append(options, tcOption{Interpretation: vtUint16Be, Type: tcaFlowerKeyCVlanID, Data: *info.KeyCVlanID})
 	}
 	if info.KeyCVlanPrio != nil {
 		options = append(options, tcOption{Interpretation: vtUint8, Type: tcaFlowerKeyCVlanPrio, Data: *info.KeyCVlanPrio})
@@ -625,6 +747,69 @@ func marshalFlower(info *Flower) ([]byte, error) {
 	}
 	if info.InHwCount != nil {
 		options = append(options, tcOption{Interpretation: vtUint32, Type: tcaFlowerInHwCount, Data: *info.InHwCount})
+	}
+	if info.KeyPortSrcMin != nil {
+		options = append(options, tcOption{Interpretation: vtUint16Be, Type: tcaFlowerKeyPortSrcMin, Data: *info.KeyPortSrcMin})
+	}
+	if info.KeyPortSrcMax != nil {
+		options = append(options, tcOption{Interpretation: vtUint16Be, Type: tcaFlowerKeyPortSrcMax, Data: *info.KeyPortSrcMax})
+	}
+	if info.KeyPortDstMin != nil {
+		options = append(options, tcOption{Interpretation: vtUint16Be, Type: tcaFlowerKeyPortDstMin, Data: *info.KeyPortDstMin})
+	}
+	if info.KeyPortDstMax != nil {
+		options = append(options, tcOption{Interpretation: vtUint16Be, Type: tcaFlowerKeyPortDstMax, Data: *info.KeyPortDstMax})
+	}
+	if info.KeyCtState != nil {
+		options = append(options, tcOption{Interpretation: vtUint16, Type: tcaFlowerKeyCtState, Data: *info.KeyCtState})
+	}
+	if info.KeyCtStateMask != nil {
+		options = append(options, tcOption{Interpretation: vtUint16, Type: tcaFlowerKeyCtStateMask, Data: *info.KeyCtStateMask})
+	}
+	if info.KeyCtZone != nil {
+		options = append(options, tcOption{Interpretation: vtUint16, Type: tcaFlowerKeyCtZone, Data: *info.KeyCtZone})
+	}
+	if info.KeyCtZoneMask != nil {
+		options = append(options, tcOption{Interpretation: vtUint16, Type: tcaFlowerKeyCtZoneMask, Data: *info.KeyCtZoneMask})
+	}
+	if info.KeyCtMark != nil {
+		options = append(options, tcOption{Interpretation: vtUint32, Type: tcaFlowerKeyCtMark, Data: *info.KeyCtMark})
+	}
+	if info.KeyCtMarkMask != nil {
+		options = append(options, tcOption{Interpretation: vtUint32, Type: tcaFlowerKeyCtMarkMask, Data: *info.KeyCtMarkMask})
+	}
+	if info.KeyHash != nil {
+		options = append(options, tcOption{Interpretation: vtUint32, Type: tcaFlowerKeyHash, Data: *info.KeyHash})
+	}
+	if info.KeyHashMask != nil {
+		options = append(options, tcOption{Interpretation: vtUint32, Type: tcaFlowerKeyHashMask, Data: *info.KeyHashMask})
+	}
+	if info.KeyNumOfVLANS != nil {
+		options = append(options, tcOption{Interpretation: vtUint8, Type: tcaFlowerKeyNumOfVLANS, Data: *info.KeyNumOfVLANS})
+	}
+	if info.KeyPppoeSID != nil {
+		options = append(options, tcOption{Interpretation: vtUint16Be, Type: tcaFlowerKeyPppoeSID, Data: *info.KeyPppoeSID})
+	}
+	if info.KeyPppProto != nil {
+		options = append(options, tcOption{Interpretation: vtUint16Be, Type: tcaFlowerKeyPppProto, Data: *info.KeyPppProto})
+	}
+	if info.KeyL2TPV3SID != nil {
+		options = append(options, tcOption{Interpretation: vtUint32Be, Type: tcaFlowerKeyL2TPV3SID, Data: *info.KeyL2TPV3SID})
+	}
+	if info.L2Miss != nil {
+		options = append(options, tcOption{Interpretation: vtUint8, Type: tcaFlowerL2Miss, Data: *info.L2Miss})
+	}
+	if info.KeySpi != nil {
+		options = append(options, tcOption{Interpretation: vtUint32Be, Type: tcaFlowerKeySPI, Data: *info.KeySpi})
+	}
+	if info.KeySpiMask != nil {
+		options = append(options, tcOption{Interpretation: vtUint32Be, Type: tcaFlowerKeySPIMask, Data: *info.KeySpiMask})
+	}
+	if info.KeyEncFlags != nil {
+		options = append(options, tcOption{Interpretation: vtUint32Be, Type: tcaFlowerKeyEncFlags, Data: *info.KeyEncFlags})
+	}
+	if info.KeyEncFlagsMask != nil {
+		options = append(options, tcOption{Interpretation: vtUint32Be, Type: tcaFlowerKeyEncFlagsMask, Data: *info.KeyEncFlagsMask})
 	}
 	if multiError != nil {
 		return []byte{}, multiError

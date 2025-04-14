@@ -59,7 +59,6 @@ func unmarshalTaPrio(data []byte, info *TaPrio) error {
 			info.Flags = uint32Ptr(ad.Uint32())
 		case tcaTaPrioTxTimeDelay:
 			info.TxTimeDelay = uint32Ptr(ad.Uint32())
-
 		case tcaTaPrioPad:
 			// padding does not contain data, we just skip it
 		default:
