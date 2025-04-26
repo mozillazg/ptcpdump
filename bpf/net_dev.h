@@ -27,10 +27,22 @@ struct new_netdevice_event_t {
     struct netdevice_t dev;
 };
 
+struct mount_event_t {
+    char fs[FS_NAME_LEN];
+    char src[PATH_MAX];
+    char dest[PATH_MAX];
+};
+
 struct netdevice_change_event_t {
     struct netdevice_t old_device;
     struct netdevice_t new_device;
 };
+
+const struct mount_event_t *unused12 __attribute__((unused));
+const struct netdevice_change_event_t *unused13 __attribute__((unused));
+const struct new_netdevice_event_t *unused14 __attribute__((unused));
+
+#ifdef ENABLE_NET_DEV_W
 
 struct {
     __uint(type, BPF_MAP_TYPE_LRU_HASH);
@@ -62,12 +74,6 @@ struct enter_mount_buf_t {
     u64 fs;
     u64 src;
     u64 dest;
-};
-
-struct mount_event_t {
-    char fs[FS_NAME_LEN];
-    char src[PATH_MAX];
-    char dest[PATH_MAX];
 };
 
 struct {
@@ -309,5 +315,7 @@ int BPF_KRETPROBE(ptcpdump_kretprobe__dev_change_net_namespace, long ret) {
 out:
     return 0;
 }
+
+#endif /* ENABLE_NET_DEV_W */
 
 #endif /* __PTCPDUMP_NET_DEV_H__ */

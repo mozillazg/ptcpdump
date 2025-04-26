@@ -123,6 +123,9 @@ type bpf_legacyVariableSpecs struct {
 	Unused1  *ebpf.VariableSpec `ebpf:"unused1"`
 	Unused10 *ebpf.VariableSpec `ebpf:"unused10"`
 	Unused11 *ebpf.VariableSpec `ebpf:"unused11"`
+	Unused12 *ebpf.VariableSpec `ebpf:"unused12"`
+	Unused13 *ebpf.VariableSpec `ebpf:"unused13"`
+	Unused14 *ebpf.VariableSpec `ebpf:"unused14"`
 	Unused2  *ebpf.VariableSpec `ebpf:"unused2"`
 	Unused3  *ebpf.VariableSpec `ebpf:"unused3"`
 	Unused4  *ebpf.VariableSpec `ebpf:"unused4"`
@@ -227,6 +230,9 @@ type bpf_legacyVariables struct {
 	Unused1  *ebpf.Variable `ebpf:"unused1"`
 	Unused10 *ebpf.Variable `ebpf:"unused10"`
 	Unused11 *ebpf.Variable `ebpf:"unused11"`
+	Unused12 *ebpf.Variable `ebpf:"unused12"`
+	Unused13 *ebpf.Variable `ebpf:"unused13"`
+	Unused14 *ebpf.Variable `ebpf:"unused14"`
 	Unused2  *ebpf.Variable `ebpf:"unused2"`
 	Unused3  *ebpf.Variable `ebpf:"unused3"`
 	Unused4  *ebpf.Variable `ebpf:"unused4"`

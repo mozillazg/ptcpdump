@@ -91,6 +91,10 @@ func (b *BPF) handlePacketEvents(ctx context.Context, reader *EventReader, ch ch
 		}
 		event, err := parsePacketEvent(record.RawSample)
 		if err != nil {
+			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+				log.Infof("got EOF error: %s", err)
+				continue
+			}
 			log.Errorf("parse packet event failed: %s", err)
 		} else {
 			ch <- *event
@@ -170,6 +174,10 @@ func (b *BPF) handleExecEvents(ctx context.Context, reader *EventReader, ch chan
 		}
 		event, err := parseExecEvent(record.RawSample)
 		if err != nil {
+			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+				log.Infof("got EOF error: %s", err)
+				continue
+			}
 			log.Errorf("parse exec event failed: %s", err)
 		} else {
 			ch <- *event
@@ -240,6 +248,10 @@ func (b *BPF) handleGoKeyLogEvents(ctx context.Context, reader *EventReader, ch 
 		}
 		event, err := parseGoKeyLogEvent(record.RawSample)
 		if err != nil {
+			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+				log.Infof("got EOF error: %s", err)
+				continue
+			}
 			log.Errorf("parse go tls keylog event failed: %s", err)
 		} else {
 			ch <- *event
@@ -248,30 +260,6 @@ func (b *BPF) handleGoKeyLogEvents(ctx context.Context, reader *EventReader, ch 
 			// TODO: XXX
 		}
 	}
-}
-
-func (b *BPF) PullNewNetDeviceEvents(ctx context.Context, chanSize int) (<-chan BpfNewNetdeviceEventT, error) {
-	pageSize := os.Getpagesize()
-	log.Infof("pagesize is %d", pageSize)
-	perCPUBuffer := pageSize * 1
-	eventSize := int(unsafe.Sizeof(BpfNewNetdeviceEventT{}))
-	if eventSize >= perCPUBuffer {
-		perCPUBuffer = perCPUBuffer * (1 + (eventSize / perCPUBuffer))
-	}
-	log.Infof("use %d as perCPUBuffer", perCPUBuffer)
-
-	reader, err := perf.NewReader(b.objs.PtcpdumpNewNetdeviceEvents, perCPUBuffer)
-	if err != nil {
-		return nil, fmt.Errorf(": %w", err)
-	}
-	ch := make(chan BpfNewNetdeviceEventT, chanSize)
-	go func() {
-		defer close(ch)
-		defer reader.Close()
-		b.handleNewNetDeviceEvents(ctx, reader, ch)
-	}()
-
-	return ch, nil
 }
 
 func (b *BPF) handleNewNetDeviceEvents(ctx context.Context, reader *perf.Reader, ch chan<- BpfNewNetdeviceEventT) {
@@ -296,6 +284,10 @@ func (b *BPF) handleNewNetDeviceEvents(ctx context.Context, reader *perf.Reader,
 		}
 		event, err := parseNewNetDeviceEvent(record.RawSample)
 		if err != nil {
+			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+				log.Infof("got EOF error: %s", err)
+				continue
+			}
 			log.Errorf("parse new net device event failed: %s", err)
 		} else {
 			ch <- *event
@@ -315,30 +307,6 @@ func parseNewNetDeviceEvent(rawSample []byte) (*BpfNewNetdeviceEventT, error) {
 		return nil, fmt.Errorf("parse event: %w", err)
 	}
 	return &event, nil
-}
-
-func (b *BPF) PullNetDeviceChangeEvents(ctx context.Context, chanSize int) (<-chan BpfNetdeviceChangeEventT, error) {
-	pageSize := os.Getpagesize()
-	log.Infof("pagesize is %d", pageSize)
-	perCPUBuffer := pageSize * 1
-	eventSize := int(unsafe.Sizeof(BpfNetdeviceChangeEventT{}))
-	if eventSize >= perCPUBuffer {
-		perCPUBuffer = perCPUBuffer * (1 + (eventSize / perCPUBuffer))
-	}
-	log.Infof("use %d as perCPUBuffer", perCPUBuffer)
-
-	reader, err := perf.NewReader(b.objs.PtcpdumpNetdeviceChangeEvents, perCPUBuffer)
-	if err != nil {
-		return nil, fmt.Errorf(": %w", err)
-	}
-	ch := make(chan BpfNetdeviceChangeEventT, chanSize)
-	go func() {
-		defer close(ch)
-		defer reader.Close()
-		b.handleNetDeviceChangeEvents(ctx, reader, ch)
-	}()
-
-	return ch, nil
 }
 
 func (b *BPF) handleNetDeviceChangeEvents(ctx context.Context, reader *perf.Reader, ch chan<- BpfNetdeviceChangeEventT) {
@@ -363,6 +331,10 @@ func (b *BPF) handleNetDeviceChangeEvents(ctx context.Context, reader *perf.Read
 		}
 		event, err := parseNetDeviceChangeEvent(record.RawSample)
 		if err != nil {
+			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+				log.Infof("got EOF error: %s", err)
+				continue
+			}
 			log.Errorf("parse net device change event failed: %s", err)
 		} else {
 			ch <- *event
@@ -384,30 +356,6 @@ func parseNetDeviceChangeEvent(rawSample []byte) (*BpfNetdeviceChangeEventT, err
 		return nil, fmt.Errorf("parse event: %w", err)
 	}
 	return &event, nil
-}
-
-func (b *BPF) PullMountEventEvents(ctx context.Context, chanSize int) (<-chan BpfMountEventT, error) {
-	pageSize := os.Getpagesize()
-	log.Infof("pagesize is %d", pageSize)
-	perCPUBuffer := pageSize * 1
-	eventSize := int(unsafe.Sizeof(BpfMountEventT{}))
-	if eventSize >= perCPUBuffer {
-		perCPUBuffer = perCPUBuffer * (1 + (eventSize / perCPUBuffer))
-	}
-	log.Infof("use %d as perCPUBuffer", perCPUBuffer)
-
-	reader, err := perf.NewReader(b.objs.PtcpdumpMountEvents, perCPUBuffer)
-	if err != nil {
-		return nil, fmt.Errorf(": %w", err)
-	}
-	ch := make(chan BpfMountEventT, chanSize)
-	go func() {
-		defer close(ch)
-		defer reader.Close()
-		b.handleMountEvents(ctx, reader, ch)
-	}()
-
-	return ch, nil
 }
 
 func (b *BPF) handleMountEvents(ctx context.Context, reader *perf.Reader, ch chan<- BpfMountEventT) {
@@ -432,6 +380,10 @@ func (b *BPF) handleMountEvents(ctx context.Context, reader *perf.Reader, ch cha
 		}
 		event, err := parseMountEvent(record.RawSample)
 		if err != nil {
+			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+				log.Infof("got EOF error: %s", err)
+				continue
+			}
 			log.Errorf("parse mount event failed: %s", err)
 		} else {
 			ch <- *event
@@ -528,6 +480,10 @@ func (b *BPF) handleExitEvents(ctx context.Context, reader *EventReader, ch chan
 		}
 		event, err := parseExitEvent(record.RawSample)
 		if err != nil {
+			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+				log.Infof("got EOF error: %s", err)
+				continue
+			}
 			log.Errorf("parse exit event failed: %s", err)
 		} else {
 			ch <- *event

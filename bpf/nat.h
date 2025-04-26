@@ -14,6 +14,9 @@ struct nat_flow_t {
     u16 dport;
 };
 
+
+#ifdef SUPPORT_NAT
+
 struct {
     __uint(type, BPF_MAP_TYPE_LRU_HASH);
     __uint(max_entries, 65536);
@@ -110,6 +113,8 @@ int BPF_PROG(ptcpdump_fentry__nf_nat_manip_pkt, void *_, struct nf_conn *ct) {
     return 0;
 }
 #endif
+
+#endif /* SUPPORT_NAT */
 
 static __always_inline void clone_flow(struct nat_flow_t *orig, struct nat_flow_t *new_flow) {
     new_flow->saddr[0] = orig->saddr[0];

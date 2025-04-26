@@ -292,19 +292,8 @@ func (b *BPF) AttachTracepoints() error {
 		}
 	}
 
-	if b.opts.hookMount {
-		log.Info("attaching tracepoint/syscalls/sys_enter_mount")
-		lk, err := link.Tracepoint("syscalls", "sys_enter_mount", b.objs.PtcpdumpTracepointSyscallsSysEnterMount, &link.TracepointOptions{})
-		if err != nil {
-			return fmt.Errorf("attach tracepoint/syscalls/sys_enter_mount: %w", err)
-		}
-		b.links = append(b.links, lk)
-		log.Info("attaching tracepoint/syscalls/sys_exit_mount")
-		lk, err = link.Tracepoint("syscalls", "sys_exit_mount", b.objs.PtcpdumpTracepointSyscallsSysExitMount, &link.TracepointOptions{})
-		if err != nil {
-			return fmt.Errorf("attach tracepoint/syscalls/sys_exit_mount: %w", err)
-		}
-		b.links = append(b.links, lk)
+	if err := b.attachNetNsHooks(); err != nil {
+		return fmt.Errorf(": %w", err)
 	}
 
 	return nil

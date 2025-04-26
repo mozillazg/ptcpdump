@@ -56,4 +56,13 @@ static __always_inline bool ringbuf_available() {
 }
 #endif
 
+#if !defined(bpf_target_arm)
+#define SUPPORT_SCTP
+#define SUPPORT_NAT
+#define SUPPORT_CGROUP
+#define ENABLE_NET_DEV_W
+#else
+#define LOW_MEMORY
+#endif
+
 #endif /* __PTCPDUMP_COMPAT_H__ */

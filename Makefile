@@ -30,7 +30,7 @@ COVERAGE_ARGS ?=
 
 CARCH ?= $(shell uname -m)
 LIBPCAP_ARCH = $(CARCH)-unknown-linux-gnu
-LIBPCAP_CC ?= gcc
+CC ?= gcc
 
 IMAGE_DEV ?= quay.io/ptcpdump/develop:latest
 IMAGE_BIN ?= quay.io/ptcpdump/ptcpdump:latest
@@ -41,7 +41,7 @@ libpcap: $(LIBPCAP_OBJ)
 $(LIBPCAP_OBJ): $(LIBPCAP_SRC)/pcap.h $(wildcard $(LIBPCAP_SRC)/*.[ch]) | $(LIBPCAP_DIST_DIR)
 	cd $(LIBPCAP_SRC) && \
 	  sh autogen.sh && \
-	  CC=$(LIBPCAP_CC) ./configure --disable-shared --disable-usb --disable-netmap --disable-bluetooth --disable-dbus --without-libnl \
+	  CC=$(CC) ./configure --disable-shared --disable-usb --disable-netmap --disable-bluetooth --disable-dbus --without-libnl \
 	  	--disable-rdma --host=$(LIBPCAP_ARCH) && \
 	  $(MAKE) && \
 	  $(MAKE) install prefix=$(LIBPCAP_DIST_DIR)
@@ -62,6 +62,8 @@ $(OUTPUT):
 build: libpcap
 	CGO_CFLAGS=$(CGO_CFLAGS_STATIC) \
 	CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) \
+	GOARCH=$(GOARCH) \
+	CC=$(CC) \
 	CGO_ENABLED=1 go build -tags static -ldflags "$(LDFLAGS)" $(COVERAGE_FLAG)
 
 
@@ -82,6 +84,7 @@ generate: build-bpf
 build-bpf:
 	TARGET=amd64 go generate ./...
 	TARGET=arm64 go generate ./...
+	TARGET=arm go generate ./...
 
 
 .PHONY: build-bpf-via-docker

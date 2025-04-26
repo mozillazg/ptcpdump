@@ -91,7 +91,11 @@ struct {
 
 struct {
     __uint(type, BPF_MAP_TYPE_RINGBUF);
+#ifdef LOW_MEMORY
+    __uint(max_entries, 1 << 12);
+#else
     __uint(max_entries, 1 << 24);
+#endif
 } ptcpdump_ptcpdump_exec_events_ringbuf SEC(".maps");
 
 struct {
@@ -115,7 +119,11 @@ struct {
 
 struct {
     __uint(type, BPF_MAP_TYPE_RINGBUF);
-    __uint(max_entries, 1 << 17);
+#ifdef LOW_MEMORY
+    __uint(max_entries, 1 << 10);
+#else
+    __uint(max_entries, 1 << 13);
+#endif
 } ptcpdump_exit_events_ringbuf SEC(".maps");
 
 const struct exec_event_t *unused2 __attribute__((unused));
@@ -286,11 +294,19 @@ static __always_inline void fill_process_meta(struct task_struct *task, struct p
     BPF_CORE_READ_INTO(&meta->ppid, task, real_parent, tgid);
     BPF_CORE_READ_INTO(&meta->uid, task, cred, uid.val);
 
-    const char *cname = BPF_CORE_READ(task, cgroups, subsys[0], cgroup, kn, name);
-    int size = bpf_core_read_str(&meta->cgroup_name, sizeof(meta->cgroup_name), cname);
-    if (size < MIN_CGROUP_NAME_LEN) {
+    #ifdef SUPPORT_CGROUP
+    if (bpf_core_field_exists(task->cgroups)) {
+        const char *cname = BPF_CORE_READ(task, cgroups, subsys[0], cgroup, kn, name);
+        int size = bpf_core_read_str(&meta->cgroup_name, sizeof(meta->cgroup_name), cname);
+        if (size < MIN_CGROUP_NAME_LEN) {
+            __builtin_memset(&meta->cgroup_name, 0, sizeof(meta->cgroup_name));
+        }
+    } else {
         __builtin_memset(&meta->cgroup_name, 0, sizeof(meta->cgroup_name));
     }
+    #else
+    __builtin_memset(&meta->cgroup_name, 0, sizeof(meta->cgroup_name));
+    #endif
 }
 
 static __always_inline void fill_process_meta_with_thread(struct task_struct *task, struct process_meta_t *meta) {
