@@ -120,7 +120,7 @@ struct {
 struct {
     __uint(type, BPF_MAP_TYPE_RINGBUF);
 #ifdef LOW_MEMORY
-    __uint(max_entries, 1 << 10);
+    __uint(max_entries, 1 << 12);
 #else
     __uint(max_entries, 1 << 13);
 #endif

@@ -83,7 +83,7 @@ func (b *BPF) handlePacketEvents(ctx context.Context, reader *EventReader, ch ch
 				return
 			}
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
-				log.Infof("got EOF error: %s", err)
+				log.Debugf("got EOF error: %s", err)
 				continue
 			}
 			log.Errorf("read packet event failed: %s", err)
@@ -92,7 +92,7 @@ func (b *BPF) handlePacketEvents(ctx context.Context, reader *EventReader, ch ch
 		event, err := parsePacketEvent(record.RawSample)
 		if err != nil {
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
-				log.Infof("got EOF error: %s", err)
+				log.Debugf("got EOF error: %s", err)
 				continue
 			}
 			log.Errorf("parse packet event failed: %s", err)
@@ -166,7 +166,7 @@ func (b *BPF) handleExecEvents(ctx context.Context, reader *EventReader, ch chan
 				return
 			}
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
-				log.Infof("got EOF error: %s", err)
+				log.Debugf("got EOF error: %s", err)
 				continue
 			}
 			log.Errorf("read exec event failed: %s", err)
@@ -175,7 +175,7 @@ func (b *BPF) handleExecEvents(ctx context.Context, reader *EventReader, ch chan
 		event, err := parseExecEvent(record.RawSample)
 		if err != nil {
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
-				log.Infof("got EOF error: %s", err)
+				log.Debugf("got EOF error: %s", err)
 				continue
 			}
 			log.Errorf("parse exec event failed: %s", err)
@@ -240,7 +240,7 @@ func (b *BPF) handleGoKeyLogEvents(ctx context.Context, reader *EventReader, ch 
 				return
 			}
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
-				log.Infof("got EOF error: %s", err)
+				log.Debugf("got EOF error: %s", err)
 				continue
 			}
 			log.Errorf("read go tls keylog event failed: %s", err)
@@ -249,7 +249,7 @@ func (b *BPF) handleGoKeyLogEvents(ctx context.Context, reader *EventReader, ch 
 		event, err := parseGoKeyLogEvent(record.RawSample)
 		if err != nil {
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
-				log.Infof("got EOF error: %s", err)
+				log.Debugf("got EOF error: %s", err)
 				continue
 			}
 			log.Errorf("parse go tls keylog event failed: %s", err)
@@ -276,7 +276,7 @@ func (b *BPF) handleNewNetDeviceEvents(ctx context.Context, reader *perf.Reader,
 				return
 			}
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
-				log.Infof("got EOF error: %s", err)
+				log.Debugf("got EOF error: %s", err)
 				continue
 			}
 			log.Errorf("read new net device event failed: %s", err)
@@ -285,7 +285,7 @@ func (b *BPF) handleNewNetDeviceEvents(ctx context.Context, reader *perf.Reader,
 		event, err := parseNewNetDeviceEvent(record.RawSample)
 		if err != nil {
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
-				log.Infof("got EOF error: %s", err)
+				log.Debugf("got EOF error: %s", err)
 				continue
 			}
 			log.Errorf("parse new net device event failed: %s", err)
@@ -323,7 +323,7 @@ func (b *BPF) handleNetDeviceChangeEvents(ctx context.Context, reader *perf.Read
 				return
 			}
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
-				log.Infof("got EOF error: %s", err)
+				log.Debugf("got EOF error: %s", err)
 				continue
 			}
 			log.Errorf("read net device change event failed: %s", err)
@@ -332,7 +332,7 @@ func (b *BPF) handleNetDeviceChangeEvents(ctx context.Context, reader *perf.Read
 		event, err := parseNetDeviceChangeEvent(record.RawSample)
 		if err != nil {
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
-				log.Infof("got EOF error: %s", err)
+				log.Debugf("got EOF error: %s", err)
 				continue
 			}
 			log.Errorf("parse net device change event failed: %s", err)
@@ -372,7 +372,7 @@ func (b *BPF) handleMountEvents(ctx context.Context, reader *perf.Reader, ch cha
 				return
 			}
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
-				log.Infof("got EOF error: %s", err)
+				log.Debugf("got EOF error: %s", err)
 				continue
 			}
 			log.Errorf("read mount event failed: %s", err)
@@ -381,7 +381,7 @@ func (b *BPF) handleMountEvents(ctx context.Context, reader *perf.Reader, ch cha
 		event, err := parseMountEvent(record.RawSample)
 		if err != nil {
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
-				log.Infof("got EOF error: %s", err)
+				log.Debugf("got EOF error: %s", err)
 				continue
 			}
 			log.Errorf("parse mount event failed: %s", err)
@@ -472,7 +472,7 @@ func (b *BPF) handleExitEvents(ctx context.Context, reader *EventReader, ch chan
 				return
 			}
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
-				log.Infof("got EOF error: %s", err)
+				log.Debugf("got EOF error: %s", err)
 				continue
 			}
 			log.Errorf("read exit event failed: %s", err)
@@ -481,7 +481,7 @@ func (b *BPF) handleExitEvents(ctx context.Context, reader *EventReader, ch chan
 		event, err := parseExitEvent(record.RawSample)
 		if err != nil {
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
-				log.Infof("got EOF error: %s", err)
+				log.Debugf("got EOF error: %s", err)
 				continue
 			}
 			log.Errorf("parse exit event failed: %s", err)

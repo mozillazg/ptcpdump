@@ -62,6 +62,7 @@ static __always_inline bool ringbuf_available() {
 #define SUPPORT_CGROUP
 #define ENABLE_NET_DEV_W
 #else
+#define SUPPORT_CGROUP
 #define LOW_MEMORY
 #endif
 
