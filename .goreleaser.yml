@@ -1,9 +1,32 @@
 before:
   hooks:
-    - sudo apt-get install -y gcc flex bison make autoconf libelf-dev gcc-aarch64-linux-gnu libc6-dev-arm64-cross
+    - sudo apt-get install -y gcc flex bison make autoconf libelf-dev gcc-aarch64-linux-gnu libc6-dev-arm64-cross gcc-arm-linux-gnueabi libc6-dev-armhf-cross
     - git submodule update --init --recursive
 
 builds:
+  - id: ptcpdump-arm
+    binary: ptcpdump
+    env:
+      - CGO_ENABLED=1
+      - CC=arm-linux-gnueabi-gcc
+    flags:
+      - -tags=static
+    ldflags:
+      - -linkmode 'external'
+      - -extldflags "-static"
+      - -X github.com/mozillazg/ptcpdump/internal.Version={{.Version}}
+      - -X github.com/mozillazg/ptcpdump/internal.GitCommit={{.Commit}}
+    goos:
+      - linux
+    goarch:
+      - arm
+    hooks:
+      pre:
+        - bash -c 'sudo make clean || true'
+        - bash -c 'cd lib/libpcap && sudo make uninstall prefix=/usr/local || true'
+        - sudo make libpcap LIBPCAP_DIST_DIR=/usr/local CARCH=arm CC=arm-linux-gnueabi-gcc
+        - sudo make libpcap LIBPCAP_DIST_DIR=/usr/arm-linux-gnueabi CARCH=arm CC=arm-linux-gnueabi-gcc
+
   - id: ptcpdump-arm64
     binary: ptcpdump
     env:
@@ -51,6 +74,7 @@ builds:
 
 archives:
   - builds:
+      - ptcpdump-arm
       - ptcpdump-arm64
       - ptcpdump-amd64
 

@@ -117,6 +117,9 @@ int ptcpdump_cgroup__sock_create(void *ctx) {
         }
     }
     // debug_log("sock_create\n");
+    if (is_kernel_thread(task)) {
+        return 1;
+    }
 
     struct process_meta_t meta = {0};
     fill_process_meta(task, &meta);
@@ -157,6 +160,9 @@ static __always_inline int handle_security_sk_classify_flow(struct sock *sk) {
         }
     }
     // debug_log("flow match\n");
+    if (is_kernel_thread(task)) {
+        return 0;
+    }
 
     fill_sk_meta(sk, &key);
     fill_process_meta(task, &value);
@@ -199,6 +205,9 @@ static __always_inline void handle_sendmsg(struct sock *sk) {
         }
     }
     // debug_log("sendmsg match\n");
+    if (is_kernel_thread(task)) {
+        return;
+    }
 
     fill_sk_meta(sk, &key);
     if (bpf_map_lookup_elem(&ptcpdump_flow_pid_map, &key)) {

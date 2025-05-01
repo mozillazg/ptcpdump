@@ -46,6 +46,9 @@ func (b *BPF) PullPacketEvents(ctx context.Context, chanSize int, maxPacketSize 
 		pageSize := os.Getpagesize()
 		log.Infof("pagesize is %d", pageSize)
 		perCPUBuffer := pageSize * 64
+		if onArm32 {
+			perCPUBuffer = perCPUBuffer / 2
+		}
 		eventSize := int(unsafe.Sizeof(BpfPacketEventT{})) + maxPacketSize
 		if eventSize >= perCPUBuffer {
 			perCPUBuffer = perCPUBuffer * (1 + (eventSize / perCPUBuffer))
@@ -130,6 +133,9 @@ func (b *BPF) PullExecEvents(ctx context.Context, chanSize int) (<-chan BpfExecE
 		pageSize := os.Getpagesize()
 		log.Infof("pagesize is %d", pageSize)
 		perCPUBuffer := pageSize * 64
+		if onArm32 {
+			perCPUBuffer = perCPUBuffer / 2
+		}
 		eventSize := int(unsafe.Sizeof(BpfExecEventT{}))
 		if eventSize >= perCPUBuffer {
 			perCPUBuffer = perCPUBuffer * (1 + (eventSize / perCPUBuffer))
@@ -203,6 +209,9 @@ func (b *BPF) PullGoKeyLogEvents(ctx context.Context, chanSize int) (<-chan BpfG
 		pageSize := os.Getpagesize()
 		log.Infof("pagesize is %d", pageSize)
 		perCPUBuffer := pageSize * 4
+		if onArm32 {
+			perCPUBuffer = perCPUBuffer / 2
+		}
 		eventSize := int(unsafe.Sizeof(BpfGoKeylogEventT{}))
 		if eventSize >= perCPUBuffer {
 			perCPUBuffer = perCPUBuffer * (1 + (eventSize / perCPUBuffer))
@@ -435,6 +444,9 @@ func (b *BPF) PullExitEvents(ctx context.Context, chanSize int) (<-chan BpfExitE
 		pageSize := os.Getpagesize()
 		log.Infof("pagesize is %d", pageSize)
 		perCPUBuffer := pageSize * 4
+		if onArm32 {
+			perCPUBuffer = perCPUBuffer / 2
+		}
 		eventSize := int(unsafe.Sizeof(BpfExitEventT{}))
 		if eventSize >= perCPUBuffer {
 			perCPUBuffer = perCPUBuffer * (1 + (eventSize / perCPUBuffer))
