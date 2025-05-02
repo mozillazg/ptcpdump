@@ -140,15 +140,15 @@ const (
 )
 
 const (
-	NgEpbFlagLinkLayerDependentErrorMask            NgEpbFlag = 0xFFFF0000 // bits 16-31
-	NgEpbFlagLinkLayerDependentErrorSymbol          NgEpbFlag = 1 << 31    // Bit 31 = symbol error
-	NgEpbFlagLinkLayerDependentErrorPreamble        NgEpbFlag = 1 << 30    // Bit 30 = preamble error
-	NgEpbFlagLinkLayerDependentErrorStartFrameDelim NgEpbFlag = 1 << 29    // Bit 29 = Start Frame Delimiter error
-	NgEpbFlagLinkLayerDependentErrorUnalignedFrame  NgEpbFlag = 1 << 28    // Bit 28 = unaligned frame error
-	NgEpbFlagLinkLayerDependentErrorInterFrameGap   NgEpbFlag = 1 << 27    // Bit 27 = wrong Inter Frame Gap error
-	NgEpbFlagLinkLayerDependentErrorPacketTooShort  NgEpbFlag = 1 << 26    // Bit 26 = packet too short error
-	NgEpbFlagLinkLayerDependentErrorPacketTooLong   NgEpbFlag = 1 << 25    // Bit 25 = packet too long error
-	NgEpbFlagLinkLayerDependentErrorCRC             NgEpbFlag = 1 << 24    // Bit 24 = CRC error
+	NgEpbFlagLinkLayerDependentErrorMask                NgEpbFlag = 0xFFFF0000 // bits 16-31
+	NgEpbFlagLinkLayerDependentErrorSymbol              NgEpbFlag = 1 << 31    // Bit 31 = symbol error
+	NgEpbFlagLinkLayerDependentErrorPreamble            NgEpbFlag = 1 << 30    // Bit 30 = preamble error
+	NgEpbFlagLinkLayerDependentErrorStartFrameDelimiter NgEpbFlag = 1 << 29    // Bit 29 = Start Frame Delimiter error
+	NgEpbFlagLinkLayerDependentErrorUnalignedFrame      NgEpbFlag = 1 << 28    // Bit 28 = unaligned frame error
+	NgEpbFlagLinkLayerDependentErrorInterFrameGap       NgEpbFlag = 1 << 27    // Bit 27 = wrong Inter Frame Gap error
+	NgEpbFlagLinkLayerDependentErrorPacketTooShort      NgEpbFlag = 1 << 26    // Bit 26 = packet too short error
+	NgEpbFlagLinkLayerDependentErrorPacketTooLong       NgEpbFlag = 1 << 25    // Bit 25 = packet too long error
+	NgEpbFlagLinkLayerDependentErrorCRC                 NgEpbFlag = 1 << 24    // Bit 24 = CRC error
 )
 
 type NgEpbFlags struct {
@@ -156,6 +156,10 @@ type NgEpbFlags struct {
 	Reception    NgEpbFlag
 	FCSLen       NgEpbFlag
 	LinkLayerErr NgEpbFlag
+}
+
+func NewNgEpbFlagFCSLength(n uint8) NgEpbFlag {
+	return NgEpbFlag(n<<5) & NgEpbFlagFCSLengthMask
 }
 
 func (f *NgEpbFlags) ToUint32() uint32 {
@@ -282,8 +286,6 @@ var ngEmptyStatistics = NgInterfaceStatistics{
 
 // NgInterface holds all the information of a pcapng interface.
 type NgInterface struct {
-	// Index is the index of the interface.
-	Index int
 	// Name is the name of the interface. This value might be empty if this option is missing.
 	Name string
 	// Comment can be an arbitrary comment. This value might be empty if this option is missing.

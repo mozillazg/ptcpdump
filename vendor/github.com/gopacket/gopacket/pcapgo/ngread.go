@@ -576,9 +576,11 @@ OPTIONS:
 			flags.FromUint32(binary.LittleEndian.Uint32(r.currentOption.value))
 			opts.Flags = &flags
 		case ngOptionCodeEpbHash:
+			v := make([]byte, len(r.currentOption.value)-1)
+			copy(v, r.currentOption.value[1:])
 			opts.Hashes = append(opts.Hashes, NgEpbHash{
 				Algorithm: NgEpbHashAlgorithm(r.currentOption.value[0]),
-				Hash:      r.currentOption.value[1:],
+				Hash:      v,
 			})
 		case ngOptionCodeEpbDropCount:
 			v := binary.LittleEndian.Uint64(r.currentOption.value)
@@ -590,9 +592,11 @@ OPTIONS:
 			v := binary.LittleEndian.Uint32(r.currentOption.value)
 			opts.Queue = &v
 		case ngOptionCodeEpbVerdict:
+			v := make([]byte, len(r.currentOption.value)-1)
+			copy(v, r.currentOption.value[1:])
 			opts.Verdicts = append(opts.Verdicts, NgEpbVerdict{
 				Type: NgEpbVerdictType(r.currentOption.value[0]),
-				Data: r.currentOption.value[1:],
+				Data: v,
 			})
 		}
 	}

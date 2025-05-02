@@ -117,7 +117,7 @@ int pcap_tstamp_type_name_to_val(const char* t) {
 		#define gopacket_time_secs_t __time_t
 		#define gopacket_time_usecs_t __suseconds_t
 	#else
-		#ifdef __time64_t
+		#if defined(__USE_TIME64_REDIRECTS) || (__TIMESIZE == 32 && __USE_TIME_BITS64)
 			#define gopacket_time_secs_t __time64_t
 			#define gopacket_time_usecs_t __suseconds64_t
 		#else
