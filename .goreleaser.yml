@@ -4,9 +4,9 @@ before:
     - |
       sudo apt update && \
       sudo apt-get install -y gcc flex bison make autoconf libelf-dev \
-        gcc-arm-linux-gnueabi libc6-dev-armel-cross binutils-arm-linux-gnueabi \
-        gcc-arm-linux-gnueabihf libc6-dev-armhf-cross binutils-arm-linux-gnueabihf \
-        gcc-aarch64-linux-gnu libc6-dev-arm64-cross binutils-aarch64-linux-gnu
+      gcc-aarch64-linux-gnu libc6-dev-arm64-cross \
+      gcc-arm-linux-gnueabi libc6-dev-armel-cross \
+      gcc-arm-linux-gnueabihf libc6-dev-armhf-cross
     - git submodule update --init --recursive
 
 builds:
