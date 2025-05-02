@@ -169,14 +169,18 @@ type BpfProgramSpecs struct {
 	PtcpdumpCgroupSockRelease                    *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup__sock_release"`
 	PtcpdumpCgroupSkbEgress                      *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup_skb__egress"`
 	PtcpdumpCgroupSkbIngress                     *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup_skb__ingress"`
+	PtcpdumpFentryAcctProcess                    *ebpf.ProgramSpec `ebpf:"ptcpdump_fentry__acct_process"`
+	PtcpdumpFentryDoExit                         *ebpf.ProgramSpec `ebpf:"ptcpdump_fentry__do_exit"`
 	PtcpdumpFentryNfNatManipPkt                  *ebpf.ProgramSpec `ebpf:"ptcpdump_fentry__nf_nat_manip_pkt"`
 	PtcpdumpFentryNfNatPacket                    *ebpf.ProgramSpec `ebpf:"ptcpdump_fentry__nf_nat_packet"`
 	PtcpdumpFentrySecuritySkClassifyFlow         *ebpf.ProgramSpec `ebpf:"ptcpdump_fentry__security_sk_classify_flow"`
 	PtcpdumpFentryTcpSendmsg                     *ebpf.ProgramSpec `ebpf:"ptcpdump_fentry__tcp_sendmsg"`
 	PtcpdumpFentryUdpSendSkb                     *ebpf.ProgramSpec `ebpf:"ptcpdump_fentry__udp_send_skb"`
 	PtcpdumpFentryUdpSendmsg                     *ebpf.ProgramSpec `ebpf:"ptcpdump_fentry__udp_sendmsg"`
+	PtcpdumpKprobeAcctProcess                    *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__acct_process"`
 	PtcpdumpKprobeDevChangeNetNamespace          *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__dev_change_net_namespace"`
 	PtcpdumpKprobeDevChangeNetNamespaceLegacy    *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__dev_change_net_namespace_legacy"`
+	PtcpdumpKprobeDoExit                         *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__do_exit"`
 	PtcpdumpKprobeNfNatManipPkt                  *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__nf_nat_manip_pkt"`
 	PtcpdumpKprobeNfNatPacket                    *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__nf_nat_packet"`
 	PtcpdumpKprobeRegisterNetdevice              *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__register_netdevice"`
@@ -199,6 +203,7 @@ type BpfProgramSpecs struct {
 	PtcpdumpTpBtfSchedProcessExec                *ebpf.ProgramSpec `ebpf:"ptcpdump_tp_btf__sched_process_exec"`
 	PtcpdumpTpBtfSchedProcessExit                *ebpf.ProgramSpec `ebpf:"ptcpdump_tp_btf__sched_process_exit"`
 	PtcpdumpTpBtfSchedProcessFork                *ebpf.ProgramSpec `ebpf:"ptcpdump_tp_btf__sched_process_fork"`
+	PtcpdumpTracepointSchedProcessExec           *ebpf.ProgramSpec `ebpf:"ptcpdump_tracepoint__sched_process_exec"`
 	PtcpdumpTracepointSyscallsSysEnterMount      *ebpf.ProgramSpec `ebpf:"ptcpdump_tracepoint__syscalls__sys_enter_mount"`
 	PtcpdumpTracepointSyscallsSysExitMount       *ebpf.ProgramSpec `ebpf:"ptcpdump_tracepoint__syscalls__sys_exit_mount"`
 	PtcpdumpUprobeGoBuiltinTlsWriteKeyLog        *ebpf.ProgramSpec `ebpf:"ptcpdump_uprobe__go_builtin__tls__write_key_log"`
@@ -377,14 +382,18 @@ type BpfPrograms struct {
 	PtcpdumpCgroupSockRelease                    *ebpf.Program `ebpf:"ptcpdump_cgroup__sock_release"`
 	PtcpdumpCgroupSkbEgress                      *ebpf.Program `ebpf:"ptcpdump_cgroup_skb__egress"`
 	PtcpdumpCgroupSkbIngress                     *ebpf.Program `ebpf:"ptcpdump_cgroup_skb__ingress"`
+	PtcpdumpFentryAcctProcess                    *ebpf.Program `ebpf:"ptcpdump_fentry__acct_process"`
+	PtcpdumpFentryDoExit                         *ebpf.Program `ebpf:"ptcpdump_fentry__do_exit"`
 	PtcpdumpFentryNfNatManipPkt                  *ebpf.Program `ebpf:"ptcpdump_fentry__nf_nat_manip_pkt"`
 	PtcpdumpFentryNfNatPacket                    *ebpf.Program `ebpf:"ptcpdump_fentry__nf_nat_packet"`
 	PtcpdumpFentrySecuritySkClassifyFlow         *ebpf.Program `ebpf:"ptcpdump_fentry__security_sk_classify_flow"`
 	PtcpdumpFentryTcpSendmsg                     *ebpf.Program `ebpf:"ptcpdump_fentry__tcp_sendmsg"`
 	PtcpdumpFentryUdpSendSkb                     *ebpf.Program `ebpf:"ptcpdump_fentry__udp_send_skb"`
 	PtcpdumpFentryUdpSendmsg                     *ebpf.Program `ebpf:"ptcpdump_fentry__udp_sendmsg"`
+	PtcpdumpKprobeAcctProcess                    *ebpf.Program `ebpf:"ptcpdump_kprobe__acct_process"`
 	PtcpdumpKprobeDevChangeNetNamespace          *ebpf.Program `ebpf:"ptcpdump_kprobe__dev_change_net_namespace"`
 	PtcpdumpKprobeDevChangeNetNamespaceLegacy    *ebpf.Program `ebpf:"ptcpdump_kprobe__dev_change_net_namespace_legacy"`
+	PtcpdumpKprobeDoExit                         *ebpf.Program `ebpf:"ptcpdump_kprobe__do_exit"`
 	PtcpdumpKprobeNfNatManipPkt                  *ebpf.Program `ebpf:"ptcpdump_kprobe__nf_nat_manip_pkt"`
 	PtcpdumpKprobeNfNatPacket                    *ebpf.Program `ebpf:"ptcpdump_kprobe__nf_nat_packet"`
 	PtcpdumpKprobeRegisterNetdevice              *ebpf.Program `ebpf:"ptcpdump_kprobe__register_netdevice"`
@@ -407,6 +416,7 @@ type BpfPrograms struct {
 	PtcpdumpTpBtfSchedProcessExec                *ebpf.Program `ebpf:"ptcpdump_tp_btf__sched_process_exec"`
 	PtcpdumpTpBtfSchedProcessExit                *ebpf.Program `ebpf:"ptcpdump_tp_btf__sched_process_exit"`
 	PtcpdumpTpBtfSchedProcessFork                *ebpf.Program `ebpf:"ptcpdump_tp_btf__sched_process_fork"`
+	PtcpdumpTracepointSchedProcessExec           *ebpf.Program `ebpf:"ptcpdump_tracepoint__sched_process_exec"`
 	PtcpdumpTracepointSyscallsSysEnterMount      *ebpf.Program `ebpf:"ptcpdump_tracepoint__syscalls__sys_enter_mount"`
 	PtcpdumpTracepointSyscallsSysExitMount       *ebpf.Program `ebpf:"ptcpdump_tracepoint__syscalls__sys_exit_mount"`
 	PtcpdumpUprobeGoBuiltinTlsWriteKeyLog        *ebpf.Program `ebpf:"ptcpdump_uprobe__go_builtin__tls__write_key_log"`
@@ -419,14 +429,18 @@ func (p *BpfPrograms) Close() error {
 		p.PtcpdumpCgroupSockRelease,
 		p.PtcpdumpCgroupSkbEgress,
 		p.PtcpdumpCgroupSkbIngress,
+		p.PtcpdumpFentryAcctProcess,
+		p.PtcpdumpFentryDoExit,
 		p.PtcpdumpFentryNfNatManipPkt,
 		p.PtcpdumpFentryNfNatPacket,
 		p.PtcpdumpFentrySecuritySkClassifyFlow,
 		p.PtcpdumpFentryTcpSendmsg,
 		p.PtcpdumpFentryUdpSendSkb,
 		p.PtcpdumpFentryUdpSendmsg,
+		p.PtcpdumpKprobeAcctProcess,
 		p.PtcpdumpKprobeDevChangeNetNamespace,
 		p.PtcpdumpKprobeDevChangeNetNamespaceLegacy,
+		p.PtcpdumpKprobeDoExit,
 		p.PtcpdumpKprobeNfNatManipPkt,
 		p.PtcpdumpKprobeNfNatPacket,
 		p.PtcpdumpKprobeRegisterNetdevice,
@@ -449,6 +463,7 @@ func (p *BpfPrograms) Close() error {
 		p.PtcpdumpTpBtfSchedProcessExec,
 		p.PtcpdumpTpBtfSchedProcessExit,
 		p.PtcpdumpTpBtfSchedProcessFork,
+		p.PtcpdumpTracepointSchedProcessExec,
 		p.PtcpdumpTracepointSyscallsSysEnterMount,
 		p.PtcpdumpTracepointSyscallsSysExitMount,
 		p.PtcpdumpUprobeGoBuiltinTlsWriteKeyLog,

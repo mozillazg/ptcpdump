@@ -54,8 +54,10 @@ type bpf_legacySpecs struct {
 //
 // It can be passed ebpf.CollectionSpec.Assign.
 type bpf_legacyProgramSpecs struct {
+	PtcpdumpKprobeAcctProcess                    *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__acct_process"`
 	PtcpdumpKprobeDevChangeNetNamespace          *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__dev_change_net_namespace"`
 	PtcpdumpKprobeDevChangeNetNamespaceLegacy    *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__dev_change_net_namespace_legacy"`
+	PtcpdumpKprobeDoExit                         *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__do_exit"`
 	PtcpdumpKprobeNfNatManipPkt                  *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__nf_nat_manip_pkt"`
 	PtcpdumpKprobeNfNatPacket                    *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__nf_nat_packet"`
 	PtcpdumpKprobeRegisterNetdevice              *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__register_netdevice"`
@@ -73,6 +75,7 @@ type bpf_legacyProgramSpecs struct {
 	PtcpdumpRawTracepointSchedProcessFork        *ebpf.ProgramSpec `ebpf:"ptcpdump_raw_tracepoint__sched_process_fork"`
 	PtcpdumpTcEgress                             *ebpf.ProgramSpec `ebpf:"ptcpdump_tc_egress"`
 	PtcpdumpTcIngress                            *ebpf.ProgramSpec `ebpf:"ptcpdump_tc_ingress"`
+	PtcpdumpTracepointSchedProcessExec           *ebpf.ProgramSpec `ebpf:"ptcpdump_tracepoint__sched_process_exec"`
 	PtcpdumpTracepointSyscallsSysEnterMount      *ebpf.ProgramSpec `ebpf:"ptcpdump_tracepoint__syscalls__sys_enter_mount"`
 	PtcpdumpTracepointSyscallsSysExitMount       *ebpf.ProgramSpec `ebpf:"ptcpdump_tracepoint__syscalls__sys_exit_mount"`
 	PtcpdumpUprobeGoBuiltinTlsWriteKeyLog        *ebpf.ProgramSpec `ebpf:"ptcpdump_uprobe__go_builtin__tls__write_key_log"`
@@ -245,8 +248,10 @@ type bpf_legacyVariables struct {
 //
 // It can be passed to loadBpf_legacyObjects or ebpf.CollectionSpec.LoadAndAssign.
 type bpf_legacyPrograms struct {
+	PtcpdumpKprobeAcctProcess                    *ebpf.Program `ebpf:"ptcpdump_kprobe__acct_process"`
 	PtcpdumpKprobeDevChangeNetNamespace          *ebpf.Program `ebpf:"ptcpdump_kprobe__dev_change_net_namespace"`
 	PtcpdumpKprobeDevChangeNetNamespaceLegacy    *ebpf.Program `ebpf:"ptcpdump_kprobe__dev_change_net_namespace_legacy"`
+	PtcpdumpKprobeDoExit                         *ebpf.Program `ebpf:"ptcpdump_kprobe__do_exit"`
 	PtcpdumpKprobeNfNatManipPkt                  *ebpf.Program `ebpf:"ptcpdump_kprobe__nf_nat_manip_pkt"`
 	PtcpdumpKprobeNfNatPacket                    *ebpf.Program `ebpf:"ptcpdump_kprobe__nf_nat_packet"`
 	PtcpdumpKprobeRegisterNetdevice              *ebpf.Program `ebpf:"ptcpdump_kprobe__register_netdevice"`
@@ -264,6 +269,7 @@ type bpf_legacyPrograms struct {
 	PtcpdumpRawTracepointSchedProcessFork        *ebpf.Program `ebpf:"ptcpdump_raw_tracepoint__sched_process_fork"`
 	PtcpdumpTcEgress                             *ebpf.Program `ebpf:"ptcpdump_tc_egress"`
 	PtcpdumpTcIngress                            *ebpf.Program `ebpf:"ptcpdump_tc_ingress"`
+	PtcpdumpTracepointSchedProcessExec           *ebpf.Program `ebpf:"ptcpdump_tracepoint__sched_process_exec"`
 	PtcpdumpTracepointSyscallsSysEnterMount      *ebpf.Program `ebpf:"ptcpdump_tracepoint__syscalls__sys_enter_mount"`
 	PtcpdumpTracepointSyscallsSysExitMount       *ebpf.Program `ebpf:"ptcpdump_tracepoint__syscalls__sys_exit_mount"`
 	PtcpdumpUprobeGoBuiltinTlsWriteKeyLog        *ebpf.Program `ebpf:"ptcpdump_uprobe__go_builtin__tls__write_key_log"`
@@ -272,8 +278,10 @@ type bpf_legacyPrograms struct {
 
 func (p *bpf_legacyPrograms) Close() error {
 	return _Bpf_legacyClose(
+		p.PtcpdumpKprobeAcctProcess,
 		p.PtcpdumpKprobeDevChangeNetNamespace,
 		p.PtcpdumpKprobeDevChangeNetNamespaceLegacy,
+		p.PtcpdumpKprobeDoExit,
 		p.PtcpdumpKprobeNfNatManipPkt,
 		p.PtcpdumpKprobeNfNatPacket,
 		p.PtcpdumpKprobeRegisterNetdevice,
@@ -291,6 +299,7 @@ func (p *bpf_legacyPrograms) Close() error {
 		p.PtcpdumpRawTracepointSchedProcessFork,
 		p.PtcpdumpTcEgress,
 		p.PtcpdumpTcIngress,
+		p.PtcpdumpTracepointSchedProcessExec,
 		p.PtcpdumpTracepointSyscallsSysEnterMount,
 		p.PtcpdumpTracepointSyscallsSysExitMount,
 		p.PtcpdumpUprobeGoBuiltinTlsWriteKeyLog,

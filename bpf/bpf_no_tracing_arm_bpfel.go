@@ -58,6 +58,8 @@ type bpf_no_tracingProgramSpecs struct {
 	PtcpdumpCgroupSockRelease                *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup__sock_release"`
 	PtcpdumpCgroupSkbEgress                  *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup_skb__egress"`
 	PtcpdumpCgroupSkbIngress                 *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup_skb__ingress"`
+	PtcpdumpKprobeAcctProcess                *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__acct_process"`
+	PtcpdumpKprobeDoExit                     *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__do_exit"`
 	PtcpdumpKprobeSecuritySkClassifyFlow     *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__security_sk_classify_flow"`
 	PtcpdumpKprobeTcpSendmsg                 *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__tcp_sendmsg"`
 	PtcpdumpKprobeUdpSendSkb                 *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__udp_send_skb"`
@@ -67,6 +69,7 @@ type bpf_no_tracingProgramSpecs struct {
 	PtcpdumpRawTracepointSchedProcessFork    *ebpf.ProgramSpec `ebpf:"ptcpdump_raw_tracepoint__sched_process_fork"`
 	PtcpdumpTcEgress                         *ebpf.ProgramSpec `ebpf:"ptcpdump_tc_egress"`
 	PtcpdumpTcIngress                        *ebpf.ProgramSpec `ebpf:"ptcpdump_tc_ingress"`
+	PtcpdumpTracepointSchedProcessExec       *ebpf.ProgramSpec `ebpf:"ptcpdump_tracepoint__sched_process_exec"`
 	PtcpdumpUprobeGoBuiltinTlsWriteKeyLog    *ebpf.ProgramSpec `ebpf:"ptcpdump_uprobe__go_builtin__tls__write_key_log"`
 	PtcpdumpUprobeGoBuiltinTlsWriteKeyLogRet *ebpf.ProgramSpec `ebpf:"ptcpdump_uprobe__go_builtin__tls__write_key_log__ret"`
 }
@@ -215,6 +218,8 @@ type bpf_no_tracingPrograms struct {
 	PtcpdumpCgroupSockRelease                *ebpf.Program `ebpf:"ptcpdump_cgroup__sock_release"`
 	PtcpdumpCgroupSkbEgress                  *ebpf.Program `ebpf:"ptcpdump_cgroup_skb__egress"`
 	PtcpdumpCgroupSkbIngress                 *ebpf.Program `ebpf:"ptcpdump_cgroup_skb__ingress"`
+	PtcpdumpKprobeAcctProcess                *ebpf.Program `ebpf:"ptcpdump_kprobe__acct_process"`
+	PtcpdumpKprobeDoExit                     *ebpf.Program `ebpf:"ptcpdump_kprobe__do_exit"`
 	PtcpdumpKprobeSecuritySkClassifyFlow     *ebpf.Program `ebpf:"ptcpdump_kprobe__security_sk_classify_flow"`
 	PtcpdumpKprobeTcpSendmsg                 *ebpf.Program `ebpf:"ptcpdump_kprobe__tcp_sendmsg"`
 	PtcpdumpKprobeUdpSendSkb                 *ebpf.Program `ebpf:"ptcpdump_kprobe__udp_send_skb"`
@@ -224,6 +229,7 @@ type bpf_no_tracingPrograms struct {
 	PtcpdumpRawTracepointSchedProcessFork    *ebpf.Program `ebpf:"ptcpdump_raw_tracepoint__sched_process_fork"`
 	PtcpdumpTcEgress                         *ebpf.Program `ebpf:"ptcpdump_tc_egress"`
 	PtcpdumpTcIngress                        *ebpf.Program `ebpf:"ptcpdump_tc_ingress"`
+	PtcpdumpTracepointSchedProcessExec       *ebpf.Program `ebpf:"ptcpdump_tracepoint__sched_process_exec"`
 	PtcpdumpUprobeGoBuiltinTlsWriteKeyLog    *ebpf.Program `ebpf:"ptcpdump_uprobe__go_builtin__tls__write_key_log"`
 	PtcpdumpUprobeGoBuiltinTlsWriteKeyLogRet *ebpf.Program `ebpf:"ptcpdump_uprobe__go_builtin__tls__write_key_log__ret"`
 }
@@ -234,6 +240,8 @@ func (p *bpf_no_tracingPrograms) Close() error {
 		p.PtcpdumpCgroupSockRelease,
 		p.PtcpdumpCgroupSkbEgress,
 		p.PtcpdumpCgroupSkbIngress,
+		p.PtcpdumpKprobeAcctProcess,
+		p.PtcpdumpKprobeDoExit,
 		p.PtcpdumpKprobeSecuritySkClassifyFlow,
 		p.PtcpdumpKprobeTcpSendmsg,
 		p.PtcpdumpKprobeUdpSendSkb,
@@ -243,6 +251,7 @@ func (p *bpf_no_tracingPrograms) Close() error {
 		p.PtcpdumpRawTracepointSchedProcessFork,
 		p.PtcpdumpTcEgress,
 		p.PtcpdumpTcIngress,
+		p.PtcpdumpTracepointSchedProcessExec,
 		p.PtcpdumpUprobeGoBuiltinTlsWriteKeyLog,
 		p.PtcpdumpUprobeGoBuiltinTlsWriteKeyLogRet,
 	)

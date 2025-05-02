@@ -169,6 +169,7 @@ func (b *BPF) handleExecEvents(ctx context.Context, reader *EventReader, ch chan
 		record, err := reader.Read()
 		if err != nil {
 			if errors.Is(err, perf.ErrClosed) || errors.Is(err, ringbuf.ErrClosed) {
+				log.Infof("got closed error: %s", err)
 				return
 			}
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {

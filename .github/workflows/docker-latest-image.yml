@@ -39,7 +39,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@f7ce87c1d6bead3e36075b2ce75da1f6cc28aaca # v3.9.0
         with:
-          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          platforms: linux/amd64,linux/arm64
 
       # Login against a Docker registry except on PR
       # https://github.com/docker/login-action
@@ -71,7 +71,7 @@ jobs:
         with:
           context: .
           file: Dockerfile
-          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          platforms: linux/amd64,linux/arm64
           # platforms: linux/amd64
           push: ${{ github.event_name != 'pull_request' }}
           tags: '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG_NAME }}'
@@ -94,7 +94,7 @@ jobs:
         with:
           context: .
           file: Dockerfile
-          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          platforms: linux/amd64,linux/arm64
           # platforms: linux/amd64
           push: ${{ github.event_name != 'pull_request' }}
           tags: '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest'

@@ -1,8 +1,8 @@
 #ifndef __PTCPDUMP_CUSTOM_H__
 #define __PTCPDUMP_CUSTOM_H__
 
-#include "vmlinux.h"
 #include "compat.h"
+#include "vmlinux.h"
 
 #ifdef SUPPORT_NAT
 

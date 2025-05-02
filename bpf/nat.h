@@ -14,7 +14,6 @@ struct nat_flow_t {
     u16 dport;
 };
 
-
 #ifdef SUPPORT_NAT
 
 struct {

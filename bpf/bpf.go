@@ -269,27 +269,8 @@ func (b *BPF) AttachKprobes() error {
 }
 
 func (b *BPF) AttachTracepoints() error {
-	err := b.attachBTFTracepointOrRawTP("sched_process_exec",
-		b.objs.PtcpdumpTpBtfSchedProcessExec, b.objs.PtcpdumpRawTracepointSchedProcessExec,
-	)
-	if err != nil {
+	if err := b.attachProcessHooks(); err != nil {
 		return fmt.Errorf(": %w", err)
-	}
-
-	err = b.attachBTFTracepointOrRawTP("sched_process_exit",
-		b.objs.PtcpdumpTpBtfSchedProcessExit, b.objs.PtcpdumpRawTracepointSchedProcessExit,
-	)
-	if err != nil {
-		return fmt.Errorf(": %w", err)
-	}
-
-	if b.opts.attachForks() {
-		err := b.attachBTFTracepointOrRawTP("sched_process_fork",
-			b.objs.PtcpdumpTpBtfSchedProcessFork, b.objs.PtcpdumpRawTracepointSchedProcessFork,
-		)
-		if err != nil {
-			return fmt.Errorf(": %w", err)
-		}
 	}
 
 	if err := b.attachNetNsHooks(); err != nil {

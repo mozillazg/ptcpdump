@@ -44,7 +44,7 @@ static const u32 u32_zero = 0;
 #define GET_CONFIG()
 #endif
 
-#ifdef LEGACY_KERNEL
+#if defined(LEGACY_KERNEL) || defined(bpf_target_arm)
 static __always_inline bool ringbuf_available() { return false; }
 #else
 
@@ -61,6 +61,7 @@ static __always_inline bool ringbuf_available() {
 #define SUPPORT_NAT
 #define SUPPORT_CGROUP
 #define ENABLE_NET_DEV_W
+#define P_EXIT_CHECK_LIVE
 #else
 #define SUPPORT_CGROUP
 #define LOW_MEMORY
