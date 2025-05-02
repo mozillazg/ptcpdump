@@ -122,7 +122,7 @@ struct {
 #ifdef LOW_MEMORY
     __uint(max_entries, 1 << 12);
 #else
-    __uint(max_entries, 1 << 13);
+    __uint(max_entries, 1 << 17);
 #endif
 } ptcpdump_exit_events_ringbuf SEC(".maps");
 
@@ -294,6 +294,7 @@ static __always_inline void fill_process_meta(struct task_struct *task, struct p
     BPF_CORE_READ_INTO(&meta->ppid, task, real_parent, tgid);
     BPF_CORE_READ_INTO(&meta->uid, task, cred, uid.val);
 
+    __builtin_memset(&meta->cgroup_name, 0, sizeof(meta->cgroup_name));
 #ifdef SUPPORT_CGROUP
     if (bpf_core_field_exists(task->cgroups)) {
         const char *cname = BPF_CORE_READ(task, cgroups, subsys[0], cgroup, kn, name);
@@ -301,11 +302,7 @@ static __always_inline void fill_process_meta(struct task_struct *task, struct p
         if (size < MIN_CGROUP_NAME_LEN) {
             __builtin_memset(&meta->cgroup_name, 0, sizeof(meta->cgroup_name));
         }
-    } else {
-        __builtin_memset(&meta->cgroup_name, 0, sizeof(meta->cgroup_name));
     }
-#else
-    __builtin_memset(&meta->cgroup_name, 0, sizeof(meta->cgroup_name));
 #endif
 }
 
@@ -320,7 +317,7 @@ static __always_inline void handle_exec(void *ctx, struct task_struct *task, pid
     //        return;
     //    }
     if (is_kernel_thread(task)) {
-        debug_log("[ptcpdump] kernel thread exec\n");
+        //        debug_log("[ptcpdump] kernel thread exec\n");
         return;
     }
     bool use_ringbuf = false;
@@ -337,7 +334,7 @@ static __always_inline void handle_exec(void *ctx, struct task_struct *task, pid
         event = bpf_map_lookup_elem(&ptcpdump_exec_event_stack, &u32_zero);
     }
     if (!event) {
-        debug_log("[ptcpdump] ptcpdump_exec_event_stack failed\n");
+        //        debug_log("[ptcpdump] ptcpdump_exec_event_stack failed\n");
         return;
     }
     __builtin_memset(&event->meta, 0, sizeof(event->meta));
@@ -380,23 +377,23 @@ static __always_inline void handle_exec(void *ctx, struct task_struct *task, pid
 
 static __always_inline void handle_exit(void *ctx, struct task_struct *task) {
     if (is_kernel_thread(task)) {
-        debug_log("[ptcpdump] kernel thread exit\n");
+        //        debug_log("[ptcpdump] kernel thread exit\n");
         return;
     }
     u32 pid = BPF_CORE_READ(task, tgid);
     if (pid == 0) {
-        debug_log("[ptcpdump] pid is 0\n");
+        //        debug_log("[ptcpdump] pid is 0\n");
         return;
     }
 #ifdef P_EXIT_CHECK_LIVE
     atomic_t live = BPF_CORE_READ(task, signal, live);
     if (live.counter > 0) {
-        debug_log("[ptcpdump] task is still alive\n");
+        //        debug_log("[ptcpdump] task is still alive\n");
         return;
     }
 #else
     if (pid != BPF_CORE_READ(task, pid)) {
-        debug_log("[ptcpdump] pid is not equal tid\n");
+        //        debug_log("[ptcpdump] pid is not equal tid\n");
         return;
     }
 #endif
@@ -417,7 +414,7 @@ static __always_inline void handle_exit(void *ctx, struct task_struct *task) {
         event = bpf_map_lookup_elem(&ptcpdump_exit_event_tmp, &u32_zero);
     }
     if (!event) {
-        debug_log("[ptcpdump] ptcpdump_exit_event_tmp failed\n");
+        //        debug_log("[ptcpdump] ptcpdump_exit_event_tmp failed\n");
         return;
     }
 
@@ -481,7 +478,7 @@ int BPF_PROG(ptcpdump_tp_btf__sched_process_exit, struct task_struct *task) {
 SEC("kprobe/acct_process")
 int BPF_KPROBE(ptcpdump_kprobe__acct_process) {
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
-    debug_log("[ptcpdump] kprobe/acct_process\n");
+    //    debug_log("[ptcpdump] kprobe/acct_process\n");
     handle_exit(ctx, task);
     return 0;
 }
@@ -489,7 +486,7 @@ int BPF_KPROBE(ptcpdump_kprobe__acct_process) {
 SEC("kprobe/do_exit")
 int BPF_KPROBE(ptcpdump_kprobe__do_exit) {
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
-    debug_log("[ptcpdump] kprobe/do_exit\n");
+    //    debug_log("[ptcpdump] kprobe/do_exit\n");
     handle_exit(ctx, task);
     return 0;
 }
@@ -498,7 +495,7 @@ int BPF_KPROBE(ptcpdump_kprobe__do_exit) {
 SEC("fentry/acct_process")
 int BPF_PROG(ptcpdump_fentry__acct_process) {
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
-    debug_log("[ptcpdump] fentry/acct_process\n");
+    //    debug_log("[ptcpdump] fentry/acct_process\n");
     handle_exit(ctx, task);
     return 0;
 }
@@ -506,7 +503,7 @@ int BPF_PROG(ptcpdump_fentry__acct_process) {
 SEC("fentry/do_exit")
 int BPF_PROG(ptcpdump_fentry__do_exit) {
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
-    debug_log("[ptcpdump] fentry/do_exit\n");
+    //    debug_log("[ptcpdump] fentry/do_exit\n");
     handle_exit(ctx, task);
     return 0;
 }

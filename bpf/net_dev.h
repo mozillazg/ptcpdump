@@ -130,7 +130,7 @@ int ptcpdump_tracepoint__syscalls__sys_exit_mount(struct trace_event_raw_sys_exi
 #endif
     event = bpf_map_lookup_elem(&ptcpdump_mount_event_stack, &u32_zero);
     if (!event) {
-        debug_log("[ptcpdump] loopup ptcpdump_mount_event_stack failed\n");
+        //        debug_log("[ptcpdump] loopup ptcpdump_mount_event_stack failed\n");
         goto out;
     }
 
@@ -141,7 +141,7 @@ int ptcpdump_tracepoint__syscalls__sys_exit_mount(struct trace_event_raw_sys_exi
     //    debug_log("new mount, src: %s, dest: %s, fs: %s\n", event->src, event->dest, event->fs);
     int event_ret = bpf_perf_event_output(ctx, &ptcpdump_mount_events, BPF_F_CURRENT_CPU, event, sizeof(*event));
     if (event_ret != 0) {
-        debug_log("[ptcpdump] bpf_perf_event_output ptcpdump_mount_events failed: %d\n", event_ret);
+        //        debug_log("[ptcpdump] bpf_perf_event_output ptcpdump_mount_events failed: %d\n", event_ret);
     }
 
 out:
@@ -189,7 +189,7 @@ int BPF_KRETPROBE(ptcpdump_kretprobe__register_netdevice, long ret) {
     int event_ret =
         bpf_perf_event_output(ctx, &ptcpdump_new_netdevice_events, BPF_F_CURRENT_CPU, &event, sizeof(event));
     if (event_ret != 0) {
-        debug_log("[ptcpdump] bpf_perf_event_output new_device_events failed: %d\n", event_ret);
+        //        debug_log("[ptcpdump] bpf_perf_event_output new_device_events failed: %d\n", event_ret);
     }
 
 out:
@@ -285,7 +285,8 @@ static __always_inline void handle_dev_change_net_namespace_ret(void *ctx) {
     int event_ret =
         bpf_perf_event_output(ctx, &ptcpdump_netdevice_change_events, BPF_F_CURRENT_CPU, &event, sizeof(event));
     if (event_ret != 0) {
-        debug_log("[ptcpdump] bpf_perf_event_output ptcpdump_netdevice_change_events failed: %d\n", event_ret);
+        //        debug_log("[ptcpdump] bpf_perf_event_output ptcpdump_netdevice_change_events failed: %d\n",
+        //        event_ret);
     }
 
 out:

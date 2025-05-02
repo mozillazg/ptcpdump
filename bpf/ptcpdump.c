@@ -111,15 +111,15 @@ int ptcpdump_cgroup__sock_create(void *ctx) {
     }
 
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
+    if (is_kernel_thread(task)) {
+        return 1;
+    }
     if (parent_process_filter(task) < 0) {
         if (process_filter(task) < 0) {
             return 1;
         }
     }
     // debug_log("sock_create\n");
-    if (is_kernel_thread(task)) {
-        return 1;
-    }
 
     struct process_meta_t meta = {0};
     fill_process_meta(task, &meta);
@@ -154,15 +154,15 @@ static __always_inline int handle_security_sk_classify_flow(struct sock *sk) {
     struct process_meta_t value = {0};
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
 
+    if (is_kernel_thread(task)) {
+        return 0;
+    }
     if (parent_process_filter(task) < 0) {
         if (process_filter(task) < 0) {
             return 0;
         }
     }
     // debug_log("flow match\n");
-    if (is_kernel_thread(task)) {
-        return 0;
-    }
 
     fill_sk_meta(sk, &key);
     fill_process_meta(task, &value);
@@ -199,15 +199,15 @@ static __always_inline void handle_sendmsg(struct sock *sk) {
     struct process_meta_t value = {0};
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
 
+    if (is_kernel_thread(task)) {
+        return;
+    }
     if (parent_process_filter(task) < 0) {
         if (process_filter(task) < 0) {
             return;
         }
     }
     // debug_log("sendmsg match\n");
-    if (is_kernel_thread(task)) {
-        return;
-    }
 
     fill_sk_meta(sk, &key);
     if (bpf_map_lookup_elem(&ptcpdump_flow_pid_map, &key)) {

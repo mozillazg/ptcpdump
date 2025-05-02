@@ -1,3 +1,4 @@
+version: 2
 before:
   hooks:
     - sudo apt-get install -y gcc flex bison make autoconf libelf-dev gcc-aarch64-linux-gnu libc6-dev-arm64-cross gcc-arm-linux-gnueabi libc6-dev-armhf-cross
@@ -73,7 +74,7 @@ builds:
         - sudo make libpcap LIBPCAP_DIST_DIR=/usr/local CARCH=x86_64
 
 archives:
-  - builds:
+  - ids:
       - ptcpdump-arm
       - ptcpdump-arm64
       - ptcpdump-amd64
@@ -85,4 +86,4 @@ release:
   prerelease: auto
 
 snapshot:
-  name_template: "{{ .Tag }}-next"
+  version_template: "{{ .Tag }}-next"
