@@ -32,8 +32,8 @@ builds:
       pre:
         - bash -c 'sudo make clean || true'
         - bash -c 'cd lib/libpcap && sudo make uninstall prefix=/usr/local || true'
-        - sudo make libpcap LIBPCAP_DIST_DIR=/usr/local CARCH=arm GCC=arm-linux-gnueabi-gcc LIBPCAP_HOST=arm-unknown-linux-gnueabihf
-        - sudo make libpcap LIBPCAP_DIST_DIR=/usr/arm-linux-gnueabi CARCH=arm GCC=arm-linux-gnueabi-gcc LIBPCAP_HOST=arm-unknown-linux-gnueabihf
+        - sudo make libpcap LIBPCAP_DIST_DIR=/usr/local CARCH=arm GCC=arm-linux-gnueabihf-gcc LIBPCAP_HOST=arm-unknown-linux-gnueabihf
+        - sudo make libpcap LIBPCAP_DIST_DIR=/usr/arm-linux-gnueabihf CARCH=arm GCC=arm-linux-gnueabihf-gcc LIBPCAP_HOST=arm-unknown-linux-gnueabihf
 
   - id: ptcpdump-arm64
     binary: ptcpdump
