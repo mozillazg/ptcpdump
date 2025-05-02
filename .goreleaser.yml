@@ -21,6 +21,8 @@ builds:
       - linux
     goarch:
       - arm
+    goarm:
+      - '7'
     hooks:
       pre:
         - bash -c 'sudo make clean || true'
