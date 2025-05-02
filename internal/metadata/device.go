@@ -211,7 +211,6 @@ func NewNgInterface(dev types.Device, filter string, index int) pcapgo.NgInterfa
 			comment, dev.NetNs.Inode(), dev.NetNs.Path())
 	}
 	return pcapgo.NgInterface{
-		Index:      index,
 		Name:       dev.Name,
 		Comment:    comment,
 		Filter:     filter,
@@ -224,7 +223,6 @@ func NewNgInterface(dev types.Device, filter string, index int) pcapgo.NgInterfa
 
 func NewDummyNgInterface(index int, filter string) pcapgo.NgInterface {
 	return pcapgo.NgInterface{
-		Index:      index,
 		Name:       fmt.Sprintf("dummy-%d", index),
 		Filter:     filter,
 		OS:         runtime.GOOS,

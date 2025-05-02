@@ -30,7 +30,7 @@ COVERAGE_ARGS ?=
 
 CARCH ?= $(shell uname -m)
 LIBPCAP_HOST = $(CARCH)-unknown-linux-gnu
-CC ?= gcc
+GCC ?= gcc
 
 IMAGE_DEV ?= quay.io/ptcpdump/develop:latest
 IMAGE_BIN ?= quay.io/ptcpdump/ptcpdump:latest
@@ -41,7 +41,7 @@ libpcap: $(LIBPCAP_OBJ)
 $(LIBPCAP_OBJ): $(LIBPCAP_SRC)/pcap.h $(wildcard $(LIBPCAP_SRC)/*.[ch]) | $(LIBPCAP_DIST_DIR)
 	cd $(LIBPCAP_SRC) && \
 	  sh autogen.sh && \
-	  CC=$(CC) ./configure --disable-shared --disable-usb --disable-netmap --disable-bluetooth --disable-dbus --without-libnl \
+	  CC=$(GCC) ./configure --disable-shared --disable-usb --disable-netmap --disable-bluetooth --disable-dbus --without-libnl \
 	  	--disable-rdma --host=$(LIBPCAP_HOST) && \
 	  $(MAKE) && \
 	  $(MAKE) install prefix=$(LIBPCAP_DIST_DIR)
@@ -63,7 +63,7 @@ build: libpcap
 	CGO_CFLAGS=$(CGO_CFLAGS_STATIC) \
 	CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) \
 	GOARCH=$(GOARCH) \
-	CC=$(CC) \
+	CC=$(GCC) \
 	CGO_ENABLED=1 go build -tags static -ldflags "$(LDFLAGS)" $(COVERAGE_FLAG)
 
 
