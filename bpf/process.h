@@ -440,7 +440,7 @@ int ptcpdump_tracepoint__sched_process_exec(struct trace_event_raw_sched_process
     struct linux_binprm bprm = {0};
     bprm.filename = (char *)((void *)ctx + fname_off);
 
-    bpf_printk("new exec event from tracepoint, pid: %llu", ctx->pid);
+    // debug_log("new exec event from tracepoint, pid: %llu\n", ctx->pid);
 
     handle_exec(ctx, task, old_pid, &bprm);
     return 0;
