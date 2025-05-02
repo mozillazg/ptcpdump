@@ -38,7 +38,7 @@ jobs:
         run: |
           mkdir amd64 && tar zxvf dist/ptcpdump_v0.0.0-next_linux_amd64.tar.gz -C amd64
           mkdir arm64 && tar zxvf dist/ptcpdump_v0.0.0-next_linux_arm64.tar.gz -C arm64
-          mkdir arm && tar zxvf dist/ptcpdump_v0.0.0-next_linux_arm.tar.gz -C arm64
+          mkdir arm && tar zxvf dist/ptcpdump_v0.0.0-next_linux_arm.tar.gz -C arm
           ./amd64/ptcpdump --version
 
           file ./amd64/ptcpdump |grep x86-64 |grep 'statically linked'

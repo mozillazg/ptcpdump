@@ -29,7 +29,7 @@ COVERAGE_FLAG ?=
 COVERAGE_ARGS ?=
 
 CARCH ?= $(shell uname -m)
-LIBPCAP_ARCH = $(CARCH)-unknown-linux-gnu
+LIBPCAP_HOST = $(CARCH)-unknown-linux-gnu
 CC ?= gcc
 
 IMAGE_DEV ?= quay.io/ptcpdump/develop:latest
@@ -42,7 +42,7 @@ $(LIBPCAP_OBJ): $(LIBPCAP_SRC)/pcap.h $(wildcard $(LIBPCAP_SRC)/*.[ch]) | $(LIBP
 	cd $(LIBPCAP_SRC) && \
 	  sh autogen.sh && \
 	  CC=$(CC) ./configure --disable-shared --disable-usb --disable-netmap --disable-bluetooth --disable-dbus --without-libnl \
-	  	--disable-rdma --host=$(LIBPCAP_ARCH) && \
+	  	--disable-rdma --host=$(LIBPCAP_HOST) && \
 	  $(MAKE) && \
 	  $(MAKE) install prefix=$(LIBPCAP_DIST_DIR)
 
