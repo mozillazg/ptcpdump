@@ -3,7 +3,7 @@ module github.com/mozillazg/ptcpdump
 go 1.23.0
 
 require (
-	github.com/cilium/ebpf v0.17.3
+	github.com/cilium/ebpf v0.18.0
 	github.com/containerd/containerd v1.7.27
 	github.com/containerd/typeurl/v2 v2.2.3
 	github.com/docker/docker v27.5.1+incompatible
@@ -12,7 +12,7 @@ require (
 	github.com/jschwinger233/elibpcap v1.0.2
 	github.com/phuslu/log v1.0.117
 	github.com/shirou/gopsutil/v4 v4.25.4
-	github.com/spf13/cobra v1.8.1
+	github.com/spf13/cobra v1.9.1
 	github.com/x-way/pktdump v0.0.6
 	golang.org/x/sys v0.32.0
 )
@@ -26,9 +26,9 @@ require (
 	github.com/smira/go-xz v0.1.0
 	github.com/stretchr/testify v1.10.0
 	github.com/vishvananda/netns v0.0.5
-	golang.org/x/arch v0.14.0
-	k8s.io/cri-api v0.32.4
-	k8s.io/cri-client v0.32.4
+	golang.org/x/arch v0.16.0
+	k8s.io/cri-api v0.33.0
+	k8s.io/cri-client v0.33.0
 	k8s.io/klog/v2 v2.130.1
 )
 
@@ -80,7 +80,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
@@ -109,7 +109,7 @@ replace (
 	// github.com/cilium/ebpf => ../../cilium/ebpf
 	github.com/gopacket/gopacket => github.com/mozillazg/gopacket v0.0.0-20250502054427-166720d8f623
 
-	github.com/jschwinger233/elibpcap => github.com/mozillazg/elibpcap v0.0.0-20250314124526-312841a0730a
+	github.com/jschwinger233/elibpcap => github.com/mozillazg/elibpcap v0.0.0-20241219172611-54476d490cbb
 	// github.com/gopacket/gopacket => ../../gopacket/gopacket
 	github.com/x-way/pktdump => github.com/mozillazg/pktdump v0.0.9-0.20241102131745-63c34f34f0d1
 	// github.com/x-way/pktdump => ../../x-way/pktdump
