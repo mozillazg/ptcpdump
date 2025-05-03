@@ -63,7 +63,8 @@ In case the folder is empty, it can be mounted with:
     mount -t debugfs none /sys/kernel/debug
 
 
-The following kernel configuration is required.
+The following kernel configuration is required. Building as Modules is also
+possible.
 
 | Option                    | Backend    | Note                   |
 |---------------------------|------------|------------------------|
