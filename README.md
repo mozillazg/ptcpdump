@@ -55,6 +55,46 @@ You can download the statically linked executable for x86_64 and arm64 from the 
 
 Linux kernel >= 5.2 (compiled with BPF and BTF support).
 
+<details>
+
+`ptcpdump` optionally requires debugfs. It has to be mounted in /sys/kernel/debug. 
+In case the folder is empty, it can be mounted with:
+
+```
+mount -t debugfs none /sys/kernel/debug
+```
+
+
+The following kernel configuration is required.
+
+| Option                    | Backend    | Note                 |
+|---------------------------|------------|----------------------|
+| CONFIG_BPF=y              | both       | **Required**         |
+| CONFIG_BPF_SYSCALL=y      | both       | **Required**         |
+| CONFIG_DEBUG_INFO=y       | both       | **Required**         |
+| CONFIG_DEBUG_INFO_BTF=y   | both       | **Required**         |
+| CONFIG_KPROBES=y          | both       | **Required**         |
+| CONFIG_KPROBE_EVENTS=y    | both       | **Required**         |
+| CONFIG_TRACEPOINTS=y      | both       | **Required**         |
+| CONFIG_PERF_EVENTS=y      | both       | **Required**         |
+| CONFIG_NET=y              | both       | **Required**         |
+| CONFIG_NET_SCHED=y        | tc         | **Required**         |
+| CONFIG_NET_CLS_BPF=y      | tc         | **Required**         |
+| CONFIG_NET_ACT_BPF=y      | tc         | **Required**         |
+| CONFIG_NET_SCH_INGRESS=y  | tc         | **Required**         |
+| CONFIG_CGROUPS=y          | cgroup-skb | **Required**         |
+| CONFIG_CGROUP_BPF=y       | cgroup-skb | **Required**         |
+| CONFIG_SECURITY=y         | both       | Optional (Recommend) |
+| CONFIG_BPF_TRAMPOLINE=y   | both       | Optional (Recommend) |
+| CONFIG_SOCK_CGROUP_DATA=y | both       | Optional (Recommend) |
+| CONFIG_BPF_JIT=y          | both       | Optional (Recommend) |
+| CONFIG_CGROUP_BPF=y       | tc         | Optional (Recommend) |
+| CONFIG_CGROUPS=y          | tc         | Optional (Recommend) |
+
+You can use `zgrep $OPTION /proc/config.gz` to validate whether option is enabled.
+
+</details>
+
 <p align="right"><a href="#top">🔝</a></p>
 
 
