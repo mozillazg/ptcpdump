@@ -16,6 +16,7 @@ const (
 	tcaHtbRate64
 	tcaHtbCeil64
 	tcaHtbPad
+	tcaHtbOffload
 )
 
 // Htb contains attributes of the HTB discipline
@@ -27,6 +28,7 @@ type Htb struct {
 	DirectQlen *uint32
 	Rate64     *uint64
 	Ceil64     *uint64
+	Offload    *bool
 }
 
 // unmarshalHtb parses the Htb-encoded data and stores the result in the value pointed to by info.
@@ -60,6 +62,8 @@ func unmarshalHtb(data []byte, info *Htb) error {
 			info.Ceil64 = uint64Ptr(ad.Uint64())
 		case tcaHtbPad:
 			// padding does not contain data, we just skip it
+		case tcaHtbOffload:
+			info.Offload = boolPtr(ad.Flag())
 		default:
 			return fmt.Errorf("unmarshalHtb()\t%d\n\t%v", ad.Type(), ad.Bytes())
 		}
@@ -94,6 +98,9 @@ func marshalHtb(info *Htb) ([]byte, error) {
 	}
 	if info.Ceil64 != nil {
 		options = append(options, tcOption{Interpretation: vtUint64, Type: tcaHtbCeil64, Data: uint64Value(info.Ceil64)})
+	}
+	if info.Offload != nil {
+		options = append(options, tcOption{Interpretation: vtFlag, Type: tcaHtbOffload, Data: boolValue(info.Offload)})
 	}
 	if multiError != nil {
 		return []byte{}, multiError

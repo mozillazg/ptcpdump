@@ -216,7 +216,7 @@ func marshalNetem(info *Netem) ([]byte, error) {
 		multiError = concatError(multiError, err)
 		options = append(options, tcOption{Interpretation: vtBytes, Type: tcaNetemSlot, Data: data})
 	}
-	if info.PrngSeed !=nil {
+	if info.PrngSeed != nil {
 		options = append(options, tcOption{Interpretation: vtUint64, Type: tcaNetemPrngSeed, Data: *info.PrngSeed})
 	}
 

@@ -249,6 +249,11 @@ func (w *FileWriter) create() (err error) {
 		w.size = st.Size()
 	}
 
+	err = w.rotate()
+	if err != nil {
+		return err
+	}
+
 	if w.size == 0 && w.Header != nil {
 		if b := w.Header(st); b != nil {
 			n, err := w.file.Write(b)

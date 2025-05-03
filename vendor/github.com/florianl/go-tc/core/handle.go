@@ -17,3 +17,12 @@ func SplitHandle(handle uint32) (major, minor uint32) {
 	minor = handle & handleMinMask
 	return major, minor
 }
+
+// FilterInfo is a simple helper to set the priority and protocol of the filter
+func FilterInfo(priority uint16, protocol uint16) uint32 {
+	return BuildHandle(uint32(priority), uint32(endianSwapUint16(protocol)))
+}
+
+func endianSwapUint16(in uint16) uint16 {
+	return (in << 8) | (in >> 8)
+}

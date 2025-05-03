@@ -17,6 +17,8 @@ const (
 	tcaFqCodelCeThreshold
 	tcaFqCodelDropBatchSize
 	tcaFqCodelMemoryLimit
+	tcaFqCodelCeThresholdSelector
+	tcaFqCodelCeThresholdMask
 )
 
 const (
@@ -26,15 +28,17 @@ const (
 
 // FqCodel contains attributes of the fq_codel discipline
 type FqCodel struct {
-	Target        *uint32
-	Limit         *uint32
-	Interval      *uint32
-	ECN           *uint32
-	Flows         *uint32
-	Quantum       *uint32
-	CEThreshold   *uint32
-	DropBatchSize *uint32
-	MemoryLimit   *uint32
+	Target              *uint32
+	Limit               *uint32
+	Interval            *uint32
+	ECN                 *uint32
+	Flows               *uint32
+	Quantum             *uint32
+	CEThreshold         *uint32
+	DropBatchSize       *uint32
+	MemoryLimit         *uint32
+	CeThresholdSelector *uint8
+	CeThresholdMask     *uint8
 }
 
 // marshalFqCodel returns the binary encoding of FqCodel
@@ -82,6 +86,15 @@ func marshalFqCodel(info *FqCodel) ([]byte, error) {
 		options = append(options, tcOption{Interpretation: vtUint32, Type: tcaFqCodelMemoryLimit, Data: uint32Value(info.MemoryLimit)})
 	}
 
+	if info.CeThresholdSelector != nil {
+		options = append(options, tcOption{Interpretation: vtUint8, Type: tcaFqCodelCeThresholdSelector, Data: uint8Value(info.CeThresholdSelector)})
+
+	}
+
+	if info.CeThresholdMask != nil {
+		options = append(options, tcOption{Interpretation: vtUint8, Type: tcaFqCodelCeThresholdMask, Data: uint8Value(info.CeThresholdMask)})
+	}
+
 	return marshalAttributes(options)
 }
 
@@ -111,6 +124,10 @@ func unmarshalFqCodel(data []byte, info *FqCodel) error {
 			info.DropBatchSize = uint32Ptr(ad.Uint32())
 		case tcaFqCodelMemoryLimit:
 			info.MemoryLimit = uint32Ptr(ad.Uint32())
+		case tcaFqCodelCeThresholdSelector:
+			info.CeThresholdSelector = uint8Ptr(ad.Uint8())
+		case tcaFqCodelCeThresholdMask:
+			info.CeThresholdMask = uint8Ptr(ad.Uint8())
 		default:
 			return fmt.Errorf("unmarshalFqCodel()\t%d\n\t%v", ad.Type(), ad.Bytes())
 		}

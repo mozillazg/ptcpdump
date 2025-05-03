@@ -73,7 +73,8 @@ func unmarshalMPLS(data []byte, info *MPLS) error {
 		case tcaMPLSPad:
 			// padding does not contain data, we just skip it
 		case tcaMPLSProto: /* be16; eth_type of pushed or next (for pop) header. */
-			info.Proto = int16Ptr(ad.Int16())
+			tmp := endianSwapUint16(uint16(ad.Int16()))
+			info.Proto = int16Ptr(int16(tmp))
 		case tcaMPLSLabel:
 			info.Label = uint32Ptr(ad.Uint32())
 		case tcaMPLSTC:

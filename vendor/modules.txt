@@ -42,7 +42,7 @@ github.com/Microsoft/hcsshim/internal/wclayer
 github.com/Microsoft/hcsshim/internal/winapi
 github.com/Microsoft/hcsshim/osversion
 github.com/Microsoft/hcsshim/pkg/ociwclayer
-# github.com/cilium/ebpf v0.17.2 => github.com/mozillazg/ebpf v0.17.3-0.20250207013525-5746abfb2b20
+# github.com/cilium/ebpf v0.17.3 => github.com/mozillazg/ebpf v0.17.3-0.20250207013525-5746abfb2b20
 ## explicit; go 1.22
 github.com/cilium/ebpf
 github.com/cilium/ebpf/asm
@@ -229,7 +229,7 @@ github.com/elliotchance/orderedmap
 # github.com/felixge/httpsnoop v1.0.3
 ## explicit; go 1.13
 github.com/felixge/httpsnoop
-# github.com/florianl/go-tc v0.4.4
+# github.com/florianl/go-tc v0.4.5
 ## explicit; go 1.13
 github.com/florianl/go-tc
 github.com/florianl/go-tc/core
@@ -254,8 +254,8 @@ github.com/gogo/protobuf/sortkeys
 # github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
 ## explicit
 github.com/golang/groupcache/lru
-# github.com/google/go-cmp v0.6.0
-## explicit; go 1.13
+# github.com/google/go-cmp v0.7.0
+## explicit; go 1.21
 github.com/google/go-cmp/cmp
 github.com/google/go-cmp/cmp/internal/diff
 github.com/google/go-cmp/cmp/internal/flags
@@ -277,7 +277,7 @@ github.com/inconshreveable/mousetrap
 # github.com/josharian/native v1.1.0
 ## explicit; go 1.13
 github.com/josharian/native
-# github.com/jschwinger233/elibpcap v1.0.0 => github.com/mozillazg/elibpcap v0.0.0-20250314124526-312841a0730a
+# github.com/jschwinger233/elibpcap v1.0.2 => github.com/mozillazg/elibpcap v0.0.0-20250314124526-312841a0730a
 ## explicit; go 1.21.0
 github.com/jschwinger233/elibpcap
 # github.com/klauspost/compress v1.16.7
@@ -356,7 +356,7 @@ github.com/opencontainers/runtime-spec/specs-go
 github.com/opencontainers/selinux/go-selinux
 github.com/opencontainers/selinux/go-selinux/label
 github.com/opencontainers/selinux/pkg/pwalkdir
-# github.com/phuslu/log v1.0.113
+# github.com/phuslu/log v1.0.117
 ## explicit; go 1.18
 github.com/phuslu/log
 # github.com/pkg/errors v0.9.1
@@ -368,8 +368,8 @@ github.com/pmezard/go-difflib/difflib
 # github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c
 ## explicit; go 1.14
 github.com/power-devops/perfstat
-# github.com/shirou/gopsutil/v4 v4.25.1
-## explicit; go 1.18
+# github.com/shirou/gopsutil/v4 v4.25.4
+## explicit; go 1.23
 github.com/shirou/gopsutil/v4/common
 github.com/shirou/gopsutil/v4/cpu
 github.com/shirou/gopsutil/v4/internal/common
@@ -581,12 +581,12 @@ gopkg.in/yaml.v3
 # k8s.io/component-base v0.26.2
 ## explicit; go 1.19
 k8s.io/component-base/logs/logreduction
-# k8s.io/cri-api v0.32.1 => github.com/mozillazg/cri-api v0.32.0-alpha.1.0.20241019013855-3dc36f8743df
+# k8s.io/cri-api v0.32.4 => github.com/mozillazg/cri-api v0.32.0-alpha.1.0.20241019013855-3dc36f8743df
 ## explicit; go 1.23.0
 k8s.io/cri-api/pkg/apis
 k8s.io/cri-api/pkg/apis/runtime/v1
 k8s.io/cri-api/pkg/apis/runtime/v1alpha2
-# k8s.io/cri-client v0.32.1 => github.com/mozillazg/cri-client v0.31.0-alpha.0.0.20241019023238-87687176fd67
+# k8s.io/cri-client v0.32.4 => github.com/mozillazg/cri-client v0.31.0-alpha.0.0.20241019023238-87687176fd67
 ## explicit; go 1.23.0
 k8s.io/cri-client/pkg
 k8s.io/cri-client/pkg/util

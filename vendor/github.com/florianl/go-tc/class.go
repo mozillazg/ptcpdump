@@ -77,16 +77,22 @@ func validateClassObject(action int, info *Object) ([]tcOption, error) {
 		data, err = marshalQfq(info.Qfq)
 	case "htb":
 		data, err = marshalHtb(info.Htb)
+	case "dsmark":
+		data, err = marshalDsmark(info.Dsmark)
 	default:
-		return options, fmt.Errorf("%s: %w", info.Kind, ErrNotImplemented)
+		if !isDelAction(action) {
+			return options, fmt.Errorf("%s: %w", info.Kind, ErrNotImplemented)
+		}
 	}
 	if err != nil {
 		return options, err
 	}
-	if len(data) < 1 {
+	if len(data) < 1 && !isDelAction(action) {
 		return options, ErrNoArg
 	}
 	options = append(options, tcOption{Interpretation: vtBytes, Type: tcaOptions, Data: data})
-	options = append(options, tcOption{Interpretation: vtString, Type: tcaKind, Data: info.Kind})
+	if !isDelAction(action) {
+		options = append(options, tcOption{Interpretation: vtString, Type: tcaKind, Data: info.Kind})
+	}
 	return options, nil
 }
