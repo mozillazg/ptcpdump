@@ -89,7 +89,7 @@ The following kernel configuration is required.
 | CONFIG_CGROUP_BPF=y       | tc         | Optional (Recommended) |
 | CONFIG_CGROUPS=y          | tc         | Optional (Recommended) |
 
-You can use `zgrep $OPTION /proc/config.gz` to validate whether option is enabled.
+You can use `zgrep $OPTION /proc/config.gz` to validate whether an option is enabled.
 
 </details>
 
