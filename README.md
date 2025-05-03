@@ -57,7 +57,7 @@ Linux kernel >= 5.2 (compiled with BPF and BTF support).
 
 <details>
 
-`ptcpdump` optionally requires debugfs. It has to be mounted in /sys/kernel/debug. 
+`ptcpdump` optionally requires debugfs. It has to be mounted in /sys/kernel/debug.
 In case the folder is empty, it can be mounted with:
 
 ```
