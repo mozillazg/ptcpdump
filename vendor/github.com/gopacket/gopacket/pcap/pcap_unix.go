@@ -117,7 +117,7 @@ int pcap_tstamp_type_name_to_val(const char* t) {
 		#define gopacket_time_secs_t __time_t
 		#define gopacket_time_usecs_t __suseconds_t
 	#else
-		#ifdef __time64_t
+		#if defined(__USE_TIME64_REDIRECTS) || (__TIMESIZE == 32 && __USE_TIME_BITS64)
 			#define gopacket_time_secs_t __time64_t
 			#define gopacket_time_usecs_t __suseconds64_t
 		#else
@@ -357,8 +357,8 @@ func pcapLookupnet(device string) (netp, maskp uint32, err error) {
 
 func (b *BPF) pcapOfflineFilter(ci gopacket.CaptureInfo, data []byte) bool {
 	hdr := (*C.struct_pcap_pkthdr)(&b.hdr)
-	hdr.ts.tv_sec = C.gopacket_time_secs_t(ci.Timestamp.Unix())
-	hdr.ts.tv_usec = C.gopacket_time_usecs_t(ci.Timestamp.Nanosecond() / 1000)
+	// hdr.ts.tv_sec = C.gopacket_time_secs_t(ci.Timestamp.Unix())
+	// hdr.ts.tv_usec = C.gopacket_time_usecs_t(ci.Timestamp.Nanosecond() / 1000)
 	hdr.caplen = C.bpf_u_int32(len(data)) // Trust actual length over ci.Length.
 	hdr.len = C.bpf_u_int32(ci.Length)
 	dataptr := (*C.u_char)(unsafe.Pointer(&data[0]))

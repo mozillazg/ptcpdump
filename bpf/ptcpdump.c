@@ -111,6 +111,9 @@ int ptcpdump_cgroup__sock_create(void *ctx) {
     }
 
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
+    if (is_kernel_thread(task)) {
+        return 1;
+    }
     if (parent_process_filter(task) < 0) {
         if (process_filter(task) < 0) {
             return 1;
@@ -151,6 +154,9 @@ static __always_inline int handle_security_sk_classify_flow(struct sock *sk) {
     struct process_meta_t value = {0};
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
 
+    if (is_kernel_thread(task)) {
+        return 0;
+    }
     if (parent_process_filter(task) < 0) {
         if (process_filter(task) < 0) {
             return 0;
@@ -193,6 +199,9 @@ static __always_inline void handle_sendmsg(struct sock *sk) {
     struct process_meta_t value = {0};
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
 
+    if (is_kernel_thread(task)) {
+        return;
+    }
     if (parent_process_filter(task) < 0) {
         if (process_filter(task) < 0) {
             return;
@@ -275,6 +284,7 @@ static __always_inline void route_packet(struct packet_meta_t *packet_meta, stru
     flow->sport = packet_meta->l4.sport;
     flow->dport = packet_meta->l4.dport;
 
+#ifdef SUPPORT_NAT
     struct nat_flow_t tmp_flow = *flow;
 #pragma unroll
     for (int i = 0; i < 10; i++) {
@@ -292,7 +302,7 @@ static __always_inline void route_packet(struct packet_meta_t *packet_meta, stru
         clone_flow(translated_flow, flow);
         clone_flow(translated_flow, &tmp_flow);
     }
-
+#endif /* SUPPORT_NAT */
     return;
 }
 

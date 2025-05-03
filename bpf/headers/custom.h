@@ -1,7 +1,10 @@
 #ifndef __PTCPDUMP_CUSTOM_H__
 #define __PTCPDUMP_CUSTOM_H__
 
+#include "compat.h"
 #include "vmlinux.h"
+
+#ifdef SUPPORT_NAT
 
 struct nf_conntrack_tuple___custom {
     struct nf_conntrack_man src;
@@ -47,5 +50,7 @@ struct nf_conn___older_52 {
     struct nf_conntrack_zone zone;
     struct nf_conntrack_tuple_hash___custom tuplehash[IP_CT_DIR_MAX];
 } __attribute__((preserve_access_index));
+
+#endif /* SUPPORT_NAT */
 
 #endif /* __PTCPDUMP_CUSTOM_H__ */

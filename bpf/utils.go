@@ -5,8 +5,17 @@ import (
 	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/link"
 	"github.com/mozillazg/ptcpdump/internal/log"
+	"runtime"
 	"strings"
 )
+
+var onArm32 bool
+
+func init() {
+	if runtime.GOARCH == "arm" {
+		onArm32 = true
+	}
+}
 
 func (b *BPF) attachFentryOrKprobe(symbol string, fentryProg *ebpf.Program, kprobeProg *ebpf.Program) error {
 	var lk link.Link

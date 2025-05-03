@@ -138,6 +138,7 @@ static __always_inline int parse_skb_l4(struct __sk_buff *skb, u8 protocol, stru
         *offset += sizeof(struct udphdr);
         return 0;
     }
+#ifdef SUPPORT_SCTP
     case IPPROTO_SCTP: {
         // some systems do not have struct sctphdr. e.g. openwrt
         if (!bpf_core_type_exists(struct sctphdr)) {
@@ -153,6 +154,7 @@ static __always_inline int parse_skb_l4(struct __sk_buff *skb, u8 protocol, stru
         *offset += sizeof(struct sctphdr);
         return 0;
     }
+#endif /* SUPPORT_SCTP */
     default: {
         return 0;
     }

@@ -1,9 +1,35 @@
+version: 2
 before:
   hooks:
-    - sudo apt-get install -y gcc flex bison make autoconf libelf-dev gcc-aarch64-linux-gnu libc6-dev-arm64-cross
+    - sudo apt-get install -y gcc flex bison make autoconf libelf-dev gcc-aarch64-linux-gnu libc6-dev-arm64-cross gcc-arm-linux-gnueabi libc6-dev-armhf-cross
     - git submodule update --init --recursive
 
 builds:
+  - id: ptcpdump-arm
+    binary: ptcpdump
+    env:
+      - CGO_ENABLED=1
+      - CC=arm-linux-gnueabi-gcc
+    flags:
+      - -tags=static
+    ldflags:
+      - -linkmode 'external'
+      - -extldflags "-static"
+      - -X github.com/mozillazg/ptcpdump/internal.Version={{.Version}}
+      - -X github.com/mozillazg/ptcpdump/internal.GitCommit={{.Commit}}
+    goos:
+      - linux
+    goarch:
+      - arm
+    goarm:
+      - '7'
+    hooks:
+      pre:
+        - bash -c 'sudo make clean || true'
+        - bash -c 'cd lib/libpcap && sudo make uninstall prefix=/usr/local || true'
+        - sudo make libpcap LIBPCAP_DIST_DIR=/usr/local CARCH=arm GCC=arm-linux-gnueabi-gcc LIBPCAP_HOST=arm-unknown-linux-gnueabihf
+        - sudo make libpcap LIBPCAP_DIST_DIR=/usr/arm-linux-gnueabi CARCH=arm GCC=arm-linux-gnueabi-gcc LIBPCAP_HOST=arm-unknown-linux-gnueabihf
+
   - id: ptcpdump-arm64
     binary: ptcpdump
     env:
@@ -24,8 +50,8 @@ builds:
       pre:
         - bash -c 'sudo make clean || true'
         - bash -c 'cd lib/libpcap && sudo make uninstall prefix=/usr/local || true'
-        - sudo make libpcap LIBPCAP_DIST_DIR=/usr/local CARCH=aarch64 CC=aarch64-linux-gnu-gcc
-        - sudo make libpcap LIBPCAP_DIST_DIR=/usr/aarch64-linux-gnu CARCH=aarch64 CC=aarch64-linux-gnu-gcc
+        - sudo make libpcap LIBPCAP_DIST_DIR=/usr/local CARCH=aarch64 GCC=aarch64-linux-gnu-gcc
+        - sudo make libpcap LIBPCAP_DIST_DIR=/usr/aarch64-linux-gnu CARCH=aarch64 GCC=aarch64-linux-gnu-gcc
 
   - id: ptcpdump-amd64
     binary: ptcpdump
@@ -50,7 +76,8 @@ builds:
         - sudo make libpcap LIBPCAP_DIST_DIR=/usr/local CARCH=x86_64
 
 archives:
-  - builds:
+  - ids:
+      - ptcpdump-arm
       - ptcpdump-arm64
       - ptcpdump-amd64
 
@@ -61,4 +88,4 @@ release:
   prerelease: auto
 
 snapshot:
-  name_template: "{{ .Tag }}-next"
+  version_template: "{{ .Tag }}-next"

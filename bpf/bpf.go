@@ -269,42 +269,12 @@ func (b *BPF) AttachKprobes() error {
 }
 
 func (b *BPF) AttachTracepoints() error {
-	err := b.attachBTFTracepointOrRawTP("sched_process_exec",
-		b.objs.PtcpdumpTpBtfSchedProcessExec, b.objs.PtcpdumpRawTracepointSchedProcessExec,
-	)
-	if err != nil {
+	if err := b.attachProcessHooks(); err != nil {
 		return fmt.Errorf(": %w", err)
 	}
 
-	err = b.attachBTFTracepointOrRawTP("sched_process_exit",
-		b.objs.PtcpdumpTpBtfSchedProcessExit, b.objs.PtcpdumpRawTracepointSchedProcessExit,
-	)
-	if err != nil {
+	if err := b.attachNetNsHooks(); err != nil {
 		return fmt.Errorf(": %w", err)
-	}
-
-	if b.opts.attachForks() {
-		err := b.attachBTFTracepointOrRawTP("sched_process_fork",
-			b.objs.PtcpdumpTpBtfSchedProcessFork, b.objs.PtcpdumpRawTracepointSchedProcessFork,
-		)
-		if err != nil {
-			return fmt.Errorf(": %w", err)
-		}
-	}
-
-	if b.opts.hookMount {
-		log.Info("attaching tracepoint/syscalls/sys_enter_mount")
-		lk, err := link.Tracepoint("syscalls", "sys_enter_mount", b.objs.PtcpdumpTracepointSyscallsSysEnterMount, &link.TracepointOptions{})
-		if err != nil {
-			return fmt.Errorf("attach tracepoint/syscalls/sys_enter_mount: %w", err)
-		}
-		b.links = append(b.links, lk)
-		log.Info("attaching tracepoint/syscalls/sys_exit_mount")
-		lk, err = link.Tracepoint("syscalls", "sys_exit_mount", b.objs.PtcpdumpTracepointSyscallsSysExitMount, &link.TracepointOptions{})
-		if err != nil {
-			return fmt.Errorf("attach tracepoint/syscalls/sys_exit_mount: %w", err)
-		}
-		b.links = append(b.links, lk)
 	}
 
 	return nil

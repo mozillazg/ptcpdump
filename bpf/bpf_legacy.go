@@ -62,6 +62,9 @@ func supportTcx() bool {
 
 func supportRingBuf() bool {
 	log.Info("Checking ringbuf support")
+	if onArm32 {
+		return false
+	}
 	if err := features.HaveMapType(ebpf.RingBuf); err != nil {
 		log.Infof("%+v", err)
 		return false

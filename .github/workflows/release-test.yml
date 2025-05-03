@@ -38,10 +38,12 @@ jobs:
         run: |
           mkdir amd64 && tar zxvf dist/ptcpdump_v0.0.0-next_linux_amd64.tar.gz -C amd64
           mkdir arm64 && tar zxvf dist/ptcpdump_v0.0.0-next_linux_arm64.tar.gz -C arm64
+          mkdir armv7 && tar zxvf dist/ptcpdump_v0.0.0-next_linux_armv7.tar.gz -C armv7
           ./amd64/ptcpdump --version
 
           file ./amd64/ptcpdump |grep x86-64 |grep 'statically linked'
           file ./arm64/ptcpdump |grep aarch64 |grep 'statically linked'
+          file ./armv7/ptcpdump |grep 32-bit |grep 'statically linked'
 
       - name: Run govulncheck for binary
         run: |
@@ -60,6 +62,12 @@ jobs:
         with:
           name: ptcpdump_v0.0.0-next_linux_arm64.tar.gz
           path: dist/ptcpdump_v0.0.0-next_linux_arm64.tar.gz
+
+      - name: Store Releases
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4
+        with:
+          name: ptcpdump_v0.0.0-next_linux_armv7.tar.gz
+          path: dist/ptcpdump_v0.0.0-next_linux_armv7.tar.gz
 
   artifact-test:
     strategy:

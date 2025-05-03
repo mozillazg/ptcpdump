@@ -27,6 +27,16 @@
 #define GO_PARAM7(dst, x) BPF_CORE_READ_INTO(dst, __PT_REGS_CAST(x), __PT_PARM7_REG)
 #define GO_PARAM8(dst, x) BPF_CORE_READ_INTO(dst, __PT_REGS_CAST(x), __PT_PARM8_REG)
 #define GO_PARAM9(dst, x) BPF_CORE_READ_INTO(dst, __PT_REGS_CAST(x), regs[8])
+#elif defined(bpf_target_arm)
+#define GO_PARAM1(dst, x) BPF_CORE_READ_INTO(dst, __PT_REGS_CAST(x), __PT_PARM1_REG)
+#define GO_PARAM2(dst, x) BPF_CORE_READ_INTO(dst, __PT_REGS_CAST(x), __PT_PARM2_REG)
+#define GO_PARAM3(dst, x) BPF_CORE_READ_INTO(dst, __PT_REGS_CAST(x), __PT_PARM3_REG)
+#define GO_PARAM4(dst, x) BPF_CORE_READ_INTO(dst, __PT_REGS_CAST(x), __PT_PARM4_REG)
+#define GO_PARAM5(dst, x) NULL
+#define GO_PARAM6(dst, x) NULL
+#define GO_PARAM7(dst, x) NULL
+#define GO_PARAM8(dst, x) NULL
+#define GO_PARAM9(dst, x) NULL
 #endif
 
 static __always_inline void read_go_arg_into(u64 *dst, struct pt_regs *ctx, u8 index) {

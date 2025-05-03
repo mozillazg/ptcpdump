@@ -91,7 +91,11 @@ struct {
 
 struct {
     __uint(type, BPF_MAP_TYPE_RINGBUF);
+#ifdef LOW_MEMORY
+    __uint(max_entries, 1 << 12);
+#else
     __uint(max_entries, 1 << 24);
+#endif
 } ptcpdump_ptcpdump_exec_events_ringbuf SEC(".maps");
 
 struct {
@@ -115,7 +119,11 @@ struct {
 
 struct {
     __uint(type, BPF_MAP_TYPE_RINGBUF);
+#ifdef LOW_MEMORY
+    __uint(max_entries, 1 << 12);
+#else
     __uint(max_entries, 1 << 17);
+#endif
 } ptcpdump_exit_events_ringbuf SEC(".maps");
 
 const struct exec_event_t *unused2 __attribute__((unused));
@@ -286,11 +294,16 @@ static __always_inline void fill_process_meta(struct task_struct *task, struct p
     BPF_CORE_READ_INTO(&meta->ppid, task, real_parent, tgid);
     BPF_CORE_READ_INTO(&meta->uid, task, cred, uid.val);
 
-    const char *cname = BPF_CORE_READ(task, cgroups, subsys[0], cgroup, kn, name);
-    int size = bpf_core_read_str(&meta->cgroup_name, sizeof(meta->cgroup_name), cname);
-    if (size < MIN_CGROUP_NAME_LEN) {
-        __builtin_memset(&meta->cgroup_name, 0, sizeof(meta->cgroup_name));
+    __builtin_memset(&meta->cgroup_name, 0, sizeof(meta->cgroup_name));
+#ifdef SUPPORT_CGROUP
+    if (bpf_core_field_exists(task->cgroups)) {
+        const char *cname = BPF_CORE_READ(task, cgroups, subsys[0], cgroup, kn, name);
+        int size = bpf_core_read_str(&meta->cgroup_name, sizeof(meta->cgroup_name), cname);
+        if (size < MIN_CGROUP_NAME_LEN) {
+            __builtin_memset(&meta->cgroup_name, 0, sizeof(meta->cgroup_name));
+        }
     }
+#endif
 }
 
 static __always_inline void fill_process_meta_with_thread(struct task_struct *task, struct process_meta_t *meta) {
@@ -303,6 +316,10 @@ static __always_inline void handle_exec(void *ctx, struct task_struct *task, pid
     //    if (process_filter(task) < 0) {
     //        return;
     //    }
+    if (is_kernel_thread(task)) {
+        //        debug_log("[ptcpdump] kernel thread exec\n");
+        return;
+    }
     bool use_ringbuf = false;
 
     struct exec_event_t *event;
@@ -317,7 +334,7 @@ static __always_inline void handle_exec(void *ctx, struct task_struct *task, pid
         event = bpf_map_lookup_elem(&ptcpdump_exec_event_stack, &u32_zero);
     }
     if (!event) {
-        // debug_log("[ptcpdump] ptcpdump_exec_event_stack failed\n");
+        //        debug_log("[ptcpdump] ptcpdump_exec_event_stack failed\n");
         return;
     }
     __builtin_memset(&event->meta, 0, sizeof(event->meta));
@@ -359,26 +376,45 @@ static __always_inline void handle_exec(void *ctx, struct task_struct *task, pid
 }
 
 static __always_inline void handle_exit(void *ctx, struct task_struct *task) {
-    atomic_t live = BPF_CORE_READ(task, signal, live);
-    if (live.counter > 0) {
+    if (is_kernel_thread(task)) {
+        //        debug_log("[ptcpdump] kernel thread exit\n");
         return;
     }
-
     u32 pid = BPF_CORE_READ(task, tgid);
+    if (pid == 0) {
+        //        debug_log("[ptcpdump] pid is 0\n");
+        return;
+    }
+#ifdef P_EXIT_CHECK_LIVE
+    atomic_t live = BPF_CORE_READ(task, signal, live);
+    if (live.counter > 0) {
+        //        debug_log("[ptcpdump] task is still alive\n");
+        return;
+    }
+#else
+    if (pid != BPF_CORE_READ(task, pid)) {
+        //        debug_log("[ptcpdump] pid is not equal tid\n");
+        return;
+    }
+#endif
+
     if (bpf_map_lookup_elem(&ptcpdump_filter_pid_map, &pid)) {
         bpf_map_delete_elem(&ptcpdump_filter_pid_map, &pid);
     }
 
     struct exit_event_t *event;
     bool use_ringbuf = false;
-
+#ifdef LEGACY_KERNEL
+    u32 u32_zero = 0;
+#endif
     if (ringbuf_available()) {
         event = bpf_ringbuf_reserve(&ptcpdump_exit_events_ringbuf, sizeof(*event), 0);
         use_ringbuf = true;
     } else {
-        event = bpf_map_lookup_elem(&ptcpdump_exit_event_tmp, &pid);
+        event = bpf_map_lookup_elem(&ptcpdump_exit_event_tmp, &u32_zero);
     }
     if (!event) {
+        //        debug_log("[ptcpdump] ptcpdump_exit_event_tmp failed\n");
         return;
     }
 
@@ -394,6 +430,20 @@ static __always_inline void handle_exit(void *ctx, struct task_struct *task) {
     }
 
     return;
+}
+
+SEC("tracepoint/sched/sched_process_exec")
+int ptcpdump_tracepoint__sched_process_exec(struct trace_event_raw_sched_process_exec *ctx) {
+    unsigned fname_off = ctx->__data_loc_filename & 0xFFFF;
+    pid_t old_pid = ctx->old_pid;
+    struct task_struct *task = (struct task_struct *)bpf_get_current_task();
+    struct linux_binprm bprm = {0};
+    bprm.filename = (char *)((void *)ctx + fname_off);
+
+    // debug_log("new exec event from tracepoint, pid: %llu\n", ctx->pid);
+
+    handle_exec(ctx, task, old_pid, &bprm);
+    return 0;
 }
 
 SEC("raw_tracepoint/sched_process_exec")
@@ -423,6 +473,41 @@ int BPF_PROG(ptcpdump_tp_btf__sched_process_exit, struct task_struct *task) {
     handle_exit(ctx, task);
     return 0;
 }
+#endif
+
+SEC("kprobe/acct_process")
+int BPF_KPROBE(ptcpdump_kprobe__acct_process) {
+    struct task_struct *task = (struct task_struct *)bpf_get_current_task();
+    //    debug_log("[ptcpdump] kprobe/acct_process\n");
+    handle_exit(ctx, task);
+    return 0;
+}
+
+SEC("kprobe/do_exit")
+int BPF_KPROBE(ptcpdump_kprobe__do_exit) {
+    struct task_struct *task = (struct task_struct *)bpf_get_current_task();
+    //    debug_log("[ptcpdump] kprobe/do_exit\n");
+    handle_exit(ctx, task);
+    return 0;
+}
+
+#ifndef NO_TRACING
+SEC("fentry/acct_process")
+int BPF_PROG(ptcpdump_fentry__acct_process) {
+    struct task_struct *task = (struct task_struct *)bpf_get_current_task();
+    //    debug_log("[ptcpdump] fentry/acct_process\n");
+    handle_exit(ctx, task);
+    return 0;
+}
+
+SEC("fentry/do_exit")
+int BPF_PROG(ptcpdump_fentry__do_exit) {
+    struct task_struct *task = (struct task_struct *)bpf_get_current_task();
+    //    debug_log("[ptcpdump] fentry/do_exit\n");
+    handle_exit(ctx, task);
+    return 0;
+}
+
 #endif
 
 static __always_inline void clone_process_meta(struct process_meta_t *origin, struct process_meta_t *target) {
