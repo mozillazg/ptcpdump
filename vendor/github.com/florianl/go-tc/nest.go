@@ -60,40 +60,19 @@ func marshalAttributes(options []tcOption) ([]byte, error) {
 		case vtFlag:
 			ad.Flag(option.Type, true)
 		case vtInt8:
-			data := bytes.NewBuffer(make([]byte, 0, 1))
-			err := binary.Write(data, nativeEndian, (option.Data).(int8))
-			multiError = concatError(multiError, err)
-			ad.Bytes(option.Type, data.Bytes())
+			ad.Int8(option.Type, (option.Data).(int8))
 		case vtInt16:
-			data := bytes.NewBuffer(make([]byte, 0, 2))
-			err := binary.Write(data, nativeEndian, (option.Data).(int16))
-			multiError = concatError(multiError, err)
-			ad.Bytes(option.Type, data.Bytes())
+			ad.Int16(option.Type, (option.Data).(int16))
 		case vtInt32:
-			data := bytes.NewBuffer(make([]byte, 0, 4))
-			err := binary.Write(data, nativeEndian, (option.Data).(int32))
-			multiError = concatError(multiError, err)
-			ad.Bytes(option.Type, data.Bytes())
+			ad.Int32(option.Type, (option.Data).(int32))
 		case vtInt64:
-			data := bytes.NewBuffer(make([]byte, 0, 8))
-			err := binary.Write(data, nativeEndian, (option.Data).(int64))
-			multiError = concatError(multiError, err)
-			ad.Bytes(option.Type, data.Bytes())
+			ad.Int64(option.Type, (option.Data).(int64))
 		case vtUint16Be:
-			data := bytes.NewBuffer(make([]byte, 0, 2))
-			err := binary.Write(data, binary.BigEndian, (option.Data).(uint16))
-			multiError = concatError(multiError, err)
-			ad.Bytes(option.Type, data.Bytes())
+			ad.Uint16(option.Type, endianSwapUint16((option.Data).(uint16)))
 		case vtUint32Be:
-			data := bytes.NewBuffer(make([]byte, 0, 4))
-			err := binary.Write(data, binary.BigEndian, (option.Data).(uint32))
-			multiError = concatError(multiError, err)
-			ad.Bytes(option.Type, data.Bytes())
+			ad.Uint32(option.Type, endianSwapUint32((option.Data).(uint32)))
 		case vtInt16Be:
-			data := bytes.NewBuffer(make([]byte, 0, 2))
-			err := binary.Write(data, binary.BigEndian, (option.Data).(int16))
-			multiError = concatError(multiError, err)
-			ad.Bytes(option.Type, data.Bytes())
+			ad.Uint16(option.Type, endianSwapUint16(uint16((option.Data).(int16))))
 		default:
 			multiError = fmt.Errorf("unknown interpretation (%d)", option.Interpretation)
 		}

@@ -8,15 +8,16 @@ import (
 	"unsafe"
 )
 
-// FormatterArgs is a parsed sturct from json input
+// FormatterArgs is a parsed struct from json input
 type FormatterArgs struct {
-	Time      string // "2019-07-10T05:35:54.277Z"
-	Level     string // "info"
-	Caller    string // "prog.go:42"
-	Goid      string // "123"
-	Stack     string // "<stack string>"
-	Message   string // "a structure message"
-	KeyValues []struct {
+	Time       string // "2019-07-10T05:35:54.277Z"
+	Level      string // "info"
+	Caller     string // "prog.go:42"
+	CallerFunc string // "main.main"
+	Goid       string // "123"
+	Stack      string // "<stack string>"
+	Message    string // "a structure message"
+	KeyValues  []struct {
 		Key       string // "foo"
 		Value     string // "bar"
 		ValueType byte   // 's'
@@ -43,12 +44,14 @@ func formatterArgsPos(key string) (pos int) {
 		pos = 2
 	case "caller":
 		pos = 3
-	case "goid":
+	case "callerfunc":
 		pos = 4
-	case "stack":
+	case "goid":
 		pos = 5
-	case "message", "msg":
+	case "stack":
 		pos = 6
+	case "message", "msg":
+		pos = 7
 	}
 	return
 }

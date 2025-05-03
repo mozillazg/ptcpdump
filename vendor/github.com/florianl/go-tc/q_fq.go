@@ -27,6 +27,7 @@ const (
 	tcaFqHorizonDrop
 	tcaFqPrioMap
 	tcaFqWeights
+	tcaFqOffloadHorizon
 )
 
 // FqPrioQopt according to tc_prio_qopt in /include/uapi/linux/pkt_sched.h
@@ -54,6 +55,7 @@ type Fq struct {
 	HorizonDrop      *uint8
 	PrioMap          *FqPrioQopt
 	Weights          *[]int32
+	OffloadHorizon   *uint32
 }
 
 // unmarshalFq parses the Fq-encoded data and stores the result in the value pointed to by info.
@@ -62,7 +64,6 @@ func unmarshalFq(data []byte, info *Fq) error {
 	if err != nil {
 		return err
 	}
-	var multiError error
 	for ad.Next() {
 		switch ad.Type() {
 		case tcaFqPLimit:
@@ -97,21 +98,21 @@ func unmarshalFq(data []byte, info *Fq) error {
 			info.HorizonDrop = uint8Ptr(ad.Uint8())
 		case tcaFqPrioMap:
 			priomap := &FqPrioQopt{}
-			err := unmarshalStruct(ad.Bytes(), priomap)
-			multiError = concatError(multiError, err)
+			err = unmarshalStruct(ad.Bytes(), priomap)
 			info.PrioMap = priomap
 		case tcaFqWeights:
 			size := len(ad.Bytes()) / 4
 			weights := make([]int32, size)
 			reader := bytes.NewReader(ad.Bytes())
-			err := binary.Read(reader, nativeEndian, weights)
-			multiError = concatError(multiError, err)
+			err = binary.Read(reader, nativeEndian, weights)
 			info.Weights = &weights
+		case tcaFqOffloadHorizon:
+			info.OffloadHorizon = uint32Ptr(ad.Uint32())
 		default:
 			return fmt.Errorf("unmarshalFq()\t%d\n\t%v", ad.Type(), ad.Bytes())
 		}
 	}
-	return concatError(multiError, ad.Err())
+	return concatError(err, ad.Err())
 }
 
 // marshalFq returns the binary encoding of Fq
@@ -179,6 +180,9 @@ func marshalFq(info *Fq) ([]byte, error) {
 		err := binary.Write(buf, nativeEndian, *info.Weights)
 		multiError = concatError(multiError, err)
 		options = append(options, tcOption{Interpretation: vtBytes, Type: tcaFqWeights, Data: buf.Bytes()})
+	}
+	if info.OffloadHorizon != nil {
+		options = append(options, tcOption{Interpretation: vtUint32, Type: tcaFqOffloadHorizon, Data: uint32Value(info.OffloadHorizon)})
 	}
 
 	if multiError != nil {

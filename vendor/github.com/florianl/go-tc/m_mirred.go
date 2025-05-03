@@ -11,12 +11,14 @@ const (
 	tcaMirredTm
 	tcaMirredParms
 	tcaMirredPad
+	tcaMirredBlockID
 )
 
 // Mirred represents policing attributes of various filters and classes
 type Mirred struct {
-	Parms *MirredParam
-	Tm    *Tcft
+	Parms   *MirredParam
+	Tm      *Tcft
+	BlockID *uint32
 }
 
 // MirredParam from include/uapi/linux/tc_act/tc_mirred.h
@@ -50,6 +52,8 @@ func unmarshalMirred(data []byte, info *Mirred) error {
 			info.Tm = tm
 		case tcaMirredPad:
 			// padding does not contain data, we just skip it
+		case tcaMirredBlockID:
+			info.BlockID = uint32Ptr(ad.Uint32())
 		default:
 			return fmt.Errorf("unmarshalMirred()\t%d\n\t%v", ad.Type(), ad.Bytes())
 		}
@@ -74,6 +78,9 @@ func marshalMirred(info *Mirred) ([]byte, error) {
 			return []byte{}, err
 		}
 		options = append(options, tcOption{Interpretation: vtBytes, Type: tcaMirredParms, Data: data})
+	}
+	if info.BlockID != nil {
+		options = append(options, tcOption{Interpretation: vtUint32, Type: tcaMirredBlockID, Data: uint32Value(info.BlockID)})
 	}
 	return marshalAttributes(options)
 }

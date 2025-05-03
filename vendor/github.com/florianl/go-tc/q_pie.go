@@ -15,17 +15,19 @@ const (
 	tcaPieBeta
 	tcaPieECN
 	tcaPieBytemode
+	tcaPieDqRateEstimator
 )
 
 // Pie contains attributes of the pie discipline
 type Pie struct {
-	Target   *uint32
-	Limit    *uint32
-	TUpdate  *uint32
-	Alpha    *uint32
-	Beta     *uint32
-	ECN      *uint32
-	Bytemode *uint32
+	Target          *uint32
+	Limit           *uint32
+	TUpdate         *uint32
+	Alpha           *uint32
+	Beta            *uint32
+	ECN             *uint32
+	Bytemode        *uint32
+	DqRateEstimator *uint32
 }
 
 // unmarshalPie parses the Pie-encoded data and stores the result in the value pointed to by info.
@@ -50,6 +52,8 @@ func unmarshalPie(data []byte, info *Pie) error {
 			info.ECN = uint32Ptr(ad.Uint32())
 		case tcaPieBytemode:
 			info.Bytemode = uint32Ptr(ad.Uint32())
+		case tcaPieDqRateEstimator:
+			info.DqRateEstimator = uint32Ptr(ad.Uint32())
 		default:
 			return fmt.Errorf("extractPieOptions()\t%d\n\t%v", ad.Type(), ad.Bytes())
 		}
@@ -86,6 +90,9 @@ func marshalPie(info *Pie) ([]byte, error) {
 	}
 	if info.Bytemode != nil {
 		options = append(options, tcOption{Interpretation: vtUint32, Type: tcaPieBytemode, Data: uint32Value(info.Bytemode)})
+	}
+	if info.DqRateEstimator != nil {
+		options = append(options, tcOption{Interpretation: vtUint32, Type: tcaPieDqRateEstimator, Data: uint32Value(info.DqRateEstimator)})
 	}
 	return marshalAttributes(options)
 }

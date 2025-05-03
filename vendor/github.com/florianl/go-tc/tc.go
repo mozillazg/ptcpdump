@@ -3,7 +3,6 @@ package tc
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/florianl/go-tc/internal/unix"
@@ -27,8 +26,6 @@ var _ tcConn = &netlink.Conn{}
 // Tc represents a RTNETLINK wrapper
 type Tc struct {
 	con tcConn
-
-	logger *log.Logger
 }
 
 var nativeEndian = native.Endian
@@ -46,12 +43,6 @@ func Open(config *Config) (*Tc, error) {
 		return nil, err
 	}
 	tc.con = con
-
-	if config.Logger == nil {
-		tc.logger = setDummyLogger()
-	} else {
-		tc.logger = config.Logger
-	}
 
 	return &tc, nil
 }
@@ -107,9 +98,15 @@ func (tc *Tc) action(action int, flags netlink.HeaderFlags, msg interface{}, opt
 	}
 
 	for _, msg := range msgs {
-		if msg.Header.Type == netlink.Error {
-			// see https://www.infradead.org/~tgr/libnl/doc/core.html#core_errmsg
-			tc.logger.Printf("received netlink.Error in action()\n")
+		switch msg.Header.Type {
+		case netlink.Error:
+			errCode := bytesToInt32(msg.Data[:4])
+			// Check if the sucess message is embeded encoded as error code 0:
+			if errCode != 0 {
+				return fmt.Errorf("received error from netlink: %#v", msg)
+			}
+		case netlink.Overrun:
+			return fmt.Errorf("lost netlink data: %#v", msg)
 		}
 	}
 
@@ -294,7 +291,6 @@ func (tc *Tc) Monitor(ctx context.Context, deadline time.Duration, fn HookFunc) 
 				return 0
 			}
 		}
-		tc.logger.Printf("Could not receive message: %v\n", err)
 		return 1
 	})
 }
@@ -362,12 +358,10 @@ func (tc *Tc) monitor(ctx context.Context, deadline time.Duration,
 			for _, msg := range msgs {
 				var monitored Object
 				if err := unmarshalStruct(msg.Data[:20], &monitored.Msg); err != nil {
-					tc.logger.Printf("could not extract tc.Msg from %v\n", msg.Data[:20])
 					continue
 				}
 				if err := extractTcmsgAttributes(int(msg.Header.Type), msg.Data[20:],
 					&monitored.Attribute); err != nil {
-					tc.logger.Printf("could not extract attributes from %v\n", msg.Data[20:36])
 					continue
 				}
 				if fn(uint16(msg.Header.Type), monitored) != 0 {

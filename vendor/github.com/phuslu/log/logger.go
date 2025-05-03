@@ -1695,6 +1695,27 @@ func (e *Entry) NetIPAddr(key string, ip netip.Addr) *Entry {
 	return e
 }
 
+// NetIPAddrs adds IPv4 or IPv6 Addresses to the entry.
+func (e *Entry) NetIPAddrs(key string, ips []netip.Addr) *Entry {
+	if e == nil {
+		return nil
+	}
+
+	e.buf = append(e.buf, ',', '"')
+	e.buf = append(e.buf, key...)
+	e.buf = append(e.buf, '"', ':', '[')
+	for i, ip := range ips {
+		if i > 0 {
+			e.buf = append(e.buf, ',')
+		}
+		e.buf = append(e.buf, '"')
+		e.buf = ip.AppendTo(e.buf)
+		e.buf = append(e.buf, '"')
+	}
+	e.buf = append(e.buf, ']')
+	return e
+}
+
 // NetIPAddrPort adds IPv4 or IPv6 with Port Address to the entry.
 func (e *Entry) NetIPAddrPort(key string, ipPort netip.AddrPort) *Entry {
 	if e == nil {
