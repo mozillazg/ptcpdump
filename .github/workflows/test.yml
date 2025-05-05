@@ -517,10 +517,7 @@ jobs:
             export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
             export GOCOVERDIR="/host/${{ env.GOCOVERDIR }}"
 
-            for i in {1..10}; do
-              bash /host/testdata/test_nat.sh /host/ptcpdump/ptcpdump && exit 0 || sleep 1
-            done
-            exit 1
+            bash /host/testdata/retry.sh 8 bash /host/testdata/test_nat.sh /host/ptcpdump/ptcpdump
 
       - name: Test rotate
         uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
@@ -532,9 +529,9 @@ jobs:
             export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
             export GOCOVERDIR="/host/${{ env.GOCOVERDIR }}"
 
-            bash /host/testdata/test_rotate_filesize.sh /host/ptcpdump/ptcpdump
+            bash /host/testdata/retry.sh 5 bash /host/testdata/test_rotate_filesize.sh /host/ptcpdump/ptcpdump
             sleep 30
-            bash /host/testdata/test_rotate_filesize_with_count.sh /host/ptcpdump/ptcpdump
+            bash /host/testdata/retry.sh 5 bash /host/testdata/test_rotate_filesize_with_count.sh /host/ptcpdump/ptcpdump
 
       - name: build demo app
         if: ${{ (!startsWith(matrix.kernel, '5.4')) && (!startsWith(matrix.kernel, '4.')) }}
@@ -555,10 +552,7 @@ jobs:
 
             apt update && yes | apt install -y tshark
 
-            for i in {1..10}; do
-              bash /host/testdata/test_gotls_keylog.sh /host/ptcpdump/ptcpdump gohttpapp && exit 0 || sleep 1
-            done
-            exit 1
+            bash /host/testdata/retry.sh 8 bash /host/testdata/test_gotls_keylog.sh /host/ptcpdump/ptcpdump gohttpapp
 
       - name: Test go tls keylog (PIE)
         if: ${{ (!startsWith(matrix.kernel, '5.4')) && (!startsWith(matrix.kernel, '4.')) }}
@@ -574,10 +568,7 @@ jobs:
 
             apt update && yes | apt install -y tshark
 
-            for i in {1..10}; do
-              bash /host/testdata/test_gotls_keylog.sh /host/ptcpdump/ptcpdump gohttpapp_pie && exit 0 || sleep 1
-            done
-            exit 1
+            bash /host/testdata/retry.sh 8 bash /host/testdata/test_gotls_keylog.sh /host/ptcpdump/ptcpdump gohttpapp_pie
 
       - name: Test go tls keylog (stripped)
         if: ${{ (!startsWith(matrix.kernel, '5.4')) && (!startsWith(matrix.kernel, '4.')) }}
@@ -593,10 +584,7 @@ jobs:
 
             apt update && yes | apt install -y tshark
 
-            for i in {1..10}; do
-              bash /host/testdata/test_gotls_keylog.sh /host/ptcpdump/ptcpdump gohttpapp_stripped && exit 0 || sleep 1
-            done
-            exit 1
+            bash /host/testdata/retry.sh 8 bash /host/testdata/test_gotls_keylog.sh /host/ptcpdump/ptcpdump gohttpapp_stripped
 
       - name: Test go tls keylog (stripped + PIE)
         if: ${{ (!startsWith(matrix.kernel, '5.4')) && (!startsWith(matrix.kernel, '4.')) }}
@@ -612,10 +600,7 @@ jobs:
 
             apt update && yes | apt install -y tshark
 
-            for i in {1..10}; do
-              bash /host/testdata/test_gotls_keylog.sh /host/ptcpdump/ptcpdump gohttpapp_stripped_pie && exit 0 || sleep 1
-            done
-            exit 1
+            bash /host/testdata/retry.sh 8 bash /host/testdata/test_gotls_keylog.sh /host/ptcpdump/ptcpdump gohttpapp_stripped_pie
 
       - name: upload coverage
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

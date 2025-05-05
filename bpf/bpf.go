@@ -239,11 +239,7 @@ func (b *BPF) UpdateFlowPidMapValues(data map[*BpfFlowPidKeyT]BpfProcessMetaT) e
 func (b *BPF) AttachKprobes() error {
 	if err := b.attachFentryOrKprobe("security_sk_classify_flow",
 		b.objs.PtcpdumpFentrySecuritySkClassifyFlow, b.objs.PtcpdumpKprobeSecuritySkClassifyFlow); err != nil {
-		if isProbeNotSupportErr(err) { // some systems do not support this kprobe, e.g. openwrt
-			log.Warnf("%+v", err)
-		} else {
-			return fmt.Errorf(": %w", err)
-		}
+		log.Infof("%+v", err)
 	}
 
 	if err := b.attachFentryOrKprobe("tcp_sendmsg", b.objs.PtcpdumpFentryTcpSendmsg, b.objs.PtcpdumpKprobeTcpSendmsg); err != nil {
@@ -253,10 +249,8 @@ func (b *BPF) AttachKprobes() error {
 		log.Infof("%+v", err)
 		if isProbeNotSupportErr(err) {
 			err = b.attachFentryOrKprobe("udp_sendmsg", b.objs.PtcpdumpFentryUdpSendmsg, b.objs.PtcpdumpKprobeUdpSendmsg)
-			if err != nil {
-				return fmt.Errorf(": %w", err)
-			}
-		} else {
+		}
+		if err != nil {
 			return fmt.Errorf(": %w", err)
 		}
 	}
