@@ -108,8 +108,6 @@ replace (
 	github.com/cilium/ebpf => github.com/mozillazg/ebpf v0.17.3-0.20250207013525-5746abfb2b20
 	// github.com/cilium/ebpf => ../../cilium/ebpf
 	github.com/gopacket/gopacket => github.com/mozillazg/gopacket v0.0.0-20250502054427-166720d8f623
-
-	github.com/jschwinger233/elibpcap => github.com/mozillazg/elibpcap v0.0.0-20241219172611-54476d490cbb
 	// github.com/gopacket/gopacket => ../../gopacket/gopacket
 	github.com/x-way/pktdump => github.com/mozillazg/pktdump v0.0.9-0.20241102131745-63c34f34f0d1
 	// github.com/x-way/pktdump => ../../x-way/pktdump
