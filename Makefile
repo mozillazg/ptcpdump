@@ -20,7 +20,7 @@ CGO_LDFLAGS_STATIC = "-L$(LIBPCAP_OBJ_DIR) -lpcap $(LIBPCAP_OBJ)"
 CGO_ENABLED ?= 1
 GOARCH ?= $(shell go env GOARCH)
 GOOS ?= $(shell go env GOOS)
-LDFLAGS := -linkmode "external" -extldflags "-static"
+LDFLAGS := -linkmode "external" -extldflags "-fpie" -buildmode=pie
 LDFLAGS += -X github.com/mozillazg/ptcpdump/internal.Version=$(VERSION)
 LDFLAGS += -X github.com/mozillazg/ptcpdump/internal.GitCommit=$(GIT_COMMIT)
 LDFLAGS_DYNAMIC := -X github.com/mozillazg/ptcpdump/internal.Version=$(VERSION)
