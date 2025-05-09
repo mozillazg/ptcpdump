@@ -162,9 +162,9 @@ static __always_inline int fill_packet_event_meta(struct __sk_buff *skb, bool cg
         u64 cookie = bpf_get_socket_cookie(skb);
         if (cookie > 0) {
             if (egress) {
-                debug_log("[ptcpdump] tc egress: bpf_get_socket_cookie success\n");
+                // debug_log("[ptcpdump] tc egress: bpf_get_socket_cookie success\n");
             } else {
-                debug_log("[ptcpdump] tc ingress: bpf_get_socket_cookie success\n");
+                // debug_log("[ptcpdump] tc ingress: bpf_get_socket_cookie success\n");
             }
             struct process_meta_t *value = bpf_map_lookup_elem(&ptcpdump_sock_cookie_pid_map, &cookie);
             if (value) {
@@ -173,9 +173,9 @@ static __always_inline int fill_packet_event_meta(struct __sk_buff *skb, bool cg
             }
         } else {
             if (egress) {
-                debug_log("[ptcpdump] tc egress: bpf_get_socket_cookie failed\n");
+                // debug_log("[ptcpdump] tc egress: bpf_get_socket_cookie failed\n");
             } else {
-                debug_log("[ptcpdump] tc ingress: bpf_get_socket_cookie failed\n");
+                // debug_log("[ptcpdump] tc ingress: bpf_get_socket_cookie failed\n");
             }
         }
     }
