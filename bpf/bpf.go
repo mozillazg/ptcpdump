@@ -238,21 +238,29 @@ func (b *BPF) UpdateFlowPidMapValues(data map[*BpfFlowPidKeyT]BpfProcessMetaT) e
 
 func (b *BPF) AttachKprobes() error {
 	if err := b.attachFentryOrKprobe("security_sk_classify_flow",
-		b.objs.PtcpdumpFentrySecuritySkClassifyFlow, b.objs.PtcpdumpKprobeSecuritySkClassifyFlow); err != nil {
+		b.objs.PtcpdumpFentrySecuritySkClassifyFlow,
+		b.objs.PtcpdumpKprobeSecuritySkClassifyFlow); err != nil {
 		log.Infof("%+v", err)
 	}
 
-	if err := b.attachFentryOrKprobe("tcp_sendmsg", b.objs.PtcpdumpFentryTcpSendmsg, b.objs.PtcpdumpKprobeTcpSendmsg); err != nil {
+	if err := b.attachFentryOrKprobe("tcp_sendmsg", b.objs.PtcpdumpFentryTcpSendmsg,
+		b.objs.PtcpdumpKprobeTcpSendmsg); err != nil {
 		return fmt.Errorf(": %w", err)
 	}
-	if err := b.attachFentryOrKprobe("udp_send_skb", b.objs.PtcpdumpFentryUdpSendSkb, b.objs.PtcpdumpKprobeUdpSendSkb); err != nil {
+	if err := b.attachFentryOrKprobe("udp_send_skb", b.objs.PtcpdumpFentryUdpSendSkb,
+		b.objs.PtcpdumpKprobeUdpSendSkb); err != nil {
 		log.Infof("%+v", err)
 		if isProbeNotSupportErr(err) {
-			err = b.attachFentryOrKprobe("udp_sendmsg", b.objs.PtcpdumpFentryUdpSendmsg, b.objs.PtcpdumpKprobeUdpSendmsg)
+			err = b.attachFentryOrKprobe("udp_sendmsg", b.objs.PtcpdumpFentryUdpSendmsg,
+				b.objs.PtcpdumpKprobeUdpSendmsg)
 		}
 		if err != nil {
 			return fmt.Errorf(": %w", err)
 		}
+	}
+	if err := b.attachFentryOrKprobe("free_skb", b.objs.PtcpdumpFentryFreeSkb,
+		b.objs.PtcpdumpKprobeFreeSkb); err != nil {
+		log.Infof("%+v", err)
 	}
 
 	if err := b.attachNatHooks(); err != nil {

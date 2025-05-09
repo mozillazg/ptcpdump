@@ -196,7 +196,7 @@ jobs:
   k8s-integration-test:
     runs-on: ubuntu-latest
     needs: build
-    timeout-minutes: 15
+    timeout-minutes: 20
     env:
       GOCOVERDIR: '${{ github.workspace }}/coverage'
 
