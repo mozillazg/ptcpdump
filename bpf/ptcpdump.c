@@ -99,24 +99,27 @@ const struct packet_event_t *unused1 __attribute__((unused));
 const struct gconfig_t *unused6 __attribute__((unused));
 
 #ifndef NO_CGROUP_PROG
-SEC("cgroup/sock_create")
-int ptcpdump_cgroup__sock_create(void *ctx) {
+
+static __always_inline int store_socket_cookie_process_info(void *ctx) {
     if (!bpf_core_enum_value_exists(enum bpf_func_id, BPF_FUNC_get_socket_cookie)) {
-        return 1;
+        goto out;
     }
     u64 cookie = bpf_get_socket_cookie(ctx);
     if (cookie <= 0) {
         // debug_log("[ptcpdump] sock_create: bpf_get_socket_cookie failed\n");
-        return 1;
+        goto out;
+    }
+    if (bpf_map_lookup_elem(&ptcpdump_sock_cookie_pid_map, &cookie)) {
+        goto out;
     }
 
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
     if (is_kernel_thread(task)) {
-        return 1;
+        goto out;
     }
     if (parent_process_filter(task) < 0) {
         if (process_filter(task) < 0) {
-            return 1;
+            goto out;
         }
     }
     // debug_log("sock_create\n");
@@ -127,27 +130,120 @@ int ptcpdump_cgroup__sock_create(void *ctx) {
     int ret = bpf_map_update_elem(&ptcpdump_sock_cookie_pid_map, &cookie, &meta, BPF_ANY);
     if (ret != 0) {
         // debug_log("[ptcpdump] bpf_map_update_elem ptcpdump_sock_cookie_pid_map failed: %d\n", ret);
+        goto out;
+    } else {
+        return 1;
+    }
+
+out:
+    return 0;
+}
+
+SEC("cgroup/sock_create")
+int ptcpdump_cgroup__sock_create(void *ctx) {
+    if (store_socket_cookie_process_info(ctx) != 0) {
+        u32 pid = bpf_get_current_pid_tgid() >> 32;
+        debug_log("[ptcpdump] saved cookie from cgroup/sock_create, pid: %lld\n", pid);
     }
 
     return 1;
 }
-#endif
 
-#ifndef NO_CGROUP_PROG
+SEC("cgroup/post_bind4")
+int ptcpdump_cgroup__post_bind4(void *ctx) {
+    if (store_socket_cookie_process_info(ctx) != 0) {
+        u32 pid = bpf_get_current_pid_tgid() >> 32;
+        debug_log("[ptcpdump] saved cookie from cgroup/post_bind4, pid: %lld\n", pid);
+    }
+
+    return 1;
+}
+
+SEC("cgroup/post_bind6")
+int ptcpdump_cgroup__post_bind6(void *ctx) {
+    if (store_socket_cookie_process_info(ctx) != 0) {
+        u32 pid = bpf_get_current_pid_tgid() >> 32;
+        debug_log("[ptcpdump] saved cookie from cgroup/post_bind6, pid: %lld\n", pid);
+    }
+
+    return 1;
+}
+
+SEC("cgroup/connect4")
+int ptcpdump_cgroup__connect4(void *ctx) {
+    if (store_socket_cookie_process_info(ctx) != 0) {
+        u32 pid = bpf_get_current_pid_tgid() >> 32;
+        debug_log("[ptcpdump] saved cookie from cgroup/connect4, pid: %lld\n", pid);
+    }
+
+    return 1;
+}
+
+SEC("cgroup/connect6")
+int ptcpdump_cgroup__connect6(void *ctx) {
+    if (store_socket_cookie_process_info(ctx) != 0) {
+        u32 pid = bpf_get_current_pid_tgid() >> 32;
+        debug_log("[ptcpdump] saved cookie from cgroup/connect6, pid: %lld\n", pid);
+    }
+
+    return 1;
+}
+
+SEC("cgroup/sendmsg4")
+int ptcpdump_cgroup__sendmsg4(void *ctx) {
+    if (store_socket_cookie_process_info(ctx) != 0) {
+        u32 pid = bpf_get_current_pid_tgid() >> 32;
+        debug_log("[ptcpdump] saved cookie from cgroup/sendmsg4, pid: %lld\n", pid);
+    }
+
+    return 1;
+}
+
+SEC("cgroup/sendmsg6")
+int ptcpdump_cgroup__sendmsg6(void *ctx) {
+    if (store_socket_cookie_process_info(ctx) != 0) {
+        u32 pid = bpf_get_current_pid_tgid() >> 32;
+        debug_log("[ptcpdump] saved cookie from cgroup/sendmsg6, pid: %lld\n", pid);
+    }
+
+    return 1;
+}
+
+SEC("cgroup/recvmsg4")
+int ptcpdump_cgroup__recvmsg4(void *ctx) {
+    if (store_socket_cookie_process_info(ctx) != 0) {
+        u32 pid = bpf_get_current_pid_tgid() >> 32;
+        debug_log("[ptcpdump] saved cookie from cgroup/recvmsg4, pid: %lld\n", pid);
+    }
+
+    return 1;
+}
+
+SEC("cgroup/recvmsg6")
+int ptcpdump_cgroup__recvmsg6(void *ctx) {
+    if (store_socket_cookie_process_info(ctx) != 0) {
+        u32 pid = bpf_get_current_pid_tgid() >> 32;
+        debug_log("[ptcpdump] saved cookie from cgroup/recvmsg6, pid: %lld\n", pid);
+    }
+
+    return 1;
+}
+
 SEC("cgroup/sock_release")
 int ptcpdump_cgroup__sock_release(void *ctx) {
     if (!bpf_core_enum_value_exists(enum bpf_func_id, BPF_FUNC_get_socket_cookie)) {
-        return 1;
+        goto out;
     }
     u64 cookie = bpf_get_socket_cookie(ctx);
     if (cookie <= 0) {
-        return 1;
+        goto out;
     }
 
     bpf_map_delete_elem(&ptcpdump_sock_cookie_pid_map, &cookie);
+out:
     return 1;
 }
-#endif
+#endif /* NO_CGROUP_PROG */
 
 static __always_inline int handle_security_sk_classify_flow(struct sock *sk) {
     struct flow_pid_key_t key = {0};
@@ -208,6 +304,8 @@ static __always_inline void handle_sendmsg(struct sock *sk) {
         }
     }
     // debug_log("sendmsg match\n");
+
+    // get and save cookie
 
     fill_sk_meta(sk, &key);
     if (bpf_map_lookup_elem(&ptcpdump_flow_pid_map, &key)) {
@@ -346,6 +444,11 @@ static __always_inline int fill_packet_event_meta(struct __sk_buff *skb, bool cg
     if (bpf_core_enum_value_exists(enum bpf_func_id, BPF_FUNC_get_socket_cookie)) {
         u64 cookie = bpf_get_socket_cookie(skb);
         if (cookie > 0) {
+            if (egress) {
+                debug_log("[ptcpdump] tc egress: bpf_get_socket_cookie success\n");
+            } else {
+                debug_log("[ptcpdump] tc ingress: bpf_get_socket_cookie success\n");
+            }
             struct process_meta_t *value = bpf_map_lookup_elem(&ptcpdump_sock_cookie_pid_map, &cookie);
             if (value) {
                 clone_process_meta(value, pid_meta);
@@ -353,9 +456,9 @@ static __always_inline int fill_packet_event_meta(struct __sk_buff *skb, bool cg
             }
         } else {
             if (egress) {
-                // debug_log("[ptcpdump] tc egress: bpf_get_socket_cookie failed\n");
+                debug_log("[ptcpdump] tc egress: bpf_get_socket_cookie failed\n");
             } else {
-                // debug_log("[ptcpdump] tc ingress: bpf_get_socket_cookie failed\n");
+                debug_log("[ptcpdump] tc ingress: bpf_get_socket_cookie failed\n");
             }
         }
     }
