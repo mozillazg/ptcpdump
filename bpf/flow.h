@@ -88,9 +88,9 @@ out:
 
 SEC("cgroup/sock_create")
 int ptcpdump_cgroup__sock_create(void *ctx) {
-    if (store_cgroup_socket_cookie(ctx, true) != 0) {
-        u32 pid = bpf_get_current_pid_tgid() >> 32;
-        debug_log("[ptcpdump] saved cookie from cgroup/sock_create, pid: %lld\n", pid);
+    if (store_cgroup_socket_cookie(ctx, true) > 0) {
+        //        u32 pid = bpf_get_current_pid_tgid() >> 32;
+        //        debug_log("[ptcpdump] saved cookie from cgroup/sock_create, pid: %lld\n", pid);
     }
 
     return 1;
@@ -98,9 +98,9 @@ int ptcpdump_cgroup__sock_create(void *ctx) {
 
 SEC("cgroup/post_bind4")
 int ptcpdump_cgroup__post_bind4(void *ctx) {
-    if (store_cgroup_socket_cookie(ctx, false) != 0) {
-        u32 pid = bpf_get_current_pid_tgid() >> 32;
-        debug_log("[ptcpdump] saved cookie from cgroup/post_bind4, pid: %lld\n", pid);
+    if (store_cgroup_socket_cookie(ctx, false) > 0) {
+        //        u32 pid = bpf_get_current_pid_tgid() >> 32;
+        //        debug_log("[ptcpdump] saved cookie from cgroup/post_bind4, pid: %lld\n", pid);
     }
 
     return 1;
@@ -108,9 +108,9 @@ int ptcpdump_cgroup__post_bind4(void *ctx) {
 
 SEC("cgroup/post_bind6")
 int ptcpdump_cgroup__post_bind6(void *ctx) {
-    if (store_cgroup_socket_cookie(ctx, false) != 0) {
-        u32 pid = bpf_get_current_pid_tgid() >> 32;
-        debug_log("[ptcpdump] saved cookie from cgroup/post_bind6, pid: %lld\n", pid);
+    if (store_cgroup_socket_cookie(ctx, false) > 0) {
+        //        u32 pid = bpf_get_current_pid_tgid() >> 32;
+        //        debug_log("[ptcpdump] saved cookie from cgroup/post_bind6, pid: %lld\n", pid);
     }
 
     return 1;
@@ -118,9 +118,9 @@ int ptcpdump_cgroup__post_bind6(void *ctx) {
 
 SEC("cgroup/connect4")
 int ptcpdump_cgroup__connect4(void *ctx) {
-    if (store_cgroup_socket_cookie(ctx, false) != 0) {
-        u32 pid = bpf_get_current_pid_tgid() >> 32;
-        debug_log("[ptcpdump] saved cookie from cgroup/connect4, pid: %lld\n", pid);
+    if (store_cgroup_socket_cookie(ctx, false) > 0) {
+        //        u32 pid = bpf_get_current_pid_tgid() >> 32;
+        //        debug_log("[ptcpdump] saved cookie from cgroup/connect4, pid: %lld\n", pid);
     }
 
     return 1;
@@ -128,9 +128,9 @@ int ptcpdump_cgroup__connect4(void *ctx) {
 
 SEC("cgroup/connect6")
 int ptcpdump_cgroup__connect6(void *ctx) {
-    if (store_cgroup_socket_cookie(ctx, false) != 0) {
-        u32 pid = bpf_get_current_pid_tgid() >> 32;
-        debug_log("[ptcpdump] saved cookie from cgroup/connect6, pid: %lld\n", pid);
+    if (store_cgroup_socket_cookie(ctx, false) > 0) {
+        //        u32 pid = bpf_get_current_pid_tgid() >> 32;
+        //        debug_log("[ptcpdump] saved cookie from cgroup/connect6, pid: %lld\n", pid);
     }
 
     return 1;
@@ -138,9 +138,9 @@ int ptcpdump_cgroup__connect6(void *ctx) {
 
 SEC("cgroup/sendmsg4")
 int ptcpdump_cgroup__sendmsg4(void *ctx) {
-    if (store_cgroup_socket_cookie(ctx, false) != 0) {
-        u32 pid = bpf_get_current_pid_tgid() >> 32;
-        debug_log("[ptcpdump] saved cookie from cgroup/sendmsg4, pid: %lld\n", pid);
+    if (store_cgroup_socket_cookie(ctx, false) > 0) {
+        //        u32 pid = bpf_get_current_pid_tgid() >> 32;
+        //        debug_log("[ptcpdump] saved cookie from cgroup/sendmsg4, pid: %lld\n", pid);
     }
 
     return 1;
@@ -148,9 +148,9 @@ int ptcpdump_cgroup__sendmsg4(void *ctx) {
 
 SEC("cgroup/sendmsg6")
 int ptcpdump_cgroup__sendmsg6(void *ctx) {
-    if (store_cgroup_socket_cookie(ctx, false) != 0) {
-        u32 pid = bpf_get_current_pid_tgid() >> 32;
-        debug_log("[ptcpdump] saved cookie from cgroup/sendmsg6, pid: %lld\n", pid);
+    if (store_cgroup_socket_cookie(ctx, false) > 0) {
+        //        u32 pid = bpf_get_current_pid_tgid() >> 32;
+        //        debug_log("[ptcpdump] saved cookie from cgroup/sendmsg6, pid: %lld\n", pid);
     }
 
     return 1;
@@ -158,9 +158,9 @@ int ptcpdump_cgroup__sendmsg6(void *ctx) {
 
 SEC("cgroup/recvmsg4")
 int ptcpdump_cgroup__recvmsg4(void *ctx) {
-    if (store_cgroup_socket_cookie(ctx, false) != 0) {
-        u32 pid = bpf_get_current_pid_tgid() >> 32;
-        debug_log("[ptcpdump] saved cookie from cgroup/recvmsg4, pid: %lld\n", pid);
+    if (store_cgroup_socket_cookie(ctx, false) > 0) {
+        //        u32 pid = bpf_get_current_pid_tgid() >> 32;
+        //        debug_log("[ptcpdump] saved cookie from cgroup/recvmsg4, pid: %lld\n", pid);
     }
 
     return 1;
@@ -168,9 +168,9 @@ int ptcpdump_cgroup__recvmsg4(void *ctx) {
 
 SEC("cgroup/recvmsg6")
 int ptcpdump_cgroup__recvmsg6(void *ctx) {
-    if (store_cgroup_socket_cookie(ctx, false) != 0) {
-        u32 pid = bpf_get_current_pid_tgid() >> 32;
-        debug_log("[ptcpdump] saved cookie from cgroup/recvmsg6, pid: %lld\n", pid);
+    if (store_cgroup_socket_cookie(ctx, false) > 0) {
+        //        u32 pid = bpf_get_current_pid_tgid() >> 32;
+        //        debug_log("[ptcpdump] saved cookie from cgroup/recvmsg6, pid: %lld\n", pid);
     }
 
     return 1;
