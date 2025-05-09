@@ -179,6 +179,7 @@ type BpfProgramSpecs struct {
 	PtcpdumpCgroupSkbIngress                     *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup_skb__ingress"`
 	PtcpdumpFentryAcctProcess                    *ebpf.ProgramSpec `ebpf:"ptcpdump_fentry__acct_process"`
 	PtcpdumpFentryDoExit                         *ebpf.ProgramSpec `ebpf:"ptcpdump_fentry__do_exit"`
+	PtcpdumpFentryFreeSkb                        *ebpf.ProgramSpec `ebpf:"ptcpdump_fentry__free_skb"`
 	PtcpdumpFentryNfNatManipPkt                  *ebpf.ProgramSpec `ebpf:"ptcpdump_fentry__nf_nat_manip_pkt"`
 	PtcpdumpFentryNfNatPacket                    *ebpf.ProgramSpec `ebpf:"ptcpdump_fentry__nf_nat_packet"`
 	PtcpdumpFentrySecuritySkClassifyFlow         *ebpf.ProgramSpec `ebpf:"ptcpdump_fentry__security_sk_classify_flow"`
@@ -189,6 +190,7 @@ type BpfProgramSpecs struct {
 	PtcpdumpKprobeDevChangeNetNamespace          *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__dev_change_net_namespace"`
 	PtcpdumpKprobeDevChangeNetNamespaceLegacy    *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__dev_change_net_namespace_legacy"`
 	PtcpdumpKprobeDoExit                         *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__do_exit"`
+	PtcpdumpKprobeFreeSkb                        *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__free_skb"`
 	PtcpdumpKprobeNfNatManipPkt                  *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__nf_nat_manip_pkt"`
 	PtcpdumpKprobeNfNatPacket                    *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__nf_nat_packet"`
 	PtcpdumpKprobeRegisterNetdevice              *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__register_netdevice"`
@@ -400,6 +402,7 @@ type BpfPrograms struct {
 	PtcpdumpCgroupSkbIngress                     *ebpf.Program `ebpf:"ptcpdump_cgroup_skb__ingress"`
 	PtcpdumpFentryAcctProcess                    *ebpf.Program `ebpf:"ptcpdump_fentry__acct_process"`
 	PtcpdumpFentryDoExit                         *ebpf.Program `ebpf:"ptcpdump_fentry__do_exit"`
+	PtcpdumpFentryFreeSkb                        *ebpf.Program `ebpf:"ptcpdump_fentry__free_skb"`
 	PtcpdumpFentryNfNatManipPkt                  *ebpf.Program `ebpf:"ptcpdump_fentry__nf_nat_manip_pkt"`
 	PtcpdumpFentryNfNatPacket                    *ebpf.Program `ebpf:"ptcpdump_fentry__nf_nat_packet"`
 	PtcpdumpFentrySecuritySkClassifyFlow         *ebpf.Program `ebpf:"ptcpdump_fentry__security_sk_classify_flow"`
@@ -410,6 +413,7 @@ type BpfPrograms struct {
 	PtcpdumpKprobeDevChangeNetNamespace          *ebpf.Program `ebpf:"ptcpdump_kprobe__dev_change_net_namespace"`
 	PtcpdumpKprobeDevChangeNetNamespaceLegacy    *ebpf.Program `ebpf:"ptcpdump_kprobe__dev_change_net_namespace_legacy"`
 	PtcpdumpKprobeDoExit                         *ebpf.Program `ebpf:"ptcpdump_kprobe__do_exit"`
+	PtcpdumpKprobeFreeSkb                        *ebpf.Program `ebpf:"ptcpdump_kprobe__free_skb"`
 	PtcpdumpKprobeNfNatManipPkt                  *ebpf.Program `ebpf:"ptcpdump_kprobe__nf_nat_manip_pkt"`
 	PtcpdumpKprobeNfNatPacket                    *ebpf.Program `ebpf:"ptcpdump_kprobe__nf_nat_packet"`
 	PtcpdumpKprobeRegisterNetdevice              *ebpf.Program `ebpf:"ptcpdump_kprobe__register_netdevice"`
@@ -455,6 +459,7 @@ func (p *BpfPrograms) Close() error {
 		p.PtcpdumpCgroupSkbIngress,
 		p.PtcpdumpFentryAcctProcess,
 		p.PtcpdumpFentryDoExit,
+		p.PtcpdumpFentryFreeSkb,
 		p.PtcpdumpFentryNfNatManipPkt,
 		p.PtcpdumpFentryNfNatPacket,
 		p.PtcpdumpFentrySecuritySkClassifyFlow,
@@ -465,6 +470,7 @@ func (p *BpfPrograms) Close() error {
 		p.PtcpdumpKprobeDevChangeNetNamespace,
 		p.PtcpdumpKprobeDevChangeNetNamespaceLegacy,
 		p.PtcpdumpKprobeDoExit,
+		p.PtcpdumpKprobeFreeSkb,
 		p.PtcpdumpKprobeNfNatManipPkt,
 		p.PtcpdumpKprobeNfNatPacket,
 		p.PtcpdumpKprobeRegisterNetdevice,

@@ -33,17 +33,14 @@ struct {
 } ptcpdump_flow_pid_map SEC(".maps");
 
 #ifndef NO_CGROUP_PROG
-static __always_inline int store_socket_cookie_process_info(void *ctx) {
-    if (!bpf_core_enum_value_exists(enum bpf_func_id, BPF_FUNC_get_socket_cookie)) {
-        goto out;
-    }
-    u64 cookie = bpf_get_socket_cookie(ctx);
+static __always_inline int store_socket_cookie_process_info(u64 cookie, bool overwrite) {
     if (cookie <= 0) {
-        // debug_log("[ptcpdump] sock_create: bpf_get_socket_cookie failed\n");
         goto out;
     }
-    if (bpf_map_lookup_elem(&ptcpdump_sock_cookie_pid_map, &cookie)) {
-        goto out;
+    if (!overwrite) {
+        if (bpf_map_lookup_elem(&ptcpdump_sock_cookie_pid_map, &cookie)) {
+            goto out;
+        }
     }
 
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
@@ -59,8 +56,9 @@ static __always_inline int store_socket_cookie_process_info(void *ctx) {
 
     struct process_meta_t meta = {0};
     fill_process_meta(task, &meta);
+    u64 flags = overwrite ? BPF_ANY : BPF_NOEXIST;
 
-    int ret = bpf_map_update_elem(&ptcpdump_sock_cookie_pid_map, &cookie, &meta, BPF_ANY);
+    int ret = bpf_map_update_elem(&ptcpdump_sock_cookie_pid_map, &cookie, &meta, flags);
     if (ret != 0) {
         // debug_log("[ptcpdump] bpf_map_update_elem ptcpdump_sock_cookie_pid_map failed: %d\n", ret);
         goto out;
@@ -72,9 +70,25 @@ out:
     return 0;
 }
 
+static __always_inline int store_cgroup_socket_cookie(void *ctx, bool overwrite) {
+    if (!bpf_core_enum_value_exists(enum bpf_func_id, BPF_FUNC_get_socket_cookie)) {
+        goto out;
+    }
+    u64 cookie = bpf_get_socket_cookie(ctx);
+    if (cookie <= 0) {
+        // debug_log("[ptcpdump] sock_create: bpf_get_socket_cookie failed\n");
+        goto out;
+    }
+
+    return store_socket_cookie_process_info(cookie, overwrite);
+
+out:
+    return 0;
+}
+
 SEC("cgroup/sock_create")
 int ptcpdump_cgroup__sock_create(void *ctx) {
-    if (store_socket_cookie_process_info(ctx) != 0) {
+    if (store_cgroup_socket_cookie(ctx, true) != 0) {
         u32 pid = bpf_get_current_pid_tgid() >> 32;
         debug_log("[ptcpdump] saved cookie from cgroup/sock_create, pid: %lld\n", pid);
     }
@@ -84,7 +98,7 @@ int ptcpdump_cgroup__sock_create(void *ctx) {
 
 SEC("cgroup/post_bind4")
 int ptcpdump_cgroup__post_bind4(void *ctx) {
-    if (store_socket_cookie_process_info(ctx) != 0) {
+    if (store_cgroup_socket_cookie(ctx, false) != 0) {
         u32 pid = bpf_get_current_pid_tgid() >> 32;
         debug_log("[ptcpdump] saved cookie from cgroup/post_bind4, pid: %lld\n", pid);
     }
@@ -94,7 +108,7 @@ int ptcpdump_cgroup__post_bind4(void *ctx) {
 
 SEC("cgroup/post_bind6")
 int ptcpdump_cgroup__post_bind6(void *ctx) {
-    if (store_socket_cookie_process_info(ctx) != 0) {
+    if (store_cgroup_socket_cookie(ctx, false) != 0) {
         u32 pid = bpf_get_current_pid_tgid() >> 32;
         debug_log("[ptcpdump] saved cookie from cgroup/post_bind6, pid: %lld\n", pid);
     }
@@ -104,7 +118,7 @@ int ptcpdump_cgroup__post_bind6(void *ctx) {
 
 SEC("cgroup/connect4")
 int ptcpdump_cgroup__connect4(void *ctx) {
-    if (store_socket_cookie_process_info(ctx) != 0) {
+    if (store_cgroup_socket_cookie(ctx, false) != 0) {
         u32 pid = bpf_get_current_pid_tgid() >> 32;
         debug_log("[ptcpdump] saved cookie from cgroup/connect4, pid: %lld\n", pid);
     }
@@ -114,7 +128,7 @@ int ptcpdump_cgroup__connect4(void *ctx) {
 
 SEC("cgroup/connect6")
 int ptcpdump_cgroup__connect6(void *ctx) {
-    if (store_socket_cookie_process_info(ctx) != 0) {
+    if (store_cgroup_socket_cookie(ctx, false) != 0) {
         u32 pid = bpf_get_current_pid_tgid() >> 32;
         debug_log("[ptcpdump] saved cookie from cgroup/connect6, pid: %lld\n", pid);
     }
@@ -124,7 +138,7 @@ int ptcpdump_cgroup__connect6(void *ctx) {
 
 SEC("cgroup/sendmsg4")
 int ptcpdump_cgroup__sendmsg4(void *ctx) {
-    if (store_socket_cookie_process_info(ctx) != 0) {
+    if (store_cgroup_socket_cookie(ctx, false) != 0) {
         u32 pid = bpf_get_current_pid_tgid() >> 32;
         debug_log("[ptcpdump] saved cookie from cgroup/sendmsg4, pid: %lld\n", pid);
     }
@@ -134,7 +148,7 @@ int ptcpdump_cgroup__sendmsg4(void *ctx) {
 
 SEC("cgroup/sendmsg6")
 int ptcpdump_cgroup__sendmsg6(void *ctx) {
-    if (store_socket_cookie_process_info(ctx) != 0) {
+    if (store_cgroup_socket_cookie(ctx, false) != 0) {
         u32 pid = bpf_get_current_pid_tgid() >> 32;
         debug_log("[ptcpdump] saved cookie from cgroup/sendmsg6, pid: %lld\n", pid);
     }
@@ -144,7 +158,7 @@ int ptcpdump_cgroup__sendmsg6(void *ctx) {
 
 SEC("cgroup/recvmsg4")
 int ptcpdump_cgroup__recvmsg4(void *ctx) {
-    if (store_socket_cookie_process_info(ctx) != 0) {
+    if (store_cgroup_socket_cookie(ctx, false) != 0) {
         u32 pid = bpf_get_current_pid_tgid() >> 32;
         debug_log("[ptcpdump] saved cookie from cgroup/recvmsg4, pid: %lld\n", pid);
     }
@@ -154,7 +168,7 @@ int ptcpdump_cgroup__recvmsg4(void *ctx) {
 
 SEC("cgroup/recvmsg6")
 int ptcpdump_cgroup__recvmsg6(void *ctx) {
-    if (store_socket_cookie_process_info(ctx) != 0) {
+    if (store_cgroup_socket_cookie(ctx, false) != 0) {
         u32 pid = bpf_get_current_pid_tgid() >> 32;
         debug_log("[ptcpdump] saved cookie from cgroup/recvmsg6, pid: %lld\n", pid);
     }
@@ -178,109 +192,91 @@ out:
 }
 #endif /* NO_CGROUP_PROG */
 
-static __always_inline int handle_security_sk_classify_flow(struct sock *sk) {
+static __always_inline int handle_sock(struct sock *sk, bool overwrite) {
     struct flow_pid_key_t key = {0};
     struct process_meta_t value = {0};
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
+    u64 cookie = BPF_CORE_READ(sk, __sk_common.skc_cookie.counter);
 
     if (is_kernel_thread(task)) {
-        return 0;
+        goto out;
     }
     if (parent_process_filter(task) < 0) {
         if (process_filter(task) < 0) {
-            return 0;
+            goto out;
         }
     }
     // debug_log("flow match\n");
 
     fill_sk_meta(sk, &key);
+
+    if (!overwrite) {
+        if (bpf_map_lookup_elem(&ptcpdump_flow_pid_map, &key)) {
+            goto out;
+        }
+    }
+
     fill_process_meta(task, &value);
+    if (cookie > 0) {
+        bpf_map_update_elem(&ptcpdump_sock_cookie_pid_map, &cookie, &value, BPF_NOEXIST);
+    }
 
     if (key.sport == 0) {
-        return 0;
+        goto out;
     }
 
     // debug_log("[ptcpdump] flow key: %pI4 %d\n", &key.saddr[0], key.sport);
+    u64 flags = overwrite ? BPF_ANY : BPF_NOEXIST;
 
-    int ret = bpf_map_update_elem(&ptcpdump_flow_pid_map, &key, &value, BPF_ANY);
+    int ret = bpf_map_update_elem(&ptcpdump_flow_pid_map, &key, &value, flags);
     if (ret != 0) {
         // debug_log("bpf_map_update_elem ptcpdump_flow_pid_map failed: %d\n", ret);
+    } else {
+        return 1;
     }
+
+out:
     return 0;
 }
 
 SEC("kprobe/security_sk_classify_flow")
 int BPF_KPROBE(ptcpdump_kprobe__security_sk_classify_flow, struct sock *sk) {
-    handle_security_sk_classify_flow(sk);
+    handle_sock(sk, true);
     return 0;
 }
 
 #ifndef NO_TRACING
 SEC("fentry/security_sk_classify_flow")
 int BPF_PROG(ptcpdump_fentry__security_sk_classify_flow, struct sock *sk) {
-    handle_security_sk_classify_flow(sk);
+    handle_sock(sk, true);
     return 0;
 }
 #endif
 
-static __always_inline void handle_sendmsg(struct sock *sk) {
-    struct flow_pid_key_t key = {0};
-    struct process_meta_t value = {0};
-    struct task_struct *task = (struct task_struct *)bpf_get_current_task();
-
-    if (is_kernel_thread(task)) {
-        return;
-    }
-    if (parent_process_filter(task) < 0) {
-        if (process_filter(task) < 0) {
-            return;
-        }
-    }
-    // debug_log("sendmsg match\n");
-
-    // get and save cookie
-
-    fill_sk_meta(sk, &key);
-    if (bpf_map_lookup_elem(&ptcpdump_flow_pid_map, &key)) {
-        return;
-    }
-
-    fill_process_meta(task, &value);
-    if (key.sport == 0) {
-        return;
-    }
-    // debug_log("[ptcpdump][sendmsg] flow key: %pI4 %d\n", &key.saddr[0], key.sport);
-    int ret = bpf_map_update_elem(&ptcpdump_flow_pid_map, &key, &value, BPF_NOEXIST);
-    if (ret != 0) {
-        // debug_log("[handle_tcp_sendmsg] bpf_map_update_elem ptcpdump_flow_pid_map failed: %d\n", ret);
-    }
-    return;
-}
-
 SEC("kprobe/tcp_sendmsg")
 int BPF_KPROBE(ptcpdump_kprobe__tcp_sendmsg, struct sock *sk) {
-    handle_sendmsg(sk);
+    handle_sock(sk, false);
     return 0;
 }
 
 #ifndef NO_TRACING
 SEC("fentry/tcp_sendmsg")
 int BPF_PROG(ptcpdump_fentry__tcp_sendmsg, struct sock *sk) {
-    handle_sendmsg(sk);
+    handle_sock(sk, false);
     return 0;
 }
 #endif
 
 SEC("kprobe/udp_sendmsg")
 int BPF_KPROBE(ptcpdump_kprobe__udp_sendmsg, struct sock *sk) {
-    handle_sendmsg(sk);
+    handle_sock(sk, false);
     return 0;
 }
 
 #ifndef NO_TRACING
 SEC("fentry/udp_sendmsg")
 int BPF_PROG(ptcpdump_fentry__udp_sendmsg, struct sock *sk) {
-    handle_sendmsg(sk);
+    handle_sock(sk, false);
     return 0;
 }
 #endif
@@ -288,7 +284,7 @@ int BPF_PROG(ptcpdump_fentry__udp_sendmsg, struct sock *sk) {
 SEC("kprobe/udp_send_skb")
 int BPF_KPROBE(ptcpdump_kprobe__udp_send_skb, struct sk_buff *skb) {
     struct sock *sk = BPF_CORE_READ(skb, sk);
-    handle_sendmsg(sk);
+    handle_sock(sk, false);
     return 0;
 }
 
@@ -296,7 +292,27 @@ int BPF_KPROBE(ptcpdump_kprobe__udp_send_skb, struct sk_buff *skb) {
 SEC("fentry/udp_send_skb")
 int BPF_PROG(ptcpdump_fentry__udp_send_skb, struct sk_buff *skb) {
     struct sock *sk = BPF_CORE_READ(skb, sk);
-    handle_sendmsg(sk);
+    handle_sock(sk, false);
+    return 0;
+}
+#endif
+
+SEC("kprobe/free_skb")
+int BPF_KPROBE(ptcpdump_kprobe__free_skb, struct sk_buff *skb) {
+    u64 cookie = BPF_CORE_READ(skb, sk, __sk_common.skc_cookie.counter);
+    if (cookie > 0) {
+        bpf_map_delete_elem(&ptcpdump_sock_cookie_pid_map, &cookie);
+    }
+    return 0;
+}
+
+#ifndef NO_TRACING
+SEC("fentry/free_skb")
+int BPF_PROG(ptcpdump_fentry__free_skb, struct sk_buff *skb) {
+    u64 cookie = BPF_CORE_READ(skb, sk, __sk_common.skc_cookie.counter);
+    if (cookie > 0) {
+        bpf_map_delete_elem(&ptcpdump_sock_cookie_pid_map, &cookie);
+    }
     return 0;
 }
 #endif
