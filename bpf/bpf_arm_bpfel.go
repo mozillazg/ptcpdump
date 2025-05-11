@@ -168,14 +168,14 @@ type BpfProgramSpecs struct {
 	PtcpdumpCgroupSkbIngress                 *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup_skb__ingress"`
 	PtcpdumpFentryAcctProcess                *ebpf.ProgramSpec `ebpf:"ptcpdump_fentry__acct_process"`
 	PtcpdumpFentryDoExit                     *ebpf.ProgramSpec `ebpf:"ptcpdump_fentry__do_exit"`
-	PtcpdumpFentryFreeSkb                    *ebpf.ProgramSpec `ebpf:"ptcpdump_fentry__free_skb"`
+	PtcpdumpFentryKfreeSkb                   *ebpf.ProgramSpec `ebpf:"ptcpdump_fentry__kfree_skb"`
 	PtcpdumpFentrySecuritySkClassifyFlow     *ebpf.ProgramSpec `ebpf:"ptcpdump_fentry__security_sk_classify_flow"`
 	PtcpdumpFentryTcpSendmsg                 *ebpf.ProgramSpec `ebpf:"ptcpdump_fentry__tcp_sendmsg"`
 	PtcpdumpFentryUdpSendSkb                 *ebpf.ProgramSpec `ebpf:"ptcpdump_fentry__udp_send_skb"`
 	PtcpdumpFentryUdpSendmsg                 *ebpf.ProgramSpec `ebpf:"ptcpdump_fentry__udp_sendmsg"`
 	PtcpdumpKprobeAcctProcess                *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__acct_process"`
 	PtcpdumpKprobeDoExit                     *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__do_exit"`
-	PtcpdumpKprobeFreeSkb                    *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__free_skb"`
+	PtcpdumpKprobeKfreeSkb                   *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__kfree_skb"`
 	PtcpdumpKprobeSecuritySkClassifyFlow     *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__security_sk_classify_flow"`
 	PtcpdumpKprobeTcpSendmsg                 *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__tcp_sendmsg"`
 	PtcpdumpKprobeUdpSendSkb                 *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__udp_send_skb"`
@@ -351,14 +351,14 @@ type BpfPrograms struct {
 	PtcpdumpCgroupSkbIngress                 *ebpf.Program `ebpf:"ptcpdump_cgroup_skb__ingress"`
 	PtcpdumpFentryAcctProcess                *ebpf.Program `ebpf:"ptcpdump_fentry__acct_process"`
 	PtcpdumpFentryDoExit                     *ebpf.Program `ebpf:"ptcpdump_fentry__do_exit"`
-	PtcpdumpFentryFreeSkb                    *ebpf.Program `ebpf:"ptcpdump_fentry__free_skb"`
+	PtcpdumpFentryKfreeSkb                   *ebpf.Program `ebpf:"ptcpdump_fentry__kfree_skb"`
 	PtcpdumpFentrySecuritySkClassifyFlow     *ebpf.Program `ebpf:"ptcpdump_fentry__security_sk_classify_flow"`
 	PtcpdumpFentryTcpSendmsg                 *ebpf.Program `ebpf:"ptcpdump_fentry__tcp_sendmsg"`
 	PtcpdumpFentryUdpSendSkb                 *ebpf.Program `ebpf:"ptcpdump_fentry__udp_send_skb"`
 	PtcpdumpFentryUdpSendmsg                 *ebpf.Program `ebpf:"ptcpdump_fentry__udp_sendmsg"`
 	PtcpdumpKprobeAcctProcess                *ebpf.Program `ebpf:"ptcpdump_kprobe__acct_process"`
 	PtcpdumpKprobeDoExit                     *ebpf.Program `ebpf:"ptcpdump_kprobe__do_exit"`
-	PtcpdumpKprobeFreeSkb                    *ebpf.Program `ebpf:"ptcpdump_kprobe__free_skb"`
+	PtcpdumpKprobeKfreeSkb                   *ebpf.Program `ebpf:"ptcpdump_kprobe__kfree_skb"`
 	PtcpdumpKprobeSecuritySkClassifyFlow     *ebpf.Program `ebpf:"ptcpdump_kprobe__security_sk_classify_flow"`
 	PtcpdumpKprobeTcpSendmsg                 *ebpf.Program `ebpf:"ptcpdump_kprobe__tcp_sendmsg"`
 	PtcpdumpKprobeUdpSendSkb                 *ebpf.Program `ebpf:"ptcpdump_kprobe__udp_send_skb"`
@@ -396,14 +396,14 @@ func (p *BpfPrograms) Close() error {
 		p.PtcpdumpCgroupSkbIngress,
 		p.PtcpdumpFentryAcctProcess,
 		p.PtcpdumpFentryDoExit,
-		p.PtcpdumpFentryFreeSkb,
+		p.PtcpdumpFentryKfreeSkb,
 		p.PtcpdumpFentrySecuritySkClassifyFlow,
 		p.PtcpdumpFentryTcpSendmsg,
 		p.PtcpdumpFentryUdpSendSkb,
 		p.PtcpdumpFentryUdpSendmsg,
 		p.PtcpdumpKprobeAcctProcess,
 		p.PtcpdumpKprobeDoExit,
-		p.PtcpdumpKprobeFreeSkb,
+		p.PtcpdumpKprobeKfreeSkb,
 		p.PtcpdumpKprobeSecuritySkClassifyFlow,
 		p.PtcpdumpKprobeTcpSendmsg,
 		p.PtcpdumpKprobeUdpSendSkb,

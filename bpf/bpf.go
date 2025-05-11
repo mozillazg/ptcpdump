@@ -305,8 +305,8 @@ func (b *BPF) AttachKprobes() error {
 			return fmt.Errorf(": %w", err)
 		}
 	}
-	if err := b.attachFentryOrKprobe("free_skb", b.objs.PtcpdumpFentryFreeSkb,
-		b.objs.PtcpdumpKprobeFreeSkb); err != nil {
+	if err := b.attachFentryOrKprobe("__kfree_skb", b.objs.PtcpdumpFentryKfreeSkb,
+		b.objs.PtcpdumpKprobeKfreeSkb); err != nil {
 		log.Infof("%+v", err)
 	}
 

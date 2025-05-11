@@ -83,23 +83,23 @@ func (b *BPF) handlePacketEvents(ctx context.Context, reader *EventReader, ch ch
 
 		record, err := reader.Read()
 		if err != nil {
-			if errors.Is(err, perf.ErrClosed) || errors.Is(err, ringbuf.ErrClosed) {
+			if isReaderClosedErr(err) {
 				return
 			}
-			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
-				log.Debugf("got EOF error: %s", err)
+			if isCanIgnoreEventErr(err) {
+				log.Infof("got error: %+v", err)
 				continue
 			}
-			log.Errorf("read packet event failed: %s", err)
+			log.Errorf("read packet event failed: %+v", err)
 			continue
 		}
 		event, err := parsePacketEvent(record.RawSample)
 		if err != nil {
-			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
-				log.Debugf("got EOF error: %s", err)
+			if isCanIgnoreEventErr(err) {
+				log.Infof("got error: %+v", err)
 				continue
 			}
-			log.Errorf("parse packet event failed: %s", err)
+			log.Errorf("parse packet event failed: %+v", err)
 		} else {
 			ch <- *event
 		}
@@ -170,24 +170,24 @@ func (b *BPF) handleExecEvents(ctx context.Context, reader *EventReader, ch chan
 
 		record, err := reader.Read()
 		if err != nil {
-			if errors.Is(err, perf.ErrClosed) || errors.Is(err, ringbuf.ErrClosed) {
-				log.Infof("got closed error: %s", err)
+			if isReaderClosedErr(err) {
+				log.Infof("got closed error: %+v", err)
 				return
 			}
-			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
-				log.Debugf("got EOF error: %s", err)
+			if isCanIgnoreEventErr(err) {
+				log.Infof("got error: %+v", err)
 				continue
 			}
-			log.Errorf("read exec event failed: %s", err)
+			log.Errorf("read exec event failed: %+v", err)
 			continue
 		}
 		event, err := parseExecEvent(record.RawSample)
 		if err != nil {
-			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
-				log.Debugf("got EOF error: %s", err)
+			if isCanIgnoreEventErr(err) {
+				log.Infof("got error: %+v", err)
 				continue
 			}
-			log.Errorf("parse exec event failed: %s", err)
+			log.Errorf("parse exec event failed: %+v", err)
 		} else {
 			ch <- *event
 		}
@@ -248,23 +248,23 @@ func (b *BPF) handleGoKeyLogEvents(ctx context.Context, reader *EventReader, ch 
 
 		record, err := reader.Read()
 		if err != nil {
-			if errors.Is(err, perf.ErrClosed) || errors.Is(err, ringbuf.ErrClosed) {
+			if isReaderClosedErr(err) {
 				return
 			}
-			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
-				log.Debugf("got EOF error: %s", err)
+			if isCanIgnoreEventErr(err) {
+				log.Infof("got error: %+v", err)
 				continue
 			}
-			log.Errorf("read go tls keylog event failed: %s", err)
+			log.Errorf("read go tls keylog event failed: %+v", err)
 			continue
 		}
 		event, err := parseGoKeyLogEvent(record.RawSample)
 		if err != nil {
-			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
-				log.Debugf("got EOF error: %s", err)
+			if isCanIgnoreEventErr(err) {
+				log.Infof("got error: %+v", err)
 				continue
 			}
-			log.Errorf("parse go tls keylog event failed: %s", err)
+			log.Errorf("parse go tls keylog event failed: %+v", err)
 		} else {
 			ch <- *event
 		}
@@ -284,23 +284,23 @@ func (b *BPF) handleNewNetDeviceEvents(ctx context.Context, reader *perf.Reader,
 
 		record, err := reader.Read()
 		if err != nil {
-			if errors.Is(err, perf.ErrClosed) || errors.Is(err, ringbuf.ErrClosed) {
+			if isReaderClosedErr(err) {
 				return
 			}
-			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
-				log.Debugf("got EOF error: %s", err)
+			if isCanIgnoreEventErr(err) {
+				log.Infof("got error: %+v", err)
 				continue
 			}
-			log.Errorf("read new net device event failed: %s", err)
+			log.Errorf("read new net device event failed: %+v", err)
 			continue
 		}
 		event, err := parseNewNetDeviceEvent(record.RawSample)
 		if err != nil {
-			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
-				log.Debugf("got EOF error: %s", err)
+			if isCanIgnoreEventErr(err) {
+				log.Infof("got error: %+v", err)
 				continue
 			}
-			log.Errorf("parse new net device event failed: %s", err)
+			log.Errorf("parse new net device event failed: %+v", err)
 		} else {
 			ch <- *event
 			dev := event.Dev
@@ -331,23 +331,23 @@ func (b *BPF) handleNetDeviceChangeEvents(ctx context.Context, reader *perf.Read
 
 		record, err := reader.Read()
 		if err != nil {
-			if errors.Is(err, perf.ErrClosed) || errors.Is(err, ringbuf.ErrClosed) {
+			if isReaderClosedErr(err) {
 				return
 			}
-			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
-				log.Debugf("got EOF error: %s", err)
+			if isCanIgnoreEventErr(err) {
+				log.Infof("got error: %+v", err)
 				continue
 			}
-			log.Errorf("read net device change event failed: %s", err)
+			log.Errorf("read net device change event failed: %+v", err)
 			continue
 		}
 		event, err := parseNetDeviceChangeEvent(record.RawSample)
 		if err != nil {
-			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
-				log.Debugf("got EOF error: %s", err)
+			if isCanIgnoreEventErr(err) {
+				log.Infof("got error: %+v", err)
 				continue
 			}
-			log.Errorf("parse net device change event failed: %s", err)
+			log.Errorf("parse net device change event failed: %+v", err)
 		} else {
 			ch <- *event
 			oldDev := event.OldDevice
@@ -380,23 +380,23 @@ func (b *BPF) handleMountEvents(ctx context.Context, reader *perf.Reader, ch cha
 
 		record, err := reader.Read()
 		if err != nil {
-			if errors.Is(err, perf.ErrClosed) || errors.Is(err, ringbuf.ErrClosed) {
+			if isReaderClosedErr(err) {
 				return
 			}
-			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
-				log.Debugf("got EOF error: %s", err)
+			if isCanIgnoreEventErr(err) {
+				log.Infof("got error: %+v", err)
 				continue
 			}
-			log.Errorf("read mount event failed: %s", err)
+			log.Errorf("read mount event failed: %+v", err)
 			continue
 		}
 		event, err := parseMountEvent(record.RawSample)
 		if err != nil {
-			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
-				log.Debugf("got EOF error: %s", err)
+			if isCanIgnoreEventErr(err) {
+				log.Infof("got error: %+v", err)
 				continue
 			}
-			log.Errorf("parse mount event failed: %s", err)
+			log.Errorf("parse mount event failed: %+v", err)
 		} else {
 			ch <- *event
 			log.Infof("new BpfMountEventT: (source %s, dest %s, fstype, %s)",
@@ -483,23 +483,23 @@ func (b *BPF) handleExitEvents(ctx context.Context, reader *EventReader, ch chan
 
 		record, err := reader.Read()
 		if err != nil {
-			if errors.Is(err, perf.ErrClosed) || errors.Is(err, ringbuf.ErrClosed) {
+			if isReaderClosedErr(err) {
 				return
 			}
-			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
-				log.Debugf("got EOF error: %s", err)
+			if isCanIgnoreEventErr(err) {
+				log.Infof("got error: %+v", err)
 				continue
 			}
-			log.Errorf("read exit event failed: %s", err)
+			log.Errorf("read exit event failed: %+v", err)
 			continue
 		}
 		event, err := parseExitEvent(record.RawSample)
 		if err != nil {
-			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
-				log.Debugf("got EOF error: %s", err)
+			if isCanIgnoreEventErr(err) {
+				log.Infof("got error: %+v", err)
 				continue
 			}
-			log.Errorf("parse exit event failed: %s", err)
+			log.Errorf("parse exit event failed: %+v", err)
 		} else {
 			ch <- *event
 		}
@@ -556,4 +556,21 @@ func (r *EventReader) Close() error {
 		return r.ringbufReader.Close()
 	}
 	return nil
+}
+
+func isCanIgnoreEventErr(err error) bool {
+	if err == nil {
+		return false
+	}
+	return errors.Is(err, io.EOF) ||
+		errors.Is(err, io.ErrUnexpectedEOF) ||
+		perf.IsUnknownEvent(err)
+}
+
+func isReaderClosedErr(err error) bool {
+	if err == nil {
+		return false
+	}
+	return errors.Is(err, perf.ErrClosed) ||
+		errors.Is(err, ringbuf.ErrClosed)
 }

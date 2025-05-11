@@ -297,8 +297,8 @@ int BPF_PROG(ptcpdump_fentry__udp_send_skb, struct sk_buff *skb) {
 }
 #endif
 
-SEC("kprobe/free_skb")
-int BPF_KPROBE(ptcpdump_kprobe__free_skb, struct sk_buff *skb) {
+SEC("kprobe/__kfree_skb")
+int BPF_KPROBE(ptcpdump_kprobe__kfree_skb, struct sk_buff *skb) {
     u64 cookie = BPF_CORE_READ(skb, sk, __sk_common.skc_cookie.counter);
     if (cookie > 0) {
         bpf_map_delete_elem(&ptcpdump_sock_cookie_pid_map, &cookie);
@@ -307,8 +307,8 @@ int BPF_KPROBE(ptcpdump_kprobe__free_skb, struct sk_buff *skb) {
 }
 
 #ifndef NO_TRACING
-SEC("fentry/free_skb")
-int BPF_PROG(ptcpdump_fentry__free_skb, struct sk_buff *skb) {
+SEC("fentry/__kfree_skb")
+int BPF_PROG(ptcpdump_fentry__kfree_skb, struct sk_buff *skb) {
     u64 cookie = BPF_CORE_READ(skb, sk, __sk_common.skc_cookie.counter);
     if (cookie > 0) {
         bpf_map_delete_elem(&ptcpdump_sock_cookie_pid_map, &cookie);

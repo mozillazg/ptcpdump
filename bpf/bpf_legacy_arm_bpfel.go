@@ -56,7 +56,7 @@ type bpf_legacySpecs struct {
 type bpf_legacyProgramSpecs struct {
 	PtcpdumpKprobeAcctProcess                *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__acct_process"`
 	PtcpdumpKprobeDoExit                     *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__do_exit"`
-	PtcpdumpKprobeFreeSkb                    *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__free_skb"`
+	PtcpdumpKprobeKfreeSkb                   *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__kfree_skb"`
 	PtcpdumpKprobeSecuritySkClassifyFlow     *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__security_sk_classify_flow"`
 	PtcpdumpKprobeTcpSendmsg                 *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__tcp_sendmsg"`
 	PtcpdumpKprobeUdpSendSkb                 *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__udp_send_skb"`
@@ -211,7 +211,7 @@ type bpf_legacyVariables struct {
 type bpf_legacyPrograms struct {
 	PtcpdumpKprobeAcctProcess                *ebpf.Program `ebpf:"ptcpdump_kprobe__acct_process"`
 	PtcpdumpKprobeDoExit                     *ebpf.Program `ebpf:"ptcpdump_kprobe__do_exit"`
-	PtcpdumpKprobeFreeSkb                    *ebpf.Program `ebpf:"ptcpdump_kprobe__free_skb"`
+	PtcpdumpKprobeKfreeSkb                   *ebpf.Program `ebpf:"ptcpdump_kprobe__kfree_skb"`
 	PtcpdumpKprobeSecuritySkClassifyFlow     *ebpf.Program `ebpf:"ptcpdump_kprobe__security_sk_classify_flow"`
 	PtcpdumpKprobeTcpSendmsg                 *ebpf.Program `ebpf:"ptcpdump_kprobe__tcp_sendmsg"`
 	PtcpdumpKprobeUdpSendSkb                 *ebpf.Program `ebpf:"ptcpdump_kprobe__udp_send_skb"`
@@ -230,7 +230,7 @@ func (p *bpf_legacyPrograms) Close() error {
 	return _Bpf_legacyClose(
 		p.PtcpdumpKprobeAcctProcess,
 		p.PtcpdumpKprobeDoExit,
-		p.PtcpdumpKprobeFreeSkb,
+		p.PtcpdumpKprobeKfreeSkb,
 		p.PtcpdumpKprobeSecuritySkClassifyFlow,
 		p.PtcpdumpKprobeTcpSendmsg,
 		p.PtcpdumpKprobeUdpSendSkb,
