@@ -196,7 +196,7 @@ jobs:
   k8s-integration-test:
     runs-on: ubuntu-latest
     needs: build
-    timeout-minutes: 15
+    timeout-minutes: 20
     env:
       GOCOVERDIR: '${{ github.workspace }}/coverage'
 
@@ -290,7 +290,7 @@ jobs:
           - 'bpf-20250505.013202'
           # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
           - 'bpf-next-20250505.013202'
-    timeout-minutes: 15
+    timeout-minutes: 20
     runs-on: ubuntu-latest
     env:
       GOCOVERDIR: coverage

@@ -5,6 +5,7 @@
 [![amd64-e2e](https://img.shields.io/github/actions/workflow/status/mozillazg/ptcpdump/test.yml?label=x86_64%20(amd64)%20e2e)](https://github.com/mozillazg/ptcpdump/actions/workflows/test.yml)
 [![arm64-e2e](https://img.shields.io/circleci/build/gh/mozillazg/ptcpdump/master?label=aarch64%20(arm64)%20e2e)](https://app.circleci.com/pipelines/github/mozillazg/ptcpdump?branch=master)
 [![Release](https://img.shields.io/github/v/release/mozillazg/ptcpdump)](https://github.com/mozillazg/ptcpdump/releases)
+![Coveralls](https://img.shields.io/coverallsCoverage/github/mozillazg/ptcpdump?branch=master)
 English | [中文](README.zh-CN.md)
 
 
@@ -247,10 +248,10 @@ Docker images for `ptcpdump` are published at https://quay.io/repository/ptcpdum
 ptcpdump supports specifying a particular eBPF technology for packet capture through the
 `--backend` flag.
 
-| --backend    | eBPF Program Type          | L2 data | Cross network namespace |
-|--------------|----------------------------|---------|-------------------------|
-| `tc`         | `BPF_PROG_TYPE_SCHED_CLS`  | ✅       | ❌                       |
-| `cgroup-skb` | `BPF_PROG_TYPE_CGROUP_SKB` | ❌       | ✅                       |
+| --backend    | eBPF Program Type          | cgroup v2    | L2 data | Cross network namespace |
+|--------------|----------------------------|--------------|---------|-------------------------|
+| `tc`         | `BPF_PROG_TYPE_SCHED_CLS`  | Recommended  | ✅       | ❌                       |
+| `cgroup-skb` | `BPF_PROG_TYPE_CGROUP_SKB` | **Required** | ❌       | ✅                       |
 
 
 If this flag isn't specified, it defaults to `tc`.
@@ -261,6 +262,7 @@ If this flag isn't specified, it defaults to `tc`.
 
 ### Flags
 
+<details>
 
     Usage:
       ptcpdump [flags] [expression] [-- command [args]]
@@ -327,7 +329,8 @@ If this flag isn't specified, it defaults to `tc`.
           --version                                      Print the ptcpdump and libpcap version strings and exit
       -w, --write-file string                            Write the raw packets to file rather than parsing and printing them out. They can later be printed with the -r option. Standard output is used if file is '-'. e.g. ptcpdump.pcapng
           --write-keylog-file -- CMD [ARGS]              Write TLS Key Log file to this path (experimental: only support unstripped Go binary and must combined with -- CMD [ARGS])
-    
+
+</details>
 
 <p align="right"><a href="#top">🔝</a></p>
 
