@@ -225,6 +225,8 @@ func (c *Capturer) AttachCaptureHooks() error {
 	switch c.opts.Backend {
 	case types.NetHookBackendCgroupSkb:
 		return c.bpf.AttachCgroupSkb(c.cgroupPath, c.opts.DirectionOut, c.opts.DirectionIn)
+	case types.NetHookBackendTpBtf:
+		return c.bpf.AttachTpBtfCaptureHooks(c.opts.DirectionOut, c.opts.DirectionIn)
 	default:
 		return c.attachTcHooksToDevs(c.opts.Devices)
 	}

@@ -182,6 +182,87 @@ static __always_inline int parse_skb_meta(struct __sk_buff *skb, bool l2_skb, st
     return 0;
 }
 
+#define is_unset(x)		((x) == (typeof(x))~0U)
+
+static __always_inline bool is_valid_mac(u16 mac) {
+	return !is_unset(mac);
+}
+
+static __always_inline bool is_valid_network(u16 network) {
+	return network && !is_unset(network);
+}
+
+static __always_inline bool has_valid_mac_data(const struct sk_buff *skb) {
+	u16 mac = BPF_CORE_READ(skb, mac_header);
+	u16 network = BPF_CORE_READ(skb, network_header);
+
+	return is_valid_mac(mac) &&
+	       BPF_CORE_READ(skb, dev, hard_header_len) && mac < network &&
+	       !(is_valid_network(network) && network == mac && BPF_CORE_READ(skb, mac_len) == 0);
+}
+
+static __always_inline int parse_skb_buff_meta(struct sk_buff *skb, struct packet_meta_t *meta) {
+    meta->ifindex = BPF_CORE_READ(skb, dev, ifindex);
+
+    void *skb_head = BPF_CORE_READ(skb, head);
+    u16 mac_header = BPF_CORE_READ(skb, mac_header);
+    u16 network_header = BPF_CORE_READ(skb, network_header);
+	u16 transport_header = BPF_CORE_READ(skb, transport_header);
+
+    if (has_valid_mac_data(skb)) {
+        struct ethhdr *eth_hdr = (struct ethhdr *) (skb_head + mac_header);
+        meta->l2.h_protocol = bpf_ntohs(BPF_CORE_READ(eth_hdr, h_proto));
+    }
+    if (!meta->l2.h_protocol) {
+        meta->l2.h_protocol = bpf_ntohs(BPF_CORE_READ(skb, protocol));
+    }
+
+    bpf_printk("meta->l2.h_protocol: %d", meta->l2.h_protocol);
+	switch (meta->l2.h_protocol) {
+        case ETH_P_IP: {
+	        struct iphdr *ip_hdr = (struct iphdr *) (skb_head + network_header);
+            BPF_CORE_READ_INTO(&meta->l3.protocol, ip_hdr, protocol);
+            BPF_CORE_READ_INTO(&meta->l3.saddr[0], ip_hdr, saddr);
+            BPF_CORE_READ_INTO(&meta->l3.daddr[0], ip_hdr, daddr);
+        }
+        case ETH_P_IPV6: {
+            struct ipv6hdr *ip_hdr = (struct ipv6hdr *) (skb_head + network_header);
+            BPF_CORE_READ_INTO(&meta->l3.protocol, ip_hdr, nexthdr);
+            BPF_CORE_READ_INTO(&meta->l3.saddr, ip_hdr, saddr);
+            BPF_CORE_READ_INTO(&meta->l3.daddr, ip_hdr, daddr);
+        }
+    }
+    // TODO: fix. the values are wrong
+    bpf_printk("meta->l3.protocol: %pI4 %d, %s", &meta->l3.saddr[0],
+        meta->l3.protocol, bpf_ntohs(meta->l3.protocol));
+    switch (meta->l3.protocol) {
+        case IPPROTO_TCP: {
+            struct tcphdr *tcp_hdr = (struct tcphdr *) (skb_head + transport_header);
+            meta->l4.sport = bpf_ntohs(BPF_CORE_READ(tcp_hdr, source));
+            bpf_printk("tcp_hdr->source: %d", meta->l4.sport);
+            meta->l4.dport = bpf_ntohs(BPF_CORE_READ(tcp_hdr, dest));
+        }
+        case IPPROTO_UDP: {
+            struct udphdr *udp_hdr = (struct udphdr *) (skb_head + transport_header);
+            meta->l4.sport = bpf_ntohs(BPF_CORE_READ(udp_hdr, source));
+            meta->l4.dport = bpf_ntohs(BPF_CORE_READ(udp_hdr, dest));
+        }
+    #ifdef SUPPORT_SCTP
+        case IPPROTO_SCTP: {
+            // some systems do not have struct sctphdr. e.g. openwrt
+            if (!bpf_core_type_exists(struct sctphdr)) {
+                break;
+            }
+            struct sctphdr *sctp_hdr = (struct sctphdr *) (skb_head + transport_header);
+            meta->l4.sport = bpf_ntohs(BPF_CORE_READ(sctp_hdr, source));
+            meta->l4.dport = bpf_ntohs(BPF_CORE_READ(sctp_hdr, dest));
+        }
+    #endif /* SUPPORT_SCTP */
+    }
+
+    return 0;
+}
+
 static __always_inline void fill_sk_meta(struct sock *sk, struct flow_pid_key_t *meta) {
     BPF_CORE_READ_INTO(&meta->sport, sk, __sk_common.skc_num);
     u32 family = BPF_CORE_READ(sk, __sk_common.skc_family);

@@ -187,6 +187,8 @@ type BpfProgramSpecs struct {
 	PtcpdumpTcIngress                        *ebpf.ProgramSpec `ebpf:"ptcpdump_tc_ingress"`
 	PtcpdumpTcxEgress                        *ebpf.ProgramSpec `ebpf:"ptcpdump_tcx_egress"`
 	PtcpdumpTcxIngress                       *ebpf.ProgramSpec `ebpf:"ptcpdump_tcx_ingress"`
+	PtcpdumpTpBtfNetDevQueue                 *ebpf.ProgramSpec `ebpf:"ptcpdump_tp_btf__net_dev_queue"`
+	PtcpdumpTpBtfNetifReceiveSkb             *ebpf.ProgramSpec `ebpf:"ptcpdump_tp_btf__netif_receive_skb"`
 	PtcpdumpTpBtfSchedProcessExec            *ebpf.ProgramSpec `ebpf:"ptcpdump_tp_btf__sched_process_exec"`
 	PtcpdumpTpBtfSchedProcessExit            *ebpf.ProgramSpec `ebpf:"ptcpdump_tp_btf__sched_process_exit"`
 	PtcpdumpTpBtfSchedProcessFork            *ebpf.ProgramSpec `ebpf:"ptcpdump_tp_btf__sched_process_fork"`
@@ -368,6 +370,8 @@ type BpfPrograms struct {
 	PtcpdumpTcIngress                        *ebpf.Program `ebpf:"ptcpdump_tc_ingress"`
 	PtcpdumpTcxEgress                        *ebpf.Program `ebpf:"ptcpdump_tcx_egress"`
 	PtcpdumpTcxIngress                       *ebpf.Program `ebpf:"ptcpdump_tcx_ingress"`
+	PtcpdumpTpBtfNetDevQueue                 *ebpf.Program `ebpf:"ptcpdump_tp_btf__net_dev_queue"`
+	PtcpdumpTpBtfNetifReceiveSkb             *ebpf.Program `ebpf:"ptcpdump_tp_btf__netif_receive_skb"`
 	PtcpdumpTpBtfSchedProcessExec            *ebpf.Program `ebpf:"ptcpdump_tp_btf__sched_process_exec"`
 	PtcpdumpTpBtfSchedProcessExit            *ebpf.Program `ebpf:"ptcpdump_tp_btf__sched_process_exit"`
 	PtcpdumpTpBtfSchedProcessFork            *ebpf.Program `ebpf:"ptcpdump_tp_btf__sched_process_fork"`
@@ -411,6 +415,8 @@ func (p *BpfPrograms) Close() error {
 		p.PtcpdumpTcIngress,
 		p.PtcpdumpTcxEgress,
 		p.PtcpdumpTcxIngress,
+		p.PtcpdumpTpBtfNetDevQueue,
+		p.PtcpdumpTpBtfNetifReceiveSkb,
 		p.PtcpdumpTpBtfSchedProcessExec,
 		p.PtcpdumpTpBtfSchedProcessExit,
 		p.PtcpdumpTpBtfSchedProcessFork,

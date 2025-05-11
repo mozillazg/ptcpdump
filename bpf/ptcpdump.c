@@ -89,6 +89,10 @@ static __noinline bool pcap_filter(void *_skb, void *__skb, void *___skb, void *
     return data != data_end && _skb == __skb && __skb == ___skb;
 }
 
+static __noinline bool pcap_filter_l3(void *_skb, void *__skb, void *___skb, void *data, void *data_end) {
+    return data != data_end && _skb == __skb && __skb == ___skb;
+}
+
 static __always_inline void route_packet(struct packet_meta_t *packet_meta, struct nat_flow_t *flow) {
     flow->saddr[0] = packet_meta->l3.saddr[0];
     flow->saddr[1] = packet_meta->l3.saddr[1];
@@ -383,4 +387,191 @@ int ptcpdump_cgroup_skb__egress(struct __sk_buff *skb) {
     handle_cgroup_skb(skb, true);
     return 1;
 }
+#endif /* NO_CGROUP_PROG */
+
+
+#ifndef NO_TRACING
+
+static __always_inline int fill_packet_event_meta_from_sk_buff(struct sk_buff *skb,
+                                                  struct packet_event_meta_t *event_meta, bool egress) {
+    struct process_meta_t *pid_meta = &event_meta->process;
+
+    struct packet_meta_t packet_meta = {0};
+    int ret = parse_skb_buff_meta(skb, &packet_meta);
+    if (ret < 0) {
+        // debug_log("[ptcpdump] parse skb meta failed\n");
+        return -1;
+    }
+    event_meta->l3_protocol = packet_meta.l2.h_protocol;
+    // debug_log("l3_protocol: %d\n", event_meta->l3_protocol);
+    event_meta->ifindex = packet_meta.ifindex;
+
+    u64 cookie = BPF_CORE_READ(skb, sk, __sk_common.skc_cookie.counter);
+    if (cookie > 0) {
+        if (egress) {
+             debug_log("[ptcpdump] tp-btf egress: get socket cookie success\n");
+        } else {
+             debug_log("[ptcpdump] tp-btf ingress: get socket cookie success\n");
+        }
+        struct process_meta_t *value = bpf_map_lookup_elem(&ptcpdump_sock_cookie_pid_map, &cookie);
+        if (value) {
+            clone_process_meta(value, pid_meta);
+            return 0;
+        }
+    } else {
+        if (egress) {
+            // debug_log("[ptcpdump] tc egress: bpf_get_socket_cookie failed\n");
+        } else {
+            // debug_log("[ptcpdump] tc ingress: bpf_get_socket_cookie failed\n");
+        }
+    }
+
+    struct nat_flow_t flow = {0};
+    route_packet(&packet_meta, &flow);
+
+    bool have_pid_filter = have_pid_filter_rules();
+    struct flow_pid_key_t key = {0};
+
+#pragma unroll
+    for (int i = 0; i < 2; i++) {
+        if (egress) {
+            key.saddr[0] = flow.saddr[0];
+            key.saddr[1] = flow.saddr[1];
+            key.sport = flow.sport;
+        } else {
+            key.saddr[0] = flow.daddr[0];
+            key.saddr[1] = flow.daddr[1];
+            key.sport = flow.dport;
+        }
+
+        if (have_pid_filter && flow.sport == 0 && flow.dport == 0) {
+            // debug_log("tc, sport is zero\n");
+            // debug_log("[tc] %pI4 %d sport is zero\n", &key.saddr[0], key.sport);
+            return -1;
+        }
+
+        // debug_log("tc, try to get pid\n");
+         debug_log("[tc] check %pI4 %d\n", &key.saddr[0], key.sport);
+        if (key.sport > 0) {
+             debug_log("[tc] check %pI4 %d\n", &key.saddr[0], key.sport);
+            struct process_meta_t *value = bpf_map_lookup_elem(&ptcpdump_flow_pid_map, &key);
+            if (value) {
+                // debug_log("[tc] got %pI4 %d -> %pI4\n", &flow.saddr[0],
+                // flow.sport, &flow.daddr[0]);
+                clone_process_meta(value, pid_meta);
+                return 0;
+            } else if (have_pid_filter) {
+                // debug_log("tc, ptcpdump_flow_pid_map is empty\n");
+                // debug_log("[tc] %pI4 %d bpf_map_lookup_elem ptcpdump_flow_pid_map is empty\n", &key.saddr[0],
+                // key.sport);
+            }
+        }
+        egress = !egress;
+    }
+
+    if (have_pid_filter) {
+        // debug_log("[tc] check %pI4 %d -> %pI4\n", &flow.saddr[0], flow.sport, &flow.daddr[0]);
+        // debug_log("tc, not found pid from ptcpdump_flow_pid_map");
+        return -1;
+    }
+
+    return 0;
+}
+
+static __always_inline void handle_skb(struct sk_buff *skb, bool egress) {
+    void *skb_head = BPF_CORE_READ(skb, head);
+    #if !defined(bpf_target_arm)
+	    void *data_end = skb_head + BPF_CORE_READ(skb, tail);
+	#else
+	   void *data_end = BPF_CORE_READ(skb, tail);
+	#endif
+
+    u16 mac_header = BPF_CORE_READ(skb, mac_header);
+    u16 network_header = BPF_CORE_READ(skb, network_header);
+    bool has_l2 = has_valid_mac_data(skb);
+
+    if (has_l2) {
+        void *data = skb_head + mac_header;
+        if (!pcap_filter((void *)skb, (void *)skb, (void *)skb, data, data_end)) {
+            return;
+        }
+    } else {
+//        debug_log("[ptcpdump] no l2 header\n");
+        void *data = skb_head + network_header;
+        if (!pcap_filter_l3((void *)skb, (void *)skb, (void *)skb, data, data_end)) {
+            return;
+        }
+    }
+
+    debug_log("mac_header: %d, network_header: %d, has_l2: %d", mac_header, network_header, has_l2);
+#ifdef LEGACY_KERNEL
+    u32 u32_zero = 0;
 #endif
+    GET_CONFIG()
+
+    struct packet_event_t *event;
+    event = bpf_map_lookup_elem(&ptcpdump_packet_event_stack, &u32_zero);
+    if (!event) {
+        // debug_log("[ptcpdump] ptcpdump_packet_event_stack failed\n");
+        return;
+    }
+
+    __builtin_memset(&event->meta, 0, sizeof(event->meta));
+    __builtin_memset(&event->meta.process, 0, sizeof(event->meta.process));
+    __builtin_memset(&event->meta.process.cgroup_name, 0, sizeof(event->meta.process.cgroup_name));
+
+    if (fill_packet_event_meta_from_sk_buff(skb, &event->meta, egress) < 0) {
+        // debug_log("tc, not found pid\n");
+        return;
+    };
+    // if (process_meta_filter(&event->meta.process) < 0) {
+    //     // debug_log("tc, not match filter\n");
+    //     return;
+    // };
+
+    u32 *count;
+    count = bpf_map_lookup_or_try_init(&ptcpdump_filter_by_kernel_count, &u32_zero, &u32_zero);
+    if (count) {
+        __sync_fetch_and_add(count, 1);
+    }
+
+    if (egress) {
+        event->meta.packet_type = EGRESS_PACKET;
+    } else {
+        event->meta.packet_type = INGRESS_PACKET;
+    }
+    event->meta.timestamp = bpf_ktime_get_ns();
+    event->meta.first_layer = has_l2 ? L2_LAYER : L3_LAYER;
+
+
+    u64 payload_len = (u64)skb->len;
+    event->meta.packet_size = payload_len;
+    if (g.max_payload_size > 0) {
+        payload_len = payload_len < g.max_payload_size ? payload_len : g.max_payload_size;
+    }
+    event->meta.payload_len = payload_len;
+
+    int event_ret = bpf_skb_output(skb, &ptcpdump_packet_events, BPF_F_CURRENT_CPU | (payload_len << 32),
+                                   event, sizeof(struct packet_event_t));
+    if (event_ret != 0) {
+        // debug_log("[ptcpdump] bpf_perf_event_output exec_events failed: %d\n", event_ret);
+    }
+
+    return;
+}
+
+SEC("tp_btf/net_dev_queue")
+int BPF_PROG(ptcpdump_tp_btf__net_dev_queue, struct sk_buff *skb) {
+    handle_skb(skb, true);
+    return 0;
+}
+
+SEC("tp_btf/netif_receive_skb")
+int BPF_PROG(ptcpdump_tp_btf__netif_receive_skb, struct sk_buff *skb) {
+    handle_skb(skb, false);
+    return 0;
+}
+
+#endif  /* NO_TRACING */
+
+

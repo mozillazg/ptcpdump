@@ -74,7 +74,7 @@ func ParsePacketEvent(deviceCache *metadata.DeviceCache, event bpf.BpfPacketEven
 
 	var fakeEthernet []byte
 	var fakeEthernetLen int
-	if p.FirstLayer == FirstLayerL3 {
+	if p.FirstLayer == FirstLayerL3 || isNoL2Data(event.Payload[:14+1]) {
 		fakeEthernet = newFakeEthernet(p.L3Protocol)
 		fakeEthernetLen = len(fakeEthernet)
 	}
@@ -89,6 +89,17 @@ func ParsePacketEvent(deviceCache *metadata.DeviceCache, event bpf.BpfPacketEven
 	log.Infof("%d, %+v", p.L3Protocol, p.Data)
 
 	return &p, nil
+}
+
+func isNoL2Data(payload []byte) bool {
+	if len(payload) <= 14 {
+		return true
+	}
+	switch (payload[0] >> 4) & 0x0F {
+	case 0x4, 0x6:
+		return true
+	}
+	return false
 }
 
 func newFakeEthernet(l3Protocol uint16) []byte {
