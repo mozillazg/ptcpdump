@@ -58,6 +58,7 @@ type bpf_legacyProgramSpecs struct {
 	PtcpdumpKprobeDevChangeNetNamespace          *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__dev_change_net_namespace"`
 	PtcpdumpKprobeDevChangeNetNamespaceLegacy    *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__dev_change_net_namespace_legacy"`
 	PtcpdumpKprobeDoExit                         *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__do_exit"`
+	PtcpdumpKprobeKfreeSkb                       *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__kfree_skb"`
 	PtcpdumpKprobeNfNatManipPkt                  *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__nf_nat_manip_pkt"`
 	PtcpdumpKprobeNfNatPacket                    *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__nf_nat_packet"`
 	PtcpdumpKprobeRegisterNetdevice              *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__register_netdevice"`
@@ -252,6 +253,7 @@ type bpf_legacyPrograms struct {
 	PtcpdumpKprobeDevChangeNetNamespace          *ebpf.Program `ebpf:"ptcpdump_kprobe__dev_change_net_namespace"`
 	PtcpdumpKprobeDevChangeNetNamespaceLegacy    *ebpf.Program `ebpf:"ptcpdump_kprobe__dev_change_net_namespace_legacy"`
 	PtcpdumpKprobeDoExit                         *ebpf.Program `ebpf:"ptcpdump_kprobe__do_exit"`
+	PtcpdumpKprobeKfreeSkb                       *ebpf.Program `ebpf:"ptcpdump_kprobe__kfree_skb"`
 	PtcpdumpKprobeNfNatManipPkt                  *ebpf.Program `ebpf:"ptcpdump_kprobe__nf_nat_manip_pkt"`
 	PtcpdumpKprobeNfNatPacket                    *ebpf.Program `ebpf:"ptcpdump_kprobe__nf_nat_packet"`
 	PtcpdumpKprobeRegisterNetdevice              *ebpf.Program `ebpf:"ptcpdump_kprobe__register_netdevice"`
@@ -282,6 +284,7 @@ func (p *bpf_legacyPrograms) Close() error {
 		p.PtcpdumpKprobeDevChangeNetNamespace,
 		p.PtcpdumpKprobeDevChangeNetNamespaceLegacy,
 		p.PtcpdumpKprobeDoExit,
+		p.PtcpdumpKprobeKfreeSkb,
 		p.PtcpdumpKprobeNfNatManipPkt,
 		p.PtcpdumpKprobeNfNatPacket,
 		p.PtcpdumpKprobeRegisterNetdevice,

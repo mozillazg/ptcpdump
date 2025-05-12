@@ -54,6 +54,14 @@ type bpf_no_tracingSpecs struct {
 //
 // It can be passed ebpf.CollectionSpec.Assign.
 type bpf_no_tracingProgramSpecs struct {
+	PtcpdumpCgroupConnect4                       *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup__connect4"`
+	PtcpdumpCgroupConnect6                       *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup__connect6"`
+	PtcpdumpCgroupPostBind4                      *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup__post_bind4"`
+	PtcpdumpCgroupPostBind6                      *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup__post_bind6"`
+	PtcpdumpCgroupRecvmsg4                       *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup__recvmsg4"`
+	PtcpdumpCgroupRecvmsg6                       *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup__recvmsg6"`
+	PtcpdumpCgroupSendmsg4                       *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup__sendmsg4"`
+	PtcpdumpCgroupSendmsg6                       *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup__sendmsg6"`
 	PtcpdumpCgroupSockCreate                     *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup__sock_create"`
 	PtcpdumpCgroupSockRelease                    *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup__sock_release"`
 	PtcpdumpCgroupSkbEgress                      *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup_skb__egress"`
@@ -62,6 +70,7 @@ type bpf_no_tracingProgramSpecs struct {
 	PtcpdumpKprobeDevChangeNetNamespace          *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__dev_change_net_namespace"`
 	PtcpdumpKprobeDevChangeNetNamespaceLegacy    *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__dev_change_net_namespace_legacy"`
 	PtcpdumpKprobeDoExit                         *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__do_exit"`
+	PtcpdumpKprobeKfreeSkb                       *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__kfree_skb"`
 	PtcpdumpKprobeNfNatManipPkt                  *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__nf_nat_manip_pkt"`
 	PtcpdumpKprobeNfNatPacket                    *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__nf_nat_packet"`
 	PtcpdumpKprobeRegisterNetdevice              *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__register_netdevice"`
@@ -254,6 +263,14 @@ type bpf_no_tracingVariables struct {
 //
 // It can be passed to loadBpf_no_tracingObjects or ebpf.CollectionSpec.LoadAndAssign.
 type bpf_no_tracingPrograms struct {
+	PtcpdumpCgroupConnect4                       *ebpf.Program `ebpf:"ptcpdump_cgroup__connect4"`
+	PtcpdumpCgroupConnect6                       *ebpf.Program `ebpf:"ptcpdump_cgroup__connect6"`
+	PtcpdumpCgroupPostBind4                      *ebpf.Program `ebpf:"ptcpdump_cgroup__post_bind4"`
+	PtcpdumpCgroupPostBind6                      *ebpf.Program `ebpf:"ptcpdump_cgroup__post_bind6"`
+	PtcpdumpCgroupRecvmsg4                       *ebpf.Program `ebpf:"ptcpdump_cgroup__recvmsg4"`
+	PtcpdumpCgroupRecvmsg6                       *ebpf.Program `ebpf:"ptcpdump_cgroup__recvmsg6"`
+	PtcpdumpCgroupSendmsg4                       *ebpf.Program `ebpf:"ptcpdump_cgroup__sendmsg4"`
+	PtcpdumpCgroupSendmsg6                       *ebpf.Program `ebpf:"ptcpdump_cgroup__sendmsg6"`
 	PtcpdumpCgroupSockCreate                     *ebpf.Program `ebpf:"ptcpdump_cgroup__sock_create"`
 	PtcpdumpCgroupSockRelease                    *ebpf.Program `ebpf:"ptcpdump_cgroup__sock_release"`
 	PtcpdumpCgroupSkbEgress                      *ebpf.Program `ebpf:"ptcpdump_cgroup_skb__egress"`
@@ -262,6 +279,7 @@ type bpf_no_tracingPrograms struct {
 	PtcpdumpKprobeDevChangeNetNamespace          *ebpf.Program `ebpf:"ptcpdump_kprobe__dev_change_net_namespace"`
 	PtcpdumpKprobeDevChangeNetNamespaceLegacy    *ebpf.Program `ebpf:"ptcpdump_kprobe__dev_change_net_namespace_legacy"`
 	PtcpdumpKprobeDoExit                         *ebpf.Program `ebpf:"ptcpdump_kprobe__do_exit"`
+	PtcpdumpKprobeKfreeSkb                       *ebpf.Program `ebpf:"ptcpdump_kprobe__kfree_skb"`
 	PtcpdumpKprobeNfNatManipPkt                  *ebpf.Program `ebpf:"ptcpdump_kprobe__nf_nat_manip_pkt"`
 	PtcpdumpKprobeNfNatPacket                    *ebpf.Program `ebpf:"ptcpdump_kprobe__nf_nat_packet"`
 	PtcpdumpKprobeRegisterNetdevice              *ebpf.Program `ebpf:"ptcpdump_kprobe__register_netdevice"`
@@ -288,6 +306,14 @@ type bpf_no_tracingPrograms struct {
 
 func (p *bpf_no_tracingPrograms) Close() error {
 	return _Bpf_no_tracingClose(
+		p.PtcpdumpCgroupConnect4,
+		p.PtcpdumpCgroupConnect6,
+		p.PtcpdumpCgroupPostBind4,
+		p.PtcpdumpCgroupPostBind6,
+		p.PtcpdumpCgroupRecvmsg4,
+		p.PtcpdumpCgroupRecvmsg6,
+		p.PtcpdumpCgroupSendmsg4,
+		p.PtcpdumpCgroupSendmsg6,
 		p.PtcpdumpCgroupSockCreate,
 		p.PtcpdumpCgroupSockRelease,
 		p.PtcpdumpCgroupSkbEgress,
@@ -296,6 +322,7 @@ func (p *bpf_no_tracingPrograms) Close() error {
 		p.PtcpdumpKprobeDevChangeNetNamespace,
 		p.PtcpdumpKprobeDevChangeNetNamespaceLegacy,
 		p.PtcpdumpKprobeDoExit,
+		p.PtcpdumpKprobeKfreeSkb,
 		p.PtcpdumpKprobeNfNatManipPkt,
 		p.PtcpdumpKprobeNfNatPacket,
 		p.PtcpdumpKprobeRegisterNetdevice,

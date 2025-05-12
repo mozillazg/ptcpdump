@@ -154,18 +154,28 @@ type BpfSpecs struct {
 //
 // It can be passed ebpf.CollectionSpec.Assign.
 type BpfProgramSpecs struct {
+	PtcpdumpCgroupConnect4                   *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup__connect4"`
+	PtcpdumpCgroupConnect6                   *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup__connect6"`
+	PtcpdumpCgroupPostBind4                  *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup__post_bind4"`
+	PtcpdumpCgroupPostBind6                  *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup__post_bind6"`
+	PtcpdumpCgroupRecvmsg4                   *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup__recvmsg4"`
+	PtcpdumpCgroupRecvmsg6                   *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup__recvmsg6"`
+	PtcpdumpCgroupSendmsg4                   *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup__sendmsg4"`
+	PtcpdumpCgroupSendmsg6                   *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup__sendmsg6"`
 	PtcpdumpCgroupSockCreate                 *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup__sock_create"`
 	PtcpdumpCgroupSockRelease                *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup__sock_release"`
 	PtcpdumpCgroupSkbEgress                  *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup_skb__egress"`
 	PtcpdumpCgroupSkbIngress                 *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup_skb__ingress"`
 	PtcpdumpFentryAcctProcess                *ebpf.ProgramSpec `ebpf:"ptcpdump_fentry__acct_process"`
 	PtcpdumpFentryDoExit                     *ebpf.ProgramSpec `ebpf:"ptcpdump_fentry__do_exit"`
+	PtcpdumpFentryKfreeSkb                   *ebpf.ProgramSpec `ebpf:"ptcpdump_fentry__kfree_skb"`
 	PtcpdumpFentrySecuritySkClassifyFlow     *ebpf.ProgramSpec `ebpf:"ptcpdump_fentry__security_sk_classify_flow"`
 	PtcpdumpFentryTcpSendmsg                 *ebpf.ProgramSpec `ebpf:"ptcpdump_fentry__tcp_sendmsg"`
 	PtcpdumpFentryUdpSendSkb                 *ebpf.ProgramSpec `ebpf:"ptcpdump_fentry__udp_send_skb"`
 	PtcpdumpFentryUdpSendmsg                 *ebpf.ProgramSpec `ebpf:"ptcpdump_fentry__udp_sendmsg"`
 	PtcpdumpKprobeAcctProcess                *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__acct_process"`
 	PtcpdumpKprobeDoExit                     *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__do_exit"`
+	PtcpdumpKprobeKfreeSkb                   *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__kfree_skb"`
 	PtcpdumpKprobeSecuritySkClassifyFlow     *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__security_sk_classify_flow"`
 	PtcpdumpKprobeTcpSendmsg                 *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__tcp_sendmsg"`
 	PtcpdumpKprobeUdpSendSkb                 *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__udp_send_skb"`
@@ -325,18 +335,28 @@ type BpfVariables struct {
 //
 // It can be passed to LoadBpfObjects or ebpf.CollectionSpec.LoadAndAssign.
 type BpfPrograms struct {
+	PtcpdumpCgroupConnect4                   *ebpf.Program `ebpf:"ptcpdump_cgroup__connect4"`
+	PtcpdumpCgroupConnect6                   *ebpf.Program `ebpf:"ptcpdump_cgroup__connect6"`
+	PtcpdumpCgroupPostBind4                  *ebpf.Program `ebpf:"ptcpdump_cgroup__post_bind4"`
+	PtcpdumpCgroupPostBind6                  *ebpf.Program `ebpf:"ptcpdump_cgroup__post_bind6"`
+	PtcpdumpCgroupRecvmsg4                   *ebpf.Program `ebpf:"ptcpdump_cgroup__recvmsg4"`
+	PtcpdumpCgroupRecvmsg6                   *ebpf.Program `ebpf:"ptcpdump_cgroup__recvmsg6"`
+	PtcpdumpCgroupSendmsg4                   *ebpf.Program `ebpf:"ptcpdump_cgroup__sendmsg4"`
+	PtcpdumpCgroupSendmsg6                   *ebpf.Program `ebpf:"ptcpdump_cgroup__sendmsg6"`
 	PtcpdumpCgroupSockCreate                 *ebpf.Program `ebpf:"ptcpdump_cgroup__sock_create"`
 	PtcpdumpCgroupSockRelease                *ebpf.Program `ebpf:"ptcpdump_cgroup__sock_release"`
 	PtcpdumpCgroupSkbEgress                  *ebpf.Program `ebpf:"ptcpdump_cgroup_skb__egress"`
 	PtcpdumpCgroupSkbIngress                 *ebpf.Program `ebpf:"ptcpdump_cgroup_skb__ingress"`
 	PtcpdumpFentryAcctProcess                *ebpf.Program `ebpf:"ptcpdump_fentry__acct_process"`
 	PtcpdumpFentryDoExit                     *ebpf.Program `ebpf:"ptcpdump_fentry__do_exit"`
+	PtcpdumpFentryKfreeSkb                   *ebpf.Program `ebpf:"ptcpdump_fentry__kfree_skb"`
 	PtcpdumpFentrySecuritySkClassifyFlow     *ebpf.Program `ebpf:"ptcpdump_fentry__security_sk_classify_flow"`
 	PtcpdumpFentryTcpSendmsg                 *ebpf.Program `ebpf:"ptcpdump_fentry__tcp_sendmsg"`
 	PtcpdumpFentryUdpSendSkb                 *ebpf.Program `ebpf:"ptcpdump_fentry__udp_send_skb"`
 	PtcpdumpFentryUdpSendmsg                 *ebpf.Program `ebpf:"ptcpdump_fentry__udp_sendmsg"`
 	PtcpdumpKprobeAcctProcess                *ebpf.Program `ebpf:"ptcpdump_kprobe__acct_process"`
 	PtcpdumpKprobeDoExit                     *ebpf.Program `ebpf:"ptcpdump_kprobe__do_exit"`
+	PtcpdumpKprobeKfreeSkb                   *ebpf.Program `ebpf:"ptcpdump_kprobe__kfree_skb"`
 	PtcpdumpKprobeSecuritySkClassifyFlow     *ebpf.Program `ebpf:"ptcpdump_kprobe__security_sk_classify_flow"`
 	PtcpdumpKprobeTcpSendmsg                 *ebpf.Program `ebpf:"ptcpdump_kprobe__tcp_sendmsg"`
 	PtcpdumpKprobeUdpSendSkb                 *ebpf.Program `ebpf:"ptcpdump_kprobe__udp_send_skb"`
@@ -358,18 +378,28 @@ type BpfPrograms struct {
 
 func (p *BpfPrograms) Close() error {
 	return _BpfClose(
+		p.PtcpdumpCgroupConnect4,
+		p.PtcpdumpCgroupConnect6,
+		p.PtcpdumpCgroupPostBind4,
+		p.PtcpdumpCgroupPostBind6,
+		p.PtcpdumpCgroupRecvmsg4,
+		p.PtcpdumpCgroupRecvmsg6,
+		p.PtcpdumpCgroupSendmsg4,
+		p.PtcpdumpCgroupSendmsg6,
 		p.PtcpdumpCgroupSockCreate,
 		p.PtcpdumpCgroupSockRelease,
 		p.PtcpdumpCgroupSkbEgress,
 		p.PtcpdumpCgroupSkbIngress,
 		p.PtcpdumpFentryAcctProcess,
 		p.PtcpdumpFentryDoExit,
+		p.PtcpdumpFentryKfreeSkb,
 		p.PtcpdumpFentrySecuritySkClassifyFlow,
 		p.PtcpdumpFentryTcpSendmsg,
 		p.PtcpdumpFentryUdpSendSkb,
 		p.PtcpdumpFentryUdpSendmsg,
 		p.PtcpdumpKprobeAcctProcess,
 		p.PtcpdumpKprobeDoExit,
+		p.PtcpdumpKprobeKfreeSkb,
 		p.PtcpdumpKprobeSecuritySkClassifyFlow,
 		p.PtcpdumpKprobeTcpSendmsg,
 		p.PtcpdumpKprobeUdpSendSkb,
