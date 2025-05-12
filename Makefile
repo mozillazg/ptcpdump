@@ -20,11 +20,11 @@ CGO_LDFLAGS_STATIC = "-L$(LIBPCAP_OBJ_DIR) -lpcap $(LIBPCAP_OBJ)"
 CGO_ENABLED ?= 1
 GOARCH ?= $(shell go env GOARCH)
 GOOS ?= $(shell go env GOOS)
-LDFLAGS := -linkmode "external" -extldflags "-fpie" -buildmode=pie
-LDFLAGS += -X github.com/mozillazg/ptcpdump/internal.Version=$(VERSION)
-LDFLAGS += -X github.com/mozillazg/ptcpdump/internal.GitCommit=$(GIT_COMMIT)
-LDFLAGS_DYNAMIC := -X github.com/mozillazg/ptcpdump/internal.Version=$(VERSION)
-LDFLAGS_DYNAMIC += -X github.com/mozillazg/ptcpdump/internal.GitCommit=$(GIT_COMMIT)
+GO_LDFLAGS := -linkmode "external" -extldflags "-fpie" -buildmode=pie
+GO_LDFLAGS += -X github.com/mozillazg/ptcpdump/internal.Version=$(VERSION)
+GO_LDFLAGS += -X github.com/mozillazg/ptcpdump/internal.GitCommit=$(GIT_COMMIT)
+GO_LDFLAGS_DYNAMIC := -X github.com/mozillazg/ptcpdump/internal.Version=$(VERSION)
+GO_LDFLAGS_DYNAMIC += -X github.com/mozillazg/ptcpdump/internal.GitCommit=$(GIT_COMMIT)
 COVERAGE_FLAG ?=
 COVERAGE_ARGS ?=
 
@@ -64,12 +64,12 @@ build: libpcap
 	CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) \
 	GOARCH=$(GOARCH) \
 	CC=$(GCC) \
-	CGO_ENABLED=1 go build -tags static -ldflags "$(LDFLAGS)" $(COVERAGE_FLAG)
+	CGO_ENABLED=1 go build -tags static -ldflags "$(GO_LDFLAGS)" $(COVERAGE_FLAG)
 
 
 .PHONY: build-dynamic-link
 build-dynamic-link:
-	CGO_ENABLED=1 go build -tags dynamic -ldflags "$(LDFLAGS_DYNAMIC)" $(COVERAGE_FLAG)
+	CGO_ENABLED=1 go build -tags dynamic -ldflags "$(GO_LDFLAGS_DYNAMIC)" $(COVERAGE_FLAG)
 
 .PHONY: test
 test:
