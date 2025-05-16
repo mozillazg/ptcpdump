@@ -271,6 +271,7 @@ jobs:
         backend:
           - 'tc'
           - 'cgroup-skb'
+          - 'tp-btf'
         kernel:
           # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
           - '4.19-20250428.152446'
@@ -300,8 +301,12 @@ jobs:
       - run: |
           if [ "${{ matrix.backend }}" = "tc" ]; then
             PTCPDUMP_EXTRA_ARGS=''
-          else
+          elif [ "${{ matrix.backend }}" = "tp-btf" ]; then
+            PTCPDUMP_EXTRA_ARGS='--backend tp-btf'
+          elif [ "${{ matrix.backend }}" = "cgroup-skb" ]; then
             PTCPDUMP_EXTRA_ARGS='--backend cgroup-skb'
+          else
+            PTCPDUMP_EXTRA_ARGS='--backend tc'
           fi
           echo "PTCPDUMP_EXTRA_ARGS=${PTCPDUMP_EXTRA_ARGS}" >> $GITHUB_ENV
           mkdir $GOCOVERDIR
@@ -353,7 +358,7 @@ jobs:
 
       - name: Test default (ping)
         uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
-        if: ${{ !startsWith(matrix.backend, 'cgroup-skb') }}
+        if: ${{ startsWith(matrix.backend, 'tc') }}
         with:
           provision: 'false'
           cmd: |
@@ -365,7 +370,7 @@ jobs:
 
       - name: Test base (curl)
         uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
-        if: ${{ ( !( (startsWith(matrix.backend, 'cgroup-skb') && (startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) ) ) ) }}
+        if: ${{ startsWith(matrix.backend, 'tc') || !(startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) }}
         with:
           provision: 'false'
           cmd: |
@@ -377,7 +382,7 @@ jobs:
 
       - name: Test parent info
         uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
-        if: ${{ ( !( (startsWith(matrix.backend, 'cgroup-skb') && (startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) ) ) ) }}
+        if: ${{ startsWith(matrix.backend, 'tc') || !(startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) }}
         with:
           provision: 'false'
           cmd: |
@@ -389,7 +394,7 @@ jobs:
 
       - name: Test filter by process name
         uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
-        if: ${{ ( !( (startsWith(matrix.backend, 'cgroup-skb') && (startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) ) ) ) }}
+        if: ${{ startsWith(matrix.backend, 'tc') || !(startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) }}
         with:
           provision: 'false'
           cmd: |
@@ -401,7 +406,7 @@ jobs:
 
       - name: Test filter by process id
         uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
-        if: ${{ ( !( (startsWith(matrix.backend, 'cgroup-skb') && (startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) ) ) ) }}
+        if: ${{ startsWith(matrix.backend, 'tc') || !(startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) }}
         with:
           provision: 'false'
           cmd: |
@@ -413,6 +418,7 @@ jobs:
 
       - name: Test read pcap file
         uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
+        if: ${{ startsWith(matrix.backend, 'tc') }}
         with:
           provision: 'false'
           cmd: |
@@ -424,6 +430,7 @@ jobs:
 
       - name: Test write pcap file
         uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
+        if: ${{ startsWith(matrix.backend, 'tc') }}
         with:
           provision: 'false'
           cmd: |
@@ -435,6 +442,7 @@ jobs:
 
       - name: Test write to stdout
         uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
+        if: ${{ startsWith(matrix.backend, 'tc') }}
         with:
           provision: 'false'
           cmd: |
@@ -446,7 +454,7 @@ jobs:
 
       - name: Test exist connections
         uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
-        if: ${{ ( !( (startsWith(matrix.backend, 'cgroup-skb') && (startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) ) ) ) }}
+        if: ${{ startsWith(matrix.backend, 'tc') || !(startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) }}
         with:
           provision: 'false'
           cmd: |
@@ -496,7 +504,7 @@ jobs:
 
       - name: Test run sub program
         uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
-        if: ${{ ( !( (startsWith(matrix.backend, 'cgroup-skb') && (startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) ) ) ) }}
+        if: ${{ startsWith(matrix.backend, 'tc') || !(startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) }}
         with:
           provision: 'false'
           cmd: |
@@ -521,7 +529,7 @@ jobs:
 
       - name: Test rotate
         uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
-        if: ${{ (!startsWith(matrix.backend, 'cgroup-skb')) && (contains(matrix.kernel, 'next')) }} # no need test for all kernels
+        if: ${{ (startsWith(matrix.backend, 'tc')) && (contains(matrix.kernel, 'next')) }} # no need test for all kernels
         with:
           provision: 'false'
           cmd: |
@@ -604,7 +612,7 @@ jobs:
 
       - name: upload coverage
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        if: ${{ ( !( (startsWith(matrix.backend, 'cgroup-skb') && (startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) ) ) ) }}
+        if: ${{ startsWith(matrix.backend, 'tc') || !(startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) }}
         with:
           name: coverage.e2e.${{ matrix.backend }}.${{ matrix.kernel }}.out
           path: |
