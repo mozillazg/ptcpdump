@@ -102,7 +102,10 @@ type BpfPacketEventMetaT struct {
 	PacketType uint8
 	FirstLayer uint8
 	L3Protocol uint16
+	NetnsId    uint32
 	Ifindex    uint32
+	Ifname     [16]uint8
+	_          [4]byte
 	PayloadLen uint64
 	PacketSize uint64
 	Process    BpfProcessMetaT

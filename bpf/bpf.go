@@ -194,6 +194,8 @@ func (b *BPF) injectPcapFilter() error {
 					if b.opts.backend != types.NetHookBackendCgroupSkb {
 						continue
 					}
+				} else if b.opts.backend != types.NetHookBackendTc {
+					continue
 				}
 				log.Infof("inject pcap filter to %s", progName)
 				prog.Instructions, err = elibpcap.Inject(

@@ -59,10 +59,23 @@ func ParsePacketEvent(deviceCache *metadata.DeviceCache, event bpf.BpfPacketEven
 	p.MntNs = int(event.Meta.Process.MntnsId)
 	p.NetNs = int(event.Meta.Process.NetnsId)
 	p.CgroupName = utils.GoString(event.Meta.Process.CgroupName[:])
-	p.Device, _ = deviceCache.GetByIfindex(int(event.Meta.Ifindex), event.Meta.Process.NetnsId)
 
-	log.Infof("new packet event, thread: %s.%d, pid: %d, uid: %d, mntns: %d, netns: %d, cgroupName: %s",
-		p.TName, p.Tid, p.Pid, p.Uid, p.MntNs, p.NetNs, p.CgroupName)
+	if p.NetNs == 0 {
+		p.NetNs = int(event.Meta.NetnsId)
+	}
+	ifindex := event.Meta.Ifindex
+	p.Device, _ = deviceCache.GetByIfindex(int(ifindex), uint32(p.NetNs))
+	if p.Device.IsDummy() {
+		ifName := utils.GoStringUint(event.Meta.Ifname[:])
+		netns := event.Meta.NetnsId
+		if len(ifName) > 0 {
+			deviceCache.Add(netns, ifindex, ifName)
+			p.Device, _ = deviceCache.GetByIfindex(int(ifindex), netns)
+		}
+	}
+
+	log.Infof("new packet event, %d.%s thread: %s.%d, pid: %d, uid: %d, mntns: %d, netns: %d, cgroupName: %s",
+		ifindex, p.Device.Name, p.TName, p.Tid, p.Pid, p.Uid, p.MntNs, p.NetNs, p.CgroupName)
 
 	p.L3Protocol = event.Meta.L3Protocol
 	p.FirstLayer = firstLayerType(event.Meta.FirstLayer)
