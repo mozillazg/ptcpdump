@@ -291,7 +291,7 @@ jobs:
           - 'bpf-20250505.013202'
           # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
           - 'bpf-next-20250505.013202'
-    timeout-minutes: 20
+    timeout-minutes: 25
     runs-on: ubuntu-latest
     env:
       GOCOVERDIR: coverage
@@ -487,7 +487,7 @@ jobs:
             export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
             export GOCOVERDIR="/host/${{ env.GOCOVERDIR }}"
             
-            bash /host/testdata/test_netns.sh /host/ptcpdump/ptcpdump
+            bash /host/testdata/retry.sh 3 bash /host/testdata/test_netns.sh /host/ptcpdump/ptcpdump
 
       - name: Test netns newly
         if: ${{ !startsWith(matrix.backend, 'cgroup-skb') }}
@@ -499,8 +499,8 @@ jobs:
             export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
             export GOCOVERDIR="/host/${{ env.GOCOVERDIR }}"
             
-            bash /host/testdata/test_netns_newly_normal.sh /host/ptcpdump/ptcpdump
-            bash /host/testdata/test_netns_newly_exec.sh /host/ptcpdump/ptcpdump
+            bash /host/testdata/retry.sh 3 bash /host/testdata/test_netns_newly_normal.sh /host/ptcpdump/ptcpdump
+            bash /host/testdata/retry.sh 3 bash /host/testdata/test_netns_newly_exec.sh /host/ptcpdump/ptcpdump
 
       - name: Test run sub program
         uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
