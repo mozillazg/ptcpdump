@@ -478,7 +478,7 @@ jobs:
             bash /host/testdata/test_icmp.sh /host/ptcpdump/ptcpdump
 
       - name: Test netns
-        if: ${{ !startsWith(matrix.backend, 'cgroup-skb') }}
+        if: ${{ (!startsWith(matrix.kernel, '5.4')) && (!startsWith(matrix.kernel, '4.')) && (!startsWith(matrix.backend, 'cgroup-skb')) }}
         uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
         with:
           provision: 'false'
@@ -489,8 +489,8 @@ jobs:
             
             bash /host/testdata/retry.sh 3 bash /host/testdata/test_netns.sh /host/ptcpdump/ptcpdump
 
-      - name: Test netns newly
-        if: ${{ !startsWith(matrix.backend, 'cgroup-skb') }}
+      - name: Test netns newly (normal)
+        if: ${{ (!startsWith(matrix.kernel, '5.4')) && (!startsWith(matrix.kernel, '4.')) && (!startsWith(matrix.backend, 'cgroup-skb')) }}
         uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
         with:
           provision: 'false'
@@ -500,6 +500,17 @@ jobs:
             export GOCOVERDIR="/host/${{ env.GOCOVERDIR }}"
             
             bash /host/testdata/retry.sh 3 bash /host/testdata/test_netns_newly_normal.sh /host/ptcpdump/ptcpdump
+
+      - name: Test netns newly (exec)
+        if: ${{ (!startsWith(matrix.kernel, '5.4')) && (!startsWith(matrix.kernel, '4.')) && (!startsWith(matrix.backend, 'cgroup-skb')) }}
+        uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
+        with:
+          provision: 'false'
+          cmd: |
+            set -ex
+            export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
+            export GOCOVERDIR="/host/${{ env.GOCOVERDIR }}"
+            
             bash /host/testdata/retry.sh 3 bash /host/testdata/test_netns_newly_exec.sh /host/ptcpdump/ptcpdump
 
       - name: Test run sub program
