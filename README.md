@@ -249,13 +249,13 @@ Docker images for `ptcpdump` are published at https://quay.io/repository/ptcpdum
 ptcpdump supports specifying a particular eBPF technology for packet capture through the
 `--backend` flag.
 
-|                         | `tc`                      | `cgroup-skb`               | `tp-btf`                   |
-|-------------------------|---------------------------|----------------------------|----------------------------|
-| eBPF Program Type       | `BPF_PROG_TYPE_SCHED_CLS` | `BPF_PROG_TYPE_CGROUP_SKB` | `BPF_PROG_TYPE_CGROUP_SKB` |
-| L2 data                 | ✅                         | ❌                          | ✅                          |
-| Cross network namespace | ❌                         | ✅                          | ✅                          |
-| Kernel version          | 5.2+                      | 5.2+                       | 5.5+                       |
-| cgroup v2               | Recommended               | **Required**               | Recommended                |
+|                         | `tc`                      | `cgroup-skb`               | `tp-btf`                |
+|-------------------------|---------------------------|----------------------------|-------------------------|
+| eBPF Program Type       | `BPF_PROG_TYPE_SCHED_CLS` | `BPF_PROG_TYPE_CGROUP_SKB` | `BPF_PROG_TYPE_TRACING` |
+| L2 data                 | ✅                         | ❌                          | ✅                       |
+| Cross network namespace | ❌                         | ✅                          | ✅                       |
+| Kernel version          | 5.2+                      | 5.2+                       | 5.5+                    |
+| cgroup v2               | Recommended               | **Required**               | Recommended             |
 
 
 If this flag isn't specified, it defaults to `tc`.
