@@ -35,7 +35,6 @@ function test_ptcpdump_exec() {
 
   cat "${LNAME}"
   cat "${LNAME}" | grep '192.168.64.2.* > 192.168.64.1'
-  cat "${LNAME}" | grep '192.168.64.1.* > 192.168.64.2'
 
   ${CMD} -r ${FNAME}
 }

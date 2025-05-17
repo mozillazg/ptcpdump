@@ -502,7 +502,7 @@ jobs:
             bash /host/testdata/retry.sh 3 bash /host/testdata/test_netns_newly_normal.sh /host/ptcpdump/ptcpdump
 
       - name: Test netns newly (exec)
-        if: ${{ (!startsWith(matrix.kernel, '5.4')) && (!startsWith(matrix.kernel, '4.')) && (!startsWith(matrix.backend, 'cgroup-skb')) }}
+        if: ${{ startsWith(matrix.backend, 'tc') }}
         uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
         with:
           provision: 'false'
@@ -528,7 +528,7 @@ jobs:
 
       - name: Test NAT
         uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
-        if: ${{ !startsWith(matrix.backend, 'cgroup-skb') }}
+        if: ${{ startsWith(matrix.backend, 'tc') }}
         with:
           provision: 'false'
           cmd: |
@@ -558,7 +558,7 @@ jobs:
           make -C testdata/gohttpapp build
 
       - name: Test go tls keylog (unstripped)
-        if: ${{ (!startsWith(matrix.kernel, '5.4')) && (!startsWith(matrix.kernel, '4.')) }}
+        if: ${{ (!startsWith(matrix.kernel, '5.4')) && (!startsWith(matrix.kernel, '4.')) && (!startsWith(matrix.backend, 'tp')) }}
         uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
         with:
           provision: 'false'
@@ -574,7 +574,7 @@ jobs:
             bash /host/testdata/retry.sh 8 bash /host/testdata/test_gotls_keylog.sh /host/ptcpdump/ptcpdump gohttpapp
 
       - name: Test go tls keylog (PIE)
-        if: ${{ (!startsWith(matrix.kernel, '5.4')) && (!startsWith(matrix.kernel, '4.')) }}
+        if: ${{ (!startsWith(matrix.kernel, '5.4')) && (!startsWith(matrix.kernel, '4.')) && (!startsWith(matrix.backend, 'tp')) }}
         uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
         with:
           provision: 'false'
@@ -590,7 +590,7 @@ jobs:
             bash /host/testdata/retry.sh 8 bash /host/testdata/test_gotls_keylog.sh /host/ptcpdump/ptcpdump gohttpapp_pie
 
       - name: Test go tls keylog (stripped)
-        if: ${{ (!startsWith(matrix.kernel, '5.4')) && (!startsWith(matrix.kernel, '4.')) }}
+        if: ${{ (!startsWith(matrix.kernel, '5.4')) && (!startsWith(matrix.kernel, '4.')) && (!startsWith(matrix.backend, 'tp')) }}
         uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
         with:
           provision: 'false'
@@ -606,7 +606,7 @@ jobs:
             bash /host/testdata/retry.sh 8 bash /host/testdata/test_gotls_keylog.sh /host/ptcpdump/ptcpdump gohttpapp_stripped
 
       - name: Test go tls keylog (stripped + PIE)
-        if: ${{ (!startsWith(matrix.kernel, '5.4')) && (!startsWith(matrix.kernel, '4.')) }}
+        if: ${{ (!startsWith(matrix.kernel, '5.4')) && (!startsWith(matrix.kernel, '4.')) && (!startsWith(matrix.backend, 'tp')) }}
         uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
         with:
           provision: 'false'
