@@ -137,8 +137,8 @@ func init() {
 		"Specify which context information to include in the output")
 	rootCmd.Flags().StringVar(&opts.backend, "backend", string(types.NetHookBackendTc),
 		"Specify the backend to use for capturing packets. "+
-			fmt.Sprintf("Possible values are %q and %q",
-				types.NetHookBackendTc, types.NetHookBackendCgroupSkb))
+			fmt.Sprintf("Possible values are %q, %q and %q",
+				types.NetHookBackendTc, types.NetHookBackendCgroupSkb, types.NetHookBackendTpBtf))
 
 	rootCmd.Flags().VarP(&opts.fileSize, "file-size", "C",
 		"Before writing a raw packet to a savefile, check whether the file is currently larger than file_size and, "+
