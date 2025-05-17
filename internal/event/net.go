@@ -2,6 +2,7 @@ package event
 
 import (
 	"encoding/binary"
+	"github.com/gopacket/gopacket/layers"
 	"github.com/mozillazg/ptcpdump/internal/metadata"
 	"github.com/mozillazg/ptcpdump/internal/types"
 	"time"
@@ -64,9 +65,10 @@ func ParsePacketEvent(deviceCache *metadata.DeviceCache, event bpf.BpfPacketEven
 		p.NetNs = int(event.Meta.NetnsId)
 	}
 	ifindex := event.Meta.Ifindex
+	ifName := utils.GoStringUint(event.Meta.Ifname[:])
+	isFromSkb := len(ifName) > 0
 	p.Device, _ = deviceCache.GetByIfindex(int(ifindex), uint32(p.NetNs))
 	if p.Device.IsDummy() {
-		ifName := utils.GoStringUint(event.Meta.Ifname[:])
 		netns := event.Meta.NetnsId
 		if len(ifName) > 0 {
 			deviceCache.Add(netns, ifindex, ifName)
@@ -87,7 +89,7 @@ func ParsePacketEvent(deviceCache *metadata.DeviceCache, event bpf.BpfPacketEven
 
 	var fakeEthernet []byte
 	var fakeEthernetLen int
-	if p.FirstLayer == FirstLayerL3 || isNoL2Data(event.Payload[:14+1]) {
+	if p.FirstLayer == FirstLayerL3 || (isFromSkb && isNoL2Data(event.Payload[:])) {
 		fakeEthernet = newFakeEthernet(p.L3Protocol)
 		fakeEthernetLen = len(fakeEthernet)
 	}
@@ -105,14 +107,18 @@ func ParsePacketEvent(deviceCache *metadata.DeviceCache, event bpf.BpfPacketEven
 }
 
 func isNoL2Data(payload []byte) bool {
-	if len(payload) <= 14 {
+	if len(payload) < 14 {
 		return true
 	}
-	switch (payload[0] >> 4) & 0x0F {
-	case 0x4, 0x6:
-		return true
+	packet := gopacket.NewPacket(payload, layers.LayerTypeEthernet, gopacket.NoCopy)
+	if ethLayer := packet.Layer(layers.LayerTypeEthernet); ethLayer != nil {
+		if eth, ok := ethLayer.(*layers.Ethernet); ok {
+			if len(eth.Payload) > 0 {
+				return false
+			}
+		}
 	}
-	return false
+	return true
 }
 
 func newFakeEthernet(l3Protocol uint16) []byte {
