@@ -89,7 +89,7 @@ func ParsePacketEvent(deviceCache *metadata.DeviceCache, event bpf.BpfPacketEven
 
 	var fakeEthernet []byte
 	var fakeEthernetLen int
-	if p.FirstLayer == FirstLayerL3 || (isFromSkb && isNoL2Data(event.Payload[:])) {
+	if p.FirstLayer == FirstLayerL3 || (isFromSkb && noL2Data(event.Payload[:])) {
 		fakeEthernet = newFakeEthernet(p.L3Protocol)
 		fakeEthernetLen = len(fakeEthernet)
 	}
@@ -106,14 +106,18 @@ func ParsePacketEvent(deviceCache *metadata.DeviceCache, event bpf.BpfPacketEven
 	return &p, nil
 }
 
-func isNoL2Data(payload []byte) bool {
+func noL2Data(payload []byte) bool {
 	if len(payload) < 14 {
 		return true
 	}
 	packet := gopacket.NewPacket(payload, layers.LayerTypeEthernet, gopacket.NoCopy)
 	if ethLayer := packet.Layer(layers.LayerTypeEthernet); ethLayer != nil {
 		if eth, ok := ethLayer.(*layers.Ethernet); ok {
-			if len(eth.Payload) > 0 {
+			log.Debugf("%+v", payload)
+			log.Debugf("%+v", eth)
+			if len(eth.Payload) > 0 &&
+				eth.EthernetType != layers.EthernetTypeLLC &&
+				eth.EthernetType.String() != "UnknownEthernetType" {
 				return false
 			}
 		}

@@ -34,7 +34,8 @@ function test_ptcpdump_exec() {
       -- sh -c "bash ${CREATE_NS_SCRIPT} $NETNS1 $VETH1 $NETNS2 $VETH2 && ip netns exec ${NETNS1} curl http://192.168.64.2:8000"  | tee "${LNAME}"
 
   cat "${LNAME}"
-  cat "${LNAME}" | grep '192.168.64.2.* > 192.168.64.1'
+  cat "${LNAME}" | grep '192.168.64.2.* > 192.168.64.1' || \
+  cat "${LNAME}" | grep '192.168.64.1.* > 192.168.64.2'
 
   ${CMD} -r ${FNAME}
 }

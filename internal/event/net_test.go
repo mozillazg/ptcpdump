@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func Test_isNoL2Data(t *testing.T) {
+func Test_noL2Data(t *testing.T) {
 	type args struct {
 		payload []byte
 	}
@@ -18,6 +18,14 @@ func Test_isNoL2Data(t *testing.T) {
 		{
 			name: "payload less than 14 bytes",
 			args: args{payload: []byte{0x01, 0x02, 0x03}},
+			want: true,
+		},
+		{
+			name: "ipv4",
+			args: args{payload: []byte{
+				69, 0, 0, 40, 48, 213, 0, 0, 127, 6, 92, 229, 1, 1, 1, 1, 172, 17, 0, 3,
+				0, 80, 156, 28, 73, 124, 126, 149, 187, 87, 75, 201, 80, 25, 250, 239, 155, 38, 0, 0,
+			}},
 			want: true,
 		},
 		{
@@ -48,8 +56,8 @@ func Test_isNoL2Data(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := isNoL2Data(tt.args.payload); got != tt.want {
-				t.Errorf("isNoL2Data() = %v, want %v", got, tt.want)
+			if got := noL2Data(tt.args.payload); got != tt.want {
+				t.Errorf("noL2Data() = %v, want %v", got, tt.want)
 			}
 		})
 	}

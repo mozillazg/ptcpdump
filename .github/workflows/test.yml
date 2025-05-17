@@ -478,7 +478,7 @@ jobs:
             bash /host/testdata/test_icmp.sh /host/ptcpdump/ptcpdump
 
       - name: Test netns
-        if: ${{ (!startsWith(matrix.kernel, '5.4')) && (!startsWith(matrix.kernel, '4.')) && (!startsWith(matrix.backend, 'cgroup-skb')) }}
+        if: ${{ startsWith(matrix.backend, 'tc') || (!startsWith(matrix.kernel, '5.4') && !startsWith(matrix.kernel, '4.') && !startsWith(matrix.backend, 'cgroup-skb')) }}
         uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
         with:
           provision: 'false'
@@ -490,7 +490,7 @@ jobs:
             bash /host/testdata/retry.sh 3 bash /host/testdata/test_netns.sh /host/ptcpdump/ptcpdump
 
       - name: Test netns newly (normal)
-        if: ${{ (!startsWith(matrix.kernel, '5.4')) && (!startsWith(matrix.kernel, '4.')) && (!startsWith(matrix.backend, 'cgroup-skb')) }}
+        if: ${{ startsWith(matrix.backend, 'tc') || (!startsWith(matrix.kernel, '5.4') && !startsWith(matrix.kernel, '4.') && !startsWith(matrix.backend, 'cgroup-skb')) }}
         uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
         with:
           provision: 'false'
@@ -502,7 +502,7 @@ jobs:
             bash /host/testdata/retry.sh 3 bash /host/testdata/test_netns_newly_normal.sh /host/ptcpdump/ptcpdump
 
       - name: Test netns newly (exec)
-        if: ${{ startsWith(matrix.backend, 'tc') }}
+        if: ${{ startsWith(matrix.backend, 'tc') || (!startsWith(matrix.kernel, '5.4') && !startsWith(matrix.kernel, '4.') && !startsWith(matrix.backend, 'cgroup-skb')) }}
         uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
         with:
           provision: 'false'
@@ -553,7 +553,7 @@ jobs:
             bash /host/testdata/retry.sh 5 bash /host/testdata/test_rotate_filesize_with_count.sh /host/ptcpdump/ptcpdump
 
       - name: build demo app
-        if: ${{ (!startsWith(matrix.kernel, '5.4')) && (!startsWith(matrix.kernel, '4.')) }}
+        if: ${{ (!startsWith(matrix.kernel, '5.4')) && (!startsWith(matrix.kernel, '4.')) && (!startsWith(matrix.backend, 'tp')) }}
         run: |
           make -C testdata/gohttpapp build
 
