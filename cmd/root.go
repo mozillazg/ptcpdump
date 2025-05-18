@@ -139,6 +139,8 @@ func init() {
 		"Specify the backend to use for capturing packets. "+
 			fmt.Sprintf("Possible values are %q, %q and %q",
 				types.NetHookBackendTc, types.NetHookBackendCgroupSkb, types.NetHookBackendTpBtf))
+	rootCmd.Flags().BoolVar(&opts.disableReverseMatch, "disable-reverse-match", false,
+		"Disable reverse match for TCP and UDP packets.")
 
 	rootCmd.Flags().VarP(&opts.fileSize, "file-size", "C",
 		"Before writing a raw packet to a savefile, check whether the file is currently larger than file_size and, "+

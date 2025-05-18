@@ -96,38 +96,6 @@ static __noinline bool pcap_filter_l3(void *_skb, void *__skb, void *___skb, voi
     return data != data_end && _skb == __skb && __skb == ___skb;
 }
 
-static __always_inline void route_packet(struct packet_meta_t *packet_meta, struct nat_flow_t *flow) {
-    flow->saddr[0] = packet_meta->l3.saddr[0];
-    flow->saddr[1] = packet_meta->l3.saddr[1];
-
-    flow->daddr[0] = packet_meta->l3.daddr[0];
-    flow->daddr[1] = packet_meta->l3.daddr[1];
-
-    flow->sport = packet_meta->l4.sport;
-    flow->dport = packet_meta->l4.dport;
-
-#ifdef SUPPORT_NAT
-    struct nat_flow_t tmp_flow = *flow;
-#pragma unroll
-    for (int i = 0; i < 10; i++) {
-        struct nat_flow_t *translated_flow = bpf_map_lookup_elem(&ptcpdump_nat_flow_map, &tmp_flow);
-        if (translated_flow == NULL) {
-            // debug_log("[ptcpdump]: no router %pI4:%d %pI4:%d\n",
-            // 		&tmp_flow.saddr[0], tmp_flow.sport, &tmp_flow.daddr[0],
-            // tmp_flow.dport);
-            break;
-        }
-
-        // debug_log("[ptcpdump] route: %pI4 %pI4 => %pI4 %pI4\n",
-        // 		&tmp_flow.saddr[0], &tmp_flow.daddr[0],
-        // 		&translated_flow->saddr[0], &translated_flow->daddr[0]);
-        clone_flow(translated_flow, flow);
-        clone_flow(translated_flow, &tmp_flow);
-    }
-#endif /* SUPPORT_NAT */
-    return;
-}
-
 static __always_inline int fill_packet_event_meta(struct __sk_buff *skb, bool cgroup_skb,
                                                   struct packet_event_meta_t *event_meta, bool egress) {
     struct process_meta_t *pid_meta = &event_meta->process;
@@ -152,17 +120,21 @@ static __always_inline int fill_packet_event_meta(struct __sk_buff *skb, bool cg
         // debug_log("[ptcpdump][cgroup_sk] get_current_task failed\n");
     }
 
+    bool have_pid_filter = have_pid_filter_rules();
     struct packet_meta_t packet_meta = {0};
     if (cgroup_skb) {
         packet_meta.l2.h_protocol = bpf_ntohs(skb->protocol);
     }
     int ret = parse_skb_meta(skb, !cgroup_skb, &packet_meta);
-    if (ret < 0) {
-        // debug_log("[ptcpdump] parse skb meta failed\n");
-        return -1;
-    }
     event_meta->l3_protocol = packet_meta.l2.h_protocol;
     // debug_log("l3_protocol: %d\n", event_meta->l3_protocol);
+    if (ret < 0) {
+        // debug_log("[ptcpdump] parse skb meta failed\n");
+        if (have_pid_filter) {
+            return -1;
+        }
+        return 0;
+    }
 
 #ifndef LEGACY_KERNEL
     if (bpf_core_enum_value_exists(enum bpf_func_id, BPF_FUNC_get_socket_cookie)) {
@@ -189,54 +161,90 @@ static __always_inline int fill_packet_event_meta(struct __sk_buff *skb, bool cg
 #endif
 
     struct nat_flow_t flow = {0};
-    route_packet(&packet_meta, &flow);
-
-    bool have_pid_filter = have_pid_filter_rules();
+    GET_CONFIG()
     struct flow_pid_key_t key = {0};
+    bool reverse = false;
+
+#ifdef SUPPORT_NAT
+    struct nat_flow_t tmp_flow = flow;
+#endif
 
 #pragma unroll
-    for (int i = 0; i < 2; i++) {
-        if (egress) {
-            key.saddr[0] = flow.saddr[0];
-            key.saddr[1] = flow.saddr[1];
-            key.sport = flow.sport;
-        } else {
-            key.saddr[0] = flow.daddr[0];
-            key.saddr[1] = flow.daddr[1];
-            key.sport = flow.dport;
-        }
-
-        if (have_pid_filter && flow.sport == 0 && flow.dport == 0) {
-            // debug_log("tc, sport is zero\n");
-            // debug_log("[tc] %pI4 %d sport is zero\n", &key.saddr[0], key.sport);
-            return -1;
-        }
-
-        // debug_log("tc, try to get pid\n");
-        // debug_log("[tc] check %pI4 %d\n", &key.saddr[0], key.sport);
-        if (key.sport > 0) {
-            // debug_log("[tc] check %pI4 %d\n", &key.saddr[0], key.sport);
-            struct process_meta_t *value = bpf_map_lookup_elem(&ptcpdump_flow_pid_map, &key);
-            if (value) {
-                // debug_log("[tc] got %pI4 %d -> %pI4\n", &flow.saddr[0],
-                // flow.sport, &flow.daddr[0]);
-                clone_process_meta(value, pid_meta);
-                return 0;
-            } else if (have_pid_filter) {
-                // debug_log("tc, ptcpdump_flow_pid_map is empty\n");
-                // debug_log("[tc] %pI4 %d bpf_map_lookup_elem ptcpdump_flow_pid_map is empty\n", &key.saddr[0],
-                // key.sport);
+    for (int j = 0; j < 2; j++) {
+        if (j == 1) {
+            if (g.disable_reverse_match) {
+                break;
             }
+            reverse = true;
         }
-        egress = !egress;
-    }
+        flow.saddr[0] = packet_meta.l3.saddr[0];
+        flow.saddr[1] = packet_meta.l3.saddr[1];
 
+        flow.daddr[0] = packet_meta.l3.daddr[0];
+        flow.daddr[1] = packet_meta.l3.daddr[1];
+
+        flow.sport = packet_meta.l4.sport;
+        flow.dport = packet_meta.l4.dport;
+
+#pragma unroll
+        for (int i = 0; i < 10; i++) {
+            if (!reverse) {
+                key.saddr[0] = flow.saddr[0];
+                key.saddr[1] = flow.saddr[1];
+                key.sport = flow.sport;
+            } else {
+                key.saddr[0] = flow.daddr[0];
+                key.saddr[1] = flow.daddr[1];
+                key.sport = flow.dport;
+            }
+
+            if (have_pid_filter && flow.sport == 0 && flow.dport == 0) {
+                // debug_log("[ptcpdump][tc], sport is zero\n");
+                // debug_log("[ptcpdump][tc] %pI4 %d sport is zero\n", &key.saddr[0], key.sport);
+                return -1;
+            }
+
+            // debug_log("tc, try to get pid\n");
+            //            debug_log("[ptcpdump][tc] %d, %d check %pI4 %d\n", j, i, &key.saddr[0], key.sport);
+            if (key.sport > 0) {
+                //                debug_log("[tc] check %pI4 %d\n", &key.saddr[0], key.sport);
+                struct process_meta_t *value = bpf_map_lookup_elem(&ptcpdump_flow_pid_map, &key);
+                if (value) {
+                    // debug_log("[ptcpdump][tc] got %pI4 %d -> %pI4\n", &flow.saddr[0],
+                    // flow.sport, &flow.daddr[0]);
+                    clone_process_meta(value, pid_meta);
+                    return 0;
+                } else if (have_pid_filter) {
+                    // debug_log("[ptcpdump][tc], ptcpdump_flow_pid_map is empty\n");
+                    // debug_log("[ptcpdump][tc] %pI4 %d bpf_map_lookup_elem ptcpdump_flow_pid_map is empty\n",
+                    // &key.saddr[0], key.sport);
+                }
+            }
+
+#ifdef SUPPORT_NAT
+            struct nat_flow_t *translated_flow = bpf_map_lookup_elem(&ptcpdump_nat_flow_map, &tmp_flow);
+            if (translated_flow == NULL) {
+                // debug_log("[ptcpdump][tc]: no router %pI4:%d %pI4:%d\n",
+                // 		&tmp_flow.saddr[0], tmp_flow.sport, &tmp_flow.daddr[0],
+                // tmp_flow.dport);
+                break;
+            }
+
+            // debug_log("[ptcpdump][tc] route: %pI4 %pI4 => %pI4 %pI4\n",
+            // 		&tmp_flow.saddr[0], &tmp_flow.daddr[0],
+            // 		&translated_flow->saddr[0], &translated_flow->daddr[0]);
+            clone_flow(translated_flow, &flow);
+            clone_flow(translated_flow, &tmp_flow);
+#else
+            break;
+#endif /* SUPPORT_NAT */
+        }
+    }
     if (have_pid_filter) {
         // debug_log("[tc] check %pI4 %d -> %pI4\n", &flow.saddr[0], flow.sport, &flow.daddr[0]);
         // debug_log("tc, not found pid from ptcpdump_flow_pid_map");
         return -1;
     }
-
     return 0;
 }
 
@@ -393,11 +401,15 @@ int ptcpdump_cgroup_skb__egress(struct __sk_buff *skb) {
 
 static __always_inline int fill_packet_event_meta_from_sk_buff(struct sk_buff *skb,
                                                                struct packet_event_meta_t *event_meta, bool egress) {
+    bool have_pid_filter = have_pid_filter_rules();
     struct process_meta_t *pid_meta = &event_meta->process;
     struct packet_meta_t packet_meta = {0};
     int ret = parse_skb_buff_meta(skb, &packet_meta);
     if (ret < 0) {
         // debug_log("[ptcpdump] parse skb meta failed\n");
+        if (have_pid_filter) {
+            return -1;
+        }
         return 0;
     }
     event_meta->l3_protocol = packet_meta.l2.h_protocol;
@@ -420,15 +432,14 @@ static __always_inline int fill_packet_event_meta_from_sk_buff(struct sk_buff *s
         }
     } else {
         if (egress) {
-            // debug_log("[ptcpdump] tc egress: bpf_get_socket_cookie failed\n");
+            // debug_log("[ptcpdump] tp-btf egress: bpf_get_socket_cookie failed\n");
         } else {
-            // debug_log("[ptcpdump] tc ingress: bpf_get_socket_cookie failed\n");
+            // debug_log("[ptcpdump] tp-btf ingress: bpf_get_socket_cookie failed\n");
         }
     }
 
     struct nat_flow_t flow = {0};
-
-    bool have_pid_filter = have_pid_filter_rules();
+    GET_CONFIG()
     struct flow_pid_key_t key = {0};
     bool reverse = false;
 
@@ -439,8 +450,10 @@ static __always_inline int fill_packet_event_meta_from_sk_buff(struct sk_buff *s
 #pragma unroll
     for (int j = 0; j < 2; j++) {
         if (j == 1) {
+            if (g.disable_reverse_match) {
+                break;
+            }
             reverse = true;
-            break;
         }
         flow.saddr[0] = packet_meta.l3.saddr[0];
         flow.saddr[1] = packet_meta.l3.saddr[1];
@@ -453,7 +466,6 @@ static __always_inline int fill_packet_event_meta_from_sk_buff(struct sk_buff *s
 
 #pragma unroll
         for (int i = 0; i < 10; i++) {
-
             if (!reverse) {
                 key.saddr[0] = flow.saddr[0];
                 key.saddr[1] = flow.saddr[1];

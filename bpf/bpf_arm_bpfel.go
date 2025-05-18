@@ -37,7 +37,8 @@ type BpfGconfigT struct {
 	FilterCommEnable    uint8
 	FilterIfindexEnable uint8
 	UseRingbufSubmitSkb uint8
-	_                   [3]byte
+	DisableReverseMatch uint8
+	_                   [2]byte
 	MaxPayloadSize      uint32
 }
 

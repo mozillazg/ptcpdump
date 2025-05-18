@@ -296,6 +296,7 @@ If this flag isn't specified, it defaults to `tc`.
           --cri-runtime-address string                   Address of CRI container runtime service (default: uses in order the first successful one of [/var/run/dockershim.sock, /var/run/cri-dockerd.sock, /run/crio/crio.sock, /run/containerd/containerd.sock])
           --delay-before-handle-packet-events duration   Delay some durations before handle packet events
       -Q, --direction string                             Choose send/receive direction for which packets should be captured. Possible values are 'in', 'out' and 'inout' (default "inout")
+          --disable-reverse-match                        Disable reverse match for TCP and UDP packets.
           --docker-address string                        Address of Docker Engine service (default "/var/run/docker.sock")
           --embed-keylog-to-pcapng -- CMD [ARGS]         Write TLS Key Log file to this path (experimental: only support unstripped Go binary and must combined with -- CMD [ARGS])
           --event-chan-size uint                         Size of event chan (default 20)
