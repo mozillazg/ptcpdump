@@ -54,6 +54,18 @@ func (i *Interfaces) GetByIfindex(index int) Device {
 	return Device{}
 }
 
+func NewDummyDevice(ifindex int, ns *NetNs) Device {
+	return Device{
+		Name:    fmt.Sprintf("dummy-%d", ifindex),
+		Ifindex: ifindex,
+		NetNs:   ns,
+	}
+}
+
+func (d *Device) IsDummy() bool {
+	return d.Name == fmt.Sprintf("dummy-%d", d.Ifindex)
+}
+
 func (d *Device) Key() string {
 	return fmt.Sprintf("%d.%d", d.NetNs.Inode(), d.Ifindex)
 }

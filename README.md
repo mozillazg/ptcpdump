@@ -84,12 +84,13 @@ possible.
 | CONFIG_NET_SCH_INGRESS=y  | tc         | **Required**           |
 | CONFIG_CGROUPS=y          | cgroup-skb | **Required**           |
 | CONFIG_CGROUP_BPF=y       | cgroup-skb | **Required**           |
+| CONFIG_BPF_TRAMPOLINE=y   | tp-btf     | **Required**           |
 | CONFIG_SECURITY=y         | both       | Optional (Recommended) |
 | CONFIG_BPF_TRAMPOLINE=y   | both       | Optional (Recommended) |
 | CONFIG_SOCK_CGROUP_DATA=y | both       | Optional (Recommended) |
 | CONFIG_BPF_JIT=y          | both       | Optional (Recommended) |
-| CONFIG_CGROUP_BPF=y       | tc         | Optional (Recommended) |
-| CONFIG_CGROUPS=y          | tc         | Optional (Recommended) |
+| CONFIG_CGROUP_BPF=y       | tc, tp-btf | Optional (Recommended) |
+| CONFIG_CGROUPS=y          | tc, tp-btf | Optional (Recommended) |
 
 You can use `zgrep $OPTION /proc/config.gz` to validate whether an option is enabled.
 
@@ -248,10 +249,13 @@ Docker images for `ptcpdump` are published at https://quay.io/repository/ptcpdum
 ptcpdump supports specifying a particular eBPF technology for packet capture through the
 `--backend` flag.
 
-| --backend    | eBPF Program Type          | cgroup v2    | L2 data | Cross network namespace |
-|--------------|----------------------------|--------------|---------|-------------------------|
-| `tc`         | `BPF_PROG_TYPE_SCHED_CLS`  | Recommended  | ✅       | ❌                       |
-| `cgroup-skb` | `BPF_PROG_TYPE_CGROUP_SKB` | **Required** | ❌       | ✅                       |
+|                         | `tc`                      | `cgroup-skb`               | `tp-btf`                |
+|-------------------------|---------------------------|----------------------------|-------------------------|
+| eBPF Program Type       | `BPF_PROG_TYPE_SCHED_CLS` | `BPF_PROG_TYPE_CGROUP_SKB` | `BPF_PROG_TYPE_TRACING` |
+| L2 data                 | ✅                         | ❌                          | ✅                       |
+| Cross network namespace | ❌                         | ✅                          | ✅                       |
+| Kernel version          | 5.2+                      | 5.2+                       | 5.5+                    |
+| cgroup v2               | Recommended               | **Required**               | Recommended             |
 
 
 If this flag isn't specified, it defaults to `tc`.
@@ -283,7 +287,7 @@ If this flag isn't specified, it defaults to `tc`.
     Expression: see "man 7 pcap-filter"
     
     Flags:
-          --backend string                               Specify the backend to use for capturing packets. Possible values are "tc" and "cgroup-skb" (default "tc")
+          --backend string                               Specify the backend to use for capturing packets. Possible values are "tc", "cgroup-skb" and "tp-btf" (default "tc")
           --container-id string                          Filter by container id (only TCP and UDP packets are supported)
           --container-name string                        Filter by container name (only TCP and UDP packets are supported)
           --containerd-address string                    Address of containerd service (default "/run/containerd/containerd.sock")
@@ -318,7 +322,7 @@ If this flag isn't specified, it defaults to `tc`.
       -A, --print-data-in-ascii                          Print each packet (minus its link level header) in ASCII
       -x, --print-data-in-hex count                      When parsing and printing, in addition to printing the headers of each packet, print the data of each packet in hex
       -X, --print-data-in-hex-ascii count                When parsing and printing, in addition to printing the headers of each packet, print the data of each packet in hex and ASCII
-      -t, --print-timestamp count
+      -t, --print-timestamp count                        control the format of the timestamp printed in the output
       -q, --quiet                                        Quiet output. Print less protocol information so output lines are shorter
       -r, --read-file string                             Read packets from file (which was created with the -w option). e.g. ptcpdump.pcapng
       -c, --receive-count uint                           Exit after receiving count packets
@@ -329,6 +333,7 @@ If this flag isn't specified, it defaults to `tc`.
           --version                                      Print the ptcpdump and libpcap version strings and exit
       -w, --write-file string                            Write the raw packets to file rather than parsing and printing them out. They can later be printed with the -r option. Standard output is used if file is '-'. e.g. ptcpdump.pcapng
           --write-keylog-file -- CMD [ARGS]              Write TLS Key Log file to this path (experimental: only support unstripped Go binary and must combined with -- CMD [ARGS])
+
 
 </details>
 

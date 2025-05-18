@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/mozillazg/ptcpdump/internal/types"
 	"github.com/mozillazg/ptcpdump/internal/utils"
 	"io"
 	"os"
@@ -34,7 +35,7 @@ type BpfPacketEventWithPayloadT struct {
 
 func (b *BPF) PullPacketEvents(ctx context.Context, chanSize int, maxPacketSize int) (<-chan BpfPacketEventWithPayloadT, error) {
 	var reader EventReader
-	if b.supportRingBuf && b.useRingBufSubmitSkb {
+	if b.supportRingBuf && b.useRingBufSubmitSkb && b.opts.backend != types.NetHookBackendTpBtf {
 		log.Info("use ringbuf for packet events")
 		ringbufReader, err := ringbuf.NewReader(b.objs.PtcpdumpPacketEventsRingbuf)
 		if err != nil {
@@ -109,6 +110,7 @@ func (b *BPF) handlePacketEvents(ctx context.Context, reader *EventReader, ch ch
 }
 
 func parsePacketEvent(rawSample []byte) (*BpfPacketEventWithPayloadT, error) {
+	log.Infof("raw packet event: %v", rawSample)
 	event := BpfPacketEventWithPayloadT{}
 	if err := binary.Read(bytes.NewBuffer(rawSample), binary.LittleEndian, &event.Meta); err != nil {
 		return nil, fmt.Errorf("parse meta: %w", err)

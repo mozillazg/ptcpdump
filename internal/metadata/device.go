@@ -141,11 +141,7 @@ func (d *DeviceCache) GetByIfindex(ifindex int, netNsInode uint32) (types.Device
 		}
 	}
 
-	return types.Device{
-		Name:    fmt.Sprintf("dummy-%d", ifindex),
-		Ifindex: ifindex,
-		NetNs:   ns,
-	}, false
+	return types.NewDummyDevice(ifindex, ns), false
 }
 
 func (d *DeviceCache) getDeviceFromNetNs(name string, ns *types.NetNs) (*types.Device, error) {

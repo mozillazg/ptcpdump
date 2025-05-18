@@ -2,6 +2,7 @@ package event
 
 import (
 	"encoding/binary"
+	"github.com/gopacket/gopacket/layers"
 	"github.com/mozillazg/ptcpdump/internal/metadata"
 	"github.com/mozillazg/ptcpdump/internal/types"
 	"time"
@@ -59,10 +60,24 @@ func ParsePacketEvent(deviceCache *metadata.DeviceCache, event bpf.BpfPacketEven
 	p.MntNs = int(event.Meta.Process.MntnsId)
 	p.NetNs = int(event.Meta.Process.NetnsId)
 	p.CgroupName = utils.GoString(event.Meta.Process.CgroupName[:])
-	p.Device, _ = deviceCache.GetByIfindex(int(event.Meta.Ifindex), event.Meta.Process.NetnsId)
 
-	log.Infof("new packet event, thread: %s.%d, pid: %d, uid: %d, mntns: %d, netns: %d, cgroupName: %s",
-		p.TName, p.Tid, p.Pid, p.Uid, p.MntNs, p.NetNs, p.CgroupName)
+	if p.NetNs == 0 {
+		p.NetNs = int(event.Meta.NetnsId)
+	}
+	ifindex := event.Meta.Ifindex
+	ifName := utils.GoStringUint(event.Meta.Ifname[:])
+	isFromSkb := len(ifName) > 0
+	p.Device, _ = deviceCache.GetByIfindex(int(ifindex), uint32(p.NetNs))
+	if p.Device.IsDummy() {
+		netns := event.Meta.NetnsId
+		if len(ifName) > 0 {
+			deviceCache.Add(netns, ifindex, ifName)
+			p.Device, _ = deviceCache.GetByIfindex(int(ifindex), netns)
+		}
+	}
+
+	log.Infof("new packet event, %d.%s thread: %s.%d, pid: %d, uid: %d, mntns: %d, netns: %d, cgroupName: %s",
+		ifindex, p.Device.Name, p.TName, p.Tid, p.Pid, p.Uid, p.MntNs, p.NetNs, p.CgroupName)
 
 	p.L3Protocol = event.Meta.L3Protocol
 	p.FirstLayer = firstLayerType(event.Meta.FirstLayer)
@@ -74,7 +89,7 @@ func ParsePacketEvent(deviceCache *metadata.DeviceCache, event bpf.BpfPacketEven
 
 	var fakeEthernet []byte
 	var fakeEthernetLen int
-	if p.FirstLayer == FirstLayerL3 {
+	if p.FirstLayer == FirstLayerL3 || (isFromSkb && noL2Data(event.Payload[:])) {
 		fakeEthernet = newFakeEthernet(p.L3Protocol)
 		fakeEthernetLen = len(fakeEthernet)
 	}
@@ -89,6 +104,25 @@ func ParsePacketEvent(deviceCache *metadata.DeviceCache, event bpf.BpfPacketEven
 	log.Infof("%d, %+v", p.L3Protocol, p.Data)
 
 	return &p, nil
+}
+
+func noL2Data(payload []byte) bool {
+	if len(payload) < 14 {
+		return true
+	}
+	packet := gopacket.NewPacket(payload, layers.LayerTypeEthernet, gopacket.NoCopy)
+	if ethLayer := packet.Layer(layers.LayerTypeEthernet); ethLayer != nil {
+		if eth, ok := ethLayer.(*layers.Ethernet); ok {
+			log.Debugf("%+v", payload)
+			log.Debugf("%+v", eth)
+			if len(eth.Payload) > 0 &&
+				eth.EthernetType != layers.EthernetTypeLLC &&
+				eth.EthernetType.String() != "UnknownEthernetType" {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 func newFakeEthernet(l3Protocol uint16) []byte {
