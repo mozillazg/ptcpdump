@@ -58,6 +58,8 @@ type Options struct {
 	hookNetDev     bool
 	kernelTypes    *btf.Spec
 	backend        types.NetHookBackend
+
+	disableReverseMatch bool
 }
 
 func NewBPF() (*BPF, error) {
@@ -114,6 +116,9 @@ func (b *BPF) Load(opts Options) error {
 	}
 	if b.useRingBufSubmitSkb {
 		config.UseRingbufSubmitSkb = 1
+	}
+	if opts.disableReverseMatch {
+		config.DisableReverseMatch = 1
 	}
 	if opts.backend != types.NetHookBackendCgroupSkb {
 		b.disableCgroupSkb()
@@ -680,6 +685,11 @@ func (opts *Options) WithPcapFilter(pcapFilter string) *Options {
 
 func (opts *Options) WithMaxPayloadSize(n uint32) *Options {
 	opts.maxPayloadSize = n
+	return opts
+}
+
+func (opts *Options) WithDisableReverseMatch(v bool) *Options {
+	opts.disableReverseMatch = v
 	return opts
 }
 

@@ -78,6 +78,7 @@ type Options struct {
 	DelayBeforeHandlePacketEvents time.Duration
 	ExecEventsWorkerNumber        uint
 	SnapshotLength                uint32
+	DisableReverseMatch           bool
 
 	DockerEndpoint     string
 	ContainerdEndpoint string
@@ -162,6 +163,7 @@ func (c *Capturer) Prepare() error {
 		WithMntNsIds(c.opts.MntnsIds).
 		WithNetNsIds(c.opts.NetnsIds).
 		WithMaxPayloadSize(c.opts.SnapshotLength).
+		WithDisableReverseMatch(c.opts.DisableReverseMatch).
 		WithHookMount(c.opts.AllNetNs || c.opts.AllNewlyNetNs).
 		WithHookNetDev(c.opts.AllNetNs || c.opts.AllNewlyNetNs || c.opts.AllDev).
 		WithPcapFilter(c.opts.PcapFilter).

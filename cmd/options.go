@@ -82,6 +82,7 @@ type Options struct {
 	execEventsWorkerNumber        uint
 	logLevel                      string
 	snapshotLength                uint32
+	disableReverseMatch           bool
 
 	dockerEndpoint     string
 	containerdEndpoint string
@@ -380,6 +381,7 @@ func (o *Options) ToCapturerOptions() *capturer.Options {
 		CriRuntimeEndpoint:            o.criRuntimeEndpoint,
 		WriteTLSKeyLogPath:            o.writeTLSKeyLogPath,
 		EmbedTLSKeyLogToPcapng:        o.embedTLSKeyLogToPcapng,
+		DisableReverseMatch:           o.disableReverseMatch,
 		SubProgArgs:                   o.subProgArgs,
 		MntnsIds:                      o.mntnsIds,
 		NetnsIds:                      o.netnsIds,
