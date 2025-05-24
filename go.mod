@@ -14,11 +14,11 @@ require (
 	github.com/shirou/gopsutil/v4 v4.25.4
 	github.com/spf13/cobra v1.9.1
 	github.com/x-way/pktdump v0.0.6
-	golang.org/x/sys v0.32.0
+	golang.org/x/sys v0.33.0
 )
 
 require (
-	github.com/containerd/containerd/api v1.8.0
+	github.com/containerd/containerd/api v1.9.0
 	github.com/containerd/errdefs v0.3.0
 	github.com/go-logr/logr v1.4.2
 	github.com/mandiant/GoReSym v1.7.2-0.20240819162932-534ca84b42d5
@@ -26,7 +26,7 @@ require (
 	github.com/smira/go-xz v0.1.0
 	github.com/stretchr/testify v1.10.0
 	github.com/vishvananda/netns v0.0.5
-	golang.org/x/arch v0.16.0
+	golang.org/x/arch v0.17.0
 	k8s.io/cri-api v0.33.0
 	k8s.io/cri-client v0.33.0
 	k8s.io/klog/v2 v2.130.1
@@ -73,7 +73,7 @@ require (
 	github.com/moby/term v0.5.0 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
-	github.com/opencontainers/image-spec v1.1.0 // indirect
+	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/opencontainers/runtime-spec v1.1.0 // indirect
 	github.com/opencontainers/selinux v1.11.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
