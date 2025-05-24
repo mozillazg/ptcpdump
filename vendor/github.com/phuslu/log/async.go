@@ -28,9 +28,21 @@ type AsyncWriter struct {
 	file    *FileWriter
 }
 
+func (w *AsyncWriter) init() {
+	w.ch = make(chan *Entry, w.ChannelSize)
+	w.chClose = make(chan error)
+	w.file, _ = w.Writer.(*FileWriter)
+	if w.file != nil && runtime.GOOS == "linux" && unsafe.Sizeof(uintptr(0)) == 8 && !w.DisableWritev {
+		go w.writever()
+	} else {
+		go w.writer()
+	}
+}
+
 // Close implements io.Closer, and closes the underlying Writer.
 func (w *AsyncWriter) Close() (err error) {
-	w.ch <- nil
+	w.once.Do(w.init)
+	close(w.ch)
 	err = <-w.chClose
 	if closer, ok := w.Writer.(io.Closer); ok {
 		if err1 := closer.Close(); err1 != nil {
@@ -62,17 +74,7 @@ func (w *AsyncWriter) Write(p []byte) (n int, err error) {
 
 // WriteEntry implements Writer.
 func (w *AsyncWriter) WriteEntry(e *Entry) (int, error) {
-	w.once.Do(func() {
-		// channels
-		w.ch = make(chan *Entry, w.ChannelSize)
-		w.chClose = make(chan error)
-		w.file, _ = w.Writer.(*FileWriter)
-		if w.file != nil && runtime.GOOS == "linux" && unsafe.Sizeof(uintptr(0)) == 8 && !w.DisableWritev {
-			go w.writever()
-		} else {
-			go w.writer()
-		}
-	})
+	w.once.Do(w.init)
 
 	// cheating to logger pool
 	entry := epool.Get().(*Entry)
