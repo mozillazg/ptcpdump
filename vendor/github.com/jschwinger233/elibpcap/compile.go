@@ -70,6 +70,15 @@ func CompileEbpf(expr string, opts Options) (insts asm.Instructions, err error) 
 		return
 	}
 
+	// ==== ADD THIS FOR DEBUGGING ====
+	if opts.Debug {
+		fmt.Printf("Original eBPF from cbpfc.ToEBPF for %q:\n", expr)
+		for i, inst := range ebpfInsts {
+			fmt.Printf("  %3d: %v\n", i, inst) // Or however you pretty print instructions
+		}
+	}
+	// ================================
+
 	return adjustEbpf(ebpfInsts, opts)
 }
 

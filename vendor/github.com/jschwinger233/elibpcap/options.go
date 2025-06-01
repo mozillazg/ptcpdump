@@ -22,6 +22,8 @@ type Options struct {
 	// L2Skb indicates if the injected bpf program should use L2 skb or not.
 	// The L2 skb is the one that contains the ethernet header, while the L3 skb->data points to the IP header.
 	L2Skb bool
+
+	Debug bool
 }
 
 func (o Options) resultLabel() string {

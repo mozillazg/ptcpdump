@@ -277,7 +277,7 @@ github.com/inconshreveable/mousetrap
 # github.com/josharian/native v1.1.0
 ## explicit; go 1.13
 github.com/josharian/native
-# github.com/jschwinger233/elibpcap v1.0.2 => github.com/mozillazg/elibpcap v0.0.0-20250601033626-1e3768e022a1
+# github.com/jschwinger233/elibpcap v1.0.2 => github.com/mozillazg/elibpcap v0.0.0-20250601153002-0ce266fb605c
 ## explicit; go 1.21.0
 github.com/jschwinger233/elibpcap
 # github.com/klauspost/compress v1.16.7
@@ -608,7 +608,7 @@ rsc.io/binaryregexp
 rsc.io/binaryregexp/syntax
 # github.com/cilium/ebpf => github.com/mozillazg/ebpf v0.17.3-0.20250207013525-5746abfb2b20
 # github.com/gopacket/gopacket => github.com/mozillazg/gopacket v0.0.0-20250502054427-166720d8f623
-# github.com/jschwinger233/elibpcap => github.com/mozillazg/elibpcap v0.0.0-20250601033626-1e3768e022a1
+# github.com/jschwinger233/elibpcap => github.com/mozillazg/elibpcap v0.0.0-20250601153002-0ce266fb605c
 # github.com/x-way/pktdump => github.com/mozillazg/pktdump v0.0.9-0.20241102131745-63c34f34f0d1
 # k8s.io/cri-api => github.com/mozillazg/cri-api v0.32.0-alpha.1.0.20241019013855-3dc36f8743df
 # k8s.io/cri-client => github.com/mozillazg/cri-client v0.31.0-alpha.0.0.20241019023238-87687176fd67

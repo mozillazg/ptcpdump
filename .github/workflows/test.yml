@@ -373,7 +373,7 @@ jobs:
 
       - name: Test base (curl)
         uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
-        if: ${{ startsWith(matrix.backend, 'tc') || !(startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) }}
+        if: ${{ startsWith(matrix.backend, 'tc') || startsWith(matrix.backend, 'socket-filter') || !(startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) }}
         with:
           provision: 'false'
           cmd: |
@@ -421,7 +421,7 @@ jobs:
 
       - name: Test read pcap file
         uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
-        if: ${{ startsWith(matrix.backend, 'tc') }}
+        if: ${{ startsWith(matrix.backend, 'tc') || startsWith(matrix.backend, 'socket-filter') }}
         with:
           provision: 'false'
           cmd: |
@@ -433,7 +433,7 @@ jobs:
 
       - name: Test write pcap file
         uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
-        if: ${{ startsWith(matrix.backend, 'tc') }}
+        if: ${{ startsWith(matrix.backend, 'tc') || startsWith(matrix.backend, 'socket-filter') }}
         with:
           provision: 'false'
           cmd: |
@@ -445,7 +445,7 @@ jobs:
 
       - name: Test write to stdout
         uses: cilium/little-vm-helper@e87948476ca97050b1f149ab2aec379d0de19b84 # v0.0.23
-        if: ${{ startsWith(matrix.backend, 'tc') }}
+        if: ${{ startsWith(matrix.backend, 'tc') || startsWith(matrix.backend, 'socket-filter') }}
         with:
           provision: 'false'
           cmd: |

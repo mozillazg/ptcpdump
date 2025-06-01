@@ -109,7 +109,8 @@ replace (
 	// github.com/cilium/ebpf => ../../cilium/ebpf
 	github.com/gopacket/gopacket => github.com/mozillazg/gopacket v0.0.0-20250502054427-166720d8f623
 	// github.com/x-way/pktdump => ../../x-way/pktdump
-	github.com/jschwinger233/elibpcap => github.com/mozillazg/elibpcap v0.0.0-20250601033626-1e3768e022a1
+	// github.com/jschwinger233/elibpcap => ../../jschwinger233/elibpcap
+	github.com/jschwinger233/elibpcap => github.com/mozillazg/elibpcap v0.0.0-20250601153002-0ce266fb605c
 	// github.com/gopacket/gopacket => ../../gopacket/gopacket
 	github.com/x-way/pktdump => github.com/mozillazg/pktdump v0.0.9-0.20241102131745-63c34f34f0d1
 	k8s.io/cri-api => github.com/mozillazg/cri-api v0.32.0-alpha.1.0.20241019013855-3dc36f8743df

@@ -315,6 +315,7 @@ jobs:
           command: |
             set -ex
 
+            sudo PTCPDUMP_EXTRA_ARGS='--backend socket-filter' bash testdata/test_base.sh ./ptcpdump
             sudo PTCPDUMP_EXTRA_ARGS='--backend socket-filter' bash testdata/test_pid_filter.sh ./ptcpdump
             sudo PTCPDUMP_EXTRA_ARGS='--backend socket-filter' bash testdata/test_pname_filter.sh ./ptcpdump
             sudo PTCPDUMP_EXTRA_ARGS='--backend socket-filter' bash testdata/test_sub_program.sh ./ptcpdump

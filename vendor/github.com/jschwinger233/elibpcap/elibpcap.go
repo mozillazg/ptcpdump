@@ -27,6 +27,11 @@ func Inject(filter string, insns asm.Instructions, opts Options) (_ asm.Instruct
 		return insns, err
 	}
 
+	if opts.Debug {
+		fmt.Printf("Injecting pcap filter: %q at %d, instructions: \n%s\n",
+			filter, injectIdx, filterInsns)
+	}
+
 	filterInsns[0] = filterInsns[0].WithMetadata(insns[injectIdx].Metadata)
 	insns[injectIdx] = insns[injectIdx].WithMetadata(asm.Metadata{})
 	return append(insns[:injectIdx],
