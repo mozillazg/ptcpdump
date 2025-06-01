@@ -120,9 +120,8 @@ func (b *BPF) Load(opts Options) error {
 	if opts.disableReverseMatch {
 		config.DisableReverseMatch = 1
 	}
-	if opts.backend != types.NetHookBackendCgroupSkb {
-		b.disableCgroupSkb()
-	}
+	b.disableNeedlessPrograms()
+
 	if !b.isLegacyKernel {
 		log.Infof("rewrite constants with %+v", config)
 		err = b.spec.Variables["g"].Set(config)

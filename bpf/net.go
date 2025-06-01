@@ -8,6 +8,7 @@ import (
 	"github.com/cilium/ebpf/features"
 	"github.com/cilium/ebpf/link"
 	"github.com/mozillazg/ptcpdump/internal/log"
+	"github.com/mozillazg/ptcpdump/internal/types"
 	"os"
 	"syscall"
 )
@@ -121,4 +122,38 @@ func openRawSock(ifindex int) (int, error) {
 		return 0, fmt.Errorf("failed to bind raw socket: %w", err)
 	}
 	return sock, nil
+}
+
+func (b *BPF) disableNeedlessPrograms() {
+	switch b.opts.backend {
+	case types.NetHookBackendTc:
+		b.disableCgroupSkb()
+		b.disableSocketFilter()
+		break
+	case types.NetHookBackendCgroupSkb:
+		b.disableTc()
+		b.disableSocketFilter()
+		break
+	case types.NetHookBackendSocketFilter:
+		b.disableTc()
+		b.disableCgroupSkb()
+		break
+	}
+
+}
+
+func (b *BPF) disableSocketFilter() {
+	for k, v := range b.spec.Programs {
+		if v.Type == ebpf.SocketFilter {
+			delete(b.spec.Programs, k)
+		}
+	}
+}
+
+func (b *BPF) disableTc() {
+	for k, v := range b.spec.Programs {
+		if v.Type == ebpf.SchedCLS || v.Type == ebpf.SchedACT {
+			delete(b.spec.Programs, k)
+		}
+	}
 }
