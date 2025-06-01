@@ -67,30 +67,31 @@ In case the folder is empty, it can be mounted with:
 The following kernel configuration is required. Building as Modules is also
 possible.
 
-| Option                    | Backend    | Note                   |
-|---------------------------|------------|------------------------|
-| CONFIG_BPF=y              | both       | **Required**           |
-| CONFIG_BPF_SYSCALL=y      | both       | **Required**           |
-| CONFIG_DEBUG_INFO=y       | both       | **Required**           |
-| CONFIG_DEBUG_INFO_BTF=y   | both       | **Required**           |
-| CONFIG_KPROBES=y          | both       | **Required**           |
-| CONFIG_KPROBE_EVENTS=y    | both       | **Required**           |
-| CONFIG_TRACEPOINTS=y      | both       | **Required**           |
-| CONFIG_PERF_EVENTS=y      | both       | **Required**           |
-| CONFIG_NET=y              | both       | **Required**           |
-| CONFIG_NET_SCHED=y        | tc         | **Required**           |
-| CONFIG_NET_CLS_BPF=y      | tc         | **Required**           |
-| CONFIG_NET_ACT_BPF=y      | tc         | **Required**           |
-| CONFIG_NET_SCH_INGRESS=y  | tc         | **Required**           |
-| CONFIG_CGROUPS=y          | cgroup-skb | **Required**           |
-| CONFIG_CGROUP_BPF=y       | cgroup-skb | **Required**           |
-| CONFIG_BPF_TRAMPOLINE=y   | tp-btf     | **Required**           |
-| CONFIG_SECURITY=y         | both       | Optional (Recommended) |
-| CONFIG_BPF_TRAMPOLINE=y   | both       | Optional (Recommended) |
-| CONFIG_SOCK_CGROUP_DATA=y | both       | Optional (Recommended) |
-| CONFIG_BPF_JIT=y          | both       | Optional (Recommended) |
-| CONFIG_CGROUP_BPF=y       | tc, tp-btf | Optional (Recommended) |
-| CONFIG_CGROUPS=y          | tc, tp-btf | Optional (Recommended) |
+| Option                    | Backend                   | Note                   |
+|---------------------------|---------------------------|------------------------|
+| CONFIG_BPF=y              | both                      | **Required**           |
+| CONFIG_BPF_SYSCALL=y      | both                      | **Required**           |
+| CONFIG_DEBUG_INFO=y       | both                      | **Required**           |
+| CONFIG_DEBUG_INFO_BTF=y   | both                      | **Required**           |
+| CONFIG_KPROBES=y          | both                      | **Required**           |
+| CONFIG_KPROBE_EVENTS=y    | both                      | **Required**           |
+| CONFIG_TRACEPOINTS=y      | both                      | **Required**           |
+| CONFIG_PERF_EVENTS=y      | both                      | **Required**           |
+| CONFIG_NET=y              | both                      | **Required**           |
+| CONFIG_NET_SCHED=y        | tc                        | **Required**           |
+| CONFIG_NET_CLS_BPF=y      | tc                        | **Required**           |
+| CONFIG_NET_ACT_BPF=y      | tc                        | **Required**           |
+| CONFIG_NET_SCH_INGRESS=y  | tc                        | **Required**           |
+| CONFIG_CGROUPS=y          | cgroup-skb                | **Required**           |
+| CONFIG_CGROUP_BPF=y       | cgroup-skb                | **Required**           |
+| CONFIG_FILTER=y           | socket-filter             | **Required**           |
+| CONFIG_BPF_TRAMPOLINE=y   | tp-btf                    | **Required**           |
+| CONFIG_SECURITY=y         | both                      | Optional (Recommended) |
+| CONFIG_BPF_TRAMPOLINE=y   | both                      | Optional (Recommended) |
+| CONFIG_SOCK_CGROUP_DATA=y | both                      | Optional (Recommended) |
+| CONFIG_BPF_JIT=y          | both                      | Optional (Recommended) |
+| CONFIG_CGROUP_BPF=y       | tc, tp-btf, socket-filter | Optional (Recommended) |
+| CONFIG_CGROUPS=y          | tc, tp-btf, socket-filter | Optional (Recommended) |
 
 You can use `zgrep $OPTION /proc/config.gz` to validate whether an option is enabled.
 
@@ -249,13 +250,13 @@ Docker images for `ptcpdump` are published at https://quay.io/repository/ptcpdum
 ptcpdump supports specifying a particular eBPF technology for packet capture through the
 `--backend` flag.
 
-|                         | `tc`                      | `cgroup-skb`               | `tp-btf`                |
-|-------------------------|---------------------------|----------------------------|-------------------------|
-| eBPF Program Type       | `BPF_PROG_TYPE_SCHED_CLS` | `BPF_PROG_TYPE_CGROUP_SKB` | `BPF_PROG_TYPE_TRACING` |
-| L2 data                 | ✅                         | ❌                          | ✅                       |
-| Cross network namespace | ❌                         | ✅                          | ✅                       |
-| Kernel version          | 5.2+                      | 5.2+                       | 5.5+                    |
-| cgroup v2               | Recommended               | **Required**               | Recommended             |
+|                         | `tc`                      | `cgroup-skb`               | `socket-filter`               | `tp-btf`                |
+|-------------------------|---------------------------|----------------------------|-------------------------------|-------------------------|
+| eBPF Program Type       | `BPF_PROG_TYPE_SCHED_CLS` | `BPF_PROG_TYPE_CGROUP_SKB` | `BPF_PROG_TYPE_SOCKET_FILTER` | `BPF_PROG_TYPE_TRACING` |
+| L2 data                 | ✅                         | ❌                          | ✅                             | ✅                       |
+| Cross network namespace | ❌                         | ✅                          | ❌                             | ✅                       |
+| Kernel version          | 5.2+                      | 5.2+                       | 5.2+                          | 5.5+                    |
+| cgroup v2               | Recommended               | **Required**               | Recommended                   | Recommended             |
 
 
 If this flag isn't specified, it defaults to `tc`.
@@ -287,7 +288,7 @@ If this flag isn't specified, it defaults to `tc`.
     Expression: see "man 7 pcap-filter"
     
     Flags:
-          --backend string                               Specify the backend to use for capturing packets. Possible values are "tc", "cgroup-skb" and "tp-btf" (default "tc")
+          --backend string                               Specify the backend to use for capturing packets. Possible values are "tc", "cgroup-skb", "tp-btf" and "socket-filter" (default "tc")
           --container-id string                          Filter by container id (only TCP and UDP packets are supported)
           --container-name string                        Filter by container name (only TCP and UDP packets are supported)
           --containerd-address string                    Address of containerd service (default "/run/containerd/containerd.sock")

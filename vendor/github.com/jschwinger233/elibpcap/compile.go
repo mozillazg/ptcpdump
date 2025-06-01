@@ -35,7 +35,7 @@ const (
 	R3Offset
 	R4Offset
 	R5Offset
-	AvailableOffset
+	//AvailableOffset
 )
 
 /*
@@ -127,7 +127,7 @@ bpf_probe_read_kernel(), we need to save the original values of R1, R2 and R3
 on stack, and restore them after the function call.
 */
 func adjustEbpf(insts asm.Instructions, opts Options) (newInsts asm.Instructions, err error) {
-	if !opts.DirectRead {
+	if !opts.DirectRead && !opts.UseBbfSkbLoadBytes {
 		replaceIdx := []int{}
 		replaceInsts := map[int]asm.Instructions{}
 		for idx, inst := range insts {
@@ -189,6 +189,10 @@ func adjustEbpf(insts asm.Instructions, opts Options) (newInsts asm.Instructions
 			asm.StoreMem(asm.RFP, int16(R4Offset), asm.R4, asm.DWord),
 			asm.StoreMem(asm.RFP, int16(R5Offset), asm.R5, asm.DWord),
 		}, insts...)
+	}
+
+	if opts.UseBbfSkbLoadBytes {
+		return adjustEbpfForLoadBytes(insts, opts)
 	}
 
 	return append(insts,

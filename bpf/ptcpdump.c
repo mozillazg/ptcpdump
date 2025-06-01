@@ -17,9 +17,14 @@
 #include <bpf/bpf_tracing.h>
 
 #define TASK_COMM_LEN 16
-#define TTY_NAME_LEN 64
 #define TC_ACT_UNSPEC (-1)
 #define TCX_NEXT (-1)
+#define PACKET_HOST 0      /* To us		*/
+#define PACKET_BROADCAST 1 /* To all		*/
+#define PACKET_MULTICAST 2 /* To group		*/
+#define PACKET_OTHERHOST 3 /* To someone else 	*/
+#define PACKET_OUTGOING 4  /* Outgoing of any type */
+#define PACKET_LOOPBACK 5  /* MC/BRD frame looped back */
 #define INGRESS_PACKET 1
 #define EGRESS_PACKET 2
 #define L2_LAYER 2
@@ -248,9 +253,10 @@ static __always_inline int fill_packet_event_meta(struct __sk_buff *skb, bool cg
     return 0;
 }
 
-static __always_inline void handle_tc(bool cgroup_skb, struct __sk_buff *skb, bool egress) {
+static __always_inline void handle_skb(bool cgroup_skb, struct __sk_buff *skb, bool egress, void *data,
+                                       void *data_end) {
 
-    if (!pcap_filter((void *)skb, (void *)skb, (void *)skb, (void *)(long)skb->data, (void *)(long)skb->data_end)) {
+    if (!pcap_filter((void *)skb, (void *)skb, (void *)skb, data, data_end)) {
         return;
     }
 
@@ -341,7 +347,7 @@ static __always_inline void handle_tc(bool cgroup_skb, struct __sk_buff *skb, bo
 SEC("tc")
 int ptcpdump_tc_ingress(struct __sk_buff *skb) {
     bpf_skb_pull_data(skb, 0);
-    handle_tc(false, skb, false);
+    handle_skb(false, skb, false, (void *)(long)skb->data, (void *)(long)skb->data_end);
     return TC_ACT_UNSPEC;
 }
 
@@ -349,7 +355,7 @@ int ptcpdump_tc_ingress(struct __sk_buff *skb) {
 SEC("tcx/ingress")
 int ptcpdump_tcx_ingress(struct __sk_buff *skb) {
     bpf_skb_pull_data(skb, 0);
-    handle_tc(false, skb, false);
+    handle_skb(false, skb, false, (void *)(long)skb->data, (void *)(long)skb->data_end);
     return TCX_NEXT;
 }
 #endif
@@ -357,7 +363,7 @@ int ptcpdump_tcx_ingress(struct __sk_buff *skb) {
 SEC("tc")
 int ptcpdump_tc_egress(struct __sk_buff *skb) {
     bpf_skb_pull_data(skb, 0);
-    handle_tc(false, skb, true);
+    handle_skb(false, skb, true, (void *)(long)skb->data, (void *)(long)skb->data_end);
     return TC_ACT_UNSPEC;
 }
 
@@ -365,10 +371,35 @@ int ptcpdump_tc_egress(struct __sk_buff *skb) {
 SEC("tcx/egress")
 int ptcpdump_tcx_egress(struct __sk_buff *skb) {
     bpf_skb_pull_data(skb, 0);
-    handle_tc(false, skb, true);
+    handle_skb(false, skb, true, (void *)(long)skb->data, (void *)(long)skb->data_end);
     return TCX_NEXT;
 }
 #endif
+
+SEC("socket")
+int ptcpdump_socket_filter__ingress(struct __sk_buff *skb) {
+    char dummy[1];
+
+    if (skb->pkt_type == PACKET_HOST) {
+        bpf_skb_load_bytes(skb, 0, &dummy, sizeof(dummy));
+        handle_skb(false, skb, false, (void *)(long)skb, dummy);
+    }
+
+    return 0;
+}
+
+SEC("socket")
+int ptcpdump_socket_filter__egress(struct __sk_buff *skb) {
+    char dummy[1];
+
+    if (skb->pkt_type == PACKET_OUTGOING) {
+        ;
+        bpf_skb_load_bytes(skb, 0, &dummy, sizeof(dummy));
+        handle_skb(false, skb, true, (void *)(long)skb, dummy);
+    }
+
+    return 0;
+}
 
 #ifndef NO_CGROUP_PROG
 static __always_inline void handle_cgroup_skb(struct __sk_buff *skb, bool egress) {
@@ -381,7 +412,7 @@ static __always_inline void handle_cgroup_skb(struct __sk_buff *skb, bool egress
         }
     }
 
-    handle_tc(true, skb, egress);
+    handle_skb(true, skb, egress, (void *)(long)skb->data, (void *)(long)skb->data_end);
 }
 
 SEC("cgroup_skb/ingress")
@@ -526,7 +557,7 @@ static __always_inline int fill_packet_event_meta_from_sk_buff(struct sk_buff *s
     return 0;
 }
 
-static __always_inline void handle_skb(struct sk_buff *skb, bool egress) {
+static __always_inline void handle_skb_buff(struct sk_buff *skb, bool egress) {
     GET_CONFIG()
     if (g.filter_ifindex_enable) {
         u32 ifindex = BPF_CORE_READ(skb, dev, ifindex);
@@ -612,13 +643,13 @@ filter_ok:
 
 SEC("tp_btf/net_dev_queue")
 int BPF_PROG(ptcpdump_tp_btf__net_dev_queue, struct sk_buff *skb) {
-    handle_skb(skb, true);
+    handle_skb_buff(skb, true);
     return 0;
 }
 
 SEC("tp_btf/netif_receive_skb")
 int BPF_PROG(ptcpdump_tp_btf__netif_receive_skb, struct sk_buff *skb) {
-    handle_skb(skb, false);
+    handle_skb_buff(skb, false);
     return 0;
 }
 

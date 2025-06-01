@@ -27,7 +27,7 @@ trap cleanup EXIT
 function test_ptcpdump_exec() {
   local LNAME="${LNAME}.exec"
   curl 1.1.1.1 &>/dev/null || true &
-  ip netns exec ${NETNS2}  sh -c "echo -e 'HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n' | nc -l 8000" &
+  ip netns exec ${NETNS2}  sh -c "printf 'HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n' | nc -l 8000" &
 
   timeout 30s ${CMD} -c 4 -i any ${PTCPDUMP_EXTRA_ARGS} --netns newly -v --print -w "${FNAME}" \
       'tcp' \

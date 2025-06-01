@@ -74,6 +74,8 @@ type bpf_legacyProgramSpecs struct {
 	PtcpdumpRawTracepointSchedProcessExec        *ebpf.ProgramSpec `ebpf:"ptcpdump_raw_tracepoint__sched_process_exec"`
 	PtcpdumpRawTracepointSchedProcessExit        *ebpf.ProgramSpec `ebpf:"ptcpdump_raw_tracepoint__sched_process_exit"`
 	PtcpdumpRawTracepointSchedProcessFork        *ebpf.ProgramSpec `ebpf:"ptcpdump_raw_tracepoint__sched_process_fork"`
+	PtcpdumpSocketFilterEgress                   *ebpf.ProgramSpec `ebpf:"ptcpdump_socket_filter__egress"`
+	PtcpdumpSocketFilterIngress                  *ebpf.ProgramSpec `ebpf:"ptcpdump_socket_filter__ingress"`
 	PtcpdumpTcEgress                             *ebpf.ProgramSpec `ebpf:"ptcpdump_tc_egress"`
 	PtcpdumpTcIngress                            *ebpf.ProgramSpec `ebpf:"ptcpdump_tc_ingress"`
 	PtcpdumpTracepointSchedProcessExec           *ebpf.ProgramSpec `ebpf:"ptcpdump_tracepoint__sched_process_exec"`
@@ -269,6 +271,8 @@ type bpf_legacyPrograms struct {
 	PtcpdumpRawTracepointSchedProcessExec        *ebpf.Program `ebpf:"ptcpdump_raw_tracepoint__sched_process_exec"`
 	PtcpdumpRawTracepointSchedProcessExit        *ebpf.Program `ebpf:"ptcpdump_raw_tracepoint__sched_process_exit"`
 	PtcpdumpRawTracepointSchedProcessFork        *ebpf.Program `ebpf:"ptcpdump_raw_tracepoint__sched_process_fork"`
+	PtcpdumpSocketFilterEgress                   *ebpf.Program `ebpf:"ptcpdump_socket_filter__egress"`
+	PtcpdumpSocketFilterIngress                  *ebpf.Program `ebpf:"ptcpdump_socket_filter__ingress"`
 	PtcpdumpTcEgress                             *ebpf.Program `ebpf:"ptcpdump_tc_egress"`
 	PtcpdumpTcIngress                            *ebpf.Program `ebpf:"ptcpdump_tc_ingress"`
 	PtcpdumpTracepointSchedProcessExec           *ebpf.Program `ebpf:"ptcpdump_tracepoint__sched_process_exec"`
@@ -300,6 +304,8 @@ func (p *bpf_legacyPrograms) Close() error {
 		p.PtcpdumpRawTracepointSchedProcessExec,
 		p.PtcpdumpRawTracepointSchedProcessExit,
 		p.PtcpdumpRawTracepointSchedProcessFork,
+		p.PtcpdumpSocketFilterEgress,
+		p.PtcpdumpSocketFilterIngress,
 		p.PtcpdumpTcEgress,
 		p.PtcpdumpTcIngress,
 		p.PtcpdumpTracepointSchedProcessExec,

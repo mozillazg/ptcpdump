@@ -16,6 +16,9 @@ type Options struct {
 	// See https://docs.kernel.org/bpf/verifier.html#direct-packet-access
 	DirectRead bool
 
+	// use bpf_skb_load_bytes to read packet.
+	UseBbfSkbLoadBytes bool
+
 	// L2Skb indicates if the injected bpf program should use L2 skb or not.
 	// The L2 skb is the one that contains the ethernet header, while the L3 skb->data points to the IP header.
 	L2Skb bool
