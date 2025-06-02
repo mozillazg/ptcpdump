@@ -110,7 +110,7 @@ func (b *BPF) handlePacketEvents(ctx context.Context, reader *EventReader, ch ch
 }
 
 func parsePacketEvent(rawSample []byte) (*BpfPacketEventWithPayloadT, error) {
-	log.Infof("raw packet event: %v", rawSample)
+	log.Debugf("raw packet event: %v", rawSample)
 	event := BpfPacketEventWithPayloadT{}
 	if err := binary.Read(bytes.NewBuffer(rawSample), binary.LittleEndian, &event.Meta); err != nil {
 		return nil, fmt.Errorf("parse meta: %w", err)

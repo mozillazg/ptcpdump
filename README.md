@@ -67,30 +67,31 @@ In case the folder is empty, it can be mounted with:
 The following kernel configuration is required. Building as Modules is also
 possible.
 
-| Option                    | Backend    | Note                   |
-|---------------------------|------------|------------------------|
-| CONFIG_BPF=y              | both       | **Required**           |
-| CONFIG_BPF_SYSCALL=y      | both       | **Required**           |
-| CONFIG_DEBUG_INFO=y       | both       | **Required**           |
-| CONFIG_DEBUG_INFO_BTF=y   | both       | **Required**           |
-| CONFIG_KPROBES=y          | both       | **Required**           |
-| CONFIG_KPROBE_EVENTS=y    | both       | **Required**           |
-| CONFIG_TRACEPOINTS=y      | both       | **Required**           |
-| CONFIG_PERF_EVENTS=y      | both       | **Required**           |
-| CONFIG_NET=y              | both       | **Required**           |
-| CONFIG_NET_SCHED=y        | tc         | **Required**           |
-| CONFIG_NET_CLS_BPF=y      | tc         | **Required**           |
-| CONFIG_NET_ACT_BPF=y      | tc         | **Required**           |
-| CONFIG_NET_SCH_INGRESS=y  | tc         | **Required**           |
-| CONFIG_CGROUPS=y          | cgroup-skb | **Required**           |
-| CONFIG_CGROUP_BPF=y       | cgroup-skb | **Required**           |
-| CONFIG_BPF_TRAMPOLINE=y   | tp-btf     | **Required**           |
-| CONFIG_SECURITY=y         | both       | Optional (Recommended) |
-| CONFIG_BPF_TRAMPOLINE=y   | both       | Optional (Recommended) |
-| CONFIG_SOCK_CGROUP_DATA=y | both       | Optional (Recommended) |
-| CONFIG_BPF_JIT=y          | both       | Optional (Recommended) |
-| CONFIG_CGROUP_BPF=y       | tc, tp-btf | Optional (Recommended) |
-| CONFIG_CGROUPS=y          | tc, tp-btf | Optional (Recommended) |
+| Option                    | Backend                   | Note                   |
+|---------------------------|---------------------------|------------------------|
+| CONFIG_BPF=y              | both                      | **Required**           |
+| CONFIG_BPF_SYSCALL=y      | both                      | **Required**           |
+| CONFIG_DEBUG_INFO=y       | both                      | **Required**           |
+| CONFIG_DEBUG_INFO_BTF=y   | both                      | **Required**           |
+| CONFIG_KPROBES=y          | both                      | **Required**           |
+| CONFIG_KPROBE_EVENTS=y    | both                      | **Required**           |
+| CONFIG_TRACEPOINTS=y      | both                      | **Required**           |
+| CONFIG_PERF_EVENTS=y      | both                      | **Required**           |
+| CONFIG_NET=y              | both                      | **Required**           |
+| CONFIG_NET_SCHED=y        | tc                        | **Required**           |
+| CONFIG_NET_CLS_BPF=y      | tc                        | **Required**           |
+| CONFIG_NET_ACT_BPF=y      | tc                        | **Required**           |
+| CONFIG_NET_SCH_INGRESS=y  | tc                        | **Required**           |
+| CONFIG_CGROUPS=y          | cgroup-skb                | **Required**           |
+| CONFIG_CGROUP_BPF=y       | cgroup-skb                | **Required**           |
+| CONFIG_FILTER=y           | socket-filter             | **Required**           |
+| CONFIG_BPF_TRAMPOLINE=y   | tp-btf                    | **Required**           |
+| CONFIG_SECURITY=y         | both                      | Optional (Recommended) |
+| CONFIG_BPF_TRAMPOLINE=y   | both                      | Optional (Recommended) |
+| CONFIG_SOCK_CGROUP_DATA=y | both                      | Optional (Recommended) |
+| CONFIG_BPF_JIT=y          | both                      | Optional (Recommended) |
+| CONFIG_CGROUP_BPF=y       | tc, tp-btf, socket-filter | Optional (Recommended) |
+| CONFIG_CGROUPS=y          | tc, tp-btf, socket-filter | Optional (Recommended) |
 
 You can use `zgrep $OPTION /proc/config.gz` to validate whether an option is enabled.
 
@@ -249,17 +250,234 @@ Docker images for `ptcpdump` are published at https://quay.io/repository/ptcpdum
 ptcpdump supports specifying a particular eBPF technology for packet capture through the
 `--backend` flag.
 
-|                         | `tc`                      | `cgroup-skb`               | `tp-btf`                |
-|-------------------------|---------------------------|----------------------------|-------------------------|
-| eBPF Program Type       | `BPF_PROG_TYPE_SCHED_CLS` | `BPF_PROG_TYPE_CGROUP_SKB` | `BPF_PROG_TYPE_TRACING` |
-| L2 data                 | ✅                         | ❌                          | ✅                       |
-| Cross network namespace | ❌                         | ✅                          | ✅                       |
-| Kernel version          | 5.2+                      | 5.2+                       | 5.5+                    |
-| cgroup v2               | Recommended               | **Required**               | Recommended             |
+|                         | `tc`                      | `cgroup-skb`               | `socket-filter`               | `tp-btf`                |
+|-------------------------|---------------------------|----------------------------|-------------------------------|-------------------------|
+| eBPF Program Type       | `BPF_PROG_TYPE_SCHED_CLS` | `BPF_PROG_TYPE_CGROUP_SKB` | `BPF_PROG_TYPE_SOCKET_FILTER` | `BPF_PROG_TYPE_TRACING` |
+| L2 data                 | ✅                         | ❌                          | ✅                             | ✅                       |
+| Cross network namespace | ❌                         | ✅                          | ❌                             | ✅                       |
+| Kernel version          | 5.2+                      | 5.2+                       | 5.4+                          | 5.5+                    |
+| cgroup v2               | Recommended               | **Required**               | Recommended                   | Recommended             |
 
 
 If this flag isn't specified, it defaults to `tc`.
 
+<details>
+
+* Running `curl http://1.1.1.1` on the host:
+
+<details>
+
+  * `--backend tc`:
+
+        $ sudo ptcpdump -i any --backend tc host 1.1.1.1
+
+        12:11:28.009276 ens33 curl.402475 Out IP 10.0.2.15.48448 > 1.1.1.1.80: Flags [S], seq 615672474, win 64240, options [mss 1460,sackOK,TS val 2168208063 ecr 0,nop,wscale 7], length 0, ParentProc [bash.321004]
+        12:11:28.113779 ens33 curl.402475 In IP 1.1.1.1.80 > 10.0.2.15.48448: Flags [S.], seq 1810787293, ack 615672475, win 64240, options [mss 1460], length 0, ParentProc [bash.321004]
+        12:11:28.113852 ens33 curl.402475 Out IP 10.0.2.15.48448 > 1.1.1.1.80: Flags [.], seq 615672475, ack 1810787294, win 64240, length 0, ParentProc [bash.321004]
+        12:11:28.114216 ens33 curl.402475 Out IP 10.0.2.15.48448 > 1.1.1.1.80: Flags [P.], seq 615672475:615672545, ack 1810787294, win 64240, length 70, ParentProc [bash.321004]
+        12:11:28.115383 ens33 curl.402475 In IP 1.1.1.1.80 > 10.0.2.15.48448: Flags [.], seq 1810787294, ack 615672545, win 64240, length 0, ParentProc [bash.321004]
+        12:11:28.534486 ens33 curl.402475 In IP 1.1.1.1.80 > 10.0.2.15.48448: Flags [P.], seq 1810787294:1810787680, ack 615672545, win 64240, length 386, ParentProc [bash.321004]
+        12:11:28.534751 ens33 curl.402475 Out IP 10.0.2.15.48448 > 1.1.1.1.80: Flags [.], seq 615672545, ack 1810787680, win 63854, length 0, ParentProc [bash.321004]
+        12:11:28.536982 ens33 curl.402475 Out IP 10.0.2.15.48448 > 1.1.1.1.80: Flags [F.], seq 615672545, ack 1810787680, win 63854, length 0, ParentProc [bash.321004]
+        12:11:28.538160 ens33 curl.402475 In IP 1.1.1.1.80 > 10.0.2.15.48448: Flags [.], seq 1810787680, ack 615672546, win 64239, length 0, ParentProc [bash.321004]
+        12:11:28.642291 ens33 curl.402475 In IP 1.1.1.1.80 > 10.0.2.15.48448: Flags [FP.], seq 1810787680, ack 615672546, win 64239, length 0, ParentProc [bash.321004]
+        12:11:28.642511 ens33 curl.402475 Out IP 10.0.2.15.48448 > 1.1.1.1.80: Flags [.], seq 615672546, ack 1810787681, win 63854, length 0, ParentProc [bash.321004]
+
+
+  * `--backend cgroup-skb`:
+
+        $ sudo ptcpdump -i any --backend cgroup-skb host 1.1.1.1
+
+        12:11:28.009182 ens33 curl.402475 Out IP 10.0.2.15.48448 > 1.1.1.1.80: Flags [S], seq 615672474, win 64240, options [mss 146063 ecr 0,nop,wscale 7], length 0, Thread [curl.402475], ParentProc [bash.321004]
+        12:11:28.113815 ens33 curl.402475 In IP 1.1.1.1.80 > 10.0.2.15.48448: Flags [S.], seq 1810787293, ack 615672475, win 64240, gth 0, ParentProc [bash.321004]
+        12:11:28.113849 ens33 curl.402475 Out IP 10.0.2.15.48448 > 1.1.1.1.80: Flags [.], seq 615672475, ack 1810787294, win 64240, ash.321004]
+        12:11:28.114212 ens33 curl.402475 Out IP 10.0.2.15.48448 > 1.1.1.1.80: Flags [P.], seq 615672475:615672545, ack 1810787294, hread [curl.402475], ParentProc [bash.321004]
+        12:11:28.115409 ens33 curl.402475 In IP 1.1.1.1.80 > 10.0.2.15.48448: Flags [.], seq 1810787294, ack 615672545, win 64240, lsh.321004]
+        12:11:28.534596 ens33 curl.402475 In IP 1.1.1.1.80 > 10.0.2.15.48448: Flags [P.], seq 1810787294:1810787680, ack 615672545, ParentProc [bash.321004]
+        12:11:28.534738 ens33 curl.402475 Out IP 10.0.2.15.48448 > 1.1.1.1.80: Flags [.], seq 615672545, ack 1810787680, win 63854, ash.321004]
+        12:11:28.536967 ens33 curl.402475 Out IP 10.0.2.15.48448 > 1.1.1.1.80: Flags [F.], seq 615672545, ack 1810787680, win 63854,.402475], ParentProc [bash.321004]
+        12:11:28.538189 ens33 curl.402475 In IP 1.1.1.1.80 > 10.0.2.15.48448: Flags [.], seq 1810787680, ack 615672546, win 64239, lsh.321004]
+        12:11:28.642419 ens33 curl.402475 Out IP 10.0.2.15.48448 > 1.1.1.1.80: Flags [.], seq 615672546, ack 1810787681, win 63854, ash.321004]
+
+
+  * `--backend socket-filter`:
+
+        $ sudo ptcpdump -i any --backend socket-filter host 1.1.1.1
+
+        12:11:28.009426 ens33 curl.402475 Out IP 10.0.2.15.48448 > 1.1.1.1.80: Flags [S], seq 615672474, win 64240, options [mss 146063 ecr 0,nop,wscale 7], length 0, ParentProc [bash.321004]
+        12:11:28.113762 ens33 curl.402475 In IP 1.1.1.1.80 > 10.0.2.15.48448: Flags [S.], seq 1810787293, ack 615672475, win 64240, gth 0, ParentProc [bash.321004]
+        12:11:28.113861 ens33 curl.402475 Out IP 10.0.2.15.48448 > 1.1.1.1.80: Flags [.], seq 615672475, ack 1810787294, win 64240, ash.321004]
+        12:11:28.114503 ens33 curl.402475 Out IP 10.0.2.15.48448 > 1.1.1.1.80: Flags [P.], seq 615672475:615672545, ack 1810787294, arentProc [bash.321004]
+        12:11:28.115335 ens33 curl.402475 In IP 1.1.1.1.80 > 10.0.2.15.48448: Flags [.], seq 1810787294, ack 615672545, win 64240, lsh.321004]
+        12:11:28.534424 ens33 curl.402475 In IP 1.1.1.1.80 > 10.0.2.15.48448: Flags [P.], seq 1810787294:1810787680, ack 615672545, ParentProc [bash.321004]
+        12:11:28.534825 ens33 curl.402475 Out IP 10.0.2.15.48448 > 1.1.1.1.80: Flags [.], seq 615672545, ack 1810787680, win 63854, ash.321004]
+        12:11:28.537088 ens33 curl.402475 Out IP 10.0.2.15.48448 > 1.1.1.1.80: Flags [F.], seq 615672545, ack 1810787680, win 63854,bash.321004]
+        12:11:28.538153 ens33 curl.402475 In IP 1.1.1.1.80 > 10.0.2.15.48448: Flags [.], seq 1810787680, ack 615672546, win 64239, lsh.321004]
+        12:11:28.642247 ens33 curl.402475 In IP 1.1.1.1.80 > 10.0.2.15.48448: Flags [FP.], seq 1810787680, ack 615672546, win 64239,bash.321004]
+        12:11:28.642537 ens33 curl.402475 Out IP 10.0.2.15.48448 > 1.1.1.1.80: Flags [.], seq 615672546, ack 1810787681, win 63854, ash.321004]
+
+  * `--backend tp-btf`:
+
+        $ sudo ptcpdump -i any --backend tp-btf host 1.1.1.1
+
+        12:11:28.009353 ens33 curl.402475 Out IP 10.0.2.15.48448 > 1.1.1.1.80: Flags [S], seq 615672474, win 64240, options [mss 146063 ecr 0,nop,wscale 7], length 0, ParentProc [bash.321004]
+        12:11:28.113739 ens33 In IP 1.1.1.1.80 > 10.0.2.15.48448: Flags [S.], seq 1810787293, ack 615672475, win 64240, options [mss
+        12:11:28.113857 ens33 curl.402475 Out IP 10.0.2.15.48448 > 1.1.1.1.80: Flags [.], seq 615672475, ack 1810787294, win 64240, ash.321004]
+        12:11:28.114225 ens33 curl.402475 Out IP 10.0.2.15.48448 > 1.1.1.1.80: Flags [P.], seq 615672475:615672545, ack 1810787294, arentProc [bash.321004]
+        12:11:28.115242 ens33 In IP 1.1.1.1.80 > 10.0.2.15.48448: Flags [.], seq 1810787294, ack 615672545, win 64240, length 0
+        12:11:28.534245 ens33 In IP 1.1.1.1.80 > 10.0.2.15.48448: Flags [P.], seq 1810787294:1810787680, ack 615672545, win 64240, l
+        12:11:28.534768 ens33 curl.402475 Out IP 10.0.2.15.48448 > 1.1.1.1.80: Flags [.], seq 615672545, ack 1810787680, win 63854, ash.321004]
+        12:11:28.537038 ens33 curl.402475 Out IP 10.0.2.15.48448 > 1.1.1.1.80: Flags [F.], seq 615672545, ack 1810787680, win 63854,bash.321004]
+        12:11:28.538129 ens33 In IP 1.1.1.1.80 > 10.0.2.15.48448: Flags [.], seq 1810787680, ack 615672546, win 64239, length 0
+        12:11:28.642088 ens33 In IP 1.1.1.1.80 > 10.0.2.15.48448: Flags [FP.], seq 1810787680, ack 615672546, win 64239, length 0
+        12:11:28.642523 ens33 curl.402475 Out IP 10.0.2.15.48448 > 1.1.1.1.80: Flags [.], seq 615672546, ack 1810787681, win 63854, ash.321004]
+
+</details>
+
+
+* Running `curl http://1.1.1.1` in a docker container:
+
+<details>
+
+  * `--backend tc`:
+
+        $ sudo ptcpdump -i any --backend tc host 1.1.1.1
+
+        12:20:31.336397 veth1d387b0 curl.405939 In IP 172.17.0.4.38670 > 1.1.1.1.80: Flags [S], seq 3064539219, win 64240, options [mss 1460,sackOK,TS val 1731159046 ecr 0,nop,wscale 7], length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.336533 docker0 curl.405939 In IP 172.17.0.4.38670 > 1.1.1.1.80: Flags [S], seq 3064539219, win 64240, options [mss 1460,sackOK,TS val 1731159046 ecr 0,nop,wscale 7], length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.336794 ens33 Out IP 10.0.2.15.38670 > 1.1.1.1.80: Flags [S], seq 3064539219, win 64240, options [mss 1460,sackOK,TS val 1731159046 ecr 0,nop,wscale 7], length 0
+        12:20:31.468027 ens33 In IP 1.1.1.1.80 > 10.0.2.15.38670: Flags [S.], seq 488132001, ack 3064539220, win 64240, options [mss 1460], length 0
+        12:20:31.467769 docker0 curl.405939 Out IP 1.1.1.1.80 > 172.17.0.4.38670: Flags [S.], seq 488132001, ack 3064539220, win 64240, options [mss 1460], length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.467781 veth1d387b0 curl.405939 Out IP 1.1.1.1.80 > 172.17.0.4.38670: Flags [S.], seq 488132001, ack 3064539220, win 64240, options [mss 1460], length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.468025 veth1d387b0 curl.405939 In IP 172.17.0.4.38670 > 1.1.1.1.80: Flags [.], seq 3064539220, ack 488132002, win 64240, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.468042 docker0 curl.405939 In IP 172.17.0.4.38670 > 1.1.1.1.80: Flags [.], seq 3064539220, ack 488132002, win 64240, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.468061 ens33 Out IP 10.0.2.15.38670 > 1.1.1.1.80: Flags [.], seq 3064539220, ack 488132002, win 64240, length 0
+        12:20:31.468089 veth1d387b0 curl.405939 In IP 172.17.0.4.38670 > 1.1.1.1.80: Flags [P.], seq 3064539220:3064539291, ack 488132002, win 64240, length 71, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.468093 docker0 curl.405939 In IP 172.17.0.4.38670 > 1.1.1.1.80: Flags [P.], seq 3064539220:3064539291, ack 488132002, win 64240, length 71, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.468110 ens33 Out IP 10.0.2.15.38670 > 1.1.1.1.80: Flags [P.], seq 3064539220:3064539291, ack 488132002, win 64240, length 71
+        12:20:31.468464 ens33 In IP 1.1.1.1.80 > 10.0.2.15.38670: Flags [.], seq 488132002, ack 3064539291, win 64240, length 0
+        12:20:31.468535 docker0 curl.405939 Out IP 1.1.1.1.80 > 172.17.0.4.38670: Flags [.], seq 488132002, ack 3064539291, win 64240, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.468558 veth1d387b0 curl.405939 Out IP 1.1.1.1.80 > 172.17.0.4.38670: Flags [.], seq 488132002, ack 3064539291, win 64240, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.575461 ens33 In IP 1.1.1.1.80 > 10.0.2.15.38670: Flags [P.], seq 488132002:488132388, ack 3064539291, win 64240, length 386
+        12:20:31.575576 docker0 curl.405939 Out IP 1.1.1.1.80 > 172.17.0.4.38670: Flags [P.], seq 488132002:488132388, ack 3064539291, win 64240, length 386, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.575613 veth1d387b0 curl.405939 Out IP 1.1.1.1.80 > 172.17.0.4.38670: Flags [P.], seq 488132002:488132388, ack 3064539291, win 64240, length 386, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.575877 veth1d387b0 curl.405939 In IP 172.17.0.4.38670 > 1.1.1.1.80: Flags [.], seq 3064539291, ack 488132388, win 63854, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.575890 docker0 curl.405939 In IP 172.17.0.4.38670 > 1.1.1.1.80: Flags [.], seq 3064539291, ack 488132388, win 63854, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.575916 ens33 Out IP 10.0.2.15.38670 > 1.1.1.1.80: Flags [.], seq 3064539291, ack 488132388, win 63854, length 0
+        12:20:31.577079 veth1d387b0 curl.405939 In IP 172.17.0.4.38670 > 1.1.1.1.80: Flags [F.], seq 3064539291, ack 488132388, win 63854, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.577107 docker0 curl.405939 In IP 172.17.0.4.38670 > 1.1.1.1.80: Flags [F.], seq 3064539291, ack 488132388, win 63854, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.577146 ens33 Out IP 10.0.2.15.38670 > 1.1.1.1.80: Flags [F.], seq 3064539291, ack 488132388, win 63854, length 0
+        12:20:31.577736 ens33 In IP 1.1.1.1.80 > 10.0.2.15.38670: Flags [.], seq 488132388, ack 3064539292, win 64239, length 0
+        12:20:31.577761 docker0 curl.405939 Out IP 1.1.1.1.80 > 172.17.0.4.38670: Flags [.], seq 488132388, ack 3064539292, win 64239, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.577773 veth1d387b0 curl.405939 Out IP 1.1.1.1.80 > 172.17.0.4.38670: Flags [.], seq 488132388, ack 3064539292, win 64239, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.687029 ens33 In IP 1.1.1.1.80 > 10.0.2.15.38670: Flags [FP.], seq 488132388, ack 3064539292, win 64239, length 0
+        12:20:31.687166 docker0 curl.405939 Out IP 1.1.1.1.80 > 172.17.0.4.38670: Flags [FP.], seq 488132388, ack 3064539292, win 64239, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.687214 veth1d387b0 curl.405939 Out IP 1.1.1.1.80 > 172.17.0.4.38670: Flags [FP.], seq 488132388, ack 3064539292, win 64239, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.687398 veth1d387b0 curl.405939 In IP 172.17.0.4.38670 > 1.1.1.1.80: Flags [.], seq 3064539292, ack 488132389, win 63854, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.687413 docker0 curl.405939 In IP 172.17.0.4.38670 > 1.1.1.1.80: Flags [.], seq 3064539292, ack 488132389, win 63854, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.687453 ens33 Out IP 10.0.2.15.38670 > 1.1.1.1.80: Flags [.], seq 3064539292, ack 488132389, win 63854, length 0
+
+  * `--backend cgroup-skb`:
+
+        $ sudo ptcpdump -i any --backend cgroup-skb host 1.1.1.1
+
+        12:20:31.336108 dummy-45 curl.405939 Out IP 172.17.0.4.38670 > 1.1.1.1.80: Flags [S], seq 3064539219, win 64240, options [mss 1460,sackOK,TS val 1731159046 ecr 0,nop,wscale 7], length 0, Thread [curl.405939], ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.467819 dummy-45 curl.405939 In IP 1.1.1.1.80 > 172.17.0.4.38670: Flags [S.], seq 488132001, ack 3064539220, win 64240, options [mss 1460], length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.467876 dummy-45 curl.405939 Out IP 172.17.0.4.38670 > 1.1.1.1.80: Flags [.], seq 3064539220, ack 488132002, win 64240, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.468072 dummy-45 curl.405939 Out IP 172.17.0.4.38670 > 1.1.1.1.80: Flags [P.], seq 3064539220:3064539291, ack 488132002, win 64240, length 71, Thread [curl.405939], ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.468681 dummy-45 curl.405939 In IP 1.1.1.1.80 > 172.17.0.4.38670: Flags [.], seq 488132002, ack 3064539291, win 64240, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.575750 dummy-45 curl.405939 In IP 1.1.1.1.80 > 172.17.0.4.38670: Flags [P.], seq 488132002:488132388, ack 3064539291, win 64240, length 386, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.575848 dummy-45 curl.405939 Out IP 172.17.0.4.38670 > 1.1.1.1.80: Flags [.], seq 3064539291, ack 488132388, win 63854, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.576982 dummy-45 curl.405939 Out IP 172.17.0.4.38670 > 1.1.1.1.80: Flags [F.], seq 3064539291, ack 488132388, win 63854, length 0, Thread [curl.405939], ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.577843 dummy-45 curl.405939 In IP 1.1.1.1.80 > 172.17.0.4.38670: Flags [.], seq 488132388, ack 3064539292, win 64239, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.687357 dummy-45 curl.405939 Out IP 172.17.0.4.38670 > 1.1.1.1.80: Flags [.], seq 3064539292, ack 488132389, win 63854, length 0, ParentProc [bash.405653], Container [musing_banach]
+
+
+  * `--backend socket-filter`:
+
+        $ sudo ptcpdump -i any --backend socket-filter host 1.1.1.1
+
+        12:20:31.336456 docker0 curl.405939 In IP 172.17.0.4.38670 > 1.1.1.1.80: Flags [S], seq 3064539219, win 64240, options [mss 1460,sackOK,TS val 1731159046 ecr 0,nop,wscale 7], length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.336818 ens33 Out IP 10.0.2.15.38670 > 1.1.1.1.80: Flags [S], seq 3064539219, win 64240, options [mss 1460,sackOK,TS val 1731159046 ecr 0,nop,wscale 7], length 0
+        12:20:31.467700 ens33 In IP 1.1.1.1.80 > 10.0.2.15.38670: Flags [S.], seq 488132001, ack 3064539220, win 64240, options [mss 1460], length 0
+        12:20:31.467776 docker0 curl.405939 Out IP 1.1.1.1.80 > 172.17.0.4.38670: Flags [S.], seq 488132001, ack 3064539220, win 64240, options [mss 1460], length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.467784 veth1d387b0 curl.405939 Out IP 1.1.1.1.80 > 172.17.0.4.38670: Flags [S.], seq 488132001, ack 3064539220, win 64240, options [mss 1460], length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.468030 docker0 curl.405939 In IP 172.17.0.4.38670 > 1.1.1.1.80: Flags [.], seq 3064539220, ack 488132002, win 64240, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.468066 ens33 Out IP 10.0.2.15.38670 > 1.1.1.1.80: Flags [.], seq 3064539220, ack 488132002, win 64240, length 0
+        12:20:31.468092 docker0 curl.405939 In IP 172.17.0.4.38670 > 1.1.1.1.80: Flags [P.], seq 3064539220:3064539291, ack 488132002, win 64240, length 71, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.468122 ens33 Out IP 10.0.2.15.38670 > 1.1.1.1.80: Flags [P.], seq 3064539220:3064539291, ack 488132002, win 64240, length 71
+        12:20:31.468461 ens33 In IP 1.1.1.1.80 > 10.0.2.15.38670: Flags [.], seq 488132002, ack 3064539291, win 64240, length 0
+        12:20:31.468552 docker0 curl.405939 Out IP 1.1.1.1.80 > 172.17.0.4.38670: Flags [.], seq 488132002, ack 3064539291, win 64240, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.468565 veth1d387b0 curl.405939 Out IP 1.1.1.1.80 > 172.17.0.4.38670: Flags [.], seq 488132002, ack 3064539291, win 64240, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.575416 ens33 In IP 1.1.1.1.80 > 10.0.2.15.38670: Flags [P.], seq 488132002:488132388, ack 3064539291, win 64240, length 386
+        12:20:31.575601 docker0 curl.405939 Out IP 1.1.1.1.80 > 172.17.0.4.38670: Flags [P.], seq 488132002:488132388, ack 3064539291, win 64240, length 386, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.575623 veth1d387b0 curl.405939 Out IP 1.1.1.1.80 > 172.17.0.4.38670: Flags [P.], seq 488132002:488132388, ack 3064539291, win 64240, length 386, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.575889 docker0 curl.405939 In IP 172.17.0.4.38670 > 1.1.1.1.80: Flags [.], seq 3064539291, ack 488132388, win 63854, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.575928 ens33 Out IP 10.0.2.15.38670 > 1.1.1.1.80: Flags [.], seq 3064539291, ack 488132388, win 63854, length 0
+        12:20:31.577085 docker0 curl.405939 In IP 172.17.0.4.38670 > 1.1.1.1.80: Flags [F.], seq 3064539291, ack 488132388, win 63854, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.577153 ens33 Out IP 10.0.2.15.38670 > 1.1.1.1.80: Flags [F.], seq 3064539291, ack 488132388, win 63854, length 0
+        12:20:31.577733 ens33 In IP 1.1.1.1.80 > 10.0.2.15.38670: Flags [.], seq 488132388, ack 3064539292, win 64239, length 0
+        12:20:31.577770 docker0 curl.405939 Out IP 1.1.1.1.80 > 172.17.0.4.38670: Flags [.], seq 488132388, ack 3064539292, win 64239, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.577778 veth1d387b0 curl.405939 Out IP 1.1.1.1.80 > 172.17.0.4.38670: Flags [.], seq 488132388, ack 3064539292, win 64239, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.687015 ens33 In IP 1.1.1.1.80 > 10.0.2.15.38670: Flags [FP.], seq 488132388, ack 3064539292, win 64239, length 0
+        12:20:31.687206 docker0 curl.405939 Out IP 1.1.1.1.80 > 172.17.0.4.38670: Flags [FP.], seq 488132388, ack 3064539292, win 64239, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.687223 veth1d387b0 curl.405939 Out IP 1.1.1.1.80 > 172.17.0.4.38670: Flags [FP.], seq 488132388, ack 3064539292, win 64239, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.687409 docker0 curl.405939 In IP 172.17.0.4.38670 > 1.1.1.1.80: Flags [.], seq 3064539292, ack 488132389, win 63854, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.687464 ens33 Out IP 10.0.2.15.38670 > 1.1.1.1.80: Flags [.], seq 3064539292, ack 488132389, win 63854, length 0
+
+  * `--backend tp-btf`:
+
+        $ sudo ptcpdump -i any --backend tp-btf host 1.1.1.1
+
+        12:20:31.336316 eth0 curl.405939 Out IP 172.17.0.4.38670 > 1.1.1.1.80: Flags [S], seq 3064539219, win 64240, options [mss 1460,sackOK,TS val 1731159046 ecr 0,nop,wscale 7], length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.336382 veth1d387b0 curl.405939 In IP 172.17.0.4.38670 > 1.1.1.1.80: Flags [S], seq 3064539219, win 64240, options [mss 1460,sackOK,TS val 1731159046 ecr 0,nop,wscale 7], length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.336443 docker0 curl.405939 In IP 172.17.0.4.38670 > 1.1.1.1.80: Flags [S], seq 3064539219, win 64240, options [mss 1460,sackOK,TS val 1731159046 ecr 0,nop,wscale 7], length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.336801 ens33 Out IP 10.0.2.15.38670 > 1.1.1.1.80: Flags [S], seq 3064539219, win 64240, options [mss 1460,sackOK,TS val 1731159046 ecr 0,nop,wscale 7], length 0
+        12:20:31.467682 ens33 In IP 1.1.1.1.80 > 10.0.2.15.38670: Flags [S.], seq 488132001, ack 3064539220, win 64240, options [mss 1460], length 0
+        12:20:31.467773 docker0 curl.405939 Out IP 1.1.1.1.80 > 172.17.0.4.38670: Flags [S.], seq 488132001, ack 3064539220, win 64240, options [mss 1460], length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.467783 veth1d387b0 curl.405939 Out IP 1.1.1.1.80 > 172.17.0.4.38670: Flags [S.], seq 488132001, ack 3064539220, win 64240, options [mss 1460], length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.467811 eth0 curl.405939 In IP 1.1.1.1.80 > 172.17.0.4.38670: Flags [S.], seq 488132001, ack 3064539220, win 64240, options [mss 1460], length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.468005 eth0 curl.405939 Out IP 172.17.0.4.38670 > 1.1.1.1.80: Flags [.], seq 3064539220, ack 488132002, win 64240, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.468022 veth1d387b0 curl.405939 In IP 172.17.0.4.38670 > 1.1.1.1.80: Flags [.], seq 3064539220, ack 488132002, win 64240, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.468029 docker0 curl.405939 In IP 172.17.0.4.38670 > 1.1.1.1.80: Flags [.], seq 3064539220, ack 488132002, win 64240, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.468063 ens33 Out IP 10.0.2.15.38670 > 1.1.1.1.80: Flags [.], seq 3064539220, ack 488132002, win 64240, length 0
+        12:20:31.468078 eth0 curl.405939 Out IP 172.17.0.4.38670 > 1.1.1.1.80: Flags [P.], seq 3064539220:3064539291, ack 488132002, win 64240, length 71, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.468085 veth1d387b0 curl.405939 In IP 172.17.0.4.38670 > 1.1.1.1.80: Flags [P.], seq 3064539220:3064539291, ack 488132002, win 64240, length 71, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.468091 docker0 curl.405939 In IP 172.17.0.4.38670 > 1.1.1.1.80: Flags [P.], seq 3064539220:3064539291, ack 488132002, win 64240, length 71, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.468112 ens33 Out IP 10.0.2.15.38670 > 1.1.1.1.80: Flags [P.], seq 3064539220:3064539291, ack 488132002, win 64240, length 71
+        12:20:31.468446 ens33 In IP 1.1.1.1.80 > 10.0.2.15.38670: Flags [.], seq 488132002, ack 3064539291, win 64240, length 0
+        12:20:31.468543 docker0 curl.405939 Out IP 1.1.1.1.80 > 172.17.0.4.38670: Flags [.], seq 488132002, ack 3064539291, win 64240, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.468562 veth1d387b0 curl.405939 Out IP 1.1.1.1.80 > 172.17.0.4.38670: Flags [.], seq 488132002, ack 3064539291, win 64240, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.468668 eth0 curl.405939 In IP 1.1.1.1.80 > 172.17.0.4.38670: Flags [.], seq 488132002, ack 3064539291, win 64240, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.575358 ens33 In IP 1.1.1.1.80 > 10.0.2.15.38670: Flags [P.], seq 488132002:488132388, ack 3064539291, win 64240, length 386
+        12:20:31.575586 docker0 curl.405939 Out IP 1.1.1.1.80 > 172.17.0.4.38670: Flags [P.], seq 488132002:488132388, ack 3064539291, win 64240, length 386, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.575617 veth1d387b0 curl.405939 Out IP 1.1.1.1.80 > 172.17.0.4.38670: Flags [P.], seq 488132002:488132388, ack 3064539291, win 64240, length 386, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.575732 eth0 curl.405939 In IP 1.1.1.1.80 > 172.17.0.4.38670: Flags [P.], seq 488132002:488132388, ack 3064539291, win 64240, length 386, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.575855 eth0 curl.405939 Out IP 172.17.0.4.38670 > 1.1.1.1.80: Flags [.], seq 3064539291, ack 488132388, win 63854, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.575870 veth1d387b0 curl.405939 In IP 172.17.0.4.38670 > 1.1.1.1.80: Flags [.], seq 3064539291, ack 488132388, win 63854, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.575883 docker0 curl.405939 In IP 172.17.0.4.38670 > 1.1.1.1.80: Flags [.], seq 3064539291, ack 488132388, win 63854, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.575920 ens33 Out IP 10.0.2.15.38670 > 1.1.1.1.80: Flags [.], seq 3064539291, ack 488132388, win 63854, length 0
+        12:20:31.577059 eth0 curl.405939 Out IP 172.17.0.4.38670 > 1.1.1.1.80: Flags [F.], seq 3064539291, ack 488132388, win 63854, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.577074 veth1d387b0 curl.405939 In IP 172.17.0.4.38670 > 1.1.1.1.80: Flags [F.], seq 3064539291, ack 488132388, win 63854, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.577082 docker0 curl.405939 In IP 172.17.0.4.38670 > 1.1.1.1.80: Flags [F.], seq 3064539291, ack 488132388, win 63854, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.577148 ens33 Out IP 10.0.2.15.38670 > 1.1.1.1.80: Flags [F.], seq 3064539291, ack 488132388, win 63854, length 0
+        12:20:31.577704 ens33 In IP 1.1.1.1.80 > 10.0.2.15.38670: Flags [.], seq 488132388, ack 3064539292, win 64239, length 0
+        12:20:31.577764 docker0 curl.405939 Out IP 1.1.1.1.80 > 172.17.0.4.38670: Flags [.], seq 488132388, ack 3064539292, win 64239, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.577774 veth1d387b0 curl.405939 Out IP 1.1.1.1.80 > 172.17.0.4.38670: Flags [.], seq 488132388, ack 3064539292, win 64239, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.577835 eth0 curl.405939 In IP 1.1.1.1.80 > 172.17.0.4.38670: Flags [.], seq 488132388, ack 3064539292, win 64239, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.686955 ens33 In IP 1.1.1.1.80 > 10.0.2.15.38670: Flags [FP.], seq 488132388, ack 3064539292, win 64239, length 0
+        12:20:31.687183 docker0 curl.405939 Out IP 1.1.1.1.80 > 172.17.0.4.38670: Flags [FP.], seq 488132388, ack 3064539292, win 64239, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.687218 veth1d387b0 curl.405939 Out IP 1.1.1.1.80 > 172.17.0.4.38670: Flags [FP.], seq 488132388, ack 3064539292, win 64239, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.687316 eth0 curl.405939 In IP 1.1.1.1.80 > 172.17.0.4.38670: Flags [FP.], seq 488132388, ack 3064539292, win 64239, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.687369 eth0 curl.405939 Out IP 172.17.0.4.38670 > 1.1.1.1.80: Flags [.], seq 3064539292, ack 488132389, win 63854, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.687388 veth1d387b0 curl.405939 In IP 172.17.0.4.38670 > 1.1.1.1.80: Flags [.], seq 3064539292, ack 488132389, win 63854, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.687404 docker0 curl.405939 In IP 172.17.0.4.38670 > 1.1.1.1.80: Flags [.], seq 3064539292, ack 488132389, win 63854, length 0, ParentProc [bash.405653], Container [musing_banach]
+        12:20:31.687457 ens33 Out IP 10.0.2.15.38670 > 1.1.1.1.80: Flags [.], seq 3064539292, ack 488132389, win 63854, length 0
+
+</details>
+
+
+</details>
 
 <p align="right"><a href="#top">🔝</a></p>
 
@@ -287,7 +505,7 @@ If this flag isn't specified, it defaults to `tc`.
     Expression: see "man 7 pcap-filter"
     
     Flags:
-          --backend string                               Specify the backend to use for capturing packets. Possible values are "tc", "cgroup-skb" and "tp-btf" (default "tc")
+          --backend string                               Specify the backend to use for capturing packets. Possible values are "tc", "cgroup-skb", "tp-btf" and "socket-filter" (default "tc")
           --container-id string                          Filter by container id (only TCP and UDP packets are supported)
           --container-name string                        Filter by container name (only TCP and UDP packets are supported)
           --containerd-address string                    Address of containerd service (default "/run/containerd/containerd.sock")

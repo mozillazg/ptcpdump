@@ -16,6 +16,8 @@ jobs:
     parameters:
       os:
         type: executor
+      backend:
+        type: string
     resource_class: arm.medium
     executor: << parameters.os >>
 
@@ -31,75 +33,101 @@ jobs:
             uname -a
             cat /etc/issue
             file ./ptcpdump
+      - run:
+          name: setup env
+          command: |
+            if [ "<< parameters.backend >>" = "tc" ]; then
+              PTCPDUMP_EXTRA_ARGS=''
+            elif [ << parameters.backend >> = "tp-btf" ]; then
+              PTCPDUMP_EXTRA_ARGS='--backend tp-btf'
+            elif [ << parameters.backend >> = "cgroup-skb" ]; then
+              PTCPDUMP_EXTRA_ARGS='--backend cgroup-skb'
+            elif [ << parameters.backend >> = "socket-filter" ]; then
+              PTCPDUMP_EXTRA_ARGS='--backend socket-filter'
+            else
+              PTCPDUMP_EXTRA_ARGS='--backend tc'
+            fi
+            echo PTCPDUMP_EXTRA_ARGS="'${PTCPDUMP_EXTRA_ARGS}'" >> "$BASH_ENV"
 
       - run:
           name: e2e (test base)
           command: |
-            sudo bash testdata/test_default.sh ./ptcpdump
-            sudo bash testdata/test_base.sh ./ptcpdump
-            sudo bash testdata/test_parent_info.sh ./ptcpdump
+            sudo PTCPDUMP_EXTRA_ARGS="${PTCPDUMP_EXTRA_ARGS}" bash testdata/test_base.sh ./ptcpdump
+
+      - run:
+          name: e2e (test parent)
+          command: |
+            sudo PTCPDUMP_EXTRA_ARGS="${PTCPDUMP_EXTRA_ARGS}" bash testdata/test_default.sh ./ptcpdump
+            sudo PTCPDUMP_EXTRA_ARGS="${PTCPDUMP_EXTRA_ARGS}" bash testdata/test_parent_info.sh ./ptcpdump
 
       - run:
           name: e2e (test pname filter)
           command: |
-            sudo bash testdata/test_pname_filter.sh ./ptcpdump
+            sudo PTCPDUMP_EXTRA_ARGS="${PTCPDUMP_EXTRA_ARGS}" bash testdata/test_pname_filter.sh ./ptcpdump
 
       - run:
           name: e2e (test pid filter)
           command: |
-            sudo bash testdata/test_pid_filter.sh ./ptcpdump
+            sudo PTCPDUMP_EXTRA_ARGS="${PTCPDUMP_EXTRA_ARGS}" bash testdata/test_pid_filter.sh ./ptcpdump
 
-      - run:
-          name: e2e (test read pcap)
-          command: |
-            sudo bash testdata/test_read_pcap.sh ./ptcpdump
+      - when:
+          condition:
+            and:
+              - equal: [ << parameters.backend >>,'tc' ]
+              - equal: [ << parameters.os >>, 'ubuntu-24-04' ]
+          steps:
+            - run:
+                name: e2e (test read pcap)
+                command: |
+                  sudo PTCPDUMP_EXTRA_ARGS="${PTCPDUMP_EXTRA_ARGS}" bash testdata/test_read_pcap.sh ./ptcpdump
 
-      - run:
-          name: e2e (test write pcap)
-          command: |
-            sudo bash testdata/test_write_pcap.sh ./ptcpdump
+            - run:
+                name: e2e (test write pcap)
+                command: |
+                  sudo PTCPDUMP_EXTRA_ARGS="${PTCPDUMP_EXTRA_ARGS}" bash testdata/test_write_pcap.sh ./ptcpdump
+
+            - run:
+                name: e2e (test write stdout)
+                command: |
+                  sudo PTCPDUMP_EXTRA_ARGS="${PTCPDUMP_EXTRA_ARGS}" bash testdata/test_write_stdout.sh ./ptcpdump
 
       - run:
           name: e2e (test_arp.sh)
           command: |
-            sudo bash testdata/test_arp.sh ./ptcpdump
-            sudo bash testdata/test_icmp.sh ./ptcpdump
+            sudo PTCPDUMP_EXTRA_ARGS="${PTCPDUMP_EXTRA_ARGS}" bash testdata/test_arp.sh ./ptcpdump
+            sudo PTCPDUMP_EXTRA_ARGS="${PTCPDUMP_EXTRA_ARGS}" bash testdata/test_icmp.sh ./ptcpdump
 
       - run:
           name: e2e (test sub-program)
           command: |
-            sudo bash testdata/test_sub_program.sh ./ptcpdump
-            sudo bash testdata/test_sub_curl_domain_program.sh ./ptcpdump
-
-      - run:
-          name: e2e (test write stdout)
-          command: |
-            sudo bash testdata/test_write_stdout.sh ./ptcpdump
+            sudo PTCPDUMP_EXTRA_ARGS="${PTCPDUMP_EXTRA_ARGS}" bash testdata/test_sub_program.sh ./ptcpdump
+            sudo PTCPDUMP_EXTRA_ARGS="${PTCPDUMP_EXTRA_ARGS}" bash testdata/test_sub_curl_domain_program.sh ./ptcpdump
 
       - run:
           name: e2e (test netns)
           command: |
-            for i in {1..5}; do
-              sudo bash testdata/test_netns.sh ./ptcpdump && exit 0 || sleep 1
-            done
-            exit 1
+            sudo PTCPDUMP_EXTRA_ARGS="${PTCPDUMP_EXTRA_ARGS}" bash testdata/retry.sh 5 bash testdata/test_netns.sh ./ptcpdump
 
-      - run:
-          name: e2e (test netns newly)
-          command: |
-            sudo bash testdata/test_netns_newly_normal.sh ./ptcpdump
-            sudo bash testdata/test_netns_newly_exec.sh ./ptcpdump
+      - when:
+          condition:
+            or:
+             - equal: [<< parameters.backend >>,'tc']
+             - equal: [<< parameters.backend >>, 'socket-filter']
+          steps:
+            - run:
+                name: e2e (test netns newly)
+                command: |
+                  sudo PTCPDUMP_EXTRA_ARGS="${PTCPDUMP_EXTRA_ARGS}" bash testdata/test_netns_newly_normal.sh ./ptcpdump
+                  sudo PTCPDUMP_EXTRA_ARGS="${PTCPDUMP_EXTRA_ARGS}" bash testdata/test_netns_newly_exec.sh ./ptcpdump
 
-      - run:
-          name: e2e (test nat)
-          command: |
-            for i in {1..5}; do
-              sudo bash testdata/test_nat.sh ./ptcpdump && exit 0 || sleep 1
-            done
-            exit 1
+            - run:
+                name: e2e (test nat)
+                command: |
+                  sudo PTCPDUMP_EXTRA_ARGS="${PTCPDUMP_EXTRA_ARGS}" bash testdata/retry.sh 5 bash testdata/test_nat.sh ./ptcpdump
 
       - run:
           name: e2e (test go tls keylog, unstripped)
+          filters: pipeline.parameters.os == 'ubuntu-24-04'
           command: |
             echo "wireshark-common wireshark-common/install-setuid boolean true" | sudo debconf-set-selections
             sudo add-apt-repository -y ppa:wireshark-dev/stable
@@ -107,13 +135,11 @@ jobs:
             sudo DEBIAN_FRONTEND=noninteractive apt install -y tshark
             make -C testdata/gohttpapp build
 
-            for i in {1..10}; do
-              sudo bash testdata/test_gotls_keylog.sh ./ptcpdump gohttpapp && exit 0 || sleep 1
-            done
-            exit 1
+            sudo PTCPDUMP_EXTRA_ARGS="${PTCPDUMP_EXTRA_ARGS}" bash testdata/retry.sh 10 bash testdata/test_gotls_keylog.sh ./ptcpdump gohttpapp
 
       - run:
           name: e2e (test go tls keylog, PIE)
+          filters: pipeline.parameters.os == 'ubuntu-24-04'
           command: |
             echo "wireshark-common wireshark-common/install-setuid boolean true" | sudo debconf-set-selections
             sudo add-apt-repository -y ppa:wireshark-dev/stable
@@ -121,13 +147,11 @@ jobs:
             sudo DEBIAN_FRONTEND=noninteractive apt install -y tshark
             make -C testdata/gohttpapp build
 
-            for i in {1..10}; do
-              sudo bash testdata/test_gotls_keylog.sh ./ptcpdump gohttpapp_pie && exit 0 || sleep 1
-            done
-            exit 1
+            sudo PTCPDUMP_EXTRA_ARGS="${PTCPDUMP_EXTRA_ARGS}" bash testdata/retry.sh 10 bash testdata/test_gotls_keylog.sh ./ptcpdump gohttpapp_pie
 
       - run:
           name: e2e (test go tls keylog, stripped)
+          filters: pipeline.parameters.os == 'ubuntu-24-04'
           command: |
             echo "wireshark-common wireshark-common/install-setuid boolean true" | sudo debconf-set-selections
             sudo add-apt-repository -y ppa:wireshark-dev/stable
@@ -135,13 +159,11 @@ jobs:
             sudo DEBIAN_FRONTEND=noninteractive apt install -y tshark
             make -C testdata/gohttpapp build
 
-            for i in {1..10}; do
-              sudo bash testdata/test_gotls_keylog.sh ./ptcpdump gohttpapp_stripped && exit 0 || sleep 1
-            done
-            exit 1
+            sudo PTCPDUMP_EXTRA_ARGS="${PTCPDUMP_EXTRA_ARGS}" bash testdata/retry.sh 10 bash testdata/test_gotls_keylog.sh ./ptcpdump gohttpapp_stripped
 
       - run:
           name: e2e (test go tls keylog, stripped + PIE)
+          filters: pipeline.parameters.os == 'ubuntu-24-04'
           command: |
             echo "wireshark-common wireshark-common/install-setuid boolean true" | sudo debconf-set-selections
             sudo add-apt-repository -y ppa:wireshark-dev/stable
@@ -149,10 +171,7 @@ jobs:
             sudo DEBIAN_FRONTEND=noninteractive apt install -y tshark
             make -C testdata/gohttpapp build
 
-            for i in {1..10}; do
-              sudo bash testdata/test_gotls_keylog.sh ./ptcpdump gohttpapp_stripped_pie && exit 0 || sleep 1
-            done
-            exit 1
+            sudo PTCPDUMP_EXTRA_ARGS="${PTCPDUMP_EXTRA_ARGS}" bash testdata/retry.sh 10 bash testdata/test_gotls_keylog.sh ./ptcpdump gohttpapp_stripped_pie
 
 
   docker-e2e:
@@ -277,40 +296,6 @@ jobs:
           command: |
             sudo bash testdata/run_test_k8s_filter_by_pod_2.sh
 
-  arm64-test-backend:
-    machine:
-      image: ubuntu-2204:2024.04.4
-    resource_class: arm.medium
-    steps:
-      - checkout
-
-      - run:
-          name: build
-          command: |
-            make build-via-docker
-
-            echo '========== info =========='
-            uname -a
-            cat /etc/issue
-            file ./ptcpdump
-      - run:
-          name: test cgroup-skb
-          command: |
-            set -ex
-
-            sudo PTCPDUMP_EXTRA_ARGS='--backend cgroup-skb' bash testdata/test_pid_filter.sh ./ptcpdump
-            sudo PTCPDUMP_EXTRA_ARGS='--backend cgroup-skb' bash testdata/test_pname_filter.sh ./ptcpdump
-            sudo PTCPDUMP_EXTRA_ARGS='--backend cgroup-skb' bash testdata/test_sub_program.sh ./ptcpdump
-      - run:
-          name: test tp-btf
-          command: |
-            set -ex
-
-            sudo PTCPDUMP_EXTRA_ARGS='--backend tp-btf' bash testdata/test_base.sh ./ptcpdump
-            sudo PTCPDUMP_EXTRA_ARGS='--backend tp-btf' bash testdata/test_pid_filter.sh ./ptcpdump
-            sudo PTCPDUMP_EXTRA_ARGS='--backend tp-btf' bash testdata/test_pname_filter.sh ./ptcpdump
-            sudo PTCPDUMP_EXTRA_ARGS='--backend tp-btf' bash testdata/test_sub_program.sh ./ptcpdump
-
 workflows:
   e2e:
     jobs:
@@ -321,4 +306,8 @@ workflows:
                 - ubuntu-20-04
                 - ubuntu-22-04
                 - ubuntu-24-04
-      - arm64-test-backend
+              backend:
+                - tc
+                - cgroup-skb
+                - tp-btf
+                - socket-filter

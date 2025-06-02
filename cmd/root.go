@@ -137,8 +137,9 @@ func init() {
 		"Specify which context information to include in the output")
 	rootCmd.Flags().StringVar(&opts.backend, "backend", string(types.NetHookBackendTc),
 		"Specify the backend to use for capturing packets. "+
-			fmt.Sprintf("Possible values are %q, %q and %q",
-				types.NetHookBackendTc, types.NetHookBackendCgroupSkb, types.NetHookBackendTpBtf))
+			fmt.Sprintf("Possible values are %q, %q, %q and %q",
+				types.NetHookBackendTc, types.NetHookBackendCgroupSkb, types.NetHookBackendTpBtf,
+				types.NetHookBackendSocketFilter))
 	rootCmd.Flags().BoolVar(&opts.disableReverseMatch, "disable-reverse-match", false,
 		"Disable reverse match for TCP and UDP packets.")
 

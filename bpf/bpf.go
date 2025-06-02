@@ -120,9 +120,8 @@ func (b *BPF) Load(opts Options) error {
 	if opts.disableReverseMatch {
 		config.DisableReverseMatch = 1
 	}
-	if opts.backend != types.NetHookBackendCgroupSkb {
-		b.disableCgroupSkb()
-	}
+	b.disableNeedlessPrograms()
+
 	if !b.isLegacyKernel {
 		log.Infof("rewrite constants with %+v", config)
 		err = b.spec.Variables["g"].Set(config)
@@ -210,6 +209,35 @@ func (b *BPF) injectPcapFilter() error {
 						AtBpf2Bpf:  "pcap_filter",
 						DirectRead: true,
 						L2Skb:      l2skb,
+					},
+				)
+				if err != nil {
+					return fmt.Errorf("inject pcap filter to %s: %w", progName, err)
+				}
+			}
+		}
+	case types.NetHookBackendSocketFilter:
+		{
+			for _, progName := range []string{"ptcpdump_socket_filter__ingress",
+				"ptcpdump_socket_filter__egress"} {
+				prog, ok := b.spec.Programs[progName]
+				if !ok {
+					log.Infof("program %s not found", progName)
+					continue
+				}
+				if prog == nil {
+					log.Infof("program %s is nil", progName)
+					continue
+				}
+				log.Infof("inject pcap filter to %s", progName)
+				prog.Instructions, err = elibpcap.Inject(
+					b.opts.pcapFilter,
+					prog.Instructions,
+					elibpcap.Options{
+						AtBpf2Bpf:          "pcap_filter",
+						DirectRead:         false,
+						UseBbfSkbLoadBytes: true,
+						L2Skb:              true,
 					},
 				)
 				if err != nil {

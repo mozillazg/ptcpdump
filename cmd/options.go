@@ -203,7 +203,9 @@ func prepareOptions(opts *Options, rawArgs []string, args []string) error {
 	}
 
 	switch opts.backend {
-	case string(types.NetHookBackendCgroupSkb), string(types.NetHookBackendTpBtf):
+	case string(types.NetHookBackendCgroupSkb),
+		string(types.NetHookBackendTpBtf),
+		string(types.NetHookBackendSocketFilter):
 		break
 	default:
 		opts.backend = string(types.NetHookBackendTc)
