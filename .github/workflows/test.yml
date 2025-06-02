@@ -655,7 +655,8 @@ jobs:
           set -ex
           ls -l coverage/
           go tool covdata textfmt -i=coverage -o coverage.out
-          ls *.out
+          ls -lh *.out
+          cat coverage.out
       - name: upload coverage to Coveralls
         uses: coverallsapp/github-action@648a8eb78e6d50909eff900e4ec85cab4524a45b # v2
         with:
