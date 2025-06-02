@@ -230,12 +230,7 @@ func (c *Capturer) AttachCaptureHooks() error {
 	case types.NetHookBackendTpBtf:
 		return c.bpf.AttachTpBtfCaptureHooks(c.opts.DirectionOut, c.opts.DirectionIn)
 	case types.NetHookBackendSocketFilter:
-		devs := c.opts.Devices
-		if c.opts.AllDev {
-			devs = []types.Device{types.NewDummyDevice(-1, c.opts.NetNSCache.GetCurrentNs())}
-			devs[0].Name = "any"
-		}
-		return c.attachSocketFilterHooksToDevs(devs)
+		return c.attachSocketFilterHooksToDevs(c.opts.Devices)
 	default:
 		return c.attachTcHooksToDevs(c.opts.Devices)
 	}
@@ -254,6 +249,21 @@ func (c *Capturer) attachTcHooksToDevs(devs []types.Device) error {
 }
 
 func (c *Capturer) attachSocketFilterHooksToDevs(devs []types.Device) error {
+	if c.opts.AllDev {
+		var anyDevs []types.Device
+		idnodes := map[uint32]bool{}
+		for _, iface := range devs {
+			id := iface.NetNs.Inode()
+			if _, ok := idnodes[id]; !ok {
+				idnodes[id] = true
+				dev := types.NewDummyDevice(-1, iface.NetNs)
+				dev.Name = "any"
+				anyDevs = append(anyDevs, dev)
+			}
+		}
+		devs = anyDevs
+	}
+
 	for _, iface := range devs {
 		err := c.attachSocketFilterHooks(iface)
 		if err != nil {
@@ -411,7 +421,6 @@ func (c *Capturer) attachSocketFilterHooksToNewDev(iface types.Device) error {
 			return nil
 		}
 	}
-	log.Infof("start to attach socket filter to %s in netns %s", iface.Name, iface.NetNs)
 	return c.attachSocketFilterHooks(iface)
 }
 
