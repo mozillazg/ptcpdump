@@ -22,7 +22,7 @@ jobs:
       uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5
       with:
         # renovate: datasource=golang-version depName=golang
-        go-version: '1.24.2'
+        go-version: '1.24.4'
 
     - name: Install Deps
       run: |
@@ -50,7 +50,7 @@ jobs:
       uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5
       with:
         # renovate: datasource=golang-version depName=golang
-        go-version: '1.24.2'
+        go-version: '1.24.4'
 
     - name: Build
       run: make build-via-docker COVERAGE_FLAG='-cover'
@@ -85,7 +85,7 @@ jobs:
         uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5
         with:
           # renovate: datasource=golang-version depName=golang
-          go-version: '1.24.2'
+          go-version: '1.24.4'
 
       - name: Install Deps
         run: |
