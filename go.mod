@@ -10,8 +10,8 @@ require (
 	github.com/florianl/go-tc v0.4.5
 	github.com/gopacket/gopacket v1.3.1
 	github.com/jschwinger233/elibpcap v1.0.2
-	github.com/phuslu/log v1.0.117
-	github.com/shirou/gopsutil/v4 v4.25.4
+	github.com/phuslu/log v1.0.118
+	github.com/shirou/gopsutil/v4 v4.25.5
 	github.com/spf13/cobra v1.9.1
 	github.com/x-way/pktdump v0.0.6
 	golang.org/x/sys v0.32.0
@@ -20,15 +20,15 @@ require (
 require (
 	github.com/containerd/containerd/api v1.8.0
 	github.com/containerd/errdefs v0.3.0
-	github.com/go-logr/logr v1.4.2
+	github.com/go-logr/logr v1.4.3
 	github.com/mandiant/GoReSym v1.7.2-0.20240819162932-534ca84b42d5
 	github.com/mdlayher/netlink v1.7.2
 	github.com/smira/go-xz v0.1.0
 	github.com/stretchr/testify v1.10.0
 	github.com/vishvananda/netns v0.0.5
 	golang.org/x/arch v0.16.0
-	k8s.io/cri-api v0.33.0
-	k8s.io/cri-client v0.33.0
+	k8s.io/cri-api v0.33.1
+	k8s.io/cri-client v0.33.1
 	k8s.io/klog/v2 v2.130.1
 )
 
@@ -49,7 +49,7 @@ require (
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-events v0.0.0-20190806004212-e31b211e4f1c // indirect
 	github.com/docker/go-units v0.5.0 // indirect
-	github.com/ebitengine/purego v0.8.2 // indirect
+	github.com/ebitengine/purego v0.8.4 // indirect
 	github.com/elliotchance/orderedmap v1.4.0 // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
