@@ -129,8 +129,11 @@ func (d *DeviceCache) GetByIfindex(ifindex int, netNsInode uint32) (types.Device
 			}
 		}
 	}
-	for _, links := range d.allLinks {
+	for inode, links := range d.allLinks {
 		for _, dev := range links {
+			if inode > 0 && inode == types.SelfNs.Inode() {
+				ns = types.SelfNs
+			}
 			if dev.Index == ifindex {
 				return types.Device{
 					Name:    dev.Name,

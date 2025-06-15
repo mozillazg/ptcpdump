@@ -56,6 +56,19 @@ func (w *StdoutWriter) Write(e *event.Packet) error {
 	}
 
 	ifName := e.Device.Name
+	netNs := e.Device.NetNs.Inode()
+	if netNs <= 0 || e.Device.IsDummy() {
+		netNs = uint32(e.NetNs)
+	}
+	log.Infof("ifindex %d types.SelfNs.Inode(): %d", e.Device.Ifindex, types.SelfNs.Inode())
+	if netNs > 0 && netNs != types.SelfNs.Inode() {
+		if e.Device.HasDummyName() {
+			ifName = fmt.Sprintf("%d@%d", e.Device.Ifindex, netNs)
+		} else {
+			ifName = fmt.Sprintf("%s@%d", ifName, netNs)
+		}
+	}
+
 	packetType := ""
 	if e.Egress() {
 		packetType = "Out"
