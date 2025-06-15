@@ -60,8 +60,8 @@ func (w *StdoutWriter) Write(e *event.Packet) error {
 	if netNs <= 0 || e.Device.IsDummy() {
 		netNs = uint32(e.NetNs)
 	}
-	log.Infof("ifindex %d types.SelfNs.Inode(): %d", e.Device.Ifindex, types.SelfNs.Inode())
-	if netNs > 0 && netNs != types.SelfNs.Inode() {
+	log.Infof("ifindex %d types.GetSelfNs().Inode(): %d", e.Device.Ifindex, types.GetSelfNs().Inode())
+	if netNs > 0 && netNs != types.GetSelfNs().Inode() {
 		if e.Device.HasDummyName() {
 			ifName = fmt.Sprintf("%d@%d", e.Device.Ifindex, netNs)
 		} else {

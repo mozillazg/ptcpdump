@@ -7,7 +7,7 @@ import (
 	"runtime"
 )
 
-var SelfNs *NetNs
+var selfNs *NetNs
 
 type NetNs struct {
 	handle netns.NsHandle
@@ -18,10 +18,18 @@ type NetNs struct {
 
 func init() {
 	var err error
-	SelfNs, err = NewNetNs("/proc/self/ns/net")
+	selfNs, err = NewNetNs("/proc/self/ns/net")
 	if err != nil {
 		fmt.Printf("error creating self netns: %v", err)
 	}
+}
+
+func GetSelfNs() *NetNs {
+	return selfNs
+}
+
+func SetSelfNs(ns *NetNs) {
+	selfNs = ns
 }
 
 func NewNetNs(netNsPath string) (*NetNs, error) {

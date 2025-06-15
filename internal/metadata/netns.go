@@ -99,8 +99,8 @@ func (n *NetNsCache) GetOrFetchByPath(p string) (*types.NetNs, error) {
 func (n *NetNsCache) GetCurrentNs() *types.NetNs {
 	p := "/proc/self/ns/net"
 	ns, _ := n.GetOrFetchByPath(p)
-	if ns != nil && types.SelfNs == nil {
-		types.SelfNs = ns
+	if ns != nil && types.GetSelfNs() == nil {
+		types.SetSelfNs(ns)
 		log.Infof("set self netns: %d with path: %s", ns.Inode(), p)
 	}
 	return ns

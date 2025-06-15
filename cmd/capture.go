@@ -122,7 +122,7 @@ func headerTips(opts *Options) {
 
 	msg := fmt.Sprintf("capturing on %s, link-type EN10MB (Ethernet), snapshot length %d bytes, backend %s"+
 		", current network namespace %d",
-		interfaces, opts.snapshotLength, opts.backend, types.SelfNs.Inode())
+		interfaces, opts.snapshotLength, opts.backend, types.GetSelfNs().Inode())
 
 	if opts.verbose < 1 {
 		log.Warn("ptcpdump: verbose output suppressed, use -v[v]... for verbose output")
