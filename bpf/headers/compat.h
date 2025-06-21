@@ -16,6 +16,7 @@ struct gconfig_t {
     u8 filter_comm_enable;
     u8 filter_ifindex_enable;
     u8 use_ringbuf_submit_skb;
+    u8 disable_reverse_match;
     u32 max_payload_size;
 };
 

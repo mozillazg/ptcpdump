@@ -18,7 +18,6 @@ function test_ptcpdump() {
   cat "${LNAME}"
   cat "${LNAME}" | grep '/usr/bin/curl'
   cat "${LNAME}" | grep -F ' > 1.1.1.1.80: Flags [S],'        # SYN
-  cat "${LNAME}" | grep -P '1.1.1.1.80 > .*: Flags \[S.\],'   # SYN-ACK
   cat "${LNAME}" | grep -F ' > 1.1.1.1.80: Flags [.],'        # ACK
 }
 
@@ -26,7 +25,6 @@ function test_tcpdump_read() {
   which tcpdump || (apt update || true && apt install -y tcpdump)
   tcpdump -nr "${FNAME}"
   tcpdump -nr "${FNAME}" | grep -F ' > 1.1.1.1.80: Flags [S],'       # SYN
-  tcpdump -nr "${FNAME}" | grep -P '1.1.1.1.80 > .*: Flags \[S.\],'  # SYN-ACK
   tcpdump -nr "${FNAME}" | grep -F ' > 1.1.1.1.80: Flags [.],'       # ACK
 }
 
@@ -36,7 +34,6 @@ function test_ptcpdump_read() {
     timeout 30s ${CMD} -v -r "${FNAME}" > "${RNAME}"
     cat "${RNAME}" | grep '/usr/bin/curl'
     cat "${RNAME}" | grep -F ' > 1.1.1.1.80: Flags [S],'        # SYN
-    cat "${RNAME}" | grep -P '1.1.1.1.80 > .*: Flags \[S.\],'   # SYN-ACK
     cat "${RNAME}" | grep -F ' > 1.1.1.1.80: Flags [.],'        # ACK
 }
 

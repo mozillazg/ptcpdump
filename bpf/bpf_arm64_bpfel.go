@@ -43,7 +43,8 @@ type BpfGconfigT struct {
 	FilterCommEnable    uint8
 	FilterIfindexEnable uint8
 	UseRingbufSubmitSkb uint8
-	_                   [3]byte
+	DisableReverseMatch uint8
+	_                   [2]byte
 	MaxPayloadSize      uint32
 }
 
@@ -102,7 +103,10 @@ type BpfPacketEventMetaT struct {
 	PacketType uint8
 	FirstLayer uint8
 	L3Protocol uint16
+	NetnsId    uint32
 	Ifindex    uint32
+	Ifname     [16]uint8
+	_          [4]byte
 	PayloadLen uint64
 	PacketSize uint64
 	Process    BpfProcessMetaT
@@ -165,12 +169,21 @@ type BpfSpecs struct {
 //
 // It can be passed ebpf.CollectionSpec.Assign.
 type BpfProgramSpecs struct {
+	PtcpdumpCgroupConnect4                       *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup__connect4"`
+	PtcpdumpCgroupConnect6                       *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup__connect6"`
+	PtcpdumpCgroupPostBind4                      *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup__post_bind4"`
+	PtcpdumpCgroupPostBind6                      *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup__post_bind6"`
+	PtcpdumpCgroupRecvmsg4                       *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup__recvmsg4"`
+	PtcpdumpCgroupRecvmsg6                       *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup__recvmsg6"`
+	PtcpdumpCgroupSendmsg4                       *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup__sendmsg4"`
+	PtcpdumpCgroupSendmsg6                       *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup__sendmsg6"`
 	PtcpdumpCgroupSockCreate                     *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup__sock_create"`
 	PtcpdumpCgroupSockRelease                    *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup__sock_release"`
 	PtcpdumpCgroupSkbEgress                      *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup_skb__egress"`
 	PtcpdumpCgroupSkbIngress                     *ebpf.ProgramSpec `ebpf:"ptcpdump_cgroup_skb__ingress"`
 	PtcpdumpFentryAcctProcess                    *ebpf.ProgramSpec `ebpf:"ptcpdump_fentry__acct_process"`
 	PtcpdumpFentryDoExit                         *ebpf.ProgramSpec `ebpf:"ptcpdump_fentry__do_exit"`
+	PtcpdumpFentryKfreeSkb                       *ebpf.ProgramSpec `ebpf:"ptcpdump_fentry__kfree_skb"`
 	PtcpdumpFentryNfNatManipPkt                  *ebpf.ProgramSpec `ebpf:"ptcpdump_fentry__nf_nat_manip_pkt"`
 	PtcpdumpFentryNfNatPacket                    *ebpf.ProgramSpec `ebpf:"ptcpdump_fentry__nf_nat_packet"`
 	PtcpdumpFentrySecuritySkClassifyFlow         *ebpf.ProgramSpec `ebpf:"ptcpdump_fentry__security_sk_classify_flow"`
@@ -181,6 +194,7 @@ type BpfProgramSpecs struct {
 	PtcpdumpKprobeDevChangeNetNamespace          *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__dev_change_net_namespace"`
 	PtcpdumpKprobeDevChangeNetNamespaceLegacy    *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__dev_change_net_namespace_legacy"`
 	PtcpdumpKprobeDoExit                         *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__do_exit"`
+	PtcpdumpKprobeKfreeSkb                       *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__kfree_skb"`
 	PtcpdumpKprobeNfNatManipPkt                  *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__nf_nat_manip_pkt"`
 	PtcpdumpKprobeNfNatPacket                    *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__nf_nat_packet"`
 	PtcpdumpKprobeRegisterNetdevice              *ebpf.ProgramSpec `ebpf:"ptcpdump_kprobe__register_netdevice"`
@@ -196,10 +210,14 @@ type BpfProgramSpecs struct {
 	PtcpdumpRawTracepointSchedProcessExec        *ebpf.ProgramSpec `ebpf:"ptcpdump_raw_tracepoint__sched_process_exec"`
 	PtcpdumpRawTracepointSchedProcessExit        *ebpf.ProgramSpec `ebpf:"ptcpdump_raw_tracepoint__sched_process_exit"`
 	PtcpdumpRawTracepointSchedProcessFork        *ebpf.ProgramSpec `ebpf:"ptcpdump_raw_tracepoint__sched_process_fork"`
+	PtcpdumpSocketFilterEgress                   *ebpf.ProgramSpec `ebpf:"ptcpdump_socket_filter__egress"`
+	PtcpdumpSocketFilterIngress                  *ebpf.ProgramSpec `ebpf:"ptcpdump_socket_filter__ingress"`
 	PtcpdumpTcEgress                             *ebpf.ProgramSpec `ebpf:"ptcpdump_tc_egress"`
 	PtcpdumpTcIngress                            *ebpf.ProgramSpec `ebpf:"ptcpdump_tc_ingress"`
 	PtcpdumpTcxEgress                            *ebpf.ProgramSpec `ebpf:"ptcpdump_tcx_egress"`
 	PtcpdumpTcxIngress                           *ebpf.ProgramSpec `ebpf:"ptcpdump_tcx_ingress"`
+	PtcpdumpTpBtfNetDevQueue                     *ebpf.ProgramSpec `ebpf:"ptcpdump_tp_btf__net_dev_queue"`
+	PtcpdumpTpBtfNetifReceiveSkb                 *ebpf.ProgramSpec `ebpf:"ptcpdump_tp_btf__netif_receive_skb"`
 	PtcpdumpTpBtfSchedProcessExec                *ebpf.ProgramSpec `ebpf:"ptcpdump_tp_btf__sched_process_exec"`
 	PtcpdumpTpBtfSchedProcessExit                *ebpf.ProgramSpec `ebpf:"ptcpdump_tp_btf__sched_process_exit"`
 	PtcpdumpTpBtfSchedProcessFork                *ebpf.ProgramSpec `ebpf:"ptcpdump_tp_btf__sched_process_fork"`
@@ -378,12 +396,21 @@ type BpfVariables struct {
 //
 // It can be passed to LoadBpfObjects or ebpf.CollectionSpec.LoadAndAssign.
 type BpfPrograms struct {
+	PtcpdumpCgroupConnect4                       *ebpf.Program `ebpf:"ptcpdump_cgroup__connect4"`
+	PtcpdumpCgroupConnect6                       *ebpf.Program `ebpf:"ptcpdump_cgroup__connect6"`
+	PtcpdumpCgroupPostBind4                      *ebpf.Program `ebpf:"ptcpdump_cgroup__post_bind4"`
+	PtcpdumpCgroupPostBind6                      *ebpf.Program `ebpf:"ptcpdump_cgroup__post_bind6"`
+	PtcpdumpCgroupRecvmsg4                       *ebpf.Program `ebpf:"ptcpdump_cgroup__recvmsg4"`
+	PtcpdumpCgroupRecvmsg6                       *ebpf.Program `ebpf:"ptcpdump_cgroup__recvmsg6"`
+	PtcpdumpCgroupSendmsg4                       *ebpf.Program `ebpf:"ptcpdump_cgroup__sendmsg4"`
+	PtcpdumpCgroupSendmsg6                       *ebpf.Program `ebpf:"ptcpdump_cgroup__sendmsg6"`
 	PtcpdumpCgroupSockCreate                     *ebpf.Program `ebpf:"ptcpdump_cgroup__sock_create"`
 	PtcpdumpCgroupSockRelease                    *ebpf.Program `ebpf:"ptcpdump_cgroup__sock_release"`
 	PtcpdumpCgroupSkbEgress                      *ebpf.Program `ebpf:"ptcpdump_cgroup_skb__egress"`
 	PtcpdumpCgroupSkbIngress                     *ebpf.Program `ebpf:"ptcpdump_cgroup_skb__ingress"`
 	PtcpdumpFentryAcctProcess                    *ebpf.Program `ebpf:"ptcpdump_fentry__acct_process"`
 	PtcpdumpFentryDoExit                         *ebpf.Program `ebpf:"ptcpdump_fentry__do_exit"`
+	PtcpdumpFentryKfreeSkb                       *ebpf.Program `ebpf:"ptcpdump_fentry__kfree_skb"`
 	PtcpdumpFentryNfNatManipPkt                  *ebpf.Program `ebpf:"ptcpdump_fentry__nf_nat_manip_pkt"`
 	PtcpdumpFentryNfNatPacket                    *ebpf.Program `ebpf:"ptcpdump_fentry__nf_nat_packet"`
 	PtcpdumpFentrySecuritySkClassifyFlow         *ebpf.Program `ebpf:"ptcpdump_fentry__security_sk_classify_flow"`
@@ -394,6 +421,7 @@ type BpfPrograms struct {
 	PtcpdumpKprobeDevChangeNetNamespace          *ebpf.Program `ebpf:"ptcpdump_kprobe__dev_change_net_namespace"`
 	PtcpdumpKprobeDevChangeNetNamespaceLegacy    *ebpf.Program `ebpf:"ptcpdump_kprobe__dev_change_net_namespace_legacy"`
 	PtcpdumpKprobeDoExit                         *ebpf.Program `ebpf:"ptcpdump_kprobe__do_exit"`
+	PtcpdumpKprobeKfreeSkb                       *ebpf.Program `ebpf:"ptcpdump_kprobe__kfree_skb"`
 	PtcpdumpKprobeNfNatManipPkt                  *ebpf.Program `ebpf:"ptcpdump_kprobe__nf_nat_manip_pkt"`
 	PtcpdumpKprobeNfNatPacket                    *ebpf.Program `ebpf:"ptcpdump_kprobe__nf_nat_packet"`
 	PtcpdumpKprobeRegisterNetdevice              *ebpf.Program `ebpf:"ptcpdump_kprobe__register_netdevice"`
@@ -409,10 +437,14 @@ type BpfPrograms struct {
 	PtcpdumpRawTracepointSchedProcessExec        *ebpf.Program `ebpf:"ptcpdump_raw_tracepoint__sched_process_exec"`
 	PtcpdumpRawTracepointSchedProcessExit        *ebpf.Program `ebpf:"ptcpdump_raw_tracepoint__sched_process_exit"`
 	PtcpdumpRawTracepointSchedProcessFork        *ebpf.Program `ebpf:"ptcpdump_raw_tracepoint__sched_process_fork"`
+	PtcpdumpSocketFilterEgress                   *ebpf.Program `ebpf:"ptcpdump_socket_filter__egress"`
+	PtcpdumpSocketFilterIngress                  *ebpf.Program `ebpf:"ptcpdump_socket_filter__ingress"`
 	PtcpdumpTcEgress                             *ebpf.Program `ebpf:"ptcpdump_tc_egress"`
 	PtcpdumpTcIngress                            *ebpf.Program `ebpf:"ptcpdump_tc_ingress"`
 	PtcpdumpTcxEgress                            *ebpf.Program `ebpf:"ptcpdump_tcx_egress"`
 	PtcpdumpTcxIngress                           *ebpf.Program `ebpf:"ptcpdump_tcx_ingress"`
+	PtcpdumpTpBtfNetDevQueue                     *ebpf.Program `ebpf:"ptcpdump_tp_btf__net_dev_queue"`
+	PtcpdumpTpBtfNetifReceiveSkb                 *ebpf.Program `ebpf:"ptcpdump_tp_btf__netif_receive_skb"`
 	PtcpdumpTpBtfSchedProcessExec                *ebpf.Program `ebpf:"ptcpdump_tp_btf__sched_process_exec"`
 	PtcpdumpTpBtfSchedProcessExit                *ebpf.Program `ebpf:"ptcpdump_tp_btf__sched_process_exit"`
 	PtcpdumpTpBtfSchedProcessFork                *ebpf.Program `ebpf:"ptcpdump_tp_btf__sched_process_fork"`
@@ -425,12 +457,21 @@ type BpfPrograms struct {
 
 func (p *BpfPrograms) Close() error {
 	return _BpfClose(
+		p.PtcpdumpCgroupConnect4,
+		p.PtcpdumpCgroupConnect6,
+		p.PtcpdumpCgroupPostBind4,
+		p.PtcpdumpCgroupPostBind6,
+		p.PtcpdumpCgroupRecvmsg4,
+		p.PtcpdumpCgroupRecvmsg6,
+		p.PtcpdumpCgroupSendmsg4,
+		p.PtcpdumpCgroupSendmsg6,
 		p.PtcpdumpCgroupSockCreate,
 		p.PtcpdumpCgroupSockRelease,
 		p.PtcpdumpCgroupSkbEgress,
 		p.PtcpdumpCgroupSkbIngress,
 		p.PtcpdumpFentryAcctProcess,
 		p.PtcpdumpFentryDoExit,
+		p.PtcpdumpFentryKfreeSkb,
 		p.PtcpdumpFentryNfNatManipPkt,
 		p.PtcpdumpFentryNfNatPacket,
 		p.PtcpdumpFentrySecuritySkClassifyFlow,
@@ -441,6 +482,7 @@ func (p *BpfPrograms) Close() error {
 		p.PtcpdumpKprobeDevChangeNetNamespace,
 		p.PtcpdumpKprobeDevChangeNetNamespaceLegacy,
 		p.PtcpdumpKprobeDoExit,
+		p.PtcpdumpKprobeKfreeSkb,
 		p.PtcpdumpKprobeNfNatManipPkt,
 		p.PtcpdumpKprobeNfNatPacket,
 		p.PtcpdumpKprobeRegisterNetdevice,
@@ -456,10 +498,14 @@ func (p *BpfPrograms) Close() error {
 		p.PtcpdumpRawTracepointSchedProcessExec,
 		p.PtcpdumpRawTracepointSchedProcessExit,
 		p.PtcpdumpRawTracepointSchedProcessFork,
+		p.PtcpdumpSocketFilterEgress,
+		p.PtcpdumpSocketFilterIngress,
 		p.PtcpdumpTcEgress,
 		p.PtcpdumpTcIngress,
 		p.PtcpdumpTcxEgress,
 		p.PtcpdumpTcxIngress,
+		p.PtcpdumpTpBtfNetDevQueue,
+		p.PtcpdumpTpBtfNetifReceiveSkb,
 		p.PtcpdumpTpBtfSchedProcessExec,
 		p.PtcpdumpTpBtfSchedProcessExit,
 		p.PtcpdumpTpBtfSchedProcessFork,

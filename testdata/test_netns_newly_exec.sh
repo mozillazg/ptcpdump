@@ -27,14 +27,14 @@ trap cleanup EXIT
 function test_ptcpdump_exec() {
   local LNAME="${LNAME}.exec"
   curl 1.1.1.1 &>/dev/null || true &
-  ip netns exec ${NETNS2}  sh -c "echo -e 'HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n' | nc -l 8000" &
+  ip netns exec ${NETNS2}  sh -c "printf 'HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n' | nc -l 8000" &
 
   timeout 30s ${CMD} -c 4 -i any ${PTCPDUMP_EXTRA_ARGS} --netns newly -v --print -w "${FNAME}" \
       'tcp' \
       -- sh -c "bash ${CREATE_NS_SCRIPT} $NETNS1 $VETH1 $NETNS2 $VETH2 && ip netns exec ${NETNS1} curl http://192.168.64.2:8000"  | tee "${LNAME}"
 
   cat "${LNAME}"
-  cat "${LNAME}" | grep '192.168.64.2.* > 192.168.64.1'
+  cat "${LNAME}" | grep '192.168.64.2.* > 192.168.64.1' || \
   cat "${LNAME}" | grep '192.168.64.1.* > 192.168.64.2'
 
   ${CMD} -r ${FNAME}

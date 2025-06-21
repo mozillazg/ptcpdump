@@ -3,6 +3,7 @@ package types
 import (
 	"fmt"
 	"sort"
+	"strings"
 )
 
 type Device struct {
@@ -52,6 +53,22 @@ func (i *Interfaces) GetByIfindex(index int) Device {
 		}
 	}
 	return Device{}
+}
+
+func NewDummyDevice(ifindex int, ns *NetNs) Device {
+	return Device{
+		Name:    fmt.Sprintf("dummy-%d", ifindex),
+		Ifindex: ifindex,
+		NetNs:   ns,
+	}
+}
+
+func (d *Device) IsDummy() bool {
+	return d.Name == fmt.Sprintf("dummy-%d", d.Ifindex)
+}
+
+func (d *Device) HasDummyName() bool {
+	return d.IsDummy() && strings.HasPrefix(d.Name, "dummy-")
 }
 
 func (d *Device) Key() string {

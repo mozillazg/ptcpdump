@@ -20,3 +20,5 @@
 /dist/
 keylog.txt
 /testdata/gohttpapp/gohttpapp*
+mptcp/
+tmp/

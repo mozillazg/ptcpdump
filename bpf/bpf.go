@@ -58,6 +58,8 @@ type Options struct {
 	hookNetDev     bool
 	kernelTypes    *btf.Spec
 	backend        types.NetHookBackend
+
+	disableReverseMatch bool
 }
 
 func NewBPF() (*BPF, error) {
@@ -115,9 +117,11 @@ func (b *BPF) Load(opts Options) error {
 	if b.useRingBufSubmitSkb {
 		config.UseRingbufSubmitSkb = 1
 	}
-	if opts.backend != types.NetHookBackendCgroupSkb {
-		b.disableCgroupSkb()
+	if opts.disableReverseMatch {
+		config.DisableReverseMatch = 1
 	}
+	b.disableNeedlessPrograms()
+
 	if !b.isLegacyKernel {
 		log.Infof("rewrite constants with %+v", config)
 		err = b.spec.Variables["g"].Set(config)
@@ -172,39 +176,116 @@ load:
 
 func (b *BPF) injectPcapFilter() error {
 	var err error
-	for _, progName := range []string{"ptcpdump_tc_ingress", "ptcpdump_tc_egress",
-		"ptcpdump_tcx_ingress", "ptcpdump_tcx_egress",
-		"ptcpdump_cgroup_skb__ingress", "ptcpdump_cgroup_skb__egress"} {
-		prog, ok := b.spec.Programs[progName]
-		if !ok {
-			log.Infof("program %s not found", progName)
-			continue
-		}
-		if prog == nil {
-			log.Infof("program %s is nil", progName)
-			continue
-		}
-		l2skb := true
-		if strings.Contains(progName, "cgroup_skb") {
-			l2skb = false
-			if b.opts.backend != types.NetHookBackendCgroupSkb {
-				continue
+
+	switch b.opts.backend {
+	case types.NetHookBackendTc, types.NetHookBackendCgroupSkb:
+		{
+			for _, progName := range []string{"ptcpdump_tc_ingress", "ptcpdump_tc_egress",
+				"ptcpdump_tcx_ingress", "ptcpdump_tcx_egress",
+				"ptcpdump_cgroup_skb__ingress", "ptcpdump_cgroup_skb__egress"} {
+				prog, ok := b.spec.Programs[progName]
+				if !ok {
+					log.Infof("program %s not found", progName)
+					continue
+				}
+				if prog == nil {
+					log.Infof("program %s is nil", progName)
+					continue
+				}
+				l2skb := true
+				if strings.Contains(progName, "cgroup_skb") {
+					l2skb = false
+					if b.opts.backend != types.NetHookBackendCgroupSkb {
+						continue
+					}
+				} else if b.opts.backend != types.NetHookBackendTc {
+					continue
+				}
+				log.Infof("inject pcap filter to %s", progName)
+				prog.Instructions, err = elibpcap.Inject(
+					b.opts.pcapFilter,
+					prog.Instructions,
+					elibpcap.Options{
+						AtBpf2Bpf:        "pcap_filter",
+						PacketAccessMode: elibpcap.Direct,
+						L2Skb:            l2skb,
+					},
+				)
+				if err != nil {
+					return fmt.Errorf("inject pcap filter to %s: %w", progName, err)
+				}
 			}
 		}
-		log.Infof("inject pcap filter to %s", progName)
-		prog.Instructions, err = elibpcap.Inject(
-			b.opts.pcapFilter,
-			prog.Instructions,
-			elibpcap.Options{
-				AtBpf2Bpf:  "pcap_filter",
-				DirectRead: true,
-				L2Skb:      l2skb,
-			},
-		)
-		if err != nil {
-			return fmt.Errorf("inject pcap filter to %s: %w", progName, err)
+	case types.NetHookBackendSocketFilter:
+		{
+			for _, progName := range []string{"ptcpdump_socket_filter__ingress",
+				"ptcpdump_socket_filter__egress"} {
+				prog, ok := b.spec.Programs[progName]
+				if !ok {
+					log.Infof("program %s not found", progName)
+					continue
+				}
+				if prog == nil {
+					log.Infof("program %s is nil", progName)
+					continue
+				}
+				log.Infof("inject pcap filter to %s", progName)
+				prog.Instructions, err = elibpcap.Inject(
+					b.opts.pcapFilter,
+					prog.Instructions,
+					elibpcap.Options{
+						AtBpf2Bpf:        "pcap_filter",
+						PacketAccessMode: elibpcap.BpfSkbLoadBytes,
+						L2Skb:            true,
+					},
+				)
+				if err != nil {
+					return fmt.Errorf("inject pcap filter to %s: %w", progName, err)
+				}
+			}
+		}
+	case types.NetHookBackendTpBtf:
+		{
+			for _, progName := range []string{"ptcpdump_tp_btf__net_dev_queue",
+				"ptcpdump_tp_btf__netif_receive_skb"} {
+				prog, ok := b.spec.Programs[progName]
+				if !ok {
+					log.Infof("program %s not found", progName)
+					continue
+				}
+				if prog == nil {
+					log.Infof("program %s is nil", progName)
+					continue
+				}
+				log.Infof("inject pcap filter to %s", progName)
+				prog.Instructions, err = elibpcap.Inject(
+					b.opts.pcapFilter,
+					prog.Instructions,
+					elibpcap.Options{
+						AtBpf2Bpf:        "pcap_filter",
+						PacketAccessMode: elibpcap.BpfProbeReadKernel,
+						L2Skb:            true,
+					},
+				)
+				if err != nil {
+					return fmt.Errorf("inject pcap filter to %s: %w", progName, err)
+				}
+				prog.Instructions, err = elibpcap.Inject(
+					b.opts.pcapFilter,
+					prog.Instructions,
+					elibpcap.Options{
+						AtBpf2Bpf:        "pcap_filter_l3",
+						PacketAccessMode: elibpcap.BpfProbeReadKernel,
+						L2Skb:            false,
+					},
+				)
+				if err != nil {
+					return fmt.Errorf("inject pcap filter to %s: %w", progName, err)
+				}
+			}
 		}
 	}
+
 	return nil
 }
 
@@ -238,27 +319,29 @@ func (b *BPF) UpdateFlowPidMapValues(data map[*BpfFlowPidKeyT]BpfProcessMetaT) e
 
 func (b *BPF) AttachKprobes() error {
 	if err := b.attachFentryOrKprobe("security_sk_classify_flow",
-		b.objs.PtcpdumpFentrySecuritySkClassifyFlow, b.objs.PtcpdumpKprobeSecuritySkClassifyFlow); err != nil {
-		if isProbeNotSupportErr(err) { // some systems do not support this kprobe, e.g. openwrt
-			log.Warnf("%+v", err)
-		} else {
-			return fmt.Errorf(": %w", err)
-		}
+		b.objs.PtcpdumpFentrySecuritySkClassifyFlow,
+		b.objs.PtcpdumpKprobeSecuritySkClassifyFlow); err != nil {
+		log.Infof("%+v", err)
 	}
 
-	if err := b.attachFentryOrKprobe("tcp_sendmsg", b.objs.PtcpdumpFentryTcpSendmsg, b.objs.PtcpdumpKprobeTcpSendmsg); err != nil {
+	if err := b.attachFentryOrKprobe("tcp_sendmsg", b.objs.PtcpdumpFentryTcpSendmsg,
+		b.objs.PtcpdumpKprobeTcpSendmsg); err != nil {
 		return fmt.Errorf(": %w", err)
 	}
-	if err := b.attachFentryOrKprobe("udp_send_skb", b.objs.PtcpdumpFentryUdpSendSkb, b.objs.PtcpdumpKprobeUdpSendSkb); err != nil {
+	if err := b.attachFentryOrKprobe("udp_send_skb", b.objs.PtcpdumpFentryUdpSendSkb,
+		b.objs.PtcpdumpKprobeUdpSendSkb); err != nil {
 		log.Infof("%+v", err)
 		if isProbeNotSupportErr(err) {
-			err = b.attachFentryOrKprobe("udp_sendmsg", b.objs.PtcpdumpFentryUdpSendmsg, b.objs.PtcpdumpKprobeUdpSendmsg)
-			if err != nil {
-				return fmt.Errorf(": %w", err)
-			}
-		} else {
+			err = b.attachFentryOrKprobe("udp_sendmsg", b.objs.PtcpdumpFentryUdpSendmsg,
+				b.objs.PtcpdumpKprobeUdpSendmsg)
+		}
+		if err != nil {
 			return fmt.Errorf(": %w", err)
 		}
+	}
+	if err := b.attachFentryOrKprobe("__kfree_skb", b.objs.PtcpdumpFentryKfreeSkb,
+		b.objs.PtcpdumpKprobeKfreeSkb); err != nil {
+		log.Infof("%+v", err)
 	}
 
 	if err := b.attachNatHooks(); err != nil {
@@ -629,6 +712,11 @@ func (opts *Options) WithPcapFilter(pcapFilter string) *Options {
 
 func (opts *Options) WithMaxPayloadSize(n uint32) *Options {
 	opts.maxPayloadSize = n
+	return opts
+}
+
+func (opts *Options) WithDisableReverseMatch(v bool) *Options {
+	opts.disableReverseMatch = v
 	return opts
 }
 

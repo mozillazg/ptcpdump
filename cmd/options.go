@@ -82,6 +82,7 @@ type Options struct {
 	execEventsWorkerNumber        uint
 	logLevel                      string
 	snapshotLength                uint32
+	disableReverseMatch           bool
 
 	dockerEndpoint     string
 	containerdEndpoint string
@@ -202,7 +203,9 @@ func prepareOptions(opts *Options, rawArgs []string, args []string) error {
 	}
 
 	switch opts.backend {
-	case string(types.NetHookBackendCgroupSkb):
+	case string(types.NetHookBackendCgroupSkb),
+		string(types.NetHookBackendTpBtf),
+		string(types.NetHookBackendSocketFilter):
 		break
 	default:
 		opts.backend = string(types.NetHookBackendTc)
@@ -380,6 +383,7 @@ func (o *Options) ToCapturerOptions() *capturer.Options {
 		CriRuntimeEndpoint:            o.criRuntimeEndpoint,
 		WriteTLSKeyLogPath:            o.writeTLSKeyLogPath,
 		EmbedTLSKeyLogToPcapng:        o.embedTLSKeyLogToPcapng,
+		DisableReverseMatch:           o.disableReverseMatch,
 		SubProgArgs:                   o.subProgArgs,
 		MntnsIds:                      o.mntnsIds,
 		NetnsIds:                      o.netnsIds,

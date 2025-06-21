@@ -1,12 +1,15 @@
 package bpf
 
 import (
+	"errors"
 	"fmt"
 	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/link"
 	"github.com/mozillazg/ptcpdump/internal/log"
+	"os"
 	"runtime"
 	"strings"
+	"syscall"
 )
 
 var onArm32 bool
@@ -114,8 +117,11 @@ func (b *BPF) attachBTFTracepointOrRawTP(name string, btfProg *ebpf.Program, raw
 
 func isProbeNotSupportErr(err error) bool {
 	// TODO: refine
-	if strings.Contains(err.Error(), "no such file or directory") ||
-		strings.Contains(err.Error(), "invalid argument") {
+	if errors.Is(err, os.ErrNotExist) ||
+		errors.Is(err, syscall.EADDRNOTAVAIL) ||
+		strings.Contains(err.Error(), "no such file or directory") ||
+		strings.Contains(err.Error(), "invalid argument") ||
+		strings.Contains(err.Error(), "opening perf event: cannot assign requested address") {
 		log.Infof("%T", err)
 		log.Infof("%#v", err)
 		return true

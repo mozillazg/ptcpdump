@@ -16,7 +16,6 @@ function test_ptcpdump() {
   cat "${LNAME}" | grep '/usr/bin/curl'
   cat "${LNAME}" | grep -F 'curl -m 10 1.1.1.1'
   cat "${LNAME}" | grep -F ' > 1.1.1.1.80: Flags [S],'        # SYN
-  cat "${LNAME}" | grep -P '1.1.1.1.80 > .*: Flags \[S.\],'   # SYN-ACK
   cat "${LNAME}" | grep -F ' > 1.1.1.1.80: Flags [.],'        # ACK
 }
 

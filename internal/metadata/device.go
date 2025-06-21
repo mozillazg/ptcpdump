@@ -141,11 +141,30 @@ func (d *DeviceCache) GetByIfindex(ifindex int, netNsInode uint32) (types.Device
 		}
 	}
 
-	return types.Device{
-		Name:    fmt.Sprintf("dummy-%d", ifindex),
-		Ifindex: ifindex,
-		NetNs:   ns,
-	}, false
+	return types.NewDummyDevice(ifindex, ns), false
+}
+
+func (d *DeviceCache) GetByKnownIfindex(ifindex int) (types.Device, bool) {
+	d.lock.RLock()
+	defer d.lock.RUnlock()
+
+	for inode, links := range d.allLinks {
+		ns, err := d.nscache.Get(inode)
+		if err != nil {
+			continue
+		}
+		for _, dev := range links {
+			if dev.Index == ifindex {
+				return types.Device{
+					Name:    dev.Name,
+					Ifindex: ifindex,
+					NetNs:   ns,
+				}, true
+			}
+		}
+	}
+
+	return types.NewDummyDevice(ifindex, nil), false
 }
 
 func (d *DeviceCache) getDeviceFromNetNs(name string, ns *types.NetNs) (*types.Device, error) {
