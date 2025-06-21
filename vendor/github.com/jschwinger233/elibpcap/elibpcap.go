@@ -2,6 +2,7 @@ package elibpcap
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/cilium/ebpf/asm"
 )
@@ -28,7 +29,7 @@ func Inject(filter string, insns asm.Instructions, opts Options) (_ asm.Instruct
 	}
 
 	if opts.Debug {
-		fmt.Printf("Injecting pcap filter: %q at %d, instructions: \n%s\n",
+		log.Printf("injecting pcap filter: %q at %d, instructions: \n%s",
 			filter, injectIdx, filterInsns)
 	}
 

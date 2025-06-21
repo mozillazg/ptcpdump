@@ -206,9 +206,9 @@ func (b *BPF) injectPcapFilter() error {
 					b.opts.pcapFilter,
 					prog.Instructions,
 					elibpcap.Options{
-						AtBpf2Bpf:  "pcap_filter",
-						DirectRead: true,
-						L2Skb:      l2skb,
+						AtBpf2Bpf:        "pcap_filter",
+						PacketAccessMode: elibpcap.Direct,
+						L2Skb:            l2skb,
 					},
 				)
 				if err != nil {
@@ -234,10 +234,9 @@ func (b *BPF) injectPcapFilter() error {
 					b.opts.pcapFilter,
 					prog.Instructions,
 					elibpcap.Options{
-						AtBpf2Bpf:          "pcap_filter",
-						DirectRead:         false,
-						UseBbfSkbLoadBytes: true,
-						L2Skb:              true,
+						AtBpf2Bpf:        "pcap_filter",
+						PacketAccessMode: elibpcap.BpfSkbLoadBytes,
+						L2Skb:            true,
 					},
 				)
 				if err != nil {
@@ -263,9 +262,9 @@ func (b *BPF) injectPcapFilter() error {
 					b.opts.pcapFilter,
 					prog.Instructions,
 					elibpcap.Options{
-						AtBpf2Bpf:  "pcap_filter",
-						DirectRead: false,
-						L2Skb:      true,
+						AtBpf2Bpf:        "pcap_filter",
+						PacketAccessMode: elibpcap.BpfProbeReadKernel,
+						L2Skb:            true,
 					},
 				)
 				if err != nil {
@@ -275,9 +274,9 @@ func (b *BPF) injectPcapFilter() error {
 					b.opts.pcapFilter,
 					prog.Instructions,
 					elibpcap.Options{
-						AtBpf2Bpf:  "pcap_filter_l3",
-						DirectRead: false,
-						L2Skb:      false,
+						AtBpf2Bpf:        "pcap_filter_l3",
+						PacketAccessMode: elibpcap.BpfProbeReadKernel,
+						L2Skb:            false,
 					},
 				)
 				if err != nil {
