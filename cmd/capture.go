@@ -8,6 +8,7 @@ import (
 	"github.com/mozillazg/ptcpdump/internal/consumer"
 	"github.com/mozillazg/ptcpdump/internal/log"
 	"github.com/mozillazg/ptcpdump/internal/metadata"
+	"github.com/mozillazg/ptcpdump/internal/types"
 	"github.com/mozillazg/ptcpdump/internal/utils"
 	"os"
 	"os/signal"
@@ -119,8 +120,9 @@ func headerTips(opts *Options) {
 		interfaces = fmt.Sprintf("[%s]", strings.Join(opts.ifaces, ", "))
 	}
 
-	msg := fmt.Sprintf("capturing on %s, link-type EN10MB (Ethernet), snapshot length %d bytes, backend %s",
-		interfaces, opts.snapshotLength, opts.backend)
+	msg := fmt.Sprintf("capturing on %s, link-type EN10MB (Ethernet), snapshot length %d bytes, backend %s"+
+		", current network namespace %d",
+		interfaces, opts.snapshotLength, opts.backend, types.GetSelfNs().Inode())
 
 	if opts.verbose < 1 {
 		log.Warn("ptcpdump: verbose output suppressed, use -v[v]... for verbose output")
