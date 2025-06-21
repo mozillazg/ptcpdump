@@ -9,16 +9,16 @@ require (
 	github.com/docker/docker v27.5.1+incompatible
 	github.com/florianl/go-tc v0.4.5
 	github.com/gopacket/gopacket v1.3.1
-	github.com/jschwinger233/elibpcap v1.0.2
+	github.com/jschwinger233/elibpcap v1.1.0
 	github.com/phuslu/log v1.0.118
 	github.com/shirou/gopsutil/v4 v4.25.5
 	github.com/spf13/cobra v1.9.1
 	github.com/x-way/pktdump v0.0.6
-	golang.org/x/sys v0.32.0
+	golang.org/x/sys v0.33.0
 )
 
 require (
-	github.com/containerd/containerd/api v1.8.0
+	github.com/containerd/containerd/api v1.9.0
 	github.com/containerd/errdefs v0.3.0
 	github.com/go-logr/logr v1.4.3
 	github.com/mandiant/GoReSym v1.7.2-0.20240819162932-534ca84b42d5
@@ -26,7 +26,7 @@ require (
 	github.com/smira/go-xz v0.1.0
 	github.com/stretchr/testify v1.10.0
 	github.com/vishvananda/netns v0.0.5
-	golang.org/x/arch v0.16.0
+	golang.org/x/arch v0.18.0
 	k8s.io/cri-api v0.33.1
 	k8s.io/cri-client v0.33.1
 	k8s.io/klog/v2 v2.130.1
@@ -73,7 +73,7 @@ require (
 	github.com/moby/term v0.5.0 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
-	github.com/opencontainers/image-spec v1.1.0 // indirect
+	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/opencontainers/runtime-spec v1.1.0 // indirect
 	github.com/opencontainers/selinux v1.11.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -105,14 +105,13 @@ require (
 )
 
 replace (
-	github.com/cilium/ebpf => github.com/mozillazg/ebpf v0.17.3-0.20250207013525-5746abfb2b20
+	github.com/cilium/ebpf => github.com/mozillazg/ebpf v0.17.3-0.20250621115703-9b903a327ca4
 	// github.com/cilium/ebpf => ../../cilium/ebpf
-	github.com/gopacket/gopacket => github.com/mozillazg/gopacket v0.0.0-20250502054427-166720d8f623
-	// github.com/x-way/pktdump => ../../x-way/pktdump
-	// github.com/jschwinger233/elibpcap => ../../jschwinger233/elibpcap
-	github.com/jschwinger233/elibpcap => github.com/mozillazg/elibpcap v0.0.0-20250601153002-0ce266fb605c
+	github.com/gopacket/gopacket => github.com/mozillazg/gopacket v0.0.0-20250621115829-7b30689e40af
 	// github.com/gopacket/gopacket => ../../gopacket/gopacket
+	// github.com/jschwinger233/elibpcap => ../../jschwinger233/elibpcap
 	github.com/x-way/pktdump => github.com/mozillazg/pktdump v0.0.9-0.20241102131745-63c34f34f0d1
+	// github.com/x-way/pktdump => ../../x-way/pktdump
 	k8s.io/cri-api => github.com/mozillazg/cri-api v0.32.0-alpha.1.0.20241019013855-3dc36f8743df
 	k8s.io/cri-client => github.com/mozillazg/cri-client v0.31.0-alpha.0.0.20241019023238-87687176fd67
 )
