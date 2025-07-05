@@ -27,8 +27,8 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/vishvananda/netns v0.0.5
 	golang.org/x/arch v0.18.0
-	k8s.io/cri-api v0.33.1
-	k8s.io/cri-client v0.33.1
+	k8s.io/cri-api v0.33.2
+	k8s.io/cri-client v0.33.2
 	k8s.io/klog/v2 v2.130.1
 )
 
