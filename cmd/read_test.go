@@ -259,6 +259,21 @@ func TestFormat(t *testing.T) {
 			expectedOutFile: "../testdata/format/curl-user.pcapng.out.txt",
 		},
 		{
+			name: "ip options",
+			opts: &Options{
+				readFilePath: "../testdata/format/ipoptions.pcap",
+			},
+			expectedOutFile: "../testdata/format/ipoptions.pcap.out.txt",
+		},
+		{
+			name: "ip options -v",
+			opts: &Options{
+				readFilePath: "../testdata/format/ipoptions.pcap",
+				verbose:      1,
+			},
+			expectedOutFile: "../testdata/format/ipoptions.pcap.-v.out.txt",
+		},
+		{
 			name: "user -v",
 			opts: &Options{
 				readFilePath: "../testdata/format/curl-user.pcapng",

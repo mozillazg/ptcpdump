@@ -47,21 +47,23 @@ const (
 )
 
 /*refer to https://datatracker.ietf.org/doc/html/rfc5246#appendix-A.4*/
+type TLSHandshakeType uint8
+
 const (
-	TLSHandshakeHelloRequest        = 0
-	TLSHandshakeClientHello         = 1
-	TLSHandshakeServerHello         = 2
-	TLSHandsharkHelloVerirfyRequest = 3
-	TLSHandshakeCertificate         = 11
-	TLSHandshakeServerKeyExchange   = 12
-	TLSHandshakeCertificateRequest  = 13
-	TLSHandshakeServerHelloDone     = 14
-	TLSHandshakeCertificateVerify   = 15
-	TLSHandshakeClientKeyExchange   = 16
-	TLSHandshakeFinished            = 20
+	TLSHandshakeHelloRequest        TLSHandshakeType = 0
+	TLSHandshakeClientHello         TLSHandshakeType = 1
+	TLSHandshakeServerHello         TLSHandshakeType = 2
+	TLSHandsharkHelloVerirfyRequest TLSHandshakeType = 3
+	TLSHandshakeCertificate         TLSHandshakeType = 11
+	TLSHandshakeServerKeyExchange   TLSHandshakeType = 12
+	TLSHandshakeCertificateRequest  TLSHandshakeType = 13
+	TLSHandshakeServerHelloDone     TLSHandshakeType = 14
+	TLSHandshakeCertificateVerify   TLSHandshakeType = 15
+	TLSHandshakeClientKeyExchange   TLSHandshakeType = 16
+	TLSHandshakeFinished            TLSHandshakeType = 20
 )
 
-var handShakeTypeMap = map[uint8]string{
+var handShakeTypeMap = map[TLSHandshakeType]string{
 	TLSHandshakeHelloRequest:        "Hello Request",
 	TLSHandshakeClientHello:         "Client Hello",
 	TLSHandshakeServerHello:         "Server Hello",
@@ -97,6 +99,9 @@ type TLSHandshakeRecordClientKeyChange struct {
 // TLSHandshakeRecord defines the structure of a Handshare Record
 type TLSHandshakeRecord struct {
 	TLSRecordHeader
+
+	HandshakeType TLSHandshakeType
+
 	ClientHello     TLSHandshakeRecordClientHello
 	ClientKeyChange TLSHandshakeRecordClientKeyChange
 }
@@ -177,7 +182,7 @@ func (t TLSHandshakeRecord) isEncryptedHandshakeMessage(h TLSRecordHeader, data 
 	if uint32(h.Length)-binary.BigEndian.Uint32(d) != 4 {
 		return true
 	}
-	if _, ok := handShakeTypeMap[maybeType]; !ok {
+	if _, ok := handShakeTypeMap[TLSHandshakeType(maybeType)]; !ok {
 		return true
 	}
 	return false
@@ -194,7 +199,8 @@ func (t *TLSHandshakeRecord) decodeFromBytes(h TLSRecordHeader, data []byte, df 
 		return nil
 	}
 	handshakeType := data[0]
-	switch handshakeType {
+	t.HandshakeType = TLSHandshakeType(handshakeType)
+	switch t.HandshakeType {
 	case TLSHandshakeClientHello:
 		t.ClientHello.decodeFromBytes(data, df)
 	case TLSHandshakeClientKeyExchange:
@@ -205,4 +211,11 @@ func (t *TLSHandshakeRecord) decodeFromBytes(h TLSRecordHeader, data []byte, df 
 	}
 
 	return nil
+}
+
+func (t TLSHandshakeType) String() string {
+	if name, ok := handShakeTypeMap[t]; ok {
+		return name
+	}
+	return "Unknown"
 }

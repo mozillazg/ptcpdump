@@ -451,6 +451,13 @@ func (f *Formatter) formatIPv4(ipv4 *layers.IPv4) string {
 	fields = append(fields, fmt.Sprintf("proto %s (%d)", ipv4.Protocol.String(), ipv4.Protocol))
 	fields = append(fields, fmt.Sprintf("length %d", ipv4.Length))
 
+	if f.opts.HeaderStyle >= FormatStyleVerbose {
+		options := formatIPv4Options(ipv4)
+		if len(options) > 0 {
+			fields = append(fields, fmt.Sprintf("options (%s)", options))
+		}
+	}
+
 	return strings.Join(fields, ", ")
 }
 
