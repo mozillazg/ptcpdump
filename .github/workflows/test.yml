@@ -572,7 +572,7 @@ jobs:
 
             ls -lh /host/testdata/gohttpapp
 
-            apt update && yes | apt install -y tshark=4.2.2-1
+            apt update && yes | apt install -y tshark
 
             bash /host/testdata/retry.sh 8 bash /host/testdata/test_gotls_keylog.sh /host/ptcpdump/ptcpdump gohttpapp
 
@@ -588,7 +588,7 @@ jobs:
 
             ls -lh /host/testdata/gohttpapp
 
-            apt update && yes | apt install -y tshark=4.2.2-1
+            apt update && yes | apt install -y tshark
 
             bash /host/testdata/retry.sh 8 bash /host/testdata/test_gotls_keylog.sh /host/ptcpdump/ptcpdump gohttpapp_pie
 
@@ -604,7 +604,7 @@ jobs:
 
             ls -lh /host/testdata/gohttpapp
 
-            apt update && yes | apt install -y tshark=4.2.2-1
+            apt update && yes | apt install -y tshark
 
             bash /host/testdata/retry.sh 8 bash /host/testdata/test_gotls_keylog.sh /host/ptcpdump/ptcpdump gohttpapp_stripped
 
@@ -620,7 +620,7 @@ jobs:
 
             ls -lh /host/testdata/gohttpapp
 
-            apt update && yes | apt install -y tshark=4.2.2-1
+            apt update && yes | apt install -y tshark
 
             bash /host/testdata/retry.sh 8 bash /host/testdata/test_gotls_keylog.sh /host/ptcpdump/ptcpdump gohttpapp_stripped_pie
 
