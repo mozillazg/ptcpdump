@@ -107,6 +107,19 @@ func (f *Formatter) formatPacketTCP(tcp *layers.TCP, src, dst string, length int
 		out += "]"
 	}
 	out += fmt.Sprintf(", length %d", length)
+
+	var haveAppHeader bool
+	httpHeader := f.formatHttp(tcp)
+	if len(httpHeader) > 0 {
+		haveAppHeader = true
+	}
+	if haveAppHeader {
+		out += ": "
+	}
+	if len(httpHeader) > 0 {
+		out += httpHeader
+	}
+
 	return out
 }
 
