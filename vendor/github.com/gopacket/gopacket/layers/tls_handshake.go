@@ -42,6 +42,7 @@ const (
 	TLSExtEncryptThenMAC       TLSExtension = 22
 	TLSExtExtendedMasterSecret TLSExtension = 23
 	TLSExtSessionTicket        TLSExtension = 35
+	TLSExtSupportedVersions    TLSExtension = 43
 	TLSExtNPN                  TLSExtension = 13172
 	TLSExtRenegotiationInfo    TLSExtension = 65281
 )
@@ -96,6 +97,20 @@ type TLSHandshakeRecordClientHello struct {
 type TLSHandshakeRecordClientKeyChange struct {
 }
 
+type TLSHandshakeRecordServerHello struct {
+	HandshakeType     uint8
+	Length            uint32
+	ProtocolVersion   TLSVersion
+	Random            []uint8
+	SessionIDLength   uint8
+	SessionID         []uint8
+	CipherSuit        uint16
+	CompressionMethod uint8
+	ExtensionsLength  uint16
+	Extensions        []uint8
+	SupportedVersions []TLSVersion
+}
+
 // TLSHandshakeRecord defines the structure of a Handshare Record
 type TLSHandshakeRecord struct {
 	TLSRecordHeader
@@ -104,6 +119,7 @@ type TLSHandshakeRecord struct {
 
 	ClientHello     TLSHandshakeRecordClientHello
 	ClientKeyChange TLSHandshakeRecordClientKeyChange
+	ServerHello     TLSHandshakeRecordServerHello
 }
 
 func (t *TLSHandshakeRecordClientHello) decodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
@@ -158,6 +174,51 @@ func (t *TLSHandshakeRecordClientKeyChange) decodeFromBytes(data []byte, df gopa
 	return nil
 }
 
+func (t *TLSHandshakeRecordServerHello) decodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
+	t.HandshakeType = data[0]
+	d := make([]byte, 4)
+	for k, v := range data[1:4] {
+		d[k+1] = v
+	}
+	t.Length = binary.BigEndian.Uint32(d)
+	t.ProtocolVersion = TLSVersion(binary.BigEndian.Uint16(data[4:6]))
+	t.Random = data[6:38]
+	t.SessionIDLength = data[38]
+	t.SessionID = data[39 : 39+t.SessionIDLength]
+	offset := 39 + t.SessionIDLength
+	t.CipherSuit = binary.BigEndian.Uint16(data[offset : offset+2])
+	offset += 2
+	t.CompressionMethod = data[offset+1]
+	offset += 1
+	t.ExtensionsLength = binary.BigEndian.Uint16(data[offset : offset+2])
+	offset += 2
+
+	// extract extension data
+	data = data[offset : uint16(offset)+t.ExtensionsLength]
+	t.Extensions = data
+	for len(data) > 0 {
+		if len(data) < 4 {
+			break
+		}
+		extensionType := binary.BigEndian.Uint16(data[:2])
+		length := binary.BigEndian.Uint16(data[2:4])
+		if len(data) < 4+int(length) {
+			break
+		}
+		switch TLSExtension(extensionType) {
+		case TLSExtSupportedVersions:
+			if length >= 2 {
+				for i := 0; i < int(length); i += 2 {
+					t.SupportedVersions = []TLSVersion{TLSVersion(binary.BigEndian.Uint16(data[4+i : 6+i]))}
+				}
+			}
+		}
+		data = data[4+length:]
+	}
+
+	return nil
+}
+
 /**
  * Checks whether a handshake message seems encrypted and cannot be dissected.
  */
@@ -205,6 +266,15 @@ func (t *TLSHandshakeRecord) decodeFromBytes(h TLSRecordHeader, data []byte, df 
 		t.ClientHello.decodeFromBytes(data, df)
 	case TLSHandshakeClientKeyExchange:
 		t.ClientKeyChange.decodeFromBytes(data, df)
+	case TLSHandshakeServerHello:
+		t.ServerHello.decodeFromBytes(data, df)
+	case TLSHandsharkHelloVerirfyRequest:
+	case TLSHandshakeCertificate:
+	case TLSHandshakeServerKeyExchange:
+	case TLSHandshakeCertificateRequest:
+	case TLSHandshakeServerHelloDone:
+	case TLSHandshakeCertificateVerify:
+	case TLSHandshakeFinished:
 	default:
 		return errors.New("Unknown TLS handshake type")
 		// TODO

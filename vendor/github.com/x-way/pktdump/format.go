@@ -10,7 +10,7 @@ import (
 	"github.com/gopacket/gopacket/layers"
 )
 
-func (f *Formatter) formatPacketTCP(tcp *layers.TCP, src, dst string, length int) string {
+func (f *Formatter) formatPacketTCP(packet *gopacket.Packet, tcp *layers.TCP, src, dst string, length int) string {
 	length -= int(tcp.DataOffset) * 4
 
 	if f.opts.Quiet {
@@ -110,7 +110,8 @@ func (f *Formatter) formatPacketTCP(tcp *layers.TCP, src, dst string, length int
 
 	var haveAppHeader bool
 	httpHeader := f.formatHttp(tcp)
-	if len(httpHeader) > 0 {
+	tlsHeader := f.formatTls(packet, tcp, length)
+	if len(httpHeader) > 0 || len(tlsHeader) > 0 {
 		haveAppHeader = true
 	}
 	if haveAppHeader {
@@ -118,6 +119,9 @@ func (f *Formatter) formatPacketTCP(tcp *layers.TCP, src, dst string, length int
 	}
 	if len(httpHeader) > 0 {
 		out += httpHeader
+	}
+	if len(tlsHeader) > 0 {
+		out += tlsHeader
 	}
 
 	return out
@@ -584,7 +588,7 @@ func (f *Formatter) formatWithOptions(packet gopacket.Packet) string {
 	case layers.LayerTypeTCP:
 		if tcpLayer := packet.Layer(layers.LayerTypeTCP); tcpLayer != nil {
 			tcp, _ := tcpLayer.(*layers.TCP)
-			return prefix + f.formatPacketTCP(tcp, src, dst, length)
+			return prefix + f.formatPacketTCP(&packet, tcp, src, dst, length)
 		}
 	case layers.LayerTypeICMPv6:
 		if icmpLayer := packet.Layer(layers.LayerTypeICMPv6); icmpLayer != nil {

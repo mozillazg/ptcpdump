@@ -19,7 +19,7 @@
     User (uid 1000)
     ParentProc (pid 18840, cmd /usr/bin/bash, args -bash)
 12:37:40.574770 ens33 Out IP (tos 0x0, ttl 64, id 48699, offset 0, flags [DF], proto TCP (6), length 557)
-    10.0.2.15.42906 > 139.178.84.217.443: Flags [P.], cksum 0xeeb9, seq 940329638:940330155, ack 525694321, win 64240, length 517
+    10.0.2.15.42906 > 139.178.84.217.443: Flags [P.], cksum 0xeeb9, seq 940329638:940330155, ack 525694321, win 64240, length 517: TLSv1.0: Client Hello (SNI=kernel.org)
     Process (pid 99722, cmd /usr/bin/curl, args curl https://kernel.org)
     User (uid 1000)
     ParentProc (pid 18840, cmd /usr/bin/bash, args -bash)
