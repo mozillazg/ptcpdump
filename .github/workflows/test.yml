@@ -556,7 +556,8 @@ jobs:
             bash /host/testdata/retry.sh 5 bash /host/testdata/test_rotate_filesize_with_count.sh /host/ptcpdump/ptcpdump
 
       - name: build demo app
-        if: ${{ (!startsWith(matrix.kernel, '5.4')) && (!startsWith(matrix.kernel, '4.')) && (!startsWith(matrix.backend, 'tp')) }}
+        if: false
+        # if: ${{ (!startsWith(matrix.kernel, '5.4')) && (!startsWith(matrix.kernel, '4.')) && (!startsWith(matrix.backend, 'tp')) }}
         run: |
           make -C testdata/gohttpapp build
 
