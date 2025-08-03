@@ -34,7 +34,7 @@
   separateMultipleMajor: true,
   separateMinorPatch: true,
   pruneStaleBranches: true,
-  baseBranches: [
+  baseBranchPatterns: [
     'master',
   ],
   vulnerabilityAlerts: {
