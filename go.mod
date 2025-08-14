@@ -6,7 +6,7 @@ require (
 	github.com/cilium/ebpf v0.18.0
 	github.com/containerd/containerd v1.7.27
 	github.com/containerd/typeurl/v2 v2.2.3
-	github.com/docker/docker v27.5.1+incompatible
+	github.com/docker/docker v28.0.0+incompatible
 	github.com/florianl/go-tc v0.4.5
 	github.com/gopacket/gopacket v1.3.1
 	github.com/jschwinger233/elibpcap v1.1.0
