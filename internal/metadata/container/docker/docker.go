@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"regexp"
 	"strings"
 	"sync"
 	"time"
 
-	dockertypes "github.com/docker/docker/api/types"
 	containertypes "github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/events"
 	"github.com/docker/docker/api/types/filters"
@@ -229,7 +229,7 @@ func (d *MetaData) watchContainerEventsWithRetry(ctx context.Context) {
 
 		d.watchContainerEvents(ctx)
 
-		time.Sleep(time.Second * 15)
+		time.Sleep(time.Second * 3)
 	}
 }
 
@@ -240,20 +240,14 @@ func (d *MetaData) watchContainerEvents(ctx context.Context) {
 	var chErr <-chan error
 	var msg events.Message
 
-	chMsg, chErr = c.Events(ctx, dockertypes.EventsOptions{
-		// Filters: filters.NewArgs(
-		// 	filters.Arg("type", "container"),
-		// 	filters.Arg("event", "exec_create"),
-		// 	filters.Arg("event", "exec_start"),
-		// ),
-	})
+	chMsg, chErr = c.Events(ctx, events.ListOptions{})
 
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case err := <-chErr:
-			if errors.Is(err, context.Canceled) {
+			if errors.Is(err, context.Canceled) || errors.Is(err, io.EOF) {
 				return
 			}
 			log.Errorf("docker events failed: %s", err)
