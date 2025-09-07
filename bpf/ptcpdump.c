@@ -102,19 +102,10 @@ static __noinline bool pcap_filter_l3(void *_skb, void *__skb, void *___skb, voi
 }
 
 static __always_inline void fallback_pid_meta(struct process_meta_t *meta) {
-    if (!bpf_core_enum_value_exists(enum bpf_func_id, BPF_FUNC_get_current_task)) {
-        return;
-    }
-    struct task_struct *task = (struct task_struct *)bpf_get_current_task();
-    if (!task || is_kernel_thread(task)) {
-        return;
-    }
-    if (parent_process_filter(task) < 0) {
-        if (process_filter(task) < 0) {
-            return;
-        }
-    }
-    fill_process_meta(task, meta);
+    // The bpf_get_current_task() fallback is disabled. It is unsafe without a reliable
+    // way to detect the interrupt context (e.g., bpf_in_interrupt()). In such a context,
+    // it would return an unrelated task and cause incorrect PID association.
+    return;
 }
 
 static __always_inline int fill_packet_event_meta(struct __sk_buff *skb, bool cgroup_skb,
