@@ -101,6 +101,22 @@ static __noinline bool pcap_filter_l3(void *_skb, void *__skb, void *___skb, voi
     return data != data_end && _skb == __skb && __skb == ___skb;
 }
 
+static __always_inline void fallback_pid_meta(struct process_meta_t *meta) {
+    if (!bpf_core_enum_value_exists(enum bpf_func_id, BPF_FUNC_get_current_task)) {
+        return;
+    }
+    struct task_struct *task = (struct task_struct *)bpf_get_current_task();
+    if (!task || is_kernel_thread(task)) {
+        return;
+    }
+    if (parent_process_filter(task) < 0) {
+        if (process_filter(task) < 0) {
+            return;
+        }
+    }
+    fill_process_meta(task, meta);
+}
+
 static __always_inline int fill_packet_event_meta(struct __sk_buff *skb, bool cgroup_skb,
                                                   struct packet_event_meta_t *event_meta, bool egress) {
     struct process_meta_t *pid_meta = &event_meta->process;
@@ -132,9 +148,9 @@ static __always_inline int fill_packet_event_meta(struct __sk_buff *skb, bool cg
     }
     int ret = parse_skb_meta(skb, !cgroup_skb, &packet_meta);
     event_meta->l3_protocol = packet_meta.l2.h_protocol;
-    // debug_log("l3_protocol: %d\n", event_meta->l3_protocol);
+    //     debug_log("l3_protocol: %d\n", event_meta->l3_protocol);
     if (ret < 0) {
-        // debug_log("[ptcpdump] parse skb meta failed\n");
+        //         debug_log("[ptcpdump] parse skb meta failed\n");
         if (have_pid_filter) {
             return -1;
         }
@@ -245,6 +261,13 @@ static __always_inline int fill_packet_event_meta(struct __sk_buff *skb, bool cg
 #endif /* SUPPORT_NAT */
         }
     }
+
+    fallback_pid_meta(pid_meta);
+    //    debug_log("fallback pid: %d\n", pid_meta->pid);
+    if (pid_meta->pid > 0) {
+        return 0;
+    }
+
     if (have_pid_filter) {
         // debug_log("[tc] check %pI4 %d -> %pI4\n", &flow.saddr[0], flow.sport, &flow.daddr[0]);
         // debug_log("tc, not found pid from ptcpdump_flow_pid_map");
@@ -549,6 +572,13 @@ static __always_inline int fill_packet_event_meta_from_sk_buff(struct sk_buff *s
 #endif /* SUPPORT_NAT */
         }
     }
+
+    fallback_pid_meta(pid_meta);
+    //    debug_log("fallback pid: %d\n", pid_meta->pid);
+    if (pid_meta->pid > 0) {
+        return 0;
+    }
+
     if (have_pid_filter) {
         // debug_log("[tc] check %pI4 %d -> %pI4\n", &flow.saddr[0], flow.sport, &flow.daddr[0]);
         // debug_log("tc, not found pid from ptcpdump_flow_pid_map");
@@ -588,7 +618,8 @@ static __always_inline void handle_skb_buff(struct sk_buff *skb, bool egress) {
 
 filter_ok:
 
-    debug_log("[ptcpdump][tp-btf] mac_header: %d, network_header: %d, has_l2: %d", mac_header, network_header, has_l2);
+//    debug_log("[ptcpdump][tp-btf] mac_header: %d, network_header: %d, has_l2: %d", mac_header, network_header,
+//    has_l2);
 #ifdef LEGACY_KERNEL
     u32 u32_zero = 0;
 #endif

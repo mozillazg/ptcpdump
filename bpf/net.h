@@ -76,7 +76,22 @@ static __always_inline int parse_skb_l3(struct __sk_buff *skb, u16 protocol, str
         l3->protocol = ip_hdr.protocol;
         l3->saddr[0] = ip_hdr.saddr;
         l3->daddr[0] = ip_hdr.daddr;
-        *offset += sizeof(struct iphdr);
+
+        u8 ip_ihl = 0;
+        u32 ip_hdr_len = 0;
+        // support ip options
+        if (bpf_skb_load_bytes(skb, *offset, &ip_ihl, sizeof(ip_ihl)) == 0) {
+            ip_hdr_len = (ip_ihl & 0x0f) * 4;
+        }
+        if (ip_hdr_len < sizeof(struct iphdr)) {
+            //            debug_log("[ptcpdump] invalid ip header length: %d, use default %d\n", ip_hdr_len,
+            //            sizeof(struct iphdr));
+            ip_hdr_len = sizeof(struct iphdr);
+        }
+
+        //        debug_log("source_ip: %pI4, dest_ip: %pI4\n", &l3->saddr[0], &l3->daddr[0]);
+
+        *offset += ip_hdr_len;
         return 0;
     }
     case ETH_P_IPV6: {
@@ -122,14 +137,17 @@ static __always_inline int parse_skb_l4(struct __sk_buff *skb, u8 protocol, stru
     case IPPROTO_TCP: {
         struct tcphdr tcp_hdr;
         if (bpf_skb_load_bytes(skb, *offset, &tcp_hdr, sizeof(struct tcphdr)) < 0) {
-            // debug_log("parse_skb_l4 1 failed:\n");
+            //             debug_log("parse_skb_l4 1 failed:\n");
             return -1;
         }
         l4->sport = bpf_ntohs(tcp_hdr.source);
         l4->dport = bpf_ntohs(tcp_hdr.dest);
+
+        //        debug_log("parse_skb_l4 1 success: %d -> %d\n", l4->sport, l4->dport);
+
         *offset += sizeof(struct tcphdr);
-    }
         return 0;
+    }
     case IPPROTO_UDP: {
         struct udphdr udp_hdr;
         if (bpf_skb_load_bytes(skb, *offset, &udp_hdr, sizeof(struct udphdr)) < 0) {
