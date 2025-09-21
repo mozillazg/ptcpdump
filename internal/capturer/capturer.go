@@ -142,6 +142,11 @@ func (c *Capturer) Prepare() error {
 		return fmt.Errorf("remove memlock failed: %w", err)
 	}
 
+	// Validate kernel version before attempting to load BPF programs
+	if err := bpf.ValidateKernelVersion(); err != nil {
+		return err
+	}
+
 	btfspec, err := c.loadBTF()
 	if err != nil {
 		return fmt.Errorf("load btf failed: %w", err)
