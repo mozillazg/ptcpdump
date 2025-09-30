@@ -25,6 +25,7 @@ GO_LDFLAGS += -X github.com/mozillazg/ptcpdump/internal.Version=$(VERSION)
 GO_LDFLAGS += -X github.com/mozillazg/ptcpdump/internal.GitCommit=$(GIT_COMMIT)
 GO_LDFLAGS_DYNAMIC := -X github.com/mozillazg/ptcpdump/internal.Version=$(VERSION)
 GO_LDFLAGS_DYNAMIC += -X github.com/mozillazg/ptcpdump/internal.GitCommit=$(GIT_COMMIT)
+GO_LDFLAGS_DYNAMIC += -buildmode=pie
 COVERAGE_FLAG ?=
 COVERAGE_ARGS ?=
 
