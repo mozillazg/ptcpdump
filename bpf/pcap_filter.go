@@ -7,7 +7,6 @@ import (
 	"github.com/cilium/ebpf"
 	"github.com/jschwinger233/elibpcap"
 	"github.com/mozillazg/ptcpdump/internal/log"
-	"github.com/mozillazg/ptcpdump/internal/types"
 )
 
 type pcapFilterCase struct {
@@ -66,20 +65,9 @@ func (b *BPF) injectPcapFilterToTcs() error {
 		"ptcpdump_tc_egress_l2", "ptcpdump_tc_egress_l3",
 		"ptcpdump_tcx_ingress_l2", "ptcpdump_tcx_ingress_l3",
 		"ptcpdump_tcx_egress_l2", "ptcpdump_tcx_egress_l3",
-		"ptcpdump_cgroup_skb__ingress",
-		"ptcpdump_cgroup_skb__egress",
 	} {
 		prog, ok := b.programSpec(progName)
 		if !ok {
-			continue
-		}
-		l2skb := true
-		if strings.Contains(progName, "cgroup_skb") {
-			l2skb = false
-			if b.opts.backend != types.NetHookBackendCgroupSkb {
-				continue
-			}
-		} else if b.opts.backend != types.NetHookBackendTc {
 			continue
 		}
 
@@ -88,7 +76,7 @@ func (b *BPF) injectPcapFilterToTcs() error {
 			progName,
 			prog,
 			pcapFilterCase{
-				enabled: strings.HasSuffix(progName, "l2") || l2skb,
+				enabled: strings.HasSuffix(progName, "l2"),
 				opts: elibpcap.Options{
 					AtBpf2Bpf:        "pcap_filter",
 					PacketAccessMode: elibpcap.Direct,
@@ -96,7 +84,35 @@ func (b *BPF) injectPcapFilterToTcs() error {
 				},
 			},
 			pcapFilterCase{
-				enabled: strings.HasSuffix(progName, "l3") || !l2skb,
+				enabled: strings.HasSuffix(progName, "l3"),
+				opts: elibpcap.Options{
+					AtBpf2Bpf:        "pcap_filter_l3",
+					PacketAccessMode: elibpcap.Direct,
+					L2Skb:            false,
+				},
+			},
+		); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (b *BPF) injectPcapFilterToCgroupSkbs() error {
+	for _, progName := range []string{
+		"ptcpdump_cgroup_skb__ingress",
+		"ptcpdump_cgroup_skb__egress",
+	} {
+		prog, ok := b.programSpec(progName)
+		if !ok {
+			continue
+		}
+		log.Infof("inject pcap filter to %s", progName)
+		if err := b.injectProgramFilters(
+			progName,
+			prog,
+			pcapFilterCase{
+				enabled: true,
 				opts: elibpcap.Options{
 					AtBpf2Bpf:        "pcap_filter_l3",
 					PacketAccessMode: elibpcap.Direct,

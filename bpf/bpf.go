@@ -175,8 +175,10 @@ load:
 
 func (b *BPF) injectPcapFilter() error {
 	switch b.opts.backend {
-	case types.NetHookBackendTc, types.NetHookBackendCgroupSkb:
+	case types.NetHookBackendTc:
 		return b.injectPcapFilterToTcs()
+	case types.NetHookBackendCgroupSkb:
+		return b.injectPcapFilterToCgroupSkbs()
 	case types.NetHookBackendSocketFilter:
 		return b.injectPcapFilterToSocketFilters()
 	case types.NetHookBackendTpBtf:
