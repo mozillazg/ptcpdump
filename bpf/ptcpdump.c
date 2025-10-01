@@ -485,7 +485,7 @@ static __always_inline void handle_cgroup_skb(struct __sk_buff *skb, bool egress
         }
     }
 
-    handle_skb(true, skb, egress, (void *)(long)skb->data, (void *)(long)skb->data_end, true);
+    handle_skb(true, skb, egress, (void *)(long)skb->data, (void *)(long)skb->data_end, false);
 }
 
 SEC("cgroup_skb/ingress")

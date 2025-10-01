@@ -207,21 +207,21 @@ func (b *BPF) injectPcapFilter() error {
 					continue
 				}
 				log.Infof("inject pcap filter to %s", progName)
-				if strings.HasSuffix(progName, "l2") || strings.Contains(progName, "cgroup_skb") {
+				if strings.HasSuffix(progName, "l2") || l2skb {
 					prog.Instructions, err = elibpcap.Inject(
 						b.opts.pcapFilter,
 						prog.Instructions,
 						elibpcap.Options{
 							AtBpf2Bpf:        "pcap_filter",
 							PacketAccessMode: elibpcap.Direct,
-							L2Skb:            l2skb,
+							L2Skb:            true,
 						},
 					)
 					if err != nil {
 						return fmt.Errorf("inject pcap filter to %s: %w", progName, err)
 					}
 				}
-				if strings.HasSuffix(progName, "l3") {
+				if strings.HasSuffix(progName, "l3") || !l2skb {
 					prog.Instructions, err = elibpcap.Inject(
 						b.opts.pcapFilter,
 						prog.Instructions,
