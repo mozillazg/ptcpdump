@@ -1,3 +1,6 @@
 [submodule "lib/libpcap"]
 	path = lib/libpcap
 	url = https://github.com/the-tcpdump-group/libpcap.git
+[submodule "docs/themes/docsy"]
+	path = docs/themes/docsy
+	url = https://github.com/google/docsy.git

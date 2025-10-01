@@ -1,0 +1,49 @@
+baseURL = '/'
+languageCode = 'en-us'
+title = 'ptcpdump'
+theme = "docsy"
+defaultContentLanguage = "en"
+
+# Main menu
+[[menu.main]]
+  name = "Documentation"
+  url = "/docs/"
+  weight = 10
+[[menu.main]]
+  name = "About"
+  url = "/about/"
+  weight = 20
+
+[params]
+# GitHub repository link
+github_repo = "https://github.com/mozillazg/ptcpdump"
+
+[params.ui]
+# Disable search
+search_disable = false
+
+[module]
+[[module.imports]]
+path = "github.com/google/docsy"
+disable = false
+[[module.imports.mounts]]
+source = "assets"
+target = "assets"
+[[module.imports.mounts]]
+source = "hugo_stats.json"
+target = "assets/watching/hugo_stats.json"
+
+[languages]
+[languages.en]
+languageName = "English"
+contentDir = "content/en"
+
+[languages.zh]
+languageName = "Chinese"
+contentDir = "content/zh"
+
+# Allow raw HTML in markdown files
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = true

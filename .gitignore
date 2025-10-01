@@ -22,3 +22,5 @@ keylog.txt
 /testdata/gohttpapp/gohttpapp*
 mptcp/
 tmp/
+docs/resources/_gen
+docs/public/
