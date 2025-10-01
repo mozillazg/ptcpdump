@@ -71,10 +71,9 @@ jobs:
             sudo PTCPDUMP_EXTRA_ARGS="${PTCPDUMP_EXTRA_ARGS}" bash testdata/test_pid_filter.sh ./ptcpdump
 
       - run:
-          name: e2e (test_tune.sh)
+          name: e2e (test_tun.sh)
           command: |
-            sudo PTCPDUMP_EXTRA_ARGS="${PTCPDUMP_EXTRA_ARGS}" bash testdata/test_tune.sh ./ptcpdump
-
+            sudo PTCPDUMP_EXTRA_ARGS="${PTCPDUMP_EXTRA_ARGS}" bash testdata/test_tun.sh ./ptcpdump
       - when:
           condition:
             and:
