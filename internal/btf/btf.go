@@ -15,6 +15,13 @@ import (
 	"github.com/mozillazg/ptcpdump/internal/log"
 )
 
+var (
+	httpGetFunc            = httpGet
+	decompressXzReaderFunc = decompressXzReader
+	saveDataToFileFunc     = saveDataToFile
+	loadSpecFunc           = loadSpec
+)
+
 const (
 	DefaultPath   = "/sys/kernel/btf/vmlinux"
 	candidatePath = "/var/lib/ptcpdump/btf/vmlinux"
@@ -33,7 +40,7 @@ const (
 
 func LoadBTFSpec(path string) (*btf.Spec, string, error) {
 	if path != "" {
-		spec, path, err := loadSpec(path)
+		spec, path, err := loadSpecFunc(path)
 		if err == nil {
 			log.Infof("use BTF specs from %s", path)
 			return spec, path, nil
@@ -106,27 +113,27 @@ func loadSpecFromBTFHub(arch string, release host.Release, kernelVersion,
 	if exist, err := fileExist(path); err != nil {
 		return nil, path, err
 	} else if exist {
-		return loadSpec(path)
+		return loadSpecFunc(path)
 	}
 
 	downloadUrl := fmt.Sprintf(btfHubURL, release.Id, release.VersionId, arch, kernelVersion)
 	log.Infof("try to download BTF specs from %s and uncompress it to %s", downloadUrl, path)
 
-	resp, err := httpGet(context.TODO(), downloadUrl)
+	resp, err := httpGetFunc(context.TODO(), downloadUrl)
 	if err != nil {
 		return nil, path, fmt.Errorf("download BTF specs from %s: %w", downloadUrl, err)
 	}
 	defer resp.Body.Close()
 
-	data, err := decompressXzReader(resp.Body)
+	data, err := decompressXzReaderFunc(resp.Body)
 	if err != nil {
 		return nil, path, fmt.Errorf("download BTF specs from %s: %w", downloadUrl, err)
 	}
-	if err := saveDataToFile(data, path); err != nil {
+	if err := saveDataToFileFunc(data, path); err != nil {
 		return nil, path, err
 	}
 
-	return loadSpec(path)
+	return loadSpecFunc(path)
 }
 
 func loadSpecFromOpenanolis(arch string, _ host.Release, kernelVersion,
@@ -139,13 +146,13 @@ func loadSpecFromOpenanolis(arch string, _ host.Release, kernelVersion,
 	if exist, err := fileExist(path); err != nil {
 		return nil, path, err
 	} else if exist {
-		return loadSpec(path)
+		return loadSpecFunc(path)
 	}
 
 	downloadUrl := fmt.Sprintf(openAnolisURL, arch, kernelVersion)
 	log.Infof("try to download BTF specs from %s and save it to %s", downloadUrl, path)
 
-	resp, err := httpGet(context.TODO(), downloadUrl)
+	resp, err := httpGetFunc(context.TODO(), downloadUrl)
 	if err != nil {
 		return nil, path, fmt.Errorf("download BTF specs from %s: %w", downloadUrl, err)
 	}
@@ -155,11 +162,11 @@ func loadSpecFromOpenanolis(arch string, _ host.Release, kernelVersion,
 	if err != nil {
 		return nil, path, fmt.Errorf("download BTF specs from %s: %w", downloadUrl, err)
 	}
-	if err := saveDataToFile(data, path); err != nil {
+	if err := saveDataToFileFunc(data, path); err != nil {
 		return nil, path, err
 	}
 
-	return loadSpec(path)
+	return loadSpecFunc(path)
 }
 
 func httpGet(ctx context.Context, url string) (*http.Response, error) {
@@ -206,7 +213,7 @@ func loadSpecFromCandidateLocations() (*btf.Spec, string, error) {
 	}
 	path = fmt.Sprintf("%s-%s", candidatePath, kernelVersion)
 
-	return loadSpec(path)
+	return loadSpecFunc(path)
 }
 
 func loadSpec(path string) (*btf.Spec, string, error) {
