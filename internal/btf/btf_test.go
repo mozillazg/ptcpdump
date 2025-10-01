@@ -1,14 +1,42 @@
 package btf
 
 import (
+	"context"
+	"io"
+	"net/http"
+	"path"
+	"strings"
+	"testing"
+
+	ebpfbtf "github.com/cilium/ebpf/btf"
 	"github.com/mozillazg/ptcpdump/internal/host"
 	"github.com/stretchr/testify/assert"
-	"path"
-	"testing"
 )
 
 func Test_loadSpecFromBTFHub(t *testing.T) {
 	saveDir := t.TempDir()
+	dummySpec := &ebpfbtf.Spec{}
+
+	origHTTPGet := httpGetFunc
+	origDecompress := decompressXzReaderFunc
+	origLoadSpec := loadSpecFunc
+	httpGetFunc = func(ctx context.Context, url string) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader("stub")),
+		}, nil
+	}
+	decompressXzReaderFunc = func(src io.Reader) ([]byte, error) {
+		return []byte("stub"), nil
+	}
+	loadSpecFunc = func(p string) (*ebpfbtf.Spec, string, error) {
+		return dummySpec, p, nil
+	}
+	t.Cleanup(func() {
+		httpGetFunc = origHTTPGet
+		decompressXzReaderFunc = origDecompress
+		loadSpecFunc = origLoadSpec
+	})
 
 	type args struct {
 		arch          string
@@ -58,6 +86,23 @@ func Test_loadSpecFromBTFHub(t *testing.T) {
 
 func Test_loadSpecFromOpenanolis(t *testing.T) {
 	saveDir := t.TempDir()
+	dummySpec := &ebpfbtf.Spec{}
+
+	origHTTPGet := httpGetFunc
+	origLoadSpec := loadSpecFunc
+	httpGetFunc = func(ctx context.Context, url string) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader("stub")),
+		}, nil
+	}
+	loadSpecFunc = func(p string) (*ebpfbtf.Spec, string, error) {
+		return dummySpec, p, nil
+	}
+	t.Cleanup(func() {
+		httpGetFunc = origHTTPGet
+		loadSpecFunc = origLoadSpec
+	})
 
 	type args struct {
 		arch          string
