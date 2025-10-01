@@ -73,7 +73,9 @@ jobs:
       - run:
           name: e2e (test_tun.sh)
           command: |
+            sudo modprobe tun || { echo 'install tun mod failed'; exit 0; }
             sudo PTCPDUMP_EXTRA_ARGS="${PTCPDUMP_EXTRA_ARGS}" bash testdata/test_tun.sh ./ptcpdump
+
       - when:
           condition:
             and:

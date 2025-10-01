@@ -487,9 +487,11 @@ jobs:
           provision: 'false'
           cmd: |
             set -ex
+            modprobe tun || { echo 'install tun mod failed'; exit 0; }
+
             export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
             export GOCOVERDIR="/host/${{ env.GOCOVERDIR }}"
-            
+
             bash /host/testdata/retry.sh 3 bash /host/testdata/test_tun.sh /host/ptcpdump/ptcpdump
 
       - name: Test netns
