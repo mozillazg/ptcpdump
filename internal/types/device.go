@@ -81,5 +81,8 @@ func (d *Device) String() string {
 }
 
 func (d *Device) L2() bool {
+	if d.Ifindex == 1 { // lo
+		return true
+	}
 	return !d.NoMac
 }

@@ -182,7 +182,7 @@ func (b *BPF) injectPcapFilter() error {
 		{
 			for _, progName := range []string{
 				"ptcpdump_tc_ingress_l2", "ptcpdump_tc_ingress_l3",
-				"ptcpdump_tc_egress_l2", "ptcpdump_tc_egress_3",
+				"ptcpdump_tc_egress_l2", "ptcpdump_tc_egress_l3",
 				"ptcpdump_tcx_ingress_l2", "ptcpdump_tcx_ingress_l3",
 				"ptcpdump_tcx_egress_l2", "ptcpdump_tcx_egress_l3",
 				"ptcpdump_cgroup_skb__ingress",

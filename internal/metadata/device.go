@@ -127,7 +127,7 @@ func (d *DeviceCache) GetByIfindex(ifindex int, netNsInode uint32) (types.Device
 				return types.Device{
 					Name:    dev.Name,
 					Ifindex: ifindex,
-					NoMac:   len(dev.HardwareAddr) == 0,
+					NoMac:   interfaceNoMac(dev),
 					NetNs:   ns,
 				}, true
 			}
@@ -139,7 +139,7 @@ func (d *DeviceCache) GetByIfindex(ifindex int, netNsInode uint32) (types.Device
 				return types.Device{
 					Name:    dev.Name,
 					Ifindex: ifindex,
-					NoMac:   len(dev.HardwareAddr) == 0,
+					NoMac:   interfaceNoMac(dev),
 					NetNs:   ns,
 				}, true
 			}
@@ -163,7 +163,7 @@ func (d *DeviceCache) GetByKnownIfindex(ifindex int) (types.Device, bool) {
 				return types.Device{
 					Name:    dev.Name,
 					Ifindex: ifindex,
-					NoMac:   len(dev.HardwareAddr) == 0,
+					NoMac:   interfaceNoMac(dev),
 					NetNs:   ns,
 				}, true
 			}
@@ -200,7 +200,7 @@ func (d *DeviceCache) getDevicesFromNetNs(ns *types.NetNs) (devices map[int]type
 			devices[interf.Index] = types.Device{
 				Name:    interf.Name,
 				Ifindex: interf.Index,
-				NoMac:   len(interf.HardwareAddr) == 0,
+				NoMac:   interfaceNoMac(interf),
 				NetNs:   ns,
 			}
 		}
@@ -256,4 +256,8 @@ func NewDummyNgInterface(index int, filter string) pcapgo.NgInterface {
 		SnapLength: uint32(math.MaxUint16),
 		//TimestampResolution: 9,
 	}
+}
+
+func interfaceNoMac(dev net.Interface) bool {
+	return len(dev.HardwareAddr) == 0 && (dev.Flags&net.FlagLoopback) == 0
 }
