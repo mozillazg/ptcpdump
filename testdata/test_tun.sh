@@ -31,6 +31,7 @@ setup_tun() {
   echo "--- [STEP 1] Creating network namespace: $NS_NAME ---"
   sudo ip netns add "$NS_NAME"
   echo "Namespace '$NS_NAME' created."
+  sleep 3
 
   echo "--- [STEP 2] Creating and configuring 'tun' device inside '$NS_NAME' ---"
   sudo ip netns exec "$NS_NAME" ip tuntap add dev "$TUN_DEV" mode tun
