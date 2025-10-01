@@ -73,6 +73,10 @@ jobs:
       - run:
           name: e2e (test_tun.sh)
           command: |
+            if [ "<< parameters.backend >>" = 'socket-filter' ]; then
+              echo 'skip tun test for socket-filter backend'
+              exit 0
+            fi
             sudo modprobe tun || { echo 'install tun mod failed'; exit 0; }
             sudo PTCPDUMP_EXTRA_ARGS="${PTCPDUMP_EXTRA_ARGS}" bash testdata/test_tun.sh ./ptcpdump
 

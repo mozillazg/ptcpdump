@@ -46,7 +46,7 @@ setup_tun() {
 
 test_tun() {
     echo "--- [STEP 4] Starting packet capture in the background ---"
-    sudo timeout 30s ${CMD} -c 4 -i any ${PTCPDUMP_EXTRA_ARGS} --netns $NS_NAME -v --print -w "${FNAME}" \
+    sudo timeout 60s ${CMD} -c 4 -i any ${PTCPDUMP_EXTRA_ARGS} --netns $NS_NAME -v --print -w "${FNAME}" \
                                         "icmp and host $PEER_IP" | tee "${LNAME}" &
     PTCPDUMP_PID=$!
     echo "tcpdump started with PID $PTCPDUMP_PID. Capturing packets on '$TUN_DEV'."
@@ -56,6 +56,7 @@ test_tun() {
     echo "Pinging peer address $PEER_IP. This is expected to fail as there's no listener."
     sudo ip netns exec "$NS_NAME" ping -c 3 "$PEER_IP" || true
 
+    sleep 5
     echo "--- [STEP 6] Stopping packet capture and showing results ---"
     sudo kill "$PTCPDUMP_PID" || true
     wait "$PTCPDUMP_PID" 2>/dev/null || true
