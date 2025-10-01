@@ -7,7 +7,7 @@ description: "A tcpdump-compatible analyzer that enriches every packet with proc
 
 {{< blocks/cover title="Welcome to ptcpdump!" image_anchor="top" height="min" >}}
 <div class="mx-auto">
-	<a class="btn btn-lg btn-primary mr-3 mb-4" href="{{< relref "/docs" >}}">
+	<a class="btn btn-lg btn-primary mr-3 mb-4" href="{{< relref "/docs/" >}}">
 		Get Started <i class="fas fa-arrow-alt-circle-right ml-2"></i>
 	</a>
 	<a class="btn btn-lg btn-secondary mr-3 mb-4" href="https://github.com/mozillazg/ptcpdump">

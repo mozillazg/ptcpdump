@@ -7,7 +7,7 @@ description: "一个兼容 tcpdump 的分析器，通过 eBPF 为每个数据包
 
 {{< blocks/cover title="欢迎使用 ptcpdump!" image_anchor="top" height="min" >}}
 <div class="mx-auto">
-	<a class="btn btn-lg btn-primary mr-3 mb-4" href="{{< relref "/docs" >}}">
+	<a class="btn btn-lg btn-primary mr-3 mb-4" href="{{< relref "/docs/" >}}">
 		开始使用 <i class="fas fa-arrow-alt-circle-right ml-2"></i>
 	</a>
 	<a class="btn btn-lg btn-secondary mr-3 mb-4" href="https://github.com/mozillazg/ptcpdump">
