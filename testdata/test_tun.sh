@@ -18,7 +18,7 @@ cleanup() {
         echo "[CLEANUP] Deleting network namespace: $NS_NAME"
         sudo ip netns del "$NS_NAME" || true
     fi
-    rm -f "${FILE_PREFIX}*" || true
+    rm -f "${FILE_PREFIX}"* || true
     echo "--- [CLEANUP] Cleanup complete. ---"
 }
 
