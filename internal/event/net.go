@@ -93,8 +93,8 @@ func ParsePacketEvent(deviceCache *metadata.DeviceCache, event bpf.BpfPacketEven
 
 	var fakeEthernet []byte
 	var fakeEthernetLen int
-	if p.FirstLayer == FirstLayerL3 || (isFromSkb && noL2Data(event.Payload[:])) {
-		if v := getL3Protocol(event.Payload[:]); v > 0 {
+	if p.FirstLayer == FirstLayerL3 || (isFromSkb && noL2Data(event.Payload[:event.Meta.PayloadLen])) {
+		if v := getL3Protocol(event.Payload[:event.Meta.PayloadLen]); v > 0 {
 			p.L3Protocol = v
 		}
 		fakeEthernet = newFakeEthernet(p.L3Protocol)
