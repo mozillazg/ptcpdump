@@ -80,9 +80,6 @@ func ParsePacketEvent(deviceCache *metadata.DeviceCache, event bpf.BpfPacketEven
 		}
 	}
 
-	log.Infof("new packet event, %d.%s thread: %s.%d, pid: %d, uid: %d, mntns: %d, netns: %d, cgroupName: %s",
-		ifindex, p.Device.Name, p.TName, p.Tid, p.Pid, p.Uid, p.MntNs, p.NetNs, p.CgroupName)
-
 	p.L3Protocol = event.Meta.L3Protocol
 	p.FirstLayer = firstLayerType(event.Meta.FirstLayer)
 	p.Type = packetType(event.Meta.PacketType)
@@ -91,11 +88,18 @@ func ParsePacketEvent(deviceCache *metadata.DeviceCache, event bpf.BpfPacketEven
 	}
 	p.Len = int(event.Meta.PacketSize)
 
+	log.Infof("new packet event, %d.%s firstLayer: %d thread: %s.%d, pid: %d, uid: %d, mntns: %d, netns: %d, cgroupName: %s",
+		ifindex, p.Device.Name, p.FirstLayer, p.TName, p.Tid, p.Pid, p.Uid, p.MntNs, p.NetNs, p.CgroupName)
+
 	var fakeEthernet []byte
 	var fakeEthernetLen int
 	if p.FirstLayer == FirstLayerL3 || (isFromSkb && noL2Data(event.Payload[:])) {
+		if v := getL3Protocol(event.Payload[:]); v > 0 {
+			p.L3Protocol = v
+		}
 		fakeEthernet = newFakeEthernet(p.L3Protocol)
 		fakeEthernetLen = len(fakeEthernet)
+		log.Infof("add fake ethernet header, l3protocol: 0x%x", p.L3Protocol)
 	}
 
 	p.Data = make([]byte, event.Meta.PayloadLen+uint64(fakeEthernetLen))
@@ -127,6 +131,22 @@ func noL2Data(payload []byte) bool {
 		}
 	}
 	return true
+}
+
+func getL3Protocol(payload []byte) uint16 {
+	packet := gopacket.NewPacket(payload, layers.LayerTypeIPv4, gopacket.NoCopy)
+	if ethLayer := packet.Layer(layers.LayerTypeIPv4); ethLayer != nil {
+		if _, ok := ethLayer.(*layers.IPv4); ok {
+			return 0x0800
+		}
+	}
+	packet = gopacket.NewPacket(payload, layers.LayerTypeIPv6, gopacket.NoCopy)
+	if ethLayer := packet.Layer(layers.LayerTypeIPv6); ethLayer != nil {
+		if _, ok := ethLayer.(*layers.IPv6); ok {
+			return 0x86DD
+		}
+	}
+	return 0
 }
 
 func newFakeEthernet(l3Protocol uint16) []byte {

@@ -74,10 +74,14 @@ type bpf_legacyProgramSpecs struct {
 	PtcpdumpRawTracepointSchedProcessExec        *ebpf.ProgramSpec `ebpf:"ptcpdump_raw_tracepoint__sched_process_exec"`
 	PtcpdumpRawTracepointSchedProcessExit        *ebpf.ProgramSpec `ebpf:"ptcpdump_raw_tracepoint__sched_process_exit"`
 	PtcpdumpRawTracepointSchedProcessFork        *ebpf.ProgramSpec `ebpf:"ptcpdump_raw_tracepoint__sched_process_fork"`
-	PtcpdumpSocketFilterEgress                   *ebpf.ProgramSpec `ebpf:"ptcpdump_socket_filter__egress"`
-	PtcpdumpSocketFilterIngress                  *ebpf.ProgramSpec `ebpf:"ptcpdump_socket_filter__ingress"`
-	PtcpdumpTcEgress                             *ebpf.ProgramSpec `ebpf:"ptcpdump_tc_egress"`
-	PtcpdumpTcIngress                            *ebpf.ProgramSpec `ebpf:"ptcpdump_tc_ingress"`
+	PtcpdumpSocketFilterEgressL2                 *ebpf.ProgramSpec `ebpf:"ptcpdump_socket_filter__egress_l2"`
+	PtcpdumpSocketFilterEgressL3                 *ebpf.ProgramSpec `ebpf:"ptcpdump_socket_filter__egress_l3"`
+	PtcpdumpSocketFilterIngressL2                *ebpf.ProgramSpec `ebpf:"ptcpdump_socket_filter__ingress_l2"`
+	PtcpdumpSocketFilterIngressL3                *ebpf.ProgramSpec `ebpf:"ptcpdump_socket_filter__ingress_l3"`
+	PtcpdumpTcEgressL2                           *ebpf.ProgramSpec `ebpf:"ptcpdump_tc_egress_l2"`
+	PtcpdumpTcEgressL3                           *ebpf.ProgramSpec `ebpf:"ptcpdump_tc_egress_l3"`
+	PtcpdumpTcIngressL2                          *ebpf.ProgramSpec `ebpf:"ptcpdump_tc_ingress_l2"`
+	PtcpdumpTcIngressL3                          *ebpf.ProgramSpec `ebpf:"ptcpdump_tc_ingress_l3"`
 	PtcpdumpTracepointSchedProcessExec           *ebpf.ProgramSpec `ebpf:"ptcpdump_tracepoint__sched_process_exec"`
 	PtcpdumpTracepointSyscallsSysEnterMount      *ebpf.ProgramSpec `ebpf:"ptcpdump_tracepoint__syscalls__sys_enter_mount"`
 	PtcpdumpTracepointSyscallsSysExitMount       *ebpf.ProgramSpec `ebpf:"ptcpdump_tracepoint__syscalls__sys_exit_mount"`
@@ -271,10 +275,14 @@ type bpf_legacyPrograms struct {
 	PtcpdumpRawTracepointSchedProcessExec        *ebpf.Program `ebpf:"ptcpdump_raw_tracepoint__sched_process_exec"`
 	PtcpdumpRawTracepointSchedProcessExit        *ebpf.Program `ebpf:"ptcpdump_raw_tracepoint__sched_process_exit"`
 	PtcpdumpRawTracepointSchedProcessFork        *ebpf.Program `ebpf:"ptcpdump_raw_tracepoint__sched_process_fork"`
-	PtcpdumpSocketFilterEgress                   *ebpf.Program `ebpf:"ptcpdump_socket_filter__egress"`
-	PtcpdumpSocketFilterIngress                  *ebpf.Program `ebpf:"ptcpdump_socket_filter__ingress"`
-	PtcpdumpTcEgress                             *ebpf.Program `ebpf:"ptcpdump_tc_egress"`
-	PtcpdumpTcIngress                            *ebpf.Program `ebpf:"ptcpdump_tc_ingress"`
+	PtcpdumpSocketFilterEgressL2                 *ebpf.Program `ebpf:"ptcpdump_socket_filter__egress_l2"`
+	PtcpdumpSocketFilterEgressL3                 *ebpf.Program `ebpf:"ptcpdump_socket_filter__egress_l3"`
+	PtcpdumpSocketFilterIngressL2                *ebpf.Program `ebpf:"ptcpdump_socket_filter__ingress_l2"`
+	PtcpdumpSocketFilterIngressL3                *ebpf.Program `ebpf:"ptcpdump_socket_filter__ingress_l3"`
+	PtcpdumpTcEgressL2                           *ebpf.Program `ebpf:"ptcpdump_tc_egress_l2"`
+	PtcpdumpTcEgressL3                           *ebpf.Program `ebpf:"ptcpdump_tc_egress_l3"`
+	PtcpdumpTcIngressL2                          *ebpf.Program `ebpf:"ptcpdump_tc_ingress_l2"`
+	PtcpdumpTcIngressL3                          *ebpf.Program `ebpf:"ptcpdump_tc_ingress_l3"`
 	PtcpdumpTracepointSchedProcessExec           *ebpf.Program `ebpf:"ptcpdump_tracepoint__sched_process_exec"`
 	PtcpdumpTracepointSyscallsSysEnterMount      *ebpf.Program `ebpf:"ptcpdump_tracepoint__syscalls__sys_enter_mount"`
 	PtcpdumpTracepointSyscallsSysExitMount       *ebpf.Program `ebpf:"ptcpdump_tracepoint__syscalls__sys_exit_mount"`
@@ -304,10 +312,14 @@ func (p *bpf_legacyPrograms) Close() error {
 		p.PtcpdumpRawTracepointSchedProcessExec,
 		p.PtcpdumpRawTracepointSchedProcessExit,
 		p.PtcpdumpRawTracepointSchedProcessFork,
-		p.PtcpdumpSocketFilterEgress,
-		p.PtcpdumpSocketFilterIngress,
-		p.PtcpdumpTcEgress,
-		p.PtcpdumpTcIngress,
+		p.PtcpdumpSocketFilterEgressL2,
+		p.PtcpdumpSocketFilterEgressL3,
+		p.PtcpdumpSocketFilterIngressL2,
+		p.PtcpdumpSocketFilterIngressL3,
+		p.PtcpdumpTcEgressL2,
+		p.PtcpdumpTcEgressL3,
+		p.PtcpdumpTcIngressL2,
+		p.PtcpdumpTcIngressL3,
 		p.PtcpdumpTracepointSchedProcessExec,
 		p.PtcpdumpTracepointSyscallsSysEnterMount,
 		p.PtcpdumpTracepointSyscallsSysExitMount,

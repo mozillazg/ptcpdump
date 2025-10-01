@@ -70,6 +70,11 @@ jobs:
           command: |
             sudo PTCPDUMP_EXTRA_ARGS="${PTCPDUMP_EXTRA_ARGS}" bash testdata/test_pid_filter.sh ./ptcpdump
 
+      - run:
+          name: e2e (test_tune.sh)
+          command: |
+            sudo PTCPDUMP_EXTRA_ARGS="${PTCPDUMP_EXTRA_ARGS}" bash testdata/test_tune.sh ./ptcpdump
+
       - when:
           condition:
             and:

@@ -20,6 +20,8 @@ type DeviceCache struct {
 	lock     sync.RWMutex
 }
 
+var dummyMac, _ = net.ParseMAC("00:00:00:00:00:00")
+
 func NewDeviceCache(nscache *NetNsCache) *DeviceCache {
 	return &DeviceCache{
 		nscache:  nscache,
@@ -101,8 +103,9 @@ func (d *DeviceCache) Add(netNsInode uint32, ifindex uint32, name string) {
 	defer d.lock.Unlock()
 
 	d.allLinks[netNsInode] = append(d.allLinks[netNsInode], net.Interface{
-		Index: int(ifindex),
-		Name:  name,
+		Index:        int(ifindex),
+		Name:         name,
+		HardwareAddr: dummyMac,
 	})
 }
 
@@ -124,6 +127,7 @@ func (d *DeviceCache) GetByIfindex(ifindex int, netNsInode uint32) (types.Device
 				return types.Device{
 					Name:    dev.Name,
 					Ifindex: ifindex,
+					NoMac:   len(dev.HardwareAddr) == 0,
 					NetNs:   ns,
 				}, true
 			}
@@ -135,6 +139,7 @@ func (d *DeviceCache) GetByIfindex(ifindex int, netNsInode uint32) (types.Device
 				return types.Device{
 					Name:    dev.Name,
 					Ifindex: ifindex,
+					NoMac:   len(dev.HardwareAddr) == 0,
 					NetNs:   ns,
 				}, true
 			}
@@ -158,6 +163,7 @@ func (d *DeviceCache) GetByKnownIfindex(ifindex int) (types.Device, bool) {
 				return types.Device{
 					Name:    dev.Name,
 					Ifindex: ifindex,
+					NoMac:   len(dev.HardwareAddr) == 0,
 					NetNs:   ns,
 				}, true
 			}
@@ -194,6 +200,7 @@ func (d *DeviceCache) getDevicesFromNetNs(ns *types.NetNs) (devices map[int]type
 			devices[interf.Index] = types.Device{
 				Name:    interf.Name,
 				Ifindex: interf.Index,
+				NoMac:   len(interf.HardwareAddr) == 0,
 				NetNs:   ns,
 			}
 		}

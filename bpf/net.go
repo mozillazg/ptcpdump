@@ -20,7 +20,7 @@ func (b *BPF) AttachTpBtfCaptureHooks(egress, ingress bool) error {
 	}
 
 	if egress {
-		log.Info("attaching tp_btf/net_dev_queue")
+		log.Infof("attaching tp_btf/net_dev_queue %q", b.objs.PtcpdumpTpBtfNetDevQueue.String())
 		lk, err := link.AttachTracing(link.TracingOptions{
 			Program:    b.objs.PtcpdumpTpBtfNetDevQueue,
 			AttachType: ebpf.AttachTraceRawTp,
@@ -31,7 +31,7 @@ func (b *BPF) AttachTpBtfCaptureHooks(egress, ingress bool) error {
 		b.links = append(b.links, lk)
 	}
 	if ingress {
-		log.Info("attaching tp_btf/netif_receive_skb")
+		log.Infof("attaching tp_btf/netif_receive_skb %q", b.objs.PtcpdumpTpBtfNetifReceiveSkb.String())
 		lk, err := link.AttachTracing(link.TracingOptions{
 			Program:    b.objs.PtcpdumpTpBtfNetifReceiveSkb,
 			AttachType: ebpf.AttachTraceRawTp,
@@ -54,11 +54,13 @@ func supportTracingGetSocket() bool {
 	return true
 }
 
-func (b *BPF) AttachSocketFilterHooks(ifindex int, egress, ingress bool) ([]func(), error) {
+func (b *BPF) AttachSocketFilterHooks(iface types.Device, egress, ingress bool) ([]func(), error) {
 	var closeFuncs []func()
+	ifindex := iface.Ifindex
 
 	if egress {
-		log.Info("attaching socket/egress")
+		prog := trueOr(iface.L2(), b.objs.PtcpdumpSocketFilterEgressL2, b.objs.PtcpdumpSocketFilterEgressL3)
+		log.Infof("attaching socket/egress %q to %s", prog.String(), iface.String())
 		sock, err := openRawSock(ifindex)
 		if err != nil {
 			return closeFuncs, fmt.Errorf("attach socket/egress failed: %w", err)
@@ -69,13 +71,14 @@ func (b *BPF) AttachSocketFilterHooks(ifindex int, egress, ingress bool) ([]func
 			return closeFuncs, fmt.Errorf("attach socket/egress failed: %w", err)
 		}
 		closeFuncs = append(closeFuncs, func() { f.Close() })
-		if err := link.AttachSocketFilter(f, b.objs.PtcpdumpSocketFilterEgress); err != nil {
+		if err := link.AttachSocketFilter(f, prog); err != nil {
 			return closeFuncs, fmt.Errorf("attach socket/egress failed: %w", err)
 		}
 	}
 
 	if ingress {
-		log.Info("attaching socket/ingress")
+		prog := trueOr(iface.L2(), b.objs.PtcpdumpSocketFilterIngressL2, b.objs.PtcpdumpSocketFilterIngressL3)
+		log.Infof("attaching socket/ingress %q to %s", prog.String(), iface.String())
 		sock, err := openRawSock(ifindex)
 		if err != nil {
 			return closeFuncs, fmt.Errorf("attach socket/ingress failed: %w", err)
@@ -86,7 +89,7 @@ func (b *BPF) AttachSocketFilterHooks(ifindex int, egress, ingress bool) ([]func
 			return closeFuncs, fmt.Errorf("attach socket/ingress failed: %w", err)
 		}
 		closeFuncs = append(closeFuncs, func() { f.Close() })
-		if err := link.AttachSocketFilter(f, b.objs.PtcpdumpSocketFilterIngress); err != nil {
+		if err := link.AttachSocketFilter(f, prog); err != nil {
 			return closeFuncs, fmt.Errorf("attach socket/ingress failed: %w", err)
 		}
 	}

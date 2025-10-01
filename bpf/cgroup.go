@@ -122,7 +122,7 @@ func (b *BPF) AttachCgroupSkb(cgroupPath string, egress, ingress bool) error {
 	}
 
 	if ingress {
-		log.Info("attaching cgroup_skb/ingress")
+		log.Infof("attaching cgroup_skb/ingress %q to %s", b.objs.PtcpdumpCgroupSkbIngress.String(), cgroupPath)
 		lk, err := link.AttachCgroup(link.CgroupOptions{
 			Path:    cgroupPath,
 			Attach:  ebpf.AttachCGroupInetIngress,
@@ -134,7 +134,7 @@ func (b *BPF) AttachCgroupSkb(cgroupPath string, egress, ingress bool) error {
 		b.links = append(b.links, lk)
 	}
 	if egress {
-		log.Info("attaching cgroup_skb/egress")
+		log.Infof("attaching cgroup_skb/egress %q to %s", b.objs.PtcpdumpCgroupSkbEgress.String(), cgroupPath)
 		lk, err := link.AttachCgroup(link.CgroupOptions{
 			Path:    cgroupPath,
 			Attach:  ebpf.AttachCGroupInetEgress,
