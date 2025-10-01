@@ -148,3 +148,10 @@ func (b *BPF) disableTracing() {
 		}
 	}
 }
+
+func trueOr(v bool, a, b *ebpf.Program) *ebpf.Program {
+	if v {
+		return a
+	}
+	return b
+}

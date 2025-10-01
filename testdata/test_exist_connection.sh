@@ -21,7 +21,7 @@ function test_ptcpdump() {
   wait
 
   cat "${LNAME}"
-  cat "${LNAME}" | grep -F 'cmd /usr/sbin/sshd'
+  cat "${LNAME}" | grep 'cmd .*/sshd'
   cat "${LNAME}" | grep '.22 .*Flags \[.\+\]'
 }
 

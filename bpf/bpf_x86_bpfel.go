@@ -210,12 +210,18 @@ type BpfProgramSpecs struct {
 	PtcpdumpRawTracepointSchedProcessExec        *ebpf.ProgramSpec `ebpf:"ptcpdump_raw_tracepoint__sched_process_exec"`
 	PtcpdumpRawTracepointSchedProcessExit        *ebpf.ProgramSpec `ebpf:"ptcpdump_raw_tracepoint__sched_process_exit"`
 	PtcpdumpRawTracepointSchedProcessFork        *ebpf.ProgramSpec `ebpf:"ptcpdump_raw_tracepoint__sched_process_fork"`
-	PtcpdumpSocketFilterEgress                   *ebpf.ProgramSpec `ebpf:"ptcpdump_socket_filter__egress"`
-	PtcpdumpSocketFilterIngress                  *ebpf.ProgramSpec `ebpf:"ptcpdump_socket_filter__ingress"`
-	PtcpdumpTcEgress                             *ebpf.ProgramSpec `ebpf:"ptcpdump_tc_egress"`
-	PtcpdumpTcIngress                            *ebpf.ProgramSpec `ebpf:"ptcpdump_tc_ingress"`
-	PtcpdumpTcxEgress                            *ebpf.ProgramSpec `ebpf:"ptcpdump_tcx_egress"`
-	PtcpdumpTcxIngress                           *ebpf.ProgramSpec `ebpf:"ptcpdump_tcx_ingress"`
+	PtcpdumpSocketFilterEgressL2                 *ebpf.ProgramSpec `ebpf:"ptcpdump_socket_filter__egress_l2"`
+	PtcpdumpSocketFilterEgressL3                 *ebpf.ProgramSpec `ebpf:"ptcpdump_socket_filter__egress_l3"`
+	PtcpdumpSocketFilterIngressL2                *ebpf.ProgramSpec `ebpf:"ptcpdump_socket_filter__ingress_l2"`
+	PtcpdumpSocketFilterIngressL3                *ebpf.ProgramSpec `ebpf:"ptcpdump_socket_filter__ingress_l3"`
+	PtcpdumpTcEgressL2                           *ebpf.ProgramSpec `ebpf:"ptcpdump_tc_egress_l2"`
+	PtcpdumpTcEgressL3                           *ebpf.ProgramSpec `ebpf:"ptcpdump_tc_egress_l3"`
+	PtcpdumpTcIngressL2                          *ebpf.ProgramSpec `ebpf:"ptcpdump_tc_ingress_l2"`
+	PtcpdumpTcIngressL3                          *ebpf.ProgramSpec `ebpf:"ptcpdump_tc_ingress_l3"`
+	PtcpdumpTcxEgressL2                          *ebpf.ProgramSpec `ebpf:"ptcpdump_tcx_egress_l2"`
+	PtcpdumpTcxEgressL3                          *ebpf.ProgramSpec `ebpf:"ptcpdump_tcx_egress_l3"`
+	PtcpdumpTcxIngressL2                         *ebpf.ProgramSpec `ebpf:"ptcpdump_tcx_ingress_l2"`
+	PtcpdumpTcxIngressL3                         *ebpf.ProgramSpec `ebpf:"ptcpdump_tcx_ingress_l3"`
 	PtcpdumpTpBtfNetDevQueue                     *ebpf.ProgramSpec `ebpf:"ptcpdump_tp_btf__net_dev_queue"`
 	PtcpdumpTpBtfNetifReceiveSkb                 *ebpf.ProgramSpec `ebpf:"ptcpdump_tp_btf__netif_receive_skb"`
 	PtcpdumpTpBtfSchedProcessExec                *ebpf.ProgramSpec `ebpf:"ptcpdump_tp_btf__sched_process_exec"`
@@ -437,12 +443,18 @@ type BpfPrograms struct {
 	PtcpdumpRawTracepointSchedProcessExec        *ebpf.Program `ebpf:"ptcpdump_raw_tracepoint__sched_process_exec"`
 	PtcpdumpRawTracepointSchedProcessExit        *ebpf.Program `ebpf:"ptcpdump_raw_tracepoint__sched_process_exit"`
 	PtcpdumpRawTracepointSchedProcessFork        *ebpf.Program `ebpf:"ptcpdump_raw_tracepoint__sched_process_fork"`
-	PtcpdumpSocketFilterEgress                   *ebpf.Program `ebpf:"ptcpdump_socket_filter__egress"`
-	PtcpdumpSocketFilterIngress                  *ebpf.Program `ebpf:"ptcpdump_socket_filter__ingress"`
-	PtcpdumpTcEgress                             *ebpf.Program `ebpf:"ptcpdump_tc_egress"`
-	PtcpdumpTcIngress                            *ebpf.Program `ebpf:"ptcpdump_tc_ingress"`
-	PtcpdumpTcxEgress                            *ebpf.Program `ebpf:"ptcpdump_tcx_egress"`
-	PtcpdumpTcxIngress                           *ebpf.Program `ebpf:"ptcpdump_tcx_ingress"`
+	PtcpdumpSocketFilterEgressL2                 *ebpf.Program `ebpf:"ptcpdump_socket_filter__egress_l2"`
+	PtcpdumpSocketFilterEgressL3                 *ebpf.Program `ebpf:"ptcpdump_socket_filter__egress_l3"`
+	PtcpdumpSocketFilterIngressL2                *ebpf.Program `ebpf:"ptcpdump_socket_filter__ingress_l2"`
+	PtcpdumpSocketFilterIngressL3                *ebpf.Program `ebpf:"ptcpdump_socket_filter__ingress_l3"`
+	PtcpdumpTcEgressL2                           *ebpf.Program `ebpf:"ptcpdump_tc_egress_l2"`
+	PtcpdumpTcEgressL3                           *ebpf.Program `ebpf:"ptcpdump_tc_egress_l3"`
+	PtcpdumpTcIngressL2                          *ebpf.Program `ebpf:"ptcpdump_tc_ingress_l2"`
+	PtcpdumpTcIngressL3                          *ebpf.Program `ebpf:"ptcpdump_tc_ingress_l3"`
+	PtcpdumpTcxEgressL2                          *ebpf.Program `ebpf:"ptcpdump_tcx_egress_l2"`
+	PtcpdumpTcxEgressL3                          *ebpf.Program `ebpf:"ptcpdump_tcx_egress_l3"`
+	PtcpdumpTcxIngressL2                         *ebpf.Program `ebpf:"ptcpdump_tcx_ingress_l2"`
+	PtcpdumpTcxIngressL3                         *ebpf.Program `ebpf:"ptcpdump_tcx_ingress_l3"`
 	PtcpdumpTpBtfNetDevQueue                     *ebpf.Program `ebpf:"ptcpdump_tp_btf__net_dev_queue"`
 	PtcpdumpTpBtfNetifReceiveSkb                 *ebpf.Program `ebpf:"ptcpdump_tp_btf__netif_receive_skb"`
 	PtcpdumpTpBtfSchedProcessExec                *ebpf.Program `ebpf:"ptcpdump_tp_btf__sched_process_exec"`
@@ -498,12 +510,18 @@ func (p *BpfPrograms) Close() error {
 		p.PtcpdumpRawTracepointSchedProcessExec,
 		p.PtcpdumpRawTracepointSchedProcessExit,
 		p.PtcpdumpRawTracepointSchedProcessFork,
-		p.PtcpdumpSocketFilterEgress,
-		p.PtcpdumpSocketFilterIngress,
-		p.PtcpdumpTcEgress,
-		p.PtcpdumpTcIngress,
-		p.PtcpdumpTcxEgress,
-		p.PtcpdumpTcxIngress,
+		p.PtcpdumpSocketFilterEgressL2,
+		p.PtcpdumpSocketFilterEgressL3,
+		p.PtcpdumpSocketFilterIngressL2,
+		p.PtcpdumpSocketFilterIngressL3,
+		p.PtcpdumpTcEgressL2,
+		p.PtcpdumpTcEgressL3,
+		p.PtcpdumpTcIngressL2,
+		p.PtcpdumpTcIngressL3,
+		p.PtcpdumpTcxEgressL2,
+		p.PtcpdumpTcxEgressL3,
+		p.PtcpdumpTcxIngressL2,
+		p.PtcpdumpTcxIngressL3,
 		p.PtcpdumpTpBtfNetDevQueue,
 		p.PtcpdumpTpBtfNetifReceiveSkb,
 		p.PtcpdumpTpBtfSchedProcessExec,

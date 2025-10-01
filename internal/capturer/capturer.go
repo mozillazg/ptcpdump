@@ -389,7 +389,7 @@ func (c *Capturer) attachTcHooks(iface types.Device) error {
 	log.Infof("start to attach tc hook to %s in netns %s", iface.Name, iface.NetNs)
 
 	err := iface.NetNs.Do(func() {
-		closeFuncs, err := c.bpf.AttachTcHooks(iface.Ifindex, c.opts.DirectionOut, c.opts.DirectionIn)
+		closeFuncs, err := c.bpf.AttachTcHooks(iface, c.opts.DirectionOut, c.opts.DirectionIn)
 		if err != nil {
 			runClosers(closeFuncs)
 			// TODO: use errors.Is(xxx) or ==
@@ -429,7 +429,7 @@ func (c *Capturer) attachSocketFilterHooks(iface types.Device) error {
 	log.Infof("start to attach socket filter to %s in netns %s", iface.Name, iface.NetNs)
 
 	err := iface.NetNs.Do(func() {
-		closeFuncs, err := c.bpf.AttachSocketFilterHooks(iface.Ifindex, c.opts.DirectionOut, c.opts.DirectionIn)
+		closeFuncs, err := c.bpf.AttachSocketFilterHooks(iface, c.opts.DirectionOut, c.opts.DirectionIn)
 		if err != nil {
 			runClosers(closeFuncs)
 			// TODO: use errors.Is(xxx) or ==
@@ -503,12 +503,12 @@ func (c *Capturer) handleNewDevEvents() {
 		switch c.opts.Backend {
 		case types.NetHookBackendTc:
 			if err := c.attachTcHooks(device); err != nil {
-				log.Infof("attach tc hooks failed: %s", err)
+				log.Infof("attach tc hooks to %s failed: %s", device.String(), err)
 			}
 			break
 		case types.NetHookBackendSocketFilter:
 			if err := c.attachSocketFilterHooksToNewDev(device); err != nil {
-				log.Infof("attach socket filter hooks failed: %s", err)
+				log.Infof("attach socket filter hooks to %s failed: %s", device.String(), err)
 			}
 			break
 		}

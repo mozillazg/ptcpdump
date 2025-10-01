@@ -13,7 +13,6 @@ import (
 	"github.com/cilium/ebpf/link"
 	"github.com/florianl/go-tc"
 	"github.com/florianl/go-tc/core"
-	"github.com/jschwinger233/elibpcap"
 	"github.com/mozillazg/ptcpdump/internal/log"
 	"github.com/mozillazg/ptcpdump/internal/types"
 	"github.com/mozillazg/ptcpdump/internal/utils"
@@ -175,115 +174,15 @@ load:
 }
 
 func (b *BPF) injectPcapFilter() error {
-	var err error
-
 	switch b.opts.backend {
-	case types.NetHookBackendTc, types.NetHookBackendCgroupSkb:
-		{
-			for _, progName := range []string{"ptcpdump_tc_ingress", "ptcpdump_tc_egress",
-				"ptcpdump_tcx_ingress", "ptcpdump_tcx_egress",
-				"ptcpdump_cgroup_skb__ingress", "ptcpdump_cgroup_skb__egress"} {
-				prog, ok := b.spec.Programs[progName]
-				if !ok {
-					log.Infof("program %s not found", progName)
-					continue
-				}
-				if prog == nil {
-					log.Infof("program %s is nil", progName)
-					continue
-				}
-				l2skb := true
-				if strings.Contains(progName, "cgroup_skb") {
-					l2skb = false
-					if b.opts.backend != types.NetHookBackendCgroupSkb {
-						continue
-					}
-				} else if b.opts.backend != types.NetHookBackendTc {
-					continue
-				}
-				log.Infof("inject pcap filter to %s", progName)
-				prog.Instructions, err = elibpcap.Inject(
-					b.opts.pcapFilter,
-					prog.Instructions,
-					elibpcap.Options{
-						AtBpf2Bpf:        "pcap_filter",
-						PacketAccessMode: elibpcap.Direct,
-						L2Skb:            l2skb,
-					},
-				)
-				if err != nil {
-					return fmt.Errorf("inject pcap filter to %s: %w", progName, err)
-				}
-			}
-		}
+	case types.NetHookBackendTc:
+		return b.injectPcapFilterToTcs()
+	case types.NetHookBackendCgroupSkb:
+		return b.injectPcapFilterToCgroupSkbs()
 	case types.NetHookBackendSocketFilter:
-		{
-			for _, progName := range []string{"ptcpdump_socket_filter__ingress",
-				"ptcpdump_socket_filter__egress"} {
-				prog, ok := b.spec.Programs[progName]
-				if !ok {
-					log.Infof("program %s not found", progName)
-					continue
-				}
-				if prog == nil {
-					log.Infof("program %s is nil", progName)
-					continue
-				}
-				log.Infof("inject pcap filter to %s", progName)
-				prog.Instructions, err = elibpcap.Inject(
-					b.opts.pcapFilter,
-					prog.Instructions,
-					elibpcap.Options{
-						AtBpf2Bpf:        "pcap_filter",
-						PacketAccessMode: elibpcap.BpfSkbLoadBytes,
-						L2Skb:            true,
-					},
-				)
-				if err != nil {
-					return fmt.Errorf("inject pcap filter to %s: %w", progName, err)
-				}
-			}
-		}
+		return b.injectPcapFilterToSocketFilters()
 	case types.NetHookBackendTpBtf:
-		{
-			for _, progName := range []string{"ptcpdump_tp_btf__net_dev_queue",
-				"ptcpdump_tp_btf__netif_receive_skb"} {
-				prog, ok := b.spec.Programs[progName]
-				if !ok {
-					log.Infof("program %s not found", progName)
-					continue
-				}
-				if prog == nil {
-					log.Infof("program %s is nil", progName)
-					continue
-				}
-				log.Infof("inject pcap filter to %s", progName)
-				prog.Instructions, err = elibpcap.Inject(
-					b.opts.pcapFilter,
-					prog.Instructions,
-					elibpcap.Options{
-						AtBpf2Bpf:        "pcap_filter",
-						PacketAccessMode: elibpcap.BpfProbeReadKernel,
-						L2Skb:            true,
-					},
-				)
-				if err != nil {
-					return fmt.Errorf("inject pcap filter to %s: %w", progName, err)
-				}
-				prog.Instructions, err = elibpcap.Inject(
-					b.opts.pcapFilter,
-					prog.Instructions,
-					elibpcap.Options{
-						AtBpf2Bpf:        "pcap_filter_l3",
-						PacketAccessMode: elibpcap.BpfProbeReadKernel,
-						L2Skb:            false,
-					},
-				)
-				if err != nil {
-					return fmt.Errorf("inject pcap filter to %s: %w", progName, err)
-				}
-			}
-		}
+		return b.injectPcapFilterToTpBtfs()
 	}
 
 	return nil
@@ -363,28 +262,30 @@ func (b *BPF) AttachTracepoints() error {
 	return nil
 }
 
-func (b *BPF) AttachTcHooks(ifindex int, egress, ingress bool) ([]func(), error) {
-	closers, err := b.attachTcxHooks(ifindex, egress, ingress)
+func (b *BPF) AttachTcHooks(iface types.Device, egress, ingress bool) ([]func(), error) {
+	closers, err := b.attachTcxHooks(iface, egress, ingress)
 	if err != nil {
 		log.Infof("attach tcx failed, fallback to tc: %+v", err)
 		utils.RunClosers(closers)
-		closers, err = b.attachTcHooks(ifindex, egress, ingress)
+		closers, err = b.attachTcHooks(iface, egress, ingress)
 	}
 	return closers, err
 }
 
-func (b *BPF) attachTcxHooks(ifindex int, egress, ingress bool) ([]func(), error) {
+func (b *BPF) attachTcxHooks(iface types.Device, egress, ingress bool) ([]func(), error) {
 	var closeFuncs []func()
 
-	if b.skipTcx || b.objs.PtcpdumpTcxEgress == nil || b.objs.PtcpdumpTcxIngress == nil {
+	ifindex := iface.Ifindex
+	if b.skipTcx || b.objs.PtcpdumpTcxEgressL2 == nil || b.objs.PtcpdumpTcxIngressL2 == nil {
 		return closeFuncs, errors.New("tcx programs not found")
 	}
 
 	if egress {
-		log.Infof("attach tcx/egress hooks to ifindex %d", ifindex)
+		prog := trueOr(iface.L2(), b.objs.PtcpdumpTcxEgressL2, b.objs.PtcpdumpTcxEgressL3)
+		log.Infof("attach tcx/egress hook %q to ifindex %s", prog.String(), iface.String())
 		lk, err := link.AttachTCX(link.TCXOptions{
 			Interface: ifindex,
-			Program:   b.objs.PtcpdumpTcxEgress,
+			Program:   prog,
 			Attach:    ebpf.AttachTCXEgress,
 		})
 		if err != nil {
@@ -396,10 +297,11 @@ func (b *BPF) attachTcxHooks(ifindex int, egress, ingress bool) ([]func(), error
 	}
 
 	if ingress {
-		log.Infof("attach tcx/ingress hooks to ifindex %d", ifindex)
+		prog := trueOr(iface.L2(), b.objs.PtcpdumpTcxIngressL2, b.objs.PtcpdumpTcxIngressL3)
+		log.Infof("attach tcx/ingress hook %q to ifindex %s", prog.String(), iface.String())
 		lk, err := link.AttachTCX(link.TCXOptions{
 			Interface: ifindex,
-			Program:   b.objs.PtcpdumpTcxIngress,
+			Program:   prog,
 			Attach:    ebpf.AttachTCXIngress,
 		})
 		if err != nil {
@@ -413,8 +315,9 @@ func (b *BPF) attachTcxHooks(ifindex int, egress, ingress bool) ([]func(), error
 	return closeFuncs, nil
 }
 
-func (b *BPF) attachTcHooks(ifindex int, egress, ingress bool) ([]func(), error) {
+func (b *BPF) attachTcHooks(iface types.Device, egress, ingress bool) ([]func(), error) {
 	var closeFuncs []func()
+	ifindex := iface.Ifindex
 	closeFunc, err := ensureTcQdisc(ifindex)
 	if err != nil {
 		closeFuncs = append(closeFuncs, closeFunc)
@@ -422,7 +325,9 @@ func (b *BPF) attachTcHooks(ifindex int, egress, ingress bool) ([]func(), error)
 	}
 
 	if egress {
-		c1, err := attachTcHook(ifindex, b.objs.PtcpdumpTcEgress, false)
+		c1, err := attachTcHook(ifindex,
+			trueOr(iface.L2(), b.objs.PtcpdumpTcEgressL2, b.objs.PtcpdumpTcEgressL3),
+			false)
 		if err != nil {
 			closeFuncs = append(closeFuncs, c1)
 			return closeFuncs, fmt.Errorf("attach tc hooks: %w", err)
@@ -431,7 +336,9 @@ func (b *BPF) attachTcHooks(ifindex int, egress, ingress bool) ([]func(), error)
 	}
 
 	if ingress {
-		c2, err := attachTcHook(ifindex, b.objs.PtcpdumpTcIngress, true)
+		c2, err := attachTcHook(ifindex,
+			trueOr(iface.L2(), b.objs.PtcpdumpTcIngressL2, b.objs.PtcpdumpTcIngressL3),
+			true)
 		if err != nil {
 			closeFuncs = append(closeFuncs, c2)
 			return closeFuncs, fmt.Errorf("attach tc hooks: %w", err)

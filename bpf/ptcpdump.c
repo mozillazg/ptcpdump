@@ -267,11 +267,17 @@ static __always_inline int fill_packet_event_meta(struct __sk_buff *skb, bool cg
     return 0;
 }
 
-static __always_inline void handle_skb(bool cgroup_skb, struct __sk_buff *skb, bool egress, void *data,
-                                       void *data_end) {
+static __always_inline void handle_skb(bool cgroup_skb, struct __sk_buff *skb, bool egress, void *data, void *data_end,
+                                       bool l2) {
 
-    if (!pcap_filter((void *)skb, (void *)skb, (void *)skb, data, data_end)) {
-        return;
+    if (l2) {
+        if (!pcap_filter((void *)skb, (void *)skb, (void *)skb, data, data_end)) {
+            return;
+        }
+    } else {
+        if (!pcap_filter_l3((void *)skb, (void *)skb, (void *)skb, data, data_end)) {
+            return;
+        }
     }
 
 #ifdef LEGACY_KERNEL
@@ -326,7 +332,7 @@ static __always_inline void handle_skb(bool cgroup_skb, struct __sk_buff *skb, b
     } else {
         event->meta.packet_type = INGRESS_PACKET;
     }
-    if (cgroup_skb) {
+    if (cgroup_skb || !l2) {
         event->meta.first_layer = L3_LAYER;
     } else {
         event->meta.first_layer = L2_LAYER;
@@ -358,60 +364,113 @@ static __always_inline void handle_skb(bool cgroup_skb, struct __sk_buff *skb, b
     return;
 }
 
-SEC("tc")
-int ptcpdump_tc_ingress(struct __sk_buff *skb) {
+__always_inline void handle_tc_ingress(struct __sk_buff *skb, bool l2) {
     bpf_skb_pull_data(skb, 0);
-    handle_skb(false, skb, false, (void *)(long)skb->data, (void *)(long)skb->data_end);
+    handle_skb(false, skb, false, (void *)(long)skb->data, (void *)(long)skb->data_end, l2);
+}
+
+SEC("tc")
+int ptcpdump_tc_ingress_l2(struct __sk_buff *skb) {
+    handle_tc_ingress(skb, true);
+    return TC_ACT_UNSPEC;
+}
+SEC("tc")
+int ptcpdump_tc_ingress_l3(struct __sk_buff *skb) {
+    handle_tc_ingress(skb, false);
     return TC_ACT_UNSPEC;
 }
 
 #ifndef NO_TCX
+__always_inline void handle_tcx_ingress(struct __sk_buff *skb, bool l2) {
+    bpf_skb_pull_data(skb, 0);
+    handle_skb(false, skb, false, (void *)(long)skb->data, (void *)(long)skb->data_end, l2);
+}
 SEC("tcx/ingress")
-int ptcpdump_tcx_ingress(struct __sk_buff *skb) {
-    bpf_skb_pull_data(skb, 0);
-    handle_skb(false, skb, false, (void *)(long)skb->data, (void *)(long)skb->data_end);
+int ptcpdump_tcx_ingress_l2(struct __sk_buff *skb) {
+    handle_tcx_ingress(skb, true);
+    return TCX_NEXT;
+}
+SEC("tcx/ingress")
+int ptcpdump_tcx_ingress_l3(struct __sk_buff *skb) {
+    handle_tcx_ingress(skb, false);
     return TCX_NEXT;
 }
 #endif
 
-SEC("tc")
-int ptcpdump_tc_egress(struct __sk_buff *skb) {
+__always_inline void handle_tc_egress(struct __sk_buff *skb, bool l2) {
     bpf_skb_pull_data(skb, 0);
-    handle_skb(false, skb, true, (void *)(long)skb->data, (void *)(long)skb->data_end);
+    handle_skb(false, skb, true, (void *)(long)skb->data, (void *)(long)skb->data_end, l2);
+}
+
+SEC("tc")
+int ptcpdump_tc_egress_l2(struct __sk_buff *skb) {
+    handle_tc_egress(skb, true);
+    return TC_ACT_UNSPEC;
+}
+SEC("tc")
+int ptcpdump_tc_egress_l3(struct __sk_buff *skb) {
+    handle_tc_egress(skb, false);
     return TC_ACT_UNSPEC;
 }
 
 #ifndef NO_TCX
-SEC("tcx/egress")
-int ptcpdump_tcx_egress(struct __sk_buff *skb) {
+__always_inline void handle_tcx_egress(struct __sk_buff *skb, bool l2) {
     bpf_skb_pull_data(skb, 0);
-    handle_skb(false, skb, true, (void *)(long)skb->data, (void *)(long)skb->data_end);
+    handle_skb(false, skb, true, (void *)(long)skb->data, (void *)(long)skb->data_end, l2);
+}
+
+SEC("tcx/egress")
+int ptcpdump_tcx_egress_l2(struct __sk_buff *skb) {
+    handle_tcx_egress(skb, true);
+    return TCX_NEXT;
+}
+
+SEC("tcx/egress")
+int ptcpdump_tcx_egress_l3(struct __sk_buff *skb) {
+    handle_tcx_egress(skb, false);
     return TCX_NEXT;
 }
 #endif
 
-SEC("socket")
-int ptcpdump_socket_filter__ingress(struct __sk_buff *skb) {
+__always_inline void handle_socket_filter__ingress(struct __sk_buff *skb, bool l2) {
     char dummy[1];
-
     if (skb->pkt_type == PACKET_HOST) {
         bpf_skb_load_bytes(skb, 0, &dummy, sizeof(dummy));
-        handle_skb(false, skb, false, (void *)(long)skb, dummy);
+        handle_skb(false, skb, false, (void *)(long)skb, dummy, l2);
     }
+}
 
+SEC("socket")
+int ptcpdump_socket_filter__ingress_l2(struct __sk_buff *skb) {
+    handle_socket_filter__ingress(skb, true);
     return 0;
 }
 
 SEC("socket")
-int ptcpdump_socket_filter__egress(struct __sk_buff *skb) {
+int ptcpdump_socket_filter__ingress_l3(struct __sk_buff *skb) {
+    handle_socket_filter__ingress(skb, false);
+    return 0;
+}
+
+__always_inline void handle_socket_filter__egress(struct __sk_buff *skb, bool l2) {
     char dummy[1];
 
     if (skb->pkt_type == PACKET_OUTGOING) {
         ;
         bpf_skb_load_bytes(skb, 0, &dummy, sizeof(dummy));
-        handle_skb(false, skb, true, (void *)(long)skb, dummy);
+        handle_skb(false, skb, true, (void *)(long)skb, dummy, l2);
     }
+}
 
+SEC("socket")
+int ptcpdump_socket_filter__egress_l2(struct __sk_buff *skb) {
+    handle_socket_filter__egress(skb, true);
+    return 0;
+}
+
+SEC("socket")
+int ptcpdump_socket_filter__egress_l3(struct __sk_buff *skb) {
+    handle_socket_filter__egress(skb, false);
     return 0;
 }
 
@@ -426,7 +485,7 @@ static __always_inline void handle_cgroup_skb(struct __sk_buff *skb, bool egress
         }
     }
 
-    handle_skb(true, skb, egress, (void *)(long)skb->data, (void *)(long)skb->data_end);
+    handle_skb(true, skb, egress, (void *)(long)skb->data, (void *)(long)skb->data_end, false);
 }
 
 SEC("cgroup_skb/ingress")

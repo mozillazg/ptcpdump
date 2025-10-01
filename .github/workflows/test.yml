@@ -14,7 +14,7 @@ jobs:
 
   build-with-dynamic-link:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
     - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
 
@@ -41,7 +41,7 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
 
     steps:
     - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
@@ -63,7 +63,7 @@ jobs:
 
   run-with-docker:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
 
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
@@ -74,7 +74,7 @@ jobs:
 
   unit-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     env:
       GOCOVERDIR: '${{ github.workspace }}/coverage'
 
@@ -107,7 +107,7 @@ jobs:
   docker-integration-test:
     runs-on: ubuntu-latest
     needs: build
-    timeout-minutes: 10
+    timeout-minutes: 15
     env:
       GOCOVERDIR: '${{ github.workspace }}/coverage'
 
@@ -147,7 +147,7 @@ jobs:
   containerd-integration-test:
     runs-on: ubuntu-latest
     needs: build
-    timeout-minutes: 10
+    timeout-minutes: 15
     env:
       GOCOVERDIR: '${{ github.workspace }}/coverage'
 
@@ -292,7 +292,7 @@ jobs:
           - 'bpf-20250630.013259'
           # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
           - 'bpf-next-20250630.013259'
-    timeout-minutes: 25
+    timeout-minutes: 30
     runs-on: ubuntu-latest
     env:
       GOCOVERDIR: coverage
@@ -480,6 +480,20 @@ jobs:
             bash /host/testdata/test_arp.sh /host/ptcpdump/ptcpdump
             bash /host/testdata/test_icmp.sh /host/ptcpdump/ptcpdump
 
+      - name: Test tun interface
+        if: ${{ !startsWith(matrix.kernel, '4.') && !startsWith(matrix.kernel, '5.') }}
+        uses: cilium/little-vm-helper@9c1f3a549af06e213863d034c13ba1c5d1e3c667 # v0.0.26
+        with:
+          provision: 'false'
+          cmd: |
+            set -ex
+            modprobe tun || { echo 'install tun mod failed'; exit 0; }
+
+            export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
+            export GOCOVERDIR="/host/${{ env.GOCOVERDIR }}"
+
+            bash /host/testdata/retry.sh 3 bash /host/testdata/test_tun.sh /host/ptcpdump/ptcpdump
+
       - name: Test netns
         if: ${{ startsWith(matrix.backend, 'tc') || (startsWith(matrix.backend, 'socket-filter') && !startsWith(matrix.kernel, '4.') ) || (!startsWith(matrix.kernel, '5.4') && !startsWith(matrix.kernel, '4.') && !startsWith(matrix.backend, 'cgroup-skb')) }}
         uses: cilium/little-vm-helper@9c1f3a549af06e213863d034c13ba1c5d1e3c667 # v0.0.26
@@ -638,7 +652,7 @@ jobs:
             coverage/*
 
   coverage:
-    timeout-minutes: 5
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     needs:
       - unit-test

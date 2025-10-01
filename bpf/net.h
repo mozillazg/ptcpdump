@@ -191,8 +191,11 @@ static __always_inline int parse_skb_meta(struct __sk_buff *skb, bool l2_skb, st
         if (parse_skb_l2(skb, &meta->l2, &meta->offset) < 0) {
             return -1;
         }
+    } else {
+        meta->l2.h_protocol = bpf_ntohs(BPF_CORE_READ(skb, protocol));
     }
 
+    //    debug_log("[ptcpdump]meta->l2.h_protocol: 0x%x\n", meta->l2.h_protocol);
     if (parse_skb_l3(skb, meta->l2.h_protocol, &meta->l3, &meta->offset) < 0) {
         return -1;
     }

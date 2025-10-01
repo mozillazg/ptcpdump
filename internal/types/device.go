@@ -8,6 +8,7 @@ import (
 
 type Device struct {
 	Name    string
+	NoMac   bool
 	Ifindex int
 	NetNs   *NetNs
 }
@@ -77,4 +78,11 @@ func (d *Device) Key() string {
 
 func (d *Device) String() string {
 	return fmt.Sprintf("{Device ifindex: %d, name: %s, ns: %s}", d.Ifindex, d.Name, d.NetNs)
+}
+
+func (d *Device) L2() bool {
+	if d.Ifindex == 1 { // lo
+		return true
+	}
+	return !d.NoMac
 }
