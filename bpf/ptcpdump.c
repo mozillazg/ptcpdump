@@ -666,7 +666,7 @@ static __always_inline void handle_skb_buff(struct sk_buff *skb, bool egress) {
         return;
     }
 
-filter_ok:
+filter_ok:;
 
 //    debug_log("[ptcpdump][tp-btf] mac_header: %d, network_header: %d, has_l2: %d", mac_header, network_header,
 //    has_l2);
