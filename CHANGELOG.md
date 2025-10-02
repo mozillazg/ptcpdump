@@ -2,11 +2,20 @@
 
 ## [unreleased](https://github.com/mozillazg/ptcpdump/compare/v0.36.0...HEAD)
 
-## [v0.36.0](https://github.com/mozillazg/ptcpdump/compare/v0.35.1...v0.36.0) - 2025-10-02
+## [v0.36.0](https://github.com/mozillazg/ptcpdump/compare/v0.35.1...v0.36.0) - 2025-10-03
 
+- fix(bpf): fix filter_ok label to avoid C23 warning ([#350](https://github.com/mozillazg/ptcpdump/pull/350)) (a58d906)
+- chore(deps): update quay.io/ptcpdump/develop docker tag to v20251002 ([#349](https://github.com/mozillazg/ptcpdump/pull/349)) (e966242)
+- chore(deps): update actions/setup-go action to v6 ([#346](https://github.com/mozillazg/ptcpdump/pull/346)) (0052a68)
+- feat(docs): Add docs site ([#345](https://github.com/mozillazg/ptcpdump/pull/345)) (434451f)
 - btf: allow tests to run without network access ([#343](https://github.com/mozillazg/ptcpdump/pull/343)) (c873bed)
 - feat(capture): handle L3-only devices and add tun regression ([#342](https://github.com/mozillazg/ptcpdump/pull/342)) (8f4c363)
 - chore: enable PIE in dynamic builds ([#341](https://github.com/mozillazg/ptcpdump/pull/341)) (172121c)
+- feat: Add kernel version validation to prevent CO-RE errors on unsupported kernels ([#340](https://github.com/mozillazg/ptcpdump/pull/340)) (0f1c8d7)
+- chore(deps): pin dependencies ([#333](https://github.com/mozillazg/ptcpdump/pull/333)) (a397915)
+- chore(deps): update golang docker tag to v1.25.1 ([#331](https://github.com/mozillazg/ptcpdump/pull/331)) (f333cb0)
+- chore(deps): update busybox:latest docker digest to d82f458 ([#322](https://github.com/mozillazg/ptcpdump/pull/322)) (2eccf30)
+- fix(deps): update all go dependencies master ([#316](https://github.com/mozillazg/ptcpdump/pull/316)) (609d5f0)
 
 ## [v0.35.1](https://github.com/mozillazg/ptcpdump/compare/v0.35.0...v0.35.1) - 2025-09-07
 - fix(bpf): Correctly parse IP headers with options ([#337](https://github.com/mozillazg/ptcpdump/pull/337)) (a7eefa8)
