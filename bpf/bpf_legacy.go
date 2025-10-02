@@ -96,6 +96,23 @@ func kernelVersionEqOrGreaterThan(a, b, c int) bool {
 	return false
 }
 
+// ValidateKernelVersion validates that the kernel version meets minimum requirements for ptcpdump
+func ValidateKernelVersion() error {
+	if !kernelVersionEqOrGreaterThan(5, 2, 0) {
+		versionCode, err := features.LinuxVersionCode()
+		if err != nil {
+			return fmt.Errorf("ptcpdump requires Linux kernel 5.2 or later, but unable to determine kernel version: %w", err)
+		}
+
+		major := (versionCode >> 16) & 0xff
+		minor := (versionCode >> 8) & 0xff
+		patch := versionCode & 0xff
+
+		return fmt.Errorf("ptcpdump requires Linux kernel 5.2 or later, current kernel version: %d.%d.%d", major, minor, patch)
+	}
+	return nil
+}
+
 func loadBpfWithData(b []byte) (*ebpf.CollectionSpec, error) {
 	reader := bytes.NewReader(b)
 	spec, err := ebpf.LoadCollectionSpecFromReader(reader)
