@@ -20,13 +20,25 @@ jobs:
       - uses: actions/checkout@v5
         with:
           submodules: 'recursive'
+          fetch-depth: 0
+
+      - name: Setup Hugo
+        uses: peaceiris/actions-hugo@v3
+        with:
+          hugo-version: '0.150.1'
+          extended: true
+
+      - name: npm install
+        run: |
+          set -ex
+          cd docs
+          npm install
 
       - name: Build static files
         id: build
         run: |
           set -ex
           cd docs
-          npm install
           hugo build
 
       - name: Upload static files as artifact
