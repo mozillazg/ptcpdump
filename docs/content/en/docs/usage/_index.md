@@ -38,6 +38,16 @@ sudo ptcpdump -i any -w - port 80 | tcpdump -n -r -
 sudo ptcpdump -i lo --netns /run/netns/foo --netns /run/netns/bar
 ```
 
+## Choosing a Backend
+
+ptcpdump defaults to the `tc` backend, but you can select other eBPF attachment points depending on your environment. For example, to capture using the cgroup socket hook:
+
+```bash
+sudo ptcpdump -i any --backend cgroup-skb host 1.1.1.1
+```
+
+Each backend has trade-offs around layer-2 visibility and namespace support. Head over to the [Backend Guide](../backends/) for a comparison table and more examples drawn from the README.
+
 ## Process and Container Filters
 
 Focus on specific workloads using the extra context-aware flags:
@@ -57,7 +67,7 @@ sudo ptcpdump -i any -- curl https://example.com
 
 ## Metadata-Rich Output
 
-Verbose mode surfaces full process/container/pod metadata:
+Verbose mode (`-v`) surfaces full process/container/pod metadata:
 
 ```
 13:44:41.529003 eth0 In IP (tos 0x4, ttl 45, id 45428, offset 0, flags [DF], proto TCP (6), length 52)
@@ -91,7 +101,10 @@ sudo ptcpdump -i any -w - 'tcp port 80' | tshark -r -
 
 ## Working with Wireshark
 
-Open the generated PcapNG files in Wireshark to inspect per-packet process details. Wireshark displays the extra metadata under *Packet Details → ptcpdump Metadata*. Ensure you are using a recent Wireshark release so it recognizes the custom blocks.
+Open the generated PcapNG files in Wireshark to inspect per-packet process details. 
+
+![Wireshark Screenshot](/images/wireshark.png)
+
 
 ## Rotation and Output Control
 

@@ -9,11 +9,6 @@ Choose the best way to install ptcpdump for your environment. If you want a guid
 
 Download static builds for x86_64 or arm64 from the [GitHub releases page](https://github.com/mozillazg/ptcpdump/releases):
 
-```bash
-curl -sSL https://github.com/mozillazg/ptcpdump/releases/latest/download/ptcpdump-$(uname -m).tar.gz \
-  | sudo tar -xz -C /usr/local/bin ptcpdump
-sudo chmod +x /usr/local/bin/ptcpdump
-```
 
 ## Build from Source
 
@@ -31,7 +26,7 @@ Clone the repository and produce a static binary:
 git clone https://github.com/mozillazg/ptcpdump.git
 cd ptcpdump
 make build
-sudo cp dist/ptcpdump /usr/local/bin/
+sudo cp ptcpdump /usr/local/bin/
 ```
 
 If you modify the eBPF programs, regenerate bytecode before building:

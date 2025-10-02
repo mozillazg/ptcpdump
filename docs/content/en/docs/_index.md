@@ -10,9 +10,11 @@ Welcome to the ptcpdump documentation hub. Start with the quickstart to install 
 - [Quickstart](quickstart/)
 - [Usage Guide](usage/)
 - [Troubleshooting](troubleshooting/)
+- [Backend Guide](backends/)
+- [Scenario Playbook](examples/)
 
 ## Additional Resources
 
-- [About ptcpdump]({{< relref "/about" >}})
+- [About ptcpdump](about/)
 - [GitHub repository](https://github.com/mozillazg/ptcpdump)
 - [Releases](https://github.com/mozillazg/ptcpdump/releases)

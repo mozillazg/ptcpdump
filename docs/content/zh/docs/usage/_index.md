@@ -91,7 +91,10 @@ sudo ptcpdump -i any -w - 'tcp port 80' | tshark -r -
 
 ## 搭配 Wireshark
 
-在 Wireshark 中打开生成的 PcapNG 文件，可在“Packet Details → ptcpdump Metadata”查看每个数据包的额外上下文。请使用较新的 Wireshark 版本以识别这些自定义块。
+在 Wireshark 中打开生成的 PcapNG 文件，可查看每个数据包的额外上下文。
+
+![Wireshark Screenshot](/images/wireshark.png)
+
 
 ## 轮转与输出控制
 

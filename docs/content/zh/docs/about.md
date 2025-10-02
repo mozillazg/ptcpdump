@@ -1,10 +1,13 @@
 ---
-title: "关于 ptcpdump"
+title: "介绍"
+weight: 2
 ---
 
 ## ptcpdump 是什么？
 
 **ptcpdump** 是一个使用 eBPF 技术实现的、兼容 tcpdump 的网络抓包工具。它的核心特性是能够在捕获数据包的同时，自动关联上对应的进程、容器以及 Kubernetes Pod 的元数据。这极大地丰富了抓包信息，让您能轻松地识别出特定网络流量的来源应用。
+
+![Wireshark Screenshot](/images/wireshark.png)
 
 ## 项目灵感
 

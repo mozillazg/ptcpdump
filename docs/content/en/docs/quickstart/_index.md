@@ -17,13 +17,8 @@ For a complete list of kernel configuration options, see the [Troubleshooting](.
 
 ### Download a Release
 
-```bash
-curl -sSL https://github.com/mozillazg/ptcpdump/releases/latest/download/ptcpdump-$(uname -m).tar.gz \
-  | sudo tar -xz -C /usr/local/bin ptcpdump
-sudo chmod +x /usr/local/bin/ptcpdump
-```
+Download static builds for x86_64 or arm64 from the [GitHub releases page](https://github.com/mozillazg/ptcpdump/releases):
 
-Replace `$(uname -m)` with `x86_64` or `arm64` if you prefer an explicit architecture.
 
 ### Build from Source (optional)
 
@@ -31,10 +26,10 @@ Replace `$(uname -m)` with `x86_64` or `arm64` if you prefer an explicit archite
 git clone https://github.com/mozillazg/ptcpdump.git
 cd ptcpdump
 make build
-sudo cp dist/ptcpdump /usr/local/bin/
+sudo cp ptcpdump /usr/local/bin/
 ```
 
-The `make build` target compiles libpcap and produces a static binary inside `dist/`.
+The `make build` target compiles libpcap and produces a static binary inside `./`.
 
 ## 3. Run Your First Capture
 
@@ -59,4 +54,3 @@ sudo ptcpdump -i any -w demo.pcapng
 - Learn more filters and workflow tips in the [Usage Guide](../usage/).
 - Troubleshoot kernel or permission issues via the [Troubleshooting](../troubleshooting/) reference.
 - Review the [GitHub README](https://github.com/mozillazg/ptcpdump#installation) for advanced build modes and feature comparisons.
-- Explore the sample capture files bundled in the repository (`demo.pcapng`, `gotls.pcapng`).

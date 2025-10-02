@@ -17,13 +17,8 @@ weight: 10
 
 ### 下载发布版
 
-```bash
-curl -sSL https://github.com/mozillazg/ptcpdump/releases/latest/download/ptcpdump-$(uname -m).tar.gz \
-  | sudo tar -xz -C /usr/local/bin ptcpdump
-sudo chmod +x /usr/local/bin/ptcpdump
-```
+在 [GitHub Releases](https://github.com/mozillazg/ptcpdump/releases) 页面获取适用于 x86_64 或 arm64 的静态版本：
 
-如果需要，可将 `$(uname -m)` 替换为显式的 `x86_64` 或 `arm64`。
 
 ### 从源码构建（可选）
 
@@ -31,10 +26,10 @@ sudo chmod +x /usr/local/bin/ptcpdump
 git clone https://github.com/mozillazg/ptcpdump.git
 cd ptcpdump
 make build
-sudo cp dist/ptcpdump /usr/local/bin/
+sudo cp ptcpdump /usr/local/bin/
 ```
 
-`make build` 会先编译 libpcap，并在 `dist/` 目录生成静态链接的可执行文件。
+`make build` 会先编译 libpcap，并在当前目录生成静态链接的可执行文件。
 
 ## 3. 运行首个抓包
 

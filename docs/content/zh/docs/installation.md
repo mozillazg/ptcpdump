@@ -9,11 +9,6 @@ weight: 5
 
 在 [GitHub Releases](https://github.com/mozillazg/ptcpdump/releases) 页面获取适用于 x86_64 或 arm64 的静态版本：
 
-```bash
-curl -sSL https://github.com/mozillazg/ptcpdump/releases/latest/download/ptcpdump-$(uname -m).tar.gz \
-  | sudo tar -xz -C /usr/local/bin ptcpdump
-sudo chmod +x /usr/local/bin/ptcpdump
-```
 
 ## 从源码构建
 

@@ -22,7 +22,8 @@ weight: 30
   sudo setcap cap_bpf,cap_net_admin=eip /usr/local/bin/ptcpdump
   ```
 
-如需 tc/cgroup/socket 等后端的完整内核配置表，请参考 README 中的“Requirements” 小节。
+如需 tc/cgroup/socket 等后端的完整内核配置表，请参考 README 中的
+[“Requirements”](https://github.com/mozillazg/ptcpdump?tab=readme-ov-file#requirements) 小节。
 
 ## 缺失元数据
 

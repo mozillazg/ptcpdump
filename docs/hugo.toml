@@ -11,7 +11,7 @@ defaultContentLanguage = "en"
   weight = 10
 [[menu.main]]
   name = "About"
-  url = "/about/"
+  url = "/docs/about/"
   weight = 20
 
 [params]

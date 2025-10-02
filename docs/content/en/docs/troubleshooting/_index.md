@@ -22,7 +22,8 @@ Diagnose the most common setup issues when running ptcpdump.
   sudo setcap cap_bpf,cap_net_admin=eip /usr/local/bin/ptcpdump
   ```
 
-If you need the full kernel option matrix for the tc, cgroup, or socket filter backends, refer to the README's requirements table.
+If you need the full kernel option matrix for the tc, cgroup, or socket filter backends, refer to the README's
+[requirements table](https://github.com/mozillazg/ptcpdump?tab=readme-ov-file#requirements).
 
 ## Missing Metadata
 

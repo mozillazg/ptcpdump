@@ -1,10 +1,13 @@
 ---
-title: "About ptcpdump"
+title: "Overview"
+weight: 2
 ---
 
 ## What is ptcpdump?
 
 **ptcpdump** is a tcpdump-compatible packet analyzer powered by eBPF. Its key feature is the ability to automatically annotate packets with process, container, and Kubernetes pod metadata where detectable. This enriches the packet capture, making it easier to understand which application is responsible for specific network traffic.
+
+![Wireshark Screenshot](/images/wireshark.png)
 
 ## Inspiration
 
