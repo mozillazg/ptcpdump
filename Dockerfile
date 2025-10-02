@@ -4,6 +4,6 @@ WORKDIR /app
 COPY . .
 RUN make build
 
-FROM busybox:latest@sha256:f85340bf132ae937d2c2a763b8335c9bab35d6e8293f70f606b9c6178d84f42b
+FROM busybox:latest@sha256:d82f458899c9696cb26a7c02d5568f81c8c8223f8661bb2a7988b269c8b9051e
 WORKDIR /ptcpdump
 COPY --from=build /app/ptcpdump /usr/local/bin/
