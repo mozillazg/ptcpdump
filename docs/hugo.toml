@@ -17,10 +17,24 @@ defaultContentLanguage = "en"
 [params]
 # GitHub repository link
 github_repo = "https://github.com/mozillazg/ptcpdump"
+offlineSearch = true
 
 [params.ui]
 # Disable search
 search_disable = false
+breadcrumb_disable = false
+sidebar_menu_compact = false
+sidebar_search_disable = false
+
+[params.ui.readingtime]
+enable = false
+
+[params.links]
+[[params.links.developer]]
+  name = "GitHub"
+  url = "https://github.com/mozillazg/ptcpdump"
+  icon = "fab fa-github"
+  desc = "Development takes place here!"
 
 [module]
 [[module.imports]]

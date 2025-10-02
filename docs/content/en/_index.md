@@ -15,12 +15,13 @@ description: "A tcpdump-compatible analyzer that enriches every packet with proc
 	</a>
 	<p class="lead mt-5">Process-aware, eBPF-based tcpdump</p>
 </div>
+
+{{< blocks/link-down color="info" >}}
 {{< /blocks/cover >}}
 
-{{< blocks/section >}}
-<div class="col-12">
-<h2 class="text-center">Features</h2>
-</div>
+
+{{% blocks/section color="light" type="row" %}}
+
 
 {{% blocks/feature icon="fa-solid fa-sitemap" title="Process/Container Aware" %}}
 Capture packets with full process, container, and Kubernetes pod context.
@@ -30,8 +31,8 @@ Capture packets with full process, container, and Kubernetes pod context.
 Use the same flags and filter syntax you already know, like `-i`, `-w`, `-A`, and `pcap-filter(7)`.
 {{% /blocks/feature %}}
 
-{{% blocks/feature icon="fa-brands fa-whireshark" title="PcapNG with Metadata" %}}
+{{% blocks/feature icon="fa-regular fa-handshake" title="PcapNG with Metadata" %}}
 Save captures in PcapNG format with embedded metadata, ready for deep analysis in Wireshark.
 {{% /blocks/feature %}}
 
-{{< /blocks/section >}}
+{{% /blocks/section %}}

@@ -15,12 +15,12 @@ description: "一个兼容 tcpdump 的分析器，通过 eBPF 为每个数据包
 	</a>
 	<p class="lead mt-5">进程感知，基于 eBPF 的 tcpdump</p>
 </div>
+{{< blocks/link-down color="info" >}}
 {{< /blocks/cover >}}
 
-{{< blocks/section >}}
-<div class="col-12">
-<h2 class="text-center">核心功能</h2>
-</div>
+
+{{% blocks/section color="light" type="row" %}}
+
 
 {{% blocks/feature icon="fa-solid fa-sitemap" title="进程/容器感知" %}}
 捕获带有完整进程、容器和 Kubernetes Pod 上下文的数据包。
@@ -30,8 +30,9 @@ description: "一个兼容 tcpdump 的分析器，通过 eBPF 为每个数据包
 使用您所熟悉的标志和过滤语法，例如 `-i`、`-w`、`-A` 和 `pcap-filter(7)`。
 {{% /blocks/feature %}}
 
-{{% blocks/feature icon="fa-brands fa-whireshark" title="带元数据的 PcapNG" %}}
+{{% blocks/feature icon="fa-regular fa-handshake" title="带元数据的 PcapNG" %}}
 将捕获的数据以 PcapNG 格式保存，其中嵌入了元数据，可直接在 Wireshark 中进行深入分析。
 {{% /blocks/feature %}}
 
-{{< /blocks/section >}}
+
+{{% /blocks/section %}}
