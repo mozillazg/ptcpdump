@@ -79,6 +79,8 @@ func validateClassObject(action int, info *Object) ([]tcOption, error) {
 		data, err = marshalHtb(info.Htb)
 	case "dsmark":
 		data, err = marshalDsmark(info.Dsmark)
+	case "drr":
+		data, err = marshalDrr(info.Drr)
 	default:
 		if !isDelAction(action) {
 			return options, fmt.Errorf("%s: %w", info.Kind, ErrNotImplemented)
@@ -88,7 +90,12 @@ func validateClassObject(action int, info *Object) ([]tcOption, error) {
 		return options, err
 	}
 	if len(data) < 1 && !isDelAction(action) {
-		return options, ErrNoArg
+		switch info.Kind {
+		case "drr":
+			// these can be parameterless
+		default:
+			return options, ErrNoArg
+		}
 	}
 	options = append(options, tcOption{Interpretation: vtBytes, Type: tcaOptions, Data: data})
 	if !isDelAction(action) {

@@ -32,7 +32,7 @@ type U32 struct {
 	Divisor *uint32
 	Sel     *U32Sel
 	InDev   *string
-	Pcnt    *uint64
+	Pcnt    *U32Pcnt
 	Mark    *U32Mark
 	Flags   *uint32
 	Police  *Police
@@ -95,7 +95,9 @@ func marshalU32(info *U32) ([]byte, error) {
 		options = append(options, tcOption{Interpretation: vtString, Type: tcaU32InDev, Data: stringValue(info.InDev)})
 	}
 	if info.Pcnt != nil {
-		options = append(options, tcOption{Interpretation: vtUint64, Type: tcaU32Pcnt, Data: uint64Value(info.Pcnt)})
+		data, err := validateU32Pcnt(info.Pcnt)
+		multiError = concatError(multiError, err)
+		options = append(options, tcOption{Interpretation: vtBytes, Type: tcaU32Pcnt, Data: data})
 	}
 
 	if multiError != nil {
@@ -135,7 +137,10 @@ func unmarshalU32(data []byte, info *U32) error {
 		case tcaU32InDev:
 			info.InDev = stringPtr(ad.String())
 		case tcaU32Pcnt:
-			info.Pcnt = uint64Ptr(ad.Uint64())
+			pcnt := &U32Pcnt{}
+			err := extractU32Pcnt(ad.Bytes(), pcnt)
+			multiError = concatError(multiError, err)
+			info.Pcnt = pcnt
 		case tcaU32Mark:
 			arg := &U32Mark{}
 			err := unmarshalStruct(ad.Bytes(), arg)
@@ -172,7 +177,8 @@ type U32Sel struct {
 
 func validateU32SelOptions(info *U32Sel) ([]byte, error) {
 	if int(info.NKeys) != len(info.Keys) {
-		return []byte{}, fmt.Errorf("number of expected keys matches not number of provided keys: %w", ErrInvalidArg)
+		return []byte{}, fmt.Errorf("number of expected keys matches not number of provided keys: %w",
+			ErrInvalidArg)
 	}
 
 	buf := new(bytes.Buffer)
@@ -199,7 +205,8 @@ func validateU32SelOptions(info *U32Sel) ([]byte, error) {
 
 func extractU32Sel(data []byte, info *U32Sel) error {
 	if len(data) < 15 {
-		return fmt.Errorf("not enough bytes for U32Sel")
+		return fmt.Errorf("not enough bytes for U32Sel, got %d: %w",
+			len(data), ErrInvalidArg)
 	}
 	info.Flags = data[0]
 	info.Offshift = data[1]
@@ -235,4 +242,38 @@ type U32Key struct {
 	Val     uint32
 	Off     uint32
 	OffMask uint32
+}
+
+// U32Pcnt from include/uapi/linux/pkt_cls.h
+type U32Pcnt struct {
+	Rcnt  uint64
+	Rhit  uint64
+	Kcnts []uint64
+}
+
+func validateU32Pcnt(info *U32Pcnt) ([]byte, error) {
+	buf := new(bytes.Buffer)
+	binary.Write(buf, nativeEndian, info.Rcnt)
+	binary.Write(buf, nativeEndian, info.Rhit)
+	binary.Write(buf, nativeEndian, info.Kcnts)
+
+	return buf.Bytes(), nil
+}
+
+func extractU32Pcnt(data []byte, info *U32Pcnt) error {
+	if len(data) < 16 {
+		return fmt.Errorf("not enough bytes for U32Pcnt: need at least 16, got %d: %w",
+			len(data), ErrInvalidArg)
+	}
+
+	info.Rcnt = nativeEndian.Uint64(data[0:8])
+	info.Rhit = nativeEndian.Uint64(data[8:16])
+
+	// Process any remaining data as Kcnts
+	info.Kcnts = []uint64{}
+	for i := 16; i+8 <= len(data); i += 8 {
+		info.Kcnts = append(info.Kcnts, nativeEndian.Uint64(data[i:i+8]))
+	}
+
+	return nil
 }

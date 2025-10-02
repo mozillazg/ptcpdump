@@ -58,6 +58,15 @@ func formatterArgsPos(key string) (pos int) {
 
 // parseFormatterArgs extracts json string to json items
 func parseFormatterArgs(json []byte, args *FormatterArgs) {
+	// Pre-allocate KeyValues slice to a reasonable capacity.
+	// This prevents a race condition that can lead to memory corruption
+	// when append is called on a nil slice from multiple goroutines.
+	args.KeyValues = make([]struct {
+		Key       string
+		Value     string
+		ValueType byte
+	}, 0, 16)
+
 	// treat formatter args as []string
 	const size = int(unsafe.Sizeof(FormatterArgs{}) / unsafe.Sizeof(""))
 	//nolint:all
