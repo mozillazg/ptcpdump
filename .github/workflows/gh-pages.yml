@@ -1,0 +1,64 @@
+name: deploy-github-pages
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "master" ]
+#  pull_request:
+#    branches: [ "master" ]
+
+permissions:
+  contents: read
+
+jobs:
+  # Build job
+  build:
+    # Specify runner +  build & upload the static files as an artifact
+    runs-on: ubuntu-latest
+    steps:
+
+      - uses: actions/checkout@v5
+        with:
+          submodules: 'recursive'
+          fetch-depth: 0
+
+      - name: Setup Hugo
+        uses: peaceiris/actions-hugo@v3
+        with:
+          hugo-version: '0.150.1'
+          extended: true
+
+      - name: npm install
+        run: |
+          set -ex
+          cd docs
+          npm install
+
+      - name: Build static files
+        id: build
+        run: |
+          set -ex
+          cd docs
+          hugo build
+
+      - name: Upload static files as artifact
+        id: deployment
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: docs/public/
+
+  # Deployment job
+  deploy:
+    needs: build
+    # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
+    permissions:
+      pages: write      # to deploy to Pages
+      id-token: write   # to verify the deployment originates from an appropriate source
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
