@@ -1,6 +1,8 @@
 # CHANGELOG
 
-## [unreleased](https://github.com/mozillazg/ptcpdump/compare/v0.35.1...HEAD)
+## [unreleased](https://github.com/mozillazg/ptcpdump/compare/v0.36.0...HEAD)
+
+## [v0.36.0](https://github.com/mozillazg/ptcpdump/compare/v0.35.1...v0.36.0) - 2025-10-02
 
 - btf: allow tests to run without network access ([#343](https://github.com/mozillazg/ptcpdump/pull/343)) (c873bed)
 - feat(capture): handle L3-only devices and add tun regression ([#342](https://github.com/mozillazg/ptcpdump/pull/342)) (8f4c363)
