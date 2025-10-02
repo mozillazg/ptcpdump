@@ -183,7 +183,6 @@ func (c *Capturer) Prepare() error {
 			log.Errorf("load bpf failed: %+v", err)
 			return versionErr
 		}
-		log.Errorf("load bpf failed: %+v", err)
 		return fmt.Errorf("load bpf failed: %w", err)
 	}
 	c.closeFuncs = append(c.closeFuncs, bf.Close)
