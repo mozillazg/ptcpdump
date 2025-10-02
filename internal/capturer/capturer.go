@@ -144,6 +144,7 @@ func (c *Capturer) Prepare() error {
 
 	btfspec, err := c.loadBTF()
 	if err != nil {
+		log.Errorf("load btf failed: %+v", err)
 		return fmt.Errorf("load btf failed: %w", err)
 	}
 	c.btfSpec = btfspec
@@ -177,6 +178,12 @@ func (c *Capturer) Prepare() error {
 	}
 
 	if err := bf.Load(*bpfopts); err != nil {
+		// Check if the error might be due to unsupported kernel version
+		if versionErr := bpf.ValidateKernelVersion(); versionErr != nil {
+			log.Errorf("load bpf failed: %+v", err)
+			return versionErr
+		}
+		log.Errorf("load bpf failed: %+v", err)
 		return fmt.Errorf("load bpf failed: %w", err)
 	}
 	c.closeFuncs = append(c.closeFuncs, bf.Close)

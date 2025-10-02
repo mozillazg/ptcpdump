@@ -157,10 +157,6 @@ load:
 			b.disableTracing()
 			goto load
 		}
-		// Check if the error might be due to unsupported kernel version
-		if versionErr := ValidateKernelVersion(); versionErr != nil {
-			return versionErr
-		}
 		return fmt.Errorf("bpf load and assign: %w", err)
 	}
 
