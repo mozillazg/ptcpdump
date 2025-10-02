@@ -3,18 +3,18 @@ module github.com/mozillazg/ptcpdump
 go 1.23.0
 
 require (
-	github.com/cilium/ebpf v0.18.0
+	github.com/cilium/ebpf v0.19.0
 	github.com/containerd/containerd v1.7.27
 	github.com/containerd/typeurl/v2 v2.2.3
-	github.com/docker/docker v28.0.0+incompatible
+	github.com/docker/docker v28.4.0+incompatible
 	github.com/florianl/go-tc v0.4.5
-	github.com/gopacket/gopacket v1.3.1
+	github.com/gopacket/gopacket v1.4.0
 	github.com/jschwinger233/elibpcap v1.1.0
 	github.com/phuslu/log v1.0.118
 	github.com/shirou/gopsutil/v4 v4.25.5
-	github.com/spf13/cobra v1.9.1
+	github.com/spf13/cobra v1.10.1
 	github.com/x-way/pktdump v0.0.6
-	golang.org/x/sys v0.33.0
+	golang.org/x/sys v0.36.0
 )
 
 require (
@@ -22,13 +22,13 @@ require (
 	github.com/containerd/errdefs v0.3.0
 	github.com/go-logr/logr v1.4.3
 	github.com/mandiant/GoReSym v1.7.2-0.20240819162932-534ca84b42d5
-	github.com/mdlayher/netlink v1.7.2
+	github.com/mdlayher/netlink v1.8.0
 	github.com/smira/go-xz v0.1.0
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	github.com/vishvananda/netns v0.0.5
-	golang.org/x/arch v0.18.0
-	k8s.io/cri-api v0.33.2
-	k8s.io/cri-client v0.33.2
+	golang.org/x/arch v0.21.0
+	k8s.io/cri-api v0.34.1
+	k8s.io/cri-client v0.34.1
 	k8s.io/klog/v2 v2.130.1
 )
 
