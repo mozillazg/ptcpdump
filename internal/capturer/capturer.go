@@ -144,10 +144,6 @@ func (c *Capturer) Prepare() error {
 
 	btfspec, err := c.loadBTF()
 	if err != nil {
-		// Check if the error might be due to unsupported kernel version
-		if versionErr := bpf.ValidateKernelVersion(); versionErr != nil {
-			return versionErr
-		}
 		return fmt.Errorf("load btf failed: %w", err)
 	}
 	c.btfSpec = btfspec

@@ -8,7 +8,7 @@ import (
 
 func TestValidateKernelVersion(t *testing.T) {
 	// This test will always pass on the current kernel (6.11.0-1018-azure)
-	// since it's >= 5.0.0, but it validates that the function works
+	// since it's >= 5.2.0, but it validates that the function works
 	err := ValidateKernelVersion()
 	if err != nil {
 		t.Errorf("ValidateKernelVersion() failed on kernel 6.11+: %v", err)
@@ -40,7 +40,7 @@ func TestKernelVersionErrorMessage(t *testing.T) {
 	// Create a mock function that simulates kernel 3.10.0
 	mockKernelVersionCheck := func() error {
 		// Simulate the same logic as ValidateKernelVersion but with forced 3.10.0
-		return fmt.Errorf("ptcpdump requires Linux kernel 5.0 or later, current kernel version: %d.%d.%d", 3, 10, 0)
+		return fmt.Errorf("ptcpdump requires Linux kernel 5.2 or later, current kernel version: %d.%d.%d", 3, 10, 0)
 	}
 	
 	err := mockKernelVersionCheck()
@@ -48,13 +48,13 @@ func TestKernelVersionErrorMessage(t *testing.T) {
 		t.Error("Expected error for kernel 3.10.0 but got nil")
 	}
 	
-	expectedMessage := "ptcpdump requires Linux kernel 5.0 or later, current kernel version: 3.10.0"
+	expectedMessage := "ptcpdump requires Linux kernel 5.2 or later, current kernel version: 3.10.0"
 	if err.Error() != expectedMessage {
 		t.Errorf("Error message = %q, want %q", err.Error(), expectedMessage)
 	}
 	
 	// Verify error message contains key components
-	if !strings.Contains(err.Error(), "ptcpdump requires Linux kernel 5.0 or later") {
+	if !strings.Contains(err.Error(), "ptcpdump requires Linux kernel 5.2 or later") {
 		t.Error("Error message should mention kernel requirement")
 	}
 	if !strings.Contains(err.Error(), "3.10.0") {
