@@ -59,6 +59,8 @@ func main() {
 }
 ```
 
+Check out the [package documentation](https://pkg.go.dev/github.com/florianl/go-tc#pkg-examples) for more and advanced examples.
+
 ## Requirements
 
 * A version of Go that is [supported by upstream](https://golang.org/doc/devel/release.html#policy)

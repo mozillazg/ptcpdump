@@ -210,6 +210,11 @@ func extractTCAOptions(data []byte, tc *Attribute, kind string) error {
 		err := unmarshalRed(data, info)
 		multiError = concatError(multiError, err)
 		tc.Red = info
+	case "gred":
+		info := &Gred{}
+		err := unmarshalGred(data, info)
+		multiError = concatError(multiError, err)
+		tc.Gred = info
 	case "pfifo":
 		limit := &FifoOpt{}
 		err := unmarshalStruct(data, limit)

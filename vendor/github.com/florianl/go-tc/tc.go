@@ -101,7 +101,7 @@ func (tc *Tc) action(action int, flags netlink.HeaderFlags, msg interface{}, opt
 		switch msg.Header.Type {
 		case netlink.Error:
 			errCode := bytesToInt32(msg.Data[:4])
-			// Check if the sucess message is embeded encoded as error code 0:
+			// Check if the success message is embedded encoded as error code 0:
 			if errCode != 0 {
 				return fmt.Errorf("received error from netlink: %#v", msg)
 			}
@@ -203,6 +203,7 @@ type Attribute struct {
 	Sfb     *Sfb
 	Sfq     *Sfq
 	Red     *Red
+	Gred    *Gred
 	MqPrio  *MqPrio
 	Pfifo   *FifoOpt
 	Bfifo   *FifoOpt

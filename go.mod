@@ -4,17 +4,17 @@ go 1.23.0
 
 require (
 	github.com/cilium/ebpf v0.18.0
-	github.com/containerd/containerd v1.7.27
+	github.com/containerd/containerd v1.7.28
 	github.com/containerd/typeurl/v2 v2.2.3
-	github.com/docker/docker v28.0.0+incompatible
-	github.com/florianl/go-tc v0.4.5
+	github.com/docker/docker v28.0.4+incompatible
+	github.com/florianl/go-tc v0.4.6
 	github.com/gopacket/gopacket v1.3.1
 	github.com/jschwinger233/elibpcap v1.1.0
-	github.com/phuslu/log v1.0.118
-	github.com/shirou/gopsutil/v4 v4.25.5
+	github.com/phuslu/log v1.0.120
+	github.com/shirou/gopsutil/v4 v4.25.9
 	github.com/spf13/cobra v1.9.1
 	github.com/x-way/pktdump v0.0.6
-	golang.org/x/sys v0.33.0
+	golang.org/x/sys v0.35.0
 )
 
 require (
@@ -24,11 +24,11 @@ require (
 	github.com/mandiant/GoReSym v1.7.2-0.20240819162932-534ca84b42d5
 	github.com/mdlayher/netlink v1.7.2
 	github.com/smira/go-xz v0.1.0
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	github.com/vishvananda/netns v0.0.5
 	golang.org/x/arch v0.18.0
-	k8s.io/cri-api v0.33.2
-	k8s.io/cri-client v0.33.2
+	k8s.io/cri-api v0.33.5
+	k8s.io/cri-client v0.33.5
 	k8s.io/klog/v2 v2.130.1
 )
 
@@ -49,7 +49,7 @@ require (
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-events v0.0.0-20190806004212-e31b211e4f1c // indirect
 	github.com/docker/go-units v0.5.0 // indirect
-	github.com/ebitengine/purego v0.8.4 // indirect
+	github.com/ebitengine/purego v0.9.0 // indirect
 	github.com/elliotchance/orderedmap v1.4.0 // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -78,11 +78,11 @@ require (
 	github.com/opencontainers/selinux v1.11.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
-	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
+	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spf13/pflag v1.0.6 // indirect
-	github.com/tklauser/go-sysconf v0.3.12 // indirect
-	github.com/tklauser/numcpus v0.6.1 // indirect
+	github.com/tklauser/go-sysconf v0.3.15 // indirect
+	github.com/tklauser/numcpus v0.10.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.45.0 // indirect
@@ -90,9 +90,9 @@ require (
 	go.opentelemetry.io/otel/metric v1.28.0 // indirect
 	go.opentelemetry.io/otel/trace v1.28.0 // indirect
 	golang.org/x/exp v0.0.0-20230811145659-89c5cff77bcb // indirect
-	golang.org/x/net v0.39.0 // indirect
-	golang.org/x/sync v0.13.0 // indirect
-	golang.org/x/text v0.24.0 // indirect
+	golang.org/x/net v0.42.0 // indirect
+	golang.org/x/sync v0.16.0 // indirect
+	golang.org/x/text v0.27.0 // indirect
 	google.golang.org/genproto v0.0.0-20231211222908-989df2bf70f3 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240701130421-f6361c86f094 // indirect
 	google.golang.org/grpc v1.65.0 // indirect

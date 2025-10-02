@@ -66,8 +66,8 @@ func (a *Actions) Delete(info []*Action) error {
 	}, options)
 }
 
-// Get fetches all actions
-func (a *Actions) Get(actions []*Action) ([]*Action, error) {
+// Get fetches a specific kind of actions. kind is the name of the action, e.g. "bpf", "gact", etc.
+func (a *Actions) Get(kind string) ([]*Action, error) {
 	var results []*Action
 	var data []byte
 	tcminfo, err := marshalStruct(tcaMsg{
@@ -76,18 +76,46 @@ func (a *Actions) Get(actions []*Action) ([]*Action, error) {
 	if err != nil {
 		return results, err
 	}
-
 	data = append(data, tcminfo...)
-	options, err := validateActionsObject(unix.RTM_GETACTION, actions)
+
+	innerOptions := []tcOption{
+		{
+			Interpretation: vtString,
+			Type:           1,
+			Data:           kind,
+		},
+		{
+			Interpretation: vtUint64,
+			Type:           2,
+			Data:           uint64(1<<32 | 1), // TCA_FLAG_LARGE_DUMP_ON
+		},
+	}
+	inner, err := marshalAttributes(innerOptions)
+	if err != nil {
+		return results, err
+	}
+	options := []tcOption{
+		{
+			Interpretation: vtBytes, // Outer attribute, nested
+			Type:           1,
+			Data:           inner,
+		},
+	}
+	got, err := marshalAttributes(options)
 	if err != nil {
 		return results, err
 	}
 
-	attrs, err := marshalAttributes(options)
+	abs, err := marshalAttributes([]tcOption{{
+		Interpretation: vtBytes,
+		Type:           1, // TCA_ACT_TAB
+		Data:           got,
+	}})
 	if err != nil {
 		return results, err
 	}
-	data = append(data, attrs...)
+
+	data = append(data, abs...)
 
 	req := netlink.Message{
 		Header: netlink.Header{

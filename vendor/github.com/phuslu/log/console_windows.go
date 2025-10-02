@@ -33,6 +33,8 @@ var (
 // WriteEntry implements Writer
 func (w *ConsoleWriter) WriteEntry(e *Entry) (n int, err error) {
 	onceConsole.Do(func() { isvt = isVirtualTerminal() })
+	muConsole.Lock()
+	defer muConsole.Unlock()
 
 	out := w.Writer
 	if out == nil {
@@ -47,9 +49,6 @@ func (w *ConsoleWriter) WriteEntry(e *Entry) (n int, err error) {
 }
 
 func (w *ConsoleWriter) writew(out io.Writer, p []byte) (n int, err error) {
-	muConsole.Lock()
-	defer muConsole.Unlock()
-
 	b := bbpool.Get().(*bb)
 	b.B = b.B[:0]
 	defer bbpool.Put(b)
