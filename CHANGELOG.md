@@ -4,10 +4,13 @@
 
 ## [v0.36.0](https://github.com/mozillazg/ptcpdump/compare/v0.35.1...v0.36.0) - 2025-10-03
 
+- chore: prepare for v0.36.0 ([#351](https://github.com/mozillazg/ptcpdump/pull/351)) (324649d)
 - fix(bpf): fix filter_ok label to avoid C23 warning ([#350](https://github.com/mozillazg/ptcpdump/pull/350)) (a58d906)
 - chore(deps): update quay.io/ptcpdump/develop docker tag to v20251002 ([#349](https://github.com/mozillazg/ptcpdump/pull/349)) (e966242)
+- feat: ✨ Set up Copilot instructions for repository ([#348](https://github.com/mozillazg/ptcpdump/pull/348)) (dd2d37d)
 - chore(deps): update actions/setup-go action to v6 ([#346](https://github.com/mozillazg/ptcpdump/pull/346)) (0052a68)
 - feat(docs): Add docs site ([#345](https://github.com/mozillazg/ptcpdump/pull/345)) (434451f)
+- feat: add CHANGELOG.md ([#344](https://github.com/mozillazg/ptcpdump/pull/344)) (884f0f1)
 - btf: allow tests to run without network access ([#343](https://github.com/mozillazg/ptcpdump/pull/343)) (c873bed)
 - feat(capture): handle L3-only devices and add tun regression ([#342](https://github.com/mozillazg/ptcpdump/pull/342)) (8f4c363)
 - chore: enable PIE in dynamic builds ([#341](https://github.com/mozillazg/ptcpdump/pull/341)) (172121c)
