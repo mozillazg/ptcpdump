@@ -7,7 +7,7 @@ require (
 	github.com/containerd/containerd v1.7.28
 	github.com/containerd/typeurl/v2 v2.2.3
 	github.com/docker/docker v28.0.4+incompatible
-	github.com/florianl/go-tc v0.4.6
+	github.com/florianl/go-tc v0.4.7
 	github.com/gopacket/gopacket v1.3.1
 	github.com/jschwinger233/elibpcap v1.1.0
 	github.com/phuslu/log v1.0.120
