@@ -1,3 +1,20 @@
+// Package core provides timing and clock functionality for traffic control operations.
+//
+// IMPORTANT: Before using any timing functions (Duration2TcTime, Time2Tick, etc.),
+// you must initialize the clock parameters by calling InitializeClock().
+//
+// Example usage:
+//   import "github.com/florianl/go-tc/core"
+//
+//   func main() {
+//       if err := core.InitializeClock(); err != nil {
+//           log.Printf("Warning: failed to initialize clock: %v", err)
+//       }
+//
+//       // Now you can use timing functions
+//       ticks := core.Time2Tick(1000)
+//   }
+
 package core
 
 import (
@@ -8,12 +25,48 @@ import (
 var (
 	tickInUSec  float64
 	clockFactor float64
+
+	// isSet indicates whether the clock parameters have been initialized.
+	isSet bool
 )
 
 const (
 	// iproute2/include/utils.h:timeUnitsPerSec
 	timeUnitsPerSec = 1000000
 )
+
+// InitializeClock initializes the clock parameters by reading from /proc/net/psched on Linux.
+// On non-Linux platforms, it sets default values (1.0 for both parameters).
+// This function must be called before using any of the timing functions.
+// It returns an error if the clock parameters cannot be read on Linux.
+func InitializeClock() error {
+	isSet = true
+	return initializeClock()
+}
+
+// SetClockParameters allows manual configuration of the clock parameters.
+// This is useful for testing or when custom clock values are needed.
+// clockFactor is the clock resolution factor, tickInUSec is the tick to microsecond conversion factor.
+func SetClockParameters(newClockFactor, newTickInUSec float64) {
+	isSet = true
+	clockFactor = newClockFactor
+	tickInUSec = newTickInUSec
+}
+
+// IsClockInitialized returns true if the clock parameters have been initialized.
+func IsClockInitialized() bool {
+	return isSet
+}
+
+// GetClockFactor returns the current clock factor value.
+func GetClockFactor() float64 {
+	return clockFactor
+}
+
+// GetTickInUSec returns the current tick in microseconds conversion factor.
+func GetTickInUSec() float64 {
+	return tickInUSec
+}
 
 // Duration2TcTime implements iproute2/tc/q_netem.c:get_ticks().
 // It converts a given duration into a time value that can be converted to ticks with Time2Tick().

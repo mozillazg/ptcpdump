@@ -8,12 +8,11 @@ import (
 	"os"
 )
 
-func init() {
+// initializeClock reads clock parameters from /proc/net/psched and initializes the global variables.
+func initializeClock() error {
 	var err error
 	clockFactor, tickInUSec, err = readPsched()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s", err)
-	}
+	return err
 }
 
 func readPsched() (float64, float64, error) {

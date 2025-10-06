@@ -11,6 +11,10 @@ import (
 
 // iproute2/tc/tc_core.c:tc_calc_rtable()
 func generateRateTable(pol *Policy) ([]byte, error) {
+	if !core.IsClockInitialized() {
+		return nil, fmt.Errorf("generateRateTable: use " +
+			"github.com/florianl/go-tc/core.InitializeClock() first")
+	}
 	var rate [256]uint32
 
 	if pol == nil {
