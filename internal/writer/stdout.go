@@ -33,6 +33,11 @@ type StdoutWriter struct {
 	n               int64
 	preTime         time.Time
 	firstTime       time.Time
+	useUTCTime      bool
+
+	formatter                  *pktdump.Formatter
+	formatOpts                 *pktdump.Options
+	absoluteTcpSequenceNumbers bool
 }
 
 func NewStdoutWriter(writer io.Writer, pcache *metadata.ProcessCache) *StdoutWriter {
@@ -48,6 +53,18 @@ func NewStdoutWriter(writer io.Writer, pcache *metadata.ProcessCache) *StdoutWri
 func (w *StdoutWriter) WithEnhancedContext(c types.EnhancedContext) *StdoutWriter {
 	w.enhancedContext = c
 	return w
+}
+
+func (w *StdoutWriter) Init() {
+	formatOpts := &pktdump.Options{
+		HeaderStyle:   w.FormatStyle,
+		ContentStyle:  w.DataStyle,
+		ContentIndent: "        ",
+		Quiet:         w.Quiet,
+	}
+	formatOpts.SetRelativeTCPSeq(!w.absoluteTcpSequenceNumbers)
+	w.formatter = pktdump.NewFormatter(formatOpts)
+	w.formatOpts = formatOpts
 }
 
 func (w *StdoutWriter) Write(e *event.Packet) error {
@@ -134,14 +151,8 @@ func (w *StdoutWriter) Write(e *event.Packet) error {
 
 	// Decode a packet
 	packet := gopacket.NewPacket(e.Data, w.Decoder, gopacket.NoCopy)
-	formatOpts := &pktdump.Options{
-		HeaderStyle:   w.FormatStyle,
-		ContentStyle:  w.DataStyle,
-		ContentIndent: "        ",
-		Quiet:         w.Quiet,
-	}
-	formatedHeader := (&pktdump.Formatter{}).FormatWithOptions(packet, formatOpts)
-	formatedData := formatOpts.FormatedContent
+	formatedHeader := w.formatter.Format(packet)
+	formatedData := w.formatOpts.FormatedContent
 
 	builder := strings.Builder{}
 
@@ -150,10 +161,11 @@ func (w *StdoutWriter) Write(e *event.Packet) error {
 	}
 
 	if !w.NoTimestamp {
-		builder.WriteString(fmt.Sprintf("%s ", w.formatTimestamp(e.Time.Local())))
-		w.preTime = e.Time.Local()
+		t := w.time(e.Time)
+		builder.WriteString(fmt.Sprintf("%s ", w.formatTimestamp(t)))
+		w.preTime = t
 		if w.firstTime.IsZero() {
-			w.firstTime = e.Time.Local()
+			w.firstTime = t
 		}
 	}
 
@@ -285,4 +297,21 @@ func (w *StdoutWriter) formatTimestamp(t time.Time) string {
 	default:
 		return t.Format(layout)
 	}
+}
+
+func (w *StdoutWriter) WithUseUTCTime(v bool) *StdoutWriter {
+	w.useUTCTime = v
+	return w
+}
+
+func (w *StdoutWriter) WithAbsoluteTcpSequenceNumbers(v bool) *StdoutWriter {
+	w.absoluteTcpSequenceNumbers = v
+	return w
+}
+
+func (w *StdoutWriter) time(t time.Time) time.Time {
+	if w.useUTCTime {
+		return t.UTC()
+	}
+	return t.Local()
 }

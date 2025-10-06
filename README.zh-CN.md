@@ -394,7 +394,7 @@ Flags:
 | -O, --no-optimize                                 | ✅       |                          |
 | -p, --no-promiscuous-mode                         | ✅       | ⛔                        |
 | -q                                                | ✅       | ✅                        |
-| -S, --absolute-tcp-sequence-numbers               | ✅       |                          |
+| -S, --absolute-tcp-sequence-numbers               | ✅       | ✅                        |
 | -s *snaplen*, --snapshot-length=*snaplen*         | ✅       | ✅                        |
 | -T *type*                                         | ✅       |                          |
 | -t                                                | ✅       | ✅                        |

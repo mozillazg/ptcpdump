@@ -14,6 +14,8 @@ type Options struct {
 	httpPorts []int
 
 	Quiet bool
+
+	RelativeTCPSeq *bool
 }
 
 const (
@@ -49,4 +51,34 @@ func (o *Options) formatContent() {
 		return
 	}
 	o.FormatedContent = append(o.FormatedContent, []byte(d)...)
+}
+
+func (o *Options) ensureDefaults() {
+	if o.RelativeTCPSeq == nil {
+		o.RelativeTCPSeq = boolPtr(true)
+	}
+}
+
+func (o *Options) resetContentBuffers() {
+	o.rawContent = o.rawContent[:0]
+	o.FormatedContent = o.FormatedContent[:0]
+}
+
+func (o *Options) relativeTCPSeqEnabled() bool {
+	if o == nil {
+		return true
+	}
+	if o.RelativeTCPSeq == nil {
+		return true
+	}
+	return *o.RelativeTCPSeq
+}
+
+func (o *Options) SetRelativeTCPSeq(enabled bool) {
+	o.RelativeTCPSeq = boolPtr(enabled)
+}
+
+func boolPtr(v bool) *bool {
+	b := v
+	return &b
 }

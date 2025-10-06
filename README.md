@@ -505,39 +505,40 @@ If this flag isn't specified, it defaults to `tc`.
     Expression: see "man 7 pcap-filter"
     
     Flags:
-          --backend string                               Specify the backend to use for capturing packets. Possible values are "tc", "cgroup-skb", "tp-btf" and "socket-filter" (default "tc")
-          --container-id string                          Filter by container id (only TCP and UDP packets are supported)
-          --container-name string                        Filter by container name (only TCP and UDP packets are supported)
-          --containerd-address string                    Address of containerd service (default "/run/containerd/containerd.sock")
-          --context strings                              Specify which context information to include in the output (default [process,thread,parentproc,user,container,pod])
-          --count                                        Print only on stdout the packet count when reading capture file instead of parsing/printing the packets
-          --cri-runtime-address string                   Address of CRI container runtime service (default: uses in order the first successful one of [/var/run/dockershim.sock, /var/run/cri-dockerd.sock, /run/crio/crio.sock, /run/containerd/containerd.sock])
-          --delay-before-handle-packet-events duration   Delay some durations before handle packet events
+      -S, --absolute-tcp-sequence-numbers                Print absolute, rather than relative, TCP sequence numbers.
+      --backend string                               Specify the backend to use for capturing packets. Possible values are "tc", "cgroup-skb", "tp-btf" and "socket-filter" (default "tc")
+      --container-id string                          Filter by container id (only TCP and UDP packets are supported)
+      --container-name string                        Filter by container name (only TCP and UDP packets are supported)
+      --containerd-address string                    Address of containerd service (default "/run/containerd/containerd.sock")
+      --context strings                              Specify which context information to include in the output (default [process,thread,parentproc,user,container,pod])
+      --count                                        Print only on stdout the packet count when reading capture file instead of parsing/printing the packets
+      --cri-runtime-address string                   Address of CRI container runtime service (default: uses in order the first successful one of [/var/run/dockershim.sock, /var/run/cri-dockerd.sock, /run/crio/crio.sock, /run/containerd/containerd.sock])
+      --delay-before-handle-packet-events duration   Delay some durations before handle packet events
       -Q, --direction string                             Choose send/receive direction for which packets should be captured. Possible values are 'in', 'out' and 'inout' (default "inout")
-          --disable-reverse-match                        Disable reverse match for TCP and UDP packets.
-          --docker-address string                        Address of Docker Engine service (default "/var/run/docker.sock")
-          --embed-keylog-to-pcapng -- CMD [ARGS]         Write TLS Key Log file to this path (experimental: only support unstripped Go binary and must combined with -- CMD [ARGS])
-          --event-chan-size uint                         Size of event chan (default 20)
-          --exec-events-worker-number uint               Number of worker to handle exec events (default 50)
+      --disable-reverse-match                        Disable reverse match for TCP and UDP packets.
+      --docker-address string                        Address of Docker Engine service (default "/var/run/docker.sock")
+      --embed-keylog-to-pcapng -- CMD [ARGS]         Write TLS Key Log file to this path (experimental: only support unstripped Go binary and must combined with -- CMD [ARGS])
+      --event-chan-size uint                         Size of event chan (default 20)
+      --exec-events-worker-number uint               Number of worker to handle exec events (default 50)
       -F, --expression-file string                       Use file as input for the filter expression. An additional expression given on the command line is ignored.
       -W, --file-count uint                              Used in conjunction with the -C option, this will limit the number of files created to the specified number, and begin overwriting files from the beginning, thus creating a 'rotating' buffer.
       -C, --file-size fileSize                           Before writing a raw packet to a savefile, check whether the file is currently larger than file_size and, if so, close the current savefile and open a new one. Savefiles after the first savefile will have the name specified with the -w flag, with a number after it, starting at 1 and continuing upward.
       -f, --follow-forks                                 Trace child processes as they are created by currently traced processes when filter by process
       -h, --help                                         help for ptcpdump
       -i, --interface strings                            Interfaces to capture (default [lo])
-          --kernel-btf string                            specify kernel BTF file (default: uses in order the first successful one of [/sys/kernel/btf/vmlinux, /var/lib/ptcpdump/btf/vmlinux, /var/lib/ptcpdump/btf/vmlinux-$(uname -r), /var/lib/ptcpdump/btf/$(uname -r).btf, download BTF file from https://mirrors.openanolis.cn/coolbpf/btf/ and https://github.com/aquasecurity/btfhub-archive/]
-      -D, --list-interfaces                              Print the list of the network interfaces available on the system
-          --log-level string                             Set the logging level ("debug", "info", "warn", "error", "fatal") (default "warn")
-          --micro                                        Shorthands for --time-stamp-precision=micro
-          --nano                                         Shorthands for --time-stamp-precision=nano
-          --netns strings                                Path to an network namespace file or name (default [/proc/self/ns/net])
+      --kernel-btf string                            specify kernel BTF file (default: uses in order the first successful one of [/sys/kernel/btf/vmlinux, /var/lib/ptcpdump/btf/vmlinux, /var/lib/ptcpdump/btf/vmlinux-$(uname -r), /var/lib/ptcpdump/btf/$(uname -r).btf, download BTF file from https://mirrors.openanolis.cn/coolbpf/btf/ and https://github.com/aquasecurity/btfhub-archive/]
+        -D, --list-interfaces                              Print the list of the network interfaces available on the system
+      --log-level string                             Set the logging level ("debug", "info", "warn", "error", "fatal") (default "warn")
+      --micro                                        Shorthands for --time-stamp-precision=micro
+      --nano                                         Shorthands for --time-stamp-precision=nano
+      --netns strings                                Path to an network namespace file or name (default [/proc/self/ns/net])
       -n, --no-convert-addr count                        Don't convert addresses (i.e., host addresses, port numbers, etc.) to names
       -#, --number                                       Print an optional packet number at the beginning of the line
-          --oneline                                      Print parsed packet output in a single line
-          --pid uints                                    Filter by process IDs (only TCP and UDP packets are supported) (default [])
-          --pname string                                 Filter by process name (only TCP and UDP packets are supported)
-          --pod-name string                              Filter by pod name (format: NAME.NAMESPACE, only TCP and UDP packets are supported)
-          --print                                        Print parsed packet output, even if the raw packets are being saved to a file with the -w flag
+      --oneline                                      Print parsed packet output in a single line
+      --pid uints                                    Filter by process IDs (only TCP and UDP packets are supported) (default [])
+      --pname string                                 Filter by process name (only TCP and UDP packets are supported)
+      --pod-name string                              Filter by pod name (format: NAME.NAMESPACE, only TCP and UDP packets are supported)
+      --print                                        Print parsed packet output, even if the raw packets are being saved to a file with the -w flag
       -A, --print-data-in-ascii                          Print each packet (minus its link level header) in ASCII
       -x, --print-data-in-hex count                      When parsing and printing, in addition to printing the headers of each packet, print the data of each packet in hex
       -X, --print-data-in-hex-ascii count                When parsing and printing, in addition to printing the headers of each packet, print the data of each packet in hex and ASCII
@@ -546,12 +547,12 @@ If this flag isn't specified, it defaults to `tc`.
       -r, --read-file string                             Read packets from file (which was created with the -w option). e.g. ptcpdump.pcapng
       -c, --receive-count uint                           Exit after receiving count packets
       -s, --snapshot-length uint32                       Snarf snaplen bytes of data from each packet rather than the default of 262144 bytes (default 262144)
-          --time-stamp-precision string                  When capturing, set the time stamp precision for the capture to the format (default "micro")
-          --uid uints                                    Filter by user IDs (only TCP and UDP packets are supported) (default [])
+      --time-stamp-precision string                  When capturing, set the time stamp precision for the capture to the format (default "micro")
+      --uid uints                                    Filter by user IDs (only TCP and UDP packets are supported) (default [])
       -v, --verbose count                                When parsing and printing, produce (slightly more) verbose output
-          --version                                      Print the ptcpdump and libpcap version strings and exit
+      --version                                      Print the ptcpdump and libpcap version strings and exit
       -w, --write-file string                            Write the raw packets to file rather than parsing and printing them out. They can later be printed with the -r option. Standard output is used if file is '-'. e.g. ptcpdump.pcapng
-          --write-keylog-file -- CMD [ARGS]              Write TLS Key Log file to this path (experimental: only support unstripped Go binary and must combined with -- CMD [ARGS])
+      --write-keylog-file -- CMD [ARGS]              Write TLS Key Log file to this path (experimental: only support unstripped Go binary and must combined with -- CMD [ARGS])
 
 
 </details>
@@ -614,7 +615,7 @@ If this flag isn't specified, it defaults to `tc`.
 | -p, --no-promiscuous-mode                         | ✅       | ⛔                        |
 | -q                                                | ✅       | ✅                        |
 | -Q *direction*, --direction=*direction*           | ✅       | ✅                        |
-| -S, --absolute-tcp-sequence-numbers               | ✅       |                          |
+| -S, --absolute-tcp-sequence-numbers               | ✅       | ✅                        |
 | -s *snaplen*, --snapshot-length=*snaplen*         | ✅       | ✅                        |
 | -T *type*                                         | ✅       |                          |
 | -t                                                | ✅       | ✅                        |

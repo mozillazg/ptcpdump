@@ -110,7 +110,7 @@ replace (
 	github.com/gopacket/gopacket => github.com/mozillazg/gopacket v0.0.0-20250705120904-4485e52403a8
 	// github.com/gopacket/gopacket => ../../gopacket/gopacket
 	// github.com/jschwinger233/elibpcap => ../../jschwinger233/elibpcap
-	github.com/x-way/pktdump => github.com/mozillazg/pktdump v0.0.9-0.20250705133231-3faa83c7025b
+	github.com/x-way/pktdump => github.com/mozillazg/pktdump v0.0.9-0.20251006081716-1f836652cfec
 	// github.com/x-way/pktdump => ../../x-way/pktdump
 	k8s.io/cri-api => github.com/mozillazg/cri-api v0.32.0-alpha.1.0.20241019013855-3dc36f8743df
 	k8s.io/cri-client => github.com/mozillazg/cri-client v0.31.0-alpha.0.0.20241019023238-87687176fd67

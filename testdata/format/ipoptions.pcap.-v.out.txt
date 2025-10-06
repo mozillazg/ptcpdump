@@ -3,4 +3,4 @@
 09:48:32.006117 IP (tos 0x0, ttl 128, id 58007, offset 0, flags [none], proto TCP (6), length 44)
     1.1.1.1.80 > 10.0.2.15.1373: Flags [S.], cksum 0x5535, seq 333262867, ack 122218746, win 64240, options [mss 1460], length 0
 09:48:32.006193 IP (tos 0x0, ttl 64, id 0, offset 0, flags [DF], proto TCP (6), length 40)
-    10.0.2.15.1373 > 1.1.1.1.80: Flags [R], cksum 0xabe0, seq 122218746, win 0, length 0
+    10.0.2.15.1373 > 1.1.1.1.80: Flags [R], cksum 0xabe0, seq 1, win 0, length 0

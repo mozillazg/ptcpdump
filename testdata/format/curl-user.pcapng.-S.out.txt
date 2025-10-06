@@ -1,0 +1,5 @@
+12:37:40.051539 ens33 curl.99722 Out IP 10.0.2.15.42906 > 139.178.84.217.443: Flags [S], seq 940329637, win 64240, options [mss 1460,sackOK,TS val 3421262256 ecr 0,nop,wscale 7], length 0, ParentProc [bash.18840]
+12:37:40.561047 ens33 curl.99722 In IP 139.178.84.217.443 > 10.0.2.15.42906: Flags [S.], seq 525694320, ack 940329638, win 64240, options [mss 1460], length 0, ParentProc [bash.18840]
+12:37:40.562003 ens33 curl.99722 Out IP 10.0.2.15.42906 > 139.178.84.217.443: Flags [.], seq 940329638, ack 525694321, win 64240, length 0, ParentProc [bash.18840]
+12:37:40.575411 ens33 curl.99722 In IP 139.178.84.217.443 > 10.0.2.15.42906: Flags [.], seq 525694321, ack 940330155, win 64240, length 0, ParentProc [bash.18840]
+12:37:40.574770 ens33 curl.99722 Out IP 10.0.2.15.42906 > 139.178.84.217.443: Flags [P.], seq 940329638:940330155, ack 525694321, win 64240, length 517: TLSv1.0: Client Hello (SNI=kernel.org), ParentProc [bash.18840]
