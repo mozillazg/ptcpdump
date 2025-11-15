@@ -2,11 +2,12 @@ package writer
 
 import (
 	"fmt"
-	"github.com/gopacket/gopacket/layers"
-	"github.com/mozillazg/ptcpdump/internal/types"
 	"io"
 	"strings"
 	"time"
+
+	"github.com/gopacket/gopacket/layers"
+	"github.com/mozillazg/ptcpdump/internal/types"
 
 	"github.com/gopacket/gopacket"
 	"github.com/mozillazg/ptcpdump/internal/event"
@@ -274,16 +275,19 @@ func (w *StdoutWriter) formatTimestamp(t time.Time) string {
 			pre = w.firstTime
 		}
 		dt := t.Sub(pre)
-		if pre.IsZero() {
+		if pre.IsZero() || dt < 0 {
 			dt = 0
 		}
+		hours := int(dt / time.Hour)
+		minutes := int((dt % time.Hour) / time.Minute)
+		seconds := int((dt % time.Minute) / time.Second)
 		switch {
 		case w.TimestampNano:
-			return fmt.Sprintf("%02d:%02d:%02d.%09d", int(dt.Hours()), int(dt.Minutes()),
-				int(dt.Seconds()), int(dt.Nanoseconds()))
+			nanos := int((dt % time.Second) / time.Nanosecond)
+			return fmt.Sprintf("%02d:%02d:%02d.%09d", hours, minutes, seconds, nanos)
 		default:
-			return fmt.Sprintf("%02d:%02d:%02d.%06d", int(dt.Hours()), int(dt.Minutes()),
-				int(dt.Seconds()), int(dt.Nanoseconds()/1000))
+			micros := int((dt % time.Second) / time.Microsecond)
+			return fmt.Sprintf("%02d:%02d:%02d.%06d", hours, minutes, seconds, micros)
 		}
 	case 4:
 		layout = "2006-01-02 "
