@@ -1,4 +1,4 @@
 19:21:01.433721 IP 10.0.1.2.46282 > 10.0.1.1.10054: Flags [S], seq 3162925789, win 64240, options [mss 1460,sackOK,TS val 3692057751 ecr 0,nop,wscale 7,tfo  cookiereq,nop,nop,mptcp 4 capable v1 flags [H]], length 0
 19:21:01.436537 IP 10.0.1.1.10054 > 10.0.1.2.46282: Flags [S.], seq 4060522904, ack 3162925790, win 65160, options [mss 1460,nop,nop,sackOK,nop,wscale 7,tfo  cookie 2657f58b2de43e0e,nop,nop,mptcp 12 capable v1 flags [H] {0x5ad4e6265b0cf688}], length 0
-19:21:01.438160 IP 10.0.1.2.46282 > 10.0.1.1.10054: Flags [.], seq 3162925790, ack 4060522905, win 502, options [mptcp 20 capable v1 flags [H] {0x22b4a70514e01c86,0x5ad4e6265b0cf688}], length 0
-19:21:01.442667 IP 10.0.1.2.46282 > 10.0.1.1.10054: Flags [P.], seq 3162925790:3162930098, ack 4060522905, win 502, options [mptcp 22 capable v1 flags [H] {0x22b4a70514e01c86,0x5ad4e6265b0cf688,data_len=8192},nop,nop], length 4308
+19:21:01.438160 IP 10.0.1.2.46282 > 10.0.1.1.10054: Flags [.], ack 1, win 502, options [mptcp 20 capable v1 flags [H] {0x22b4a70514e01c86,0x5ad4e6265b0cf688}], length 0
+19:21:01.442667 IP 10.0.1.2.46282 > 10.0.1.1.10054: Flags [P.], seq 1:4309, ack 1, win 502, options [mptcp 22 capable v1 flags [H] {0x22b4a70514e01c86,0x5ad4e6265b0cf688,data_len=8192},nop,nop], length 4308

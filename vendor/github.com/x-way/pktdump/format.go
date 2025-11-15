@@ -12,6 +12,9 @@ import (
 
 func (f *Formatter) formatPacketTCP(packet *gopacket.Packet, tcp *layers.TCP, src, dst string, length int) string {
 	length -= int(tcp.DataOffset) * 4
+	if length < 0 {
+		length = 0
+	}
 
 	if f.opts.Quiet {
 		return fmt.Sprintf("%s.%d > %s.%d: tcp %d", src, tcp.SrcPort, dst, tcp.DstPort, length)
@@ -52,16 +55,31 @@ func (f *Formatter) formatPacketTCP(packet *gopacket.Packet, tcp *layers.TCP, sr
 	if f.opts.HeaderStyle >= FormatStyleVerbose {
 		out += fmt.Sprintf(", cksum 0x%x", tcp.Checksum)
 	}
-	if length > 0 || tcp.SYN || tcp.FIN || tcp.RST || tcp.ACK {
-		if length > 0 {
-			out += fmt.Sprintf(", seq %d:%d", tcp.Seq, int(tcp.Seq)+length)
-		} else {
-			out += fmt.Sprintf(", seq %d", tcp.Seq)
+
+	if f.opts.relativeTCPSeqEnabled() {
+		seqPart, ackPart := f.tcpSequenceFields(tcp, src, dst, length)
+		if seqPart != "" {
+			out += ", " + seqPart
+		}
+		if ackPart != "" {
+			out += ", " + ackPart
+		}
+		if ackPart == "" && tcp.ACK {
+			out += fmt.Sprintf(", ack %d", tcp.Ack)
+		}
+	} else {
+		if length > 0 || tcp.SYN || tcp.FIN || tcp.RST || tcp.ACK {
+			if length > 0 {
+				out += fmt.Sprintf(", seq %d:%d", tcp.Seq, int(tcp.Seq)+length)
+			} else {
+				out += fmt.Sprintf(", seq %d", tcp.Seq)
+			}
+		}
+		if tcp.ACK {
+			out += fmt.Sprintf(", ack %d", tcp.Ack)
 		}
 	}
-	if tcp.ACK {
-		out += fmt.Sprintf(", ack %d", tcp.Ack)
-	}
+
 	out += fmt.Sprintf(", win %d", tcp.Window)
 	if tcp.URG {
 		out += fmt.Sprintf(", urg %d", tcp.Urgent)
@@ -82,7 +100,7 @@ func (f *Formatter) formatPacketTCP(packet *gopacket.Packet, tcp *layers.TCP, sr
 			case layers.TCPOptionKindWindowScale:
 				out += fmt.Sprintf("wscale %d", opt.OptionData[0])
 			case layers.TCPOptionKindSACK:
-				out += formatSack(tcp, opt)
+				out += f.formatSack(tcp, opt, src, dst)
 			case layers.TCPOptionKindSACKPermitted:
 				out += "sackOK"
 			case layers.TCPOptionKindTimestamps:
@@ -125,6 +143,74 @@ func (f *Formatter) formatPacketTCP(packet *gopacket.Packet, tcp *layers.TCP, sr
 	}
 
 	return out
+}
+
+func (f *Formatter) tcpSequenceFields(tcp *layers.TCP, src, dst string, length int) (string, string) {
+	if !f.opts.relativeTCPSeqEnabled() {
+		return "", ""
+	}
+
+	hasControl := tcp.SYN || tcp.FIN || tcp.RST
+	shouldPrintSeq := length > 0 || hasControl || !tcp.ACK
+	key := makeTCPFlowKey(src, dst, tcp.SrcPort, tcp.DstPort)
+	reverseKey := makeTCPFlowKey(dst, src, tcp.DstPort, tcp.SrcPort)
+
+	var dir *tcpDirectionState
+	if tcp.SYN && !tcp.ACK {
+		dir = f.resetTCPDirection(key, reverseKey)
+	} else {
+		dir = f.ensureTCPState(key)
+	}
+	reverse := f.tcpState[reverseKey]
+
+	if !dir.seqInitialized {
+		dir.baseSeq = tcp.Seq
+		dir.seqInitialized = true
+	}
+
+	var seqPart string
+	if shouldPrintSeq {
+		start := tcp.Seq
+		end := start + uint32(length)
+		if dir.seqRelative && !tcp.SYN {
+			startVal := uint64(start - dir.baseSeq)
+			if length > 0 {
+				endVal := uint64(end - dir.baseSeq)
+				seqPart = fmt.Sprintf("seq %d:%d", startVal, endVal)
+			} else {
+				seqPart = fmt.Sprintf("seq %d", startVal)
+			}
+		} else {
+			if !dir.seqRelative {
+				dir.seqRelative = true
+			}
+			if length > 0 {
+				seqPart = fmt.Sprintf("seq %d:%d", start, end)
+			} else {
+				seqPart = fmt.Sprintf("seq %d", start)
+			}
+		}
+	}
+
+	var ackPart string
+	if tcp.ACK {
+		relativeAvailable := reverse != nil && reverse.seqInitialized
+		ackVal := uint64(tcp.Ack)
+		if !(tcp.SYN && tcp.ACK) && relativeAvailable {
+			ackVal = uint64(tcp.Ack - reverse.baseSeq)
+		}
+		if !dir.ackRelative {
+			dir.ackRelative = true
+		}
+		ackPart = fmt.Sprintf("ack %d", ackVal)
+	}
+
+	if tcp.RST {
+		delete(f.tcpState, key)
+		delete(f.tcpState, reverseKey)
+	}
+
+	return seqPart, ackPart
 }
 
 func (f *Formatter) formatPacketSIP(sip *layers.SIP, src, dst string, srcPort, dstPort int) string {
@@ -517,19 +603,14 @@ func (f *Formatter) formatLinkLayer(packet gopacket.Packet) string {
 }
 
 // Format parses a packet and returns a string with a textual representation similar to the tcpdump output
+var defaultFormatter = NewFormatter(&Options{HeaderStyle: FormatStyleNormal})
+
 func Format(packet gopacket.Packet) string {
-	return FormatWithStyle(packet, FormatStyleNormal)
+	return defaultFormatter.Format(packet)
 }
 
 func FormatWithStyle(packet gopacket.Packet, style FormatStyle) string {
-	return NewFormatter(&Options{HeaderStyle: style}).formatWithOptions(packet)
-}
-
-func (f *Formatter) FormatWithOptions(packet gopacket.Packet, opts *Options) string {
-	f.opts = opts
-	data := f.formatWithOptions(packet)
-	opts.formatContent()
-	return data
+	return defaultFormatter.FormatWithOptions(packet, &Options{HeaderStyle: style})
 }
 
 func (f *Formatter) formatWithOptions(packet gopacket.Packet) string {

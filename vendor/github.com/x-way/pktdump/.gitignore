@@ -1,0 +1,6 @@
+*.txt
+demo.pcap
+/cmd/test/main.go
+1.pcap
+1.pcapng
+/cmd/pcapdump/pcapdump

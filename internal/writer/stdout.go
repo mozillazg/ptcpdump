@@ -2,11 +2,12 @@ package writer
 
 import (
 	"fmt"
-	"github.com/gopacket/gopacket/layers"
-	"github.com/mozillazg/ptcpdump/internal/types"
 	"io"
 	"strings"
 	"time"
+
+	"github.com/gopacket/gopacket/layers"
+	"github.com/mozillazg/ptcpdump/internal/types"
 
 	"github.com/gopacket/gopacket"
 	"github.com/mozillazg/ptcpdump/internal/event"
@@ -33,6 +34,11 @@ type StdoutWriter struct {
 	n               int64
 	preTime         time.Time
 	firstTime       time.Time
+	useUTCTime      bool
+
+	formatter                  *pktdump.Formatter
+	formatOpts                 *pktdump.Options
+	absoluteTcpSequenceNumbers bool
 }
 
 func NewStdoutWriter(writer io.Writer, pcache *metadata.ProcessCache) *StdoutWriter {
@@ -48,6 +54,18 @@ func NewStdoutWriter(writer io.Writer, pcache *metadata.ProcessCache) *StdoutWri
 func (w *StdoutWriter) WithEnhancedContext(c types.EnhancedContext) *StdoutWriter {
 	w.enhancedContext = c
 	return w
+}
+
+func (w *StdoutWriter) Init() {
+	formatOpts := &pktdump.Options{
+		HeaderStyle:   w.FormatStyle,
+		ContentStyle:  w.DataStyle,
+		ContentIndent: "        ",
+		Quiet:         w.Quiet,
+	}
+	formatOpts.SetRelativeTCPSeq(!w.absoluteTcpSequenceNumbers)
+	w.formatter = pktdump.NewFormatter(formatOpts)
+	w.formatOpts = formatOpts
 }
 
 func (w *StdoutWriter) Write(e *event.Packet) error {
@@ -134,14 +152,8 @@ func (w *StdoutWriter) Write(e *event.Packet) error {
 
 	// Decode a packet
 	packet := gopacket.NewPacket(e.Data, w.Decoder, gopacket.NoCopy)
-	formatOpts := &pktdump.Options{
-		HeaderStyle:   w.FormatStyle,
-		ContentStyle:  w.DataStyle,
-		ContentIndent: "        ",
-		Quiet:         w.Quiet,
-	}
-	formatedHeader := (&pktdump.Formatter{}).FormatWithOptions(packet, formatOpts)
-	formatedData := formatOpts.FormatedContent
+	formatedHeader := w.formatter.Format(packet)
+	formatedData := w.formatOpts.FormatedContent
 
 	builder := strings.Builder{}
 
@@ -150,10 +162,11 @@ func (w *StdoutWriter) Write(e *event.Packet) error {
 	}
 
 	if !w.NoTimestamp {
-		builder.WriteString(fmt.Sprintf("%s ", w.formatTimestamp(e.Time.Local())))
-		w.preTime = e.Time.Local()
+		t := w.time(e.Time)
+		builder.WriteString(fmt.Sprintf("%s ", w.formatTimestamp(t)))
+		w.preTime = t
 		if w.firstTime.IsZero() {
-			w.firstTime = e.Time.Local()
+			w.firstTime = t
 		}
 	}
 
@@ -262,16 +275,19 @@ func (w *StdoutWriter) formatTimestamp(t time.Time) string {
 			pre = w.firstTime
 		}
 		dt := t.Sub(pre)
-		if pre.IsZero() {
+		if pre.IsZero() || dt < 0 {
 			dt = 0
 		}
+		hours := int(dt / time.Hour)
+		minutes := int((dt % time.Hour) / time.Minute)
+		seconds := int((dt % time.Minute) / time.Second)
 		switch {
 		case w.TimestampNano:
-			return fmt.Sprintf("%02d:%02d:%02d.%09d", int(dt.Hours()), int(dt.Minutes()),
-				int(dt.Seconds()), int(dt.Nanoseconds()))
+			nanos := int((dt % time.Second) / time.Nanosecond)
+			return fmt.Sprintf("%02d:%02d:%02d.%09d", hours, minutes, seconds, nanos)
 		default:
-			return fmt.Sprintf("%02d:%02d:%02d.%06d", int(dt.Hours()), int(dt.Minutes()),
-				int(dt.Seconds()), int(dt.Nanoseconds()/1000))
+			micros := int((dt % time.Second) / time.Microsecond)
+			return fmt.Sprintf("%02d:%02d:%02d.%06d", hours, minutes, seconds, micros)
 		}
 	case 4:
 		layout = "2006-01-02 "
@@ -285,4 +301,21 @@ func (w *StdoutWriter) formatTimestamp(t time.Time) string {
 	default:
 		return t.Format(layout)
 	}
+}
+
+func (w *StdoutWriter) WithUseUTCTime(v bool) *StdoutWriter {
+	w.useUTCTime = v
+	return w
+}
+
+func (w *StdoutWriter) WithAbsoluteTcpSequenceNumbers(v bool) *StdoutWriter {
+	w.absoluteTcpSequenceNumbers = v
+	return w
+}
+
+func (w *StdoutWriter) time(t time.Time) time.Time {
+	if w.useUTCTime {
+		return t.UTC()
+	}
+	return t.Local()
 }

@@ -56,6 +56,7 @@ func getWriters(opts *Options, pcache *metadata.ProcessCache) ([]writer.PacketWr
 	if opts.WritePath() == "" || opts.print {
 		stdoutWriter := writer.NewStdoutWriter(os.Stdout, pcache)
 		opts.applyToStdoutWriter(stdoutWriter)
+		stdoutWriter.Init()
 		writers = append(writers, stdoutWriter)
 	}
 

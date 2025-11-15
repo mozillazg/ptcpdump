@@ -66,6 +66,7 @@ type Options struct {
 	timeStampPrecision string
 	timeStampMicro     bool
 	timeStampNano      bool
+	utcTime            bool
 
 	dontConvertAddr int
 	verbose         int
@@ -83,6 +84,7 @@ type Options struct {
 	logLevel                      string
 	snapshotLength                uint32
 	disableReverseMatch           bool
+	absoluteTcpSequenceNumbers    bool
 
 	dockerEndpoint     string
 	containerdEndpoint string
@@ -271,7 +273,9 @@ func (opts *Options) applyToStdoutWriter(w *writer.StdoutWriter) {
 		w.DataStyle = pktdump.ContentStyleASCII
 		break
 	}
+	w.WithUseUTCTime(opts.utcTime)
 	w.WithEnhancedContext(opts.enhancedContext)
+	w.WithAbsoluteTcpSequenceNumbers(opts.absoluteTcpSequenceNumbers)
 }
 
 func (o Options) shouldEnableGoTLSHooks() bool {

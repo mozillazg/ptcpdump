@@ -32,6 +32,7 @@ func read(ctx context.Context, opts *Options) error {
 	pcache := metadata.NewProcessCache()
 	stdoutWriter := writer.NewStdoutWriter(opts.getStdout(), pcache)
 	opts.applyToStdoutWriter(stdoutWriter)
+	stdoutWriter.Init()
 
 	ext := filepath.Ext(fpath)
 	switch {

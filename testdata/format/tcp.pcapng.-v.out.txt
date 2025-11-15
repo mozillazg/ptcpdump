@@ -15,15 +15,15 @@
     Process (pid 345650, cmd /usr/bin/curl, args curl http://127.0.0.1:8000/notfound)
     ParentProc (pid 345626, cmd /go_workshop/src/github.com/mozillazg/ptcpdump/ptcpdump, args ptcpdump -- curl http://127.0.0.1:8000/notfound)
 13:50:35.525339 lo Out IP (tos 0x0, ttl 64, id 23072, offset 0, flags [DF], proto TCP (6), length 52)
-    127.0.0.1.58694 > 127.0.0.1.8000: Flags [.], cksum 0xfe28, seq 217911224, ack 3879633684, win 512, options [nop,nop,TS val 2363239505 ecr 2363239505], length 0
+    127.0.0.1.58694 > 127.0.0.1.8000: Flags [.], cksum 0xfe28, ack 1, win 512, options [nop,nop,TS val 2363239505 ecr 2363239505], length 0
     Process (pid 345650, cmd /usr/bin/curl, args curl http://127.0.0.1:8000/notfound)
     ParentProc (pid 345626, cmd /go_workshop/src/github.com/mozillazg/ptcpdump/ptcpdump, args ptcpdump -- curl http://127.0.0.1:8000/notfound)
 13:50:35.525396 lo In IP (tos 0x0, ttl 64, id 23072, offset 0, flags [DF], proto TCP (6), length 52)
-    127.0.0.1.58694 > 127.0.0.1.8000: Flags [.], cksum 0xfe28, seq 217911224, ack 3879633684, win 512, options [nop,nop,TS val 2363239505 ecr 2363239505], length 0
+    127.0.0.1.58694 > 127.0.0.1.8000: Flags [.], cksum 0xfe28, ack 1, win 512, options [nop,nop,TS val 2363239505 ecr 2363239505], length 0
     Process (pid 345650, cmd /usr/bin/curl, args curl http://127.0.0.1:8000/notfound)
     ParentProc (pid 345626, cmd /go_workshop/src/github.com/mozillazg/ptcpdump/ptcpdump, args ptcpdump -- curl http://127.0.0.1:8000/notfound)
 13:50:35.525536 lo Out IP (tos 0x0, ttl 64, id 23073, offset 0, flags [DF], proto TCP (6), length 138)
-    127.0.0.1.58694 > 127.0.0.1.8000: Flags [P.], cksum 0xfe7e, seq 217911224:217911310, ack 3879633684, win 512, options [nop,nop,TS val 2363239505 ecr 2363239505], length 86: HTTP: GET /notfound HTTP/1.1
+    127.0.0.1.58694 > 127.0.0.1.8000: Flags [P.], cksum 0xfe7e, seq 1:87, ack 1, win 512, options [nop,nop,TS val 2363239505 ecr 2363239505], length 86: HTTP: GET /notfound HTTP/1.1
     Process (pid 345650, cmd /usr/bin/curl, args curl http://127.0.0.1:8000/notfound)
     ParentProc (pid 345626, cmd /go_workshop/src/github.com/mozillazg/ptcpdump/ptcpdump, args ptcpdump -- curl http://127.0.0.1:8000/notfound)        
         GET /notfound HTTP/1.1
@@ -33,7 +33,7 @@
         
         
 13:50:35.525652 lo In IP (tos 0x0, ttl 64, id 23073, offset 0, flags [DF], proto TCP (6), length 138)
-    127.0.0.1.58694 > 127.0.0.1.8000: Flags [P.], cksum 0xfe7e, seq 217911224:217911310, ack 3879633684, win 512, options [nop,nop,TS val 2363239505 ecr 2363239505], length 86: HTTP: GET /notfound HTTP/1.1
+    127.0.0.1.58694 > 127.0.0.1.8000: Flags [P.], cksum 0xfe7e, seq 1:87, ack 1, win 512, options [nop,nop,TS val 2363239505 ecr 2363239505], length 86: HTTP: GET /notfound HTTP/1.1
     Process (pid 345650, cmd /usr/bin/curl, args curl http://127.0.0.1:8000/notfound)
     ParentProc (pid 345626, cmd /go_workshop/src/github.com/mozillazg/ptcpdump/ptcpdump, args ptcpdump -- curl http://127.0.0.1:8000/notfound)        
         GET /notfound HTTP/1.1
@@ -43,15 +43,15 @@
         
         
 13:50:35.525721 lo Out IP (tos 0x0, ttl 64, id 35789, offset 0, flags [DF], proto TCP (6), length 52)
-    127.0.0.1.8000 > 127.0.0.1.58694: Flags [.], cksum 0xfe28, seq 3879633684, ack 217911310, win 511, options [nop,nop,TS val 2363239505 ecr 2363239505], length 0
+    127.0.0.1.8000 > 127.0.0.1.58694: Flags [.], cksum 0xfe28, ack 87, win 511, options [nop,nop,TS val 2363239505 ecr 2363239505], length 0
     Process (pid 345650, cmd /usr/bin/curl, args curl http://127.0.0.1:8000/notfound)
     ParentProc (pid 345626, cmd /go_workshop/src/github.com/mozillazg/ptcpdump/ptcpdump, args ptcpdump -- curl http://127.0.0.1:8000/notfound)
 13:50:35.525804 lo In IP (tos 0x0, ttl 64, id 35789, offset 0, flags [DF], proto TCP (6), length 52)
-    127.0.0.1.8000 > 127.0.0.1.58694: Flags [.], cksum 0xfe28, seq 3879633684, ack 217911310, win 511, options [nop,nop,TS val 2363239505 ecr 2363239505], length 0
+    127.0.0.1.8000 > 127.0.0.1.58694: Flags [.], cksum 0xfe28, ack 87, win 511, options [nop,nop,TS val 2363239505 ecr 2363239505], length 0
     Process (pid 345650, cmd /usr/bin/curl, args curl http://127.0.0.1:8000/notfound)
     ParentProc (pid 345626, cmd /go_workshop/src/github.com/mozillazg/ptcpdump/ptcpdump, args ptcpdump -- curl http://127.0.0.1:8000/notfound)
 13:50:35.558547 lo Out IP (tos 0x0, ttl 64, id 35790, offset 0, flags [DF], proto TCP (6), length 238)
-    127.0.0.1.8000 > 127.0.0.1.58694: Flags [P.], cksum 0xfee2, seq 3879633684:3879633870, ack 217911310, win 512, options [nop,nop,TS val 2363239522 ecr 2363239505], length 186: HTTP: HTTP/1.0 404 File not found
+    127.0.0.1.8000 > 127.0.0.1.58694: Flags [P.], cksum 0xfee2, seq 1:187, ack 87, win 512, options [nop,nop,TS val 2363239522 ecr 2363239505], length 186: HTTP: HTTP/1.0 404 File not found
     Process (pid 345650, cmd /usr/bin/curl, args curl http://127.0.0.1:8000/notfound)
     ParentProc (pid 345626, cmd /go_workshop/src/github.com/mozillazg/ptcpdump/ptcpdump, args ptcpdump -- curl http://127.0.0.1:8000/notfound)        
         HTTP/1.0 404 File not found
@@ -63,7 +63,7 @@
         
         
 13:50:35.558929 lo In IP (tos 0x0, ttl 64, id 35790, offset 0, flags [DF], proto TCP (6), length 238)
-    127.0.0.1.8000 > 127.0.0.1.58694: Flags [P.], cksum 0xfee2, seq 3879633684:3879633870, ack 217911310, win 512, options [nop,nop,TS val 2363239522 ecr 2363239505], length 186: HTTP: HTTP/1.0 404 File not found
+    127.0.0.1.8000 > 127.0.0.1.58694: Flags [P.], cksum 0xfee2, seq 1:187, ack 87, win 512, options [nop,nop,TS val 2363239522 ecr 2363239505], length 186: HTTP: HTTP/1.0 404 File not found
     Process (pid 345650, cmd /usr/bin/curl, args curl http://127.0.0.1:8000/notfound)
     ParentProc (pid 345626, cmd /go_workshop/src/github.com/mozillazg/ptcpdump/ptcpdump, args ptcpdump -- curl http://127.0.0.1:8000/notfound)        
         HTTP/1.0 404 File not found
@@ -75,50 +75,50 @@
         
         
 13:50:35.559171 lo Out IP (tos 0x0, ttl 64, id 23074, offset 0, flags [DF], proto TCP (6), length 52)
-    127.0.0.1.58694 > 127.0.0.1.8000: Flags [.], cksum 0xfe28, seq 217911310, ack 3879633870, win 511, options [nop,nop,TS val 2363239522 ecr 2363239522], length 0
+    127.0.0.1.58694 > 127.0.0.1.8000: Flags [.], cksum 0xfe28, ack 187, win 511, options [nop,nop,TS val 2363239522 ecr 2363239522], length 0
     Process (pid 345650, cmd /usr/bin/curl, args curl http://127.0.0.1:8000/notfound)
     ParentProc (pid 345626, cmd /go_workshop/src/github.com/mozillazg/ptcpdump/ptcpdump, args ptcpdump -- curl http://127.0.0.1:8000/notfound)
 13:50:35.559277 lo In IP (tos 0x0, ttl 64, id 23074, offset 0, flags [DF], proto TCP (6), length 52)
-    127.0.0.1.58694 > 127.0.0.1.8000: Flags [.], cksum 0xfe28, seq 217911310, ack 3879633870, win 511, options [nop,nop,TS val 2363239522 ecr 2363239522], length 0
+    127.0.0.1.58694 > 127.0.0.1.8000: Flags [.], cksum 0xfe28, ack 187, win 511, options [nop,nop,TS val 2363239522 ecr 2363239522], length 0
     Process (pid 345650, cmd /usr/bin/curl, args curl http://127.0.0.1:8000/notfound)
     ParentProc (pid 345626, cmd /go_workshop/src/github.com/mozillazg/ptcpdump/ptcpdump, args ptcpdump -- curl http://127.0.0.1:8000/notfound)
 13:50:35.559705 lo Out IP (tos 0x0, ttl 64, id 23076, offset 0, flags [DF], proto TCP (6), length 52)
-    127.0.0.1.58694 > 127.0.0.1.8000: Flags [F.], cksum 0xfe28, seq 217911310, ack 3879634339, win 512, options [nop,nop,TS val 2363239522 ecr 2363239522], length 0
+    127.0.0.1.58694 > 127.0.0.1.8000: Flags [F.], cksum 0xfe28, seq 87, ack 656, win 512, options [nop,nop,TS val 2363239522 ecr 2363239522], length 0
     Process (pid 345650, cmd /usr/bin/curl, args curl http://127.0.0.1:8000/notfound)
     ParentProc (pid 345626, cmd /go_workshop/src/github.com/mozillazg/ptcpdump/ptcpdump, args ptcpdump -- curl http://127.0.0.1:8000/notfound)
 13:50:35.559765 lo In IP (tos 0x0, ttl 64, id 23076, offset 0, flags [DF], proto TCP (6), length 52)
-    127.0.0.1.58694 > 127.0.0.1.8000: Flags [F.], cksum 0xfe28, seq 217911310, ack 3879634339, win 512, options [nop,nop,TS val 2363239522 ecr 2363239522], length 0
+    127.0.0.1.58694 > 127.0.0.1.8000: Flags [F.], cksum 0xfe28, seq 87, ack 656, win 512, options [nop,nop,TS val 2363239522 ecr 2363239522], length 0
     Process (pid 345650, cmd /usr/bin/curl, args curl http://127.0.0.1:8000/notfound)
     ParentProc (pid 345626, cmd /go_workshop/src/github.com/mozillazg/ptcpdump/ptcpdump, args ptcpdump -- curl http://127.0.0.1:8000/notfound)
 13:50:35.559522 lo Out IP (tos 0x0, ttl 64, id 35791, offset 0, flags [DF], proto TCP (6), length 521)
-    127.0.0.1.8000 > 127.0.0.1.58694: Flags [P.], cksum 0xfffd, seq 3879633870:3879634339, ack 217911310, win 512, options [nop,nop,TS val 2363239522 ecr 2363239522], length 469
+    127.0.0.1.8000 > 127.0.0.1.58694: Flags [P.], cksum 0xfffd, seq 187:656, ack 87, win 512, options [nop,nop,TS val 2363239522 ecr 2363239522], length 469
     Process (pid 345650, cmd /usr/bin/curl, args curl http://127.0.0.1:8000/notfound)
     ParentProc (pid 345626, cmd /go_workshop/src/github.com/mozillazg/ptcpdump/ptcpdump, args ptcpdump -- curl http://127.0.0.1:8000/notfound)
 13:50:35.559608 lo In IP (tos 0x0, ttl 64, id 35791, offset 0, flags [DF], proto TCP (6), length 521)
-    127.0.0.1.8000 > 127.0.0.1.58694: Flags [P.], cksum 0xfffd, seq 3879633870:3879634339, ack 217911310, win 512, options [nop,nop,TS val 2363239522 ecr 2363239522], length 469
+    127.0.0.1.8000 > 127.0.0.1.58694: Flags [P.], cksum 0xfffd, seq 187:656, ack 87, win 512, options [nop,nop,TS val 2363239522 ecr 2363239522], length 469
     Process (pid 345650, cmd /usr/bin/curl, args curl http://127.0.0.1:8000/notfound)
     ParentProc (pid 345626, cmd /go_workshop/src/github.com/mozillazg/ptcpdump/ptcpdump, args ptcpdump -- curl http://127.0.0.1:8000/notfound)
 13:50:35.559705 lo Out IP (tos 0x0, ttl 64, id 23075, offset 0, flags [DF], proto TCP (6), length 52)
-    127.0.0.1.58694 > 127.0.0.1.8000: Flags [.], cksum 0xfe28, seq 217911310, ack 3879634339, win 508, options [nop,nop,TS val 2363239522 ecr 2363239522], length 0
+    127.0.0.1.58694 > 127.0.0.1.8000: Flags [.], cksum 0xfe28, ack 656, win 508, options [nop,nop,TS val 2363239522 ecr 2363239522], length 0
     Process (pid 345650, cmd /usr/bin/curl, args curl http://127.0.0.1:8000/notfound)
     ParentProc (pid 345626, cmd /go_workshop/src/github.com/mozillazg/ptcpdump/ptcpdump, args ptcpdump -- curl http://127.0.0.1:8000/notfound)
 13:50:35.559768 lo In IP (tos 0x0, ttl 64, id 23075, offset 0, flags [DF], proto TCP (6), length 52)
-    127.0.0.1.58694 > 127.0.0.1.8000: Flags [.], cksum 0xfe28, seq 217911310, ack 3879634339, win 508, options [nop,nop,TS val 2363239522 ecr 2363239522], length 0
+    127.0.0.1.58694 > 127.0.0.1.8000: Flags [.], cksum 0xfe28, ack 656, win 508, options [nop,nop,TS val 2363239522 ecr 2363239522], length 0
     Process (pid 345650, cmd /usr/bin/curl, args curl http://127.0.0.1:8000/notfound)
     ParentProc (pid 345626, cmd /go_workshop/src/github.com/mozillazg/ptcpdump/ptcpdump, args ptcpdump -- curl http://127.0.0.1:8000/notfound)
 13:50:35.560427 lo Out IP (tos 0x0, ttl 64, id 35792, offset 0, flags [DF], proto TCP (6), length 52)
-    127.0.0.1.8000 > 127.0.0.1.58694: Flags [F.], cksum 0xfe28, seq 3879634339, ack 217911311, win 512, options [nop,nop,TS val 2363239523 ecr 2363239522], length 0
+    127.0.0.1.8000 > 127.0.0.1.58694: Flags [F.], cksum 0xfe28, seq 656, ack 88, win 512, options [nop,nop,TS val 2363239523 ecr 2363239522], length 0
     Process (pid 345650, cmd /usr/bin/curl, args curl http://127.0.0.1:8000/notfound)
     ParentProc (pid 345626, cmd /go_workshop/src/github.com/mozillazg/ptcpdump/ptcpdump, args ptcpdump -- curl http://127.0.0.1:8000/notfound)
 13:50:35.560491 lo In IP (tos 0x0, ttl 64, id 35792, offset 0, flags [DF], proto TCP (6), length 52)
-    127.0.0.1.8000 > 127.0.0.1.58694: Flags [F.], cksum 0xfe28, seq 3879634339, ack 217911311, win 512, options [nop,nop,TS val 2363239523 ecr 2363239522], length 0
+    127.0.0.1.8000 > 127.0.0.1.58694: Flags [F.], cksum 0xfe28, seq 656, ack 88, win 512, options [nop,nop,TS val 2363239523 ecr 2363239522], length 0
     Process (pid 345650, cmd /usr/bin/curl, args curl http://127.0.0.1:8000/notfound)
     ParentProc (pid 345626, cmd /go_workshop/src/github.com/mozillazg/ptcpdump/ptcpdump, args ptcpdump -- curl http://127.0.0.1:8000/notfound)
 13:50:35.560549 lo Out IP (tos 0x0, ttl 64, id 23077, offset 0, flags [DF], proto TCP (6), length 52)
-    127.0.0.1.58694 > 127.0.0.1.8000: Flags [.], cksum 0xfe28, seq 217911311, ack 3879634340, win 512, options [nop,nop,TS val 2363239523 ecr 2363239523], length 0
+    127.0.0.1.58694 > 127.0.0.1.8000: Flags [.], cksum 0xfe28, ack 657, win 512, options [nop,nop,TS val 2363239523 ecr 2363239523], length 0
     Process (pid 345650, cmd /usr/bin/curl, args curl http://127.0.0.1:8000/notfound)
     ParentProc (pid 345626, cmd /go_workshop/src/github.com/mozillazg/ptcpdump/ptcpdump, args ptcpdump -- curl http://127.0.0.1:8000/notfound)
 13:50:35.560602 lo In IP (tos 0x0, ttl 64, id 23077, offset 0, flags [DF], proto TCP (6), length 52)
-    127.0.0.1.58694 > 127.0.0.1.8000: Flags [.], cksum 0xfe28, seq 217911311, ack 3879634340, win 512, options [nop,nop,TS val 2363239523 ecr 2363239523], length 0
+    127.0.0.1.58694 > 127.0.0.1.8000: Flags [.], cksum 0xfe28, ack 657, win 512, options [nop,nop,TS val 2363239523 ecr 2363239523], length 0
     Process (pid 345650, cmd /usr/bin/curl, args curl http://127.0.0.1:8000/notfound)
     ParentProc (pid 345626, cmd /go_workshop/src/github.com/mozillazg/ptcpdump/ptcpdump, args ptcpdump -- curl http://127.0.0.1:8000/notfound)
