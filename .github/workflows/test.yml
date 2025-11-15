@@ -56,7 +56,7 @@ jobs:
       run: make build-via-docker COVERAGE_FLAG='-cover'
 
     - name: Store executable
-      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
       with:
         name: ptcpdump
         path: ptcpdump
@@ -98,7 +98,7 @@ jobs:
           make test COVERAGE_FLAG='-cover' COVERAGE_ARGS='-args -test.gocoverdir=${{ env.GOCOVERDIR }}'
 
       - name: Store coverage
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
           name: coverage.ut.out
           path: |
@@ -138,7 +138,7 @@ jobs:
           sudo GOCOVERDIR=${{ env.GOCOVERDIR }} bash testdata/test_docker_container_name_filter.sh ./ptcpdump
 
       - name: Store coverage
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
           name: coverage.docker.out
           path: |
@@ -187,7 +187,7 @@ jobs:
           sudo GOCOVERDIR=${{ env.GOCOVERDIR }} bash testdata/test_containerd_container_name_filter.sh ./ptcpdump
 
       - name: Store coverage
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
           name: coverage.containerd.out
           path: |
@@ -255,7 +255,7 @@ jobs:
           fi
 
       - name: Store coverage
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
           name: coverage.k8s.out
           path: |
@@ -644,7 +644,7 @@ jobs:
             bash /host/testdata/retry.sh 8 bash /host/testdata/test_gotls_keylog.sh /host/ptcpdump/ptcpdump gohttpapp_stripped_pie
 
       - name: upload coverage
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         if: ${{ startsWith(matrix.backend, 'tc') || (startsWith(matrix.backend, 'socket-filter') && !startsWith(matrix.kernel, '4.') ) || !(startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) }}
         with:
           name: coverage.e2e.${{ matrix.backend }}.${{ matrix.kernel }}.out
