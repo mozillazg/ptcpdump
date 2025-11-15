@@ -22,7 +22,7 @@ jobs:
       uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
       with:
         # renovate: datasource=golang-version depName=golang
-        go-version: '1.25.2'
+        go-version: '1.25.4'
 
     - name: Install Deps
       run: |
@@ -50,7 +50,7 @@ jobs:
       uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
       with:
         # renovate: datasource=golang-version depName=golang
-        go-version: '1.25.2'
+        go-version: '1.25.4'
 
     - name: Build
       run: make build-via-docker COVERAGE_FLAG='-cover'
@@ -85,7 +85,7 @@ jobs:
         uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
         with:
           # renovate: datasource=golang-version depName=golang
-          go-version: '1.25.2'
+          go-version: '1.25.4'
 
       - name: Install Deps
         run: |
@@ -320,7 +320,7 @@ jobs:
           path: ptcpdump
 
       - name: Provision LVH VMs
-        uses: cilium/little-vm-helper@9c1f3a549af06e213863d034c13ba1c5d1e3c667 # v0.0.26
+        uses: cilium/little-vm-helper@ad43ff511dd5365a0011ae9f864ec959c36daebf # v0.0.28
         with:
           test-name: ptcpdump-test
           image-version: ${{ matrix.kernel }}
@@ -345,7 +345,7 @@ jobs:
       
       - name: copy btf file
         if: ${{ startsWith(matrix.kernel, '4.') }}
-        uses: cilium/little-vm-helper@9c1f3a549af06e213863d034c13ba1c5d1e3c667 # v0.0.26
+        uses: cilium/little-vm-helper@ad43ff511dd5365a0011ae9f864ec959c36daebf # v0.0.28
         with:
           provision: 'false'
           cmd: |
@@ -360,7 +360,7 @@ jobs:
             # sudo cp $btf_file /var/lib/ptcpdump/btf/vmlinux
 
       - name: Test default (ping)
-        uses: cilium/little-vm-helper@9c1f3a549af06e213863d034c13ba1c5d1e3c667 # v0.0.26
+        uses: cilium/little-vm-helper@ad43ff511dd5365a0011ae9f864ec959c36daebf # v0.0.28
         if: ${{ startsWith(matrix.backend, 'tc') || (startsWith(matrix.backend, 'socket-filter') && !startsWith(matrix.kernel, '4.') ) }}
         with:
           provision: 'false'
@@ -372,7 +372,7 @@ jobs:
             bash /host/testdata/test_default.sh /host/ptcpdump/ptcpdump
 
       - name: Test base (curl)
-        uses: cilium/little-vm-helper@9c1f3a549af06e213863d034c13ba1c5d1e3c667 # v0.0.26
+        uses: cilium/little-vm-helper@ad43ff511dd5365a0011ae9f864ec959c36daebf # v0.0.28
         if: ${{ startsWith(matrix.backend, 'tc') || (startsWith(matrix.backend, 'socket-filter') && !startsWith(matrix.kernel, '4.') ) || !(startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) }}
         with:
           provision: 'false'
@@ -384,7 +384,7 @@ jobs:
             bash /host/testdata/test_base.sh /host/ptcpdump/ptcpdump
 
       - name: Test parent info
-        uses: cilium/little-vm-helper@9c1f3a549af06e213863d034c13ba1c5d1e3c667 # v0.0.26
+        uses: cilium/little-vm-helper@ad43ff511dd5365a0011ae9f864ec959c36daebf # v0.0.28
         if: ${{ startsWith(matrix.backend, 'tc') || (startsWith(matrix.backend, 'socket-filter') && !startsWith(matrix.kernel, '4.') ) || !(startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) }}
         with:
           provision: 'false'
@@ -396,7 +396,7 @@ jobs:
             bash /host/testdata/test_parent_info.sh /host/ptcpdump/ptcpdump
 
       - name: Test filter by process name
-        uses: cilium/little-vm-helper@9c1f3a549af06e213863d034c13ba1c5d1e3c667 # v0.0.26
+        uses: cilium/little-vm-helper@ad43ff511dd5365a0011ae9f864ec959c36daebf # v0.0.28
         if: ${{ startsWith(matrix.backend, 'tc') || (startsWith(matrix.backend, 'socket-filter') && !startsWith(matrix.kernel, '4.') ) || !(startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) }}
         with:
           provision: 'false'
@@ -408,7 +408,7 @@ jobs:
             bash /host/testdata/test_pname_filter.sh /host/ptcpdump/ptcpdump
 
       - name: Test filter by process id
-        uses: cilium/little-vm-helper@9c1f3a549af06e213863d034c13ba1c5d1e3c667 # v0.0.26
+        uses: cilium/little-vm-helper@ad43ff511dd5365a0011ae9f864ec959c36daebf # v0.0.28
         if: ${{ startsWith(matrix.backend, 'tc') || (startsWith(matrix.backend, 'socket-filter') && !startsWith(matrix.kernel, '4.') ) || !(startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) }}
         with:
           provision: 'false'
@@ -420,7 +420,7 @@ jobs:
             bash /host/testdata/test_pid_filter.sh /host/ptcpdump/ptcpdump
 
       - name: Test read pcap file
-        uses: cilium/little-vm-helper@9c1f3a549af06e213863d034c13ba1c5d1e3c667 # v0.0.26
+        uses: cilium/little-vm-helper@ad43ff511dd5365a0011ae9f864ec959c36daebf # v0.0.28
         if: ${{ startsWith(matrix.backend, 'tc') || (startsWith(matrix.backend, 'socket-filter') && !startsWith(matrix.kernel, '4.') ) }}
         with:
           provision: 'false'
@@ -432,7 +432,7 @@ jobs:
             bash /host/testdata/test_read_pcap.sh /host/ptcpdump/ptcpdump
 
       - name: Test write pcap file
-        uses: cilium/little-vm-helper@9c1f3a549af06e213863d034c13ba1c5d1e3c667 # v0.0.26
+        uses: cilium/little-vm-helper@ad43ff511dd5365a0011ae9f864ec959c36daebf # v0.0.28
         if: ${{ startsWith(matrix.backend, 'tc') || (startsWith(matrix.backend, 'socket-filter') && !startsWith(matrix.kernel, '4.') ) }}
         with:
           provision: 'false'
@@ -444,7 +444,7 @@ jobs:
             bash /host/testdata/test_write_pcap.sh /host/ptcpdump/ptcpdump
 
       - name: Test write to stdout
-        uses: cilium/little-vm-helper@9c1f3a549af06e213863d034c13ba1c5d1e3c667 # v0.0.26
+        uses: cilium/little-vm-helper@ad43ff511dd5365a0011ae9f864ec959c36daebf # v0.0.28
         if: ${{ startsWith(matrix.backend, 'tc') || (startsWith(matrix.backend, 'socket-filter') && !startsWith(matrix.kernel, '4.') ) }}
         with:
           provision: 'false'
@@ -456,7 +456,7 @@ jobs:
             bash /host/testdata/test_write_stdout.sh /host/ptcpdump/ptcpdump
 
       - name: Test exist connections
-        uses: cilium/little-vm-helper@9c1f3a549af06e213863d034c13ba1c5d1e3c667 # v0.0.26
+        uses: cilium/little-vm-helper@ad43ff511dd5365a0011ae9f864ec959c36daebf # v0.0.28
         if: ${{ startsWith(matrix.backend, 'tc') || (startsWith(matrix.backend, 'socket-filter') && !startsWith(matrix.kernel, '4.') ) || !(startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) }}
         with:
           provision: 'false'
@@ -469,7 +469,7 @@ jobs:
 
       - name: Test arp and icmp
         if: ${{ (!startsWith(matrix.kernel, '5.4')) && (!startsWith(matrix.kernel, '4.')) && (!startsWith(matrix.backend, 'cgroup-skb')) }}
-        uses: cilium/little-vm-helper@9c1f3a549af06e213863d034c13ba1c5d1e3c667 # v0.0.26
+        uses: cilium/little-vm-helper@ad43ff511dd5365a0011ae9f864ec959c36daebf # v0.0.28
         with:
           provision: 'false'
           cmd: |
@@ -482,7 +482,7 @@ jobs:
 
       - name: Test tun interface
         if: ${{ !startsWith(matrix.kernel, '4.') && !startsWith(matrix.kernel, '5.') }}
-        uses: cilium/little-vm-helper@9c1f3a549af06e213863d034c13ba1c5d1e3c667 # v0.0.26
+        uses: cilium/little-vm-helper@ad43ff511dd5365a0011ae9f864ec959c36daebf # v0.0.28
         with:
           provision: 'false'
           cmd: |
@@ -496,7 +496,7 @@ jobs:
 
       - name: Test netns
         if: ${{ startsWith(matrix.backend, 'tc') || (startsWith(matrix.backend, 'socket-filter') && !startsWith(matrix.kernel, '4.') ) || (!startsWith(matrix.kernel, '5.4') && !startsWith(matrix.kernel, '4.') && !startsWith(matrix.backend, 'cgroup-skb')) }}
-        uses: cilium/little-vm-helper@9c1f3a549af06e213863d034c13ba1c5d1e3c667 # v0.0.26
+        uses: cilium/little-vm-helper@ad43ff511dd5365a0011ae9f864ec959c36daebf # v0.0.28
         with:
           provision: 'false'
           cmd: |
@@ -508,7 +508,7 @@ jobs:
 
       - name: Test netns newly (normal)
         if: ${{ startsWith(matrix.backend, 'tc') || (startsWith(matrix.backend, 'socket-filter') && !startsWith(matrix.kernel, '4.') ) || (!startsWith(matrix.kernel, '5.4') && !startsWith(matrix.kernel, '4.') && !startsWith(matrix.backend, 'cgroup-skb')) }}
-        uses: cilium/little-vm-helper@9c1f3a549af06e213863d034c13ba1c5d1e3c667 # v0.0.26
+        uses: cilium/little-vm-helper@ad43ff511dd5365a0011ae9f864ec959c36daebf # v0.0.28
         with:
           provision: 'false'
           cmd: |
@@ -520,7 +520,7 @@ jobs:
 
       - name: Test netns newly (exec)
         if: ${{ startsWith(matrix.backend, 'tc') || (startsWith(matrix.backend, 'socket-filter') && !startsWith(matrix.kernel, '4.') ) || (!startsWith(matrix.kernel, '5.4') && !startsWith(matrix.kernel, '4.') && !startsWith(matrix.backend, 'cgroup-skb')) }}
-        uses: cilium/little-vm-helper@9c1f3a549af06e213863d034c13ba1c5d1e3c667 # v0.0.26
+        uses: cilium/little-vm-helper@ad43ff511dd5365a0011ae9f864ec959c36daebf # v0.0.28
         with:
           provision: 'false'
           cmd: |
@@ -531,7 +531,7 @@ jobs:
             bash /host/testdata/retry.sh 3 bash /host/testdata/test_netns_newly_exec.sh /host/ptcpdump/ptcpdump
 
       - name: Test run sub program
-        uses: cilium/little-vm-helper@9c1f3a549af06e213863d034c13ba1c5d1e3c667 # v0.0.26
+        uses: cilium/little-vm-helper@ad43ff511dd5365a0011ae9f864ec959c36daebf # v0.0.28
         if: ${{ startsWith(matrix.backend, 'tc') || (startsWith(matrix.backend, 'socket-filter') && !startsWith(matrix.kernel, '4.') ) || !(startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) }}
         with:
           provision: 'false'
@@ -544,7 +544,7 @@ jobs:
             bash /host/testdata/test_sub_curl_domain_program.sh /host/ptcpdump/ptcpdump
 
       - name: Test NAT
-        uses: cilium/little-vm-helper@9c1f3a549af06e213863d034c13ba1c5d1e3c667 # v0.0.26
+        uses: cilium/little-vm-helper@ad43ff511dd5365a0011ae9f864ec959c36daebf # v0.0.28
         if: ${{ startsWith(matrix.backend, 'tc') || (startsWith(matrix.backend, 'socket-filter') && !startsWith(matrix.kernel, '4.') ) }}
         with:
           provision: 'false'
@@ -556,7 +556,7 @@ jobs:
             bash /host/testdata/retry.sh 8 bash /host/testdata/test_nat.sh /host/ptcpdump/ptcpdump
 
       - name: Test rotate
-        uses: cilium/little-vm-helper@9c1f3a549af06e213863d034c13ba1c5d1e3c667 # v0.0.26
+        uses: cilium/little-vm-helper@ad43ff511dd5365a0011ae9f864ec959c36daebf # v0.0.28
         if: ${{ (startsWith(matrix.backend, 'tc')) && (contains(matrix.kernel, 'next')) }} # no need test for all kernels
         with:
           provision: 'false'
@@ -578,7 +578,7 @@ jobs:
       - name: Test go tls keylog (unstripped)
         if: false
         # if: ${{ (!startsWith(matrix.kernel, '5.4')) && (!startsWith(matrix.kernel, '4.')) && (!startsWith(matrix.backend, 'tp')) }}
-        uses: cilium/little-vm-helper@9c1f3a549af06e213863d034c13ba1c5d1e3c667 # v0.0.26
+        uses: cilium/little-vm-helper@ad43ff511dd5365a0011ae9f864ec959c36daebf # v0.0.28
         with:
           provision: 'false'
           cmd: |
@@ -595,7 +595,7 @@ jobs:
       - name: Test go tls keylog (PIE)
         if: false
         # if: ${{ (!startsWith(matrix.kernel, '5.4')) && (!startsWith(matrix.kernel, '4.')) && (!startsWith(matrix.backend, 'tp')) }}
-        uses: cilium/little-vm-helper@9c1f3a549af06e213863d034c13ba1c5d1e3c667 # v0.0.26
+        uses: cilium/little-vm-helper@ad43ff511dd5365a0011ae9f864ec959c36daebf # v0.0.28
         with:
           provision: 'false'
           cmd: |
@@ -612,7 +612,7 @@ jobs:
       - name: Test go tls keylog (stripped)
         if: false
         # if: ${{ (!startsWith(matrix.kernel, '5.4')) && (!startsWith(matrix.kernel, '4.')) && (!startsWith(matrix.backend, 'tp')) }}
-        uses: cilium/little-vm-helper@9c1f3a549af06e213863d034c13ba1c5d1e3c667 # v0.0.26
+        uses: cilium/little-vm-helper@ad43ff511dd5365a0011ae9f864ec959c36daebf # v0.0.28
         with:
           provision: 'false'
           cmd: |
@@ -629,7 +629,7 @@ jobs:
       - name: Test go tls keylog (stripped + PIE)
         if: false
         # if: ${{ (!startsWith(matrix.kernel, '5.4')) && (!startsWith(matrix.kernel, '4.')) && (!startsWith(matrix.backend, 'tp')) }}
-        uses: cilium/little-vm-helper@9c1f3a549af06e213863d034c13ba1c5d1e3c667 # v0.0.26
+        uses: cilium/little-vm-helper@ad43ff511dd5365a0011ae9f864ec959c36daebf # v0.0.28
         with:
           provision: 'false'
           cmd: |
