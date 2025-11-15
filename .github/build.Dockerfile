@@ -1,4 +1,4 @@
-FROM golang:1.25.2-bookworm@sha256:42d8e9dea06f23d0bfc908826455213ee7f3ed48c43e287a422064220c501be9
+FROM golang:1.25.4-bookworm@sha256:7419f544ffe9be4d7cbb5d2d2cef5bd6a77ec81996ae2ba15027656729445cc4
 RUN apt update && apt install -y clang gcc flex bison make autoconf \
         gcc-arm-linux-gnueabi libc6-dev-armhf-cross \
         libelf-dev gcc-aarch64-linux-gnu libc6-dev-arm64-cross git && \
