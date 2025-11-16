@@ -1,6 +1,20 @@
 # CHANGELOG
 
-## [unreleased](https://github.com/mozillazg/ptcpdump/compare/v0.36.0...HEAD)
+## [unreleased](https://github.com/mozillazg/ptcpdump/compare/v0.37.0...HEAD)
+
+## [v0.37.0](https://github.com/mozillazg/ptcpdump/compare/v0.36.0...v0.37.0) - 2025-11-16
+
+- chore(deps): update quay.io/ptcpdump/develop docker tag to v20251115 ([#365](https://github.com/mozillazg/ptcpdump/pull/365)) (c26062f)
+- feat(stdout/tcp): default to relative tcp sequence numbers ([#354](https://github.com/mozillazg/ptcpdump/pull/354)) (595e6fa)
+- chore(deps): update module github.com/opencontainers/selinux to v1.13.0 [security] ([#362](https://github.com/mozillazg/ptcpdump/pull/362)) (c6e0686)
+- fix(deps): update module github.com/containerd/containerd to v1.7.29 [security] ([#361](https://github.com/mozillazg/ptcpdump/pull/361)) (4c0f9bd)
+- chore(deps): update golang docker tag to v1.25.4 ([#363](https://github.com/mozillazg/ptcpdump/pull/363)) (7de49d3)
+- chore(deps): update all github action dependencies ([#364](https://github.com/mozillazg/ptcpdump/pull/364)) (15a867e)
+- chore(deps): update actions/upload-artifact action to v5 ([#360](https://github.com/mozillazg/ptcpdump/pull/360)) (26e79da)
+- chore(deps): update actions/download-artifact action to v6 ([#359](https://github.com/mozillazg/ptcpdump/pull/359)) (d42d494)
+- chore(deps): update quay.io/ptcpdump/develop docker tag to v20251002.140939 ([#352](https://github.com/mozillazg/ptcpdump/pull/352)) (85eea04)
+- chore(deps): update dependency golang to v1.25.2 ([#357](https://github.com/mozillazg/ptcpdump/pull/357)) (61b0c69)
+- chore(deps): update golang docker tag to v1.25.2 ([#355](https://github.com/mozillazg/ptcpdump/pull/355)) (36e9a5c)
 
 ## [v0.36.0](https://github.com/mozillazg/ptcpdump/compare/v0.35.1...v0.36.0) - 2025-10-03
 
