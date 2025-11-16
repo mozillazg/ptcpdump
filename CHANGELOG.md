@@ -1,6 +1,10 @@
 # CHANGELOG
 
-## [unreleased](https://github.com/mozillazg/ptcpdump/compare/v0.36.0...HEAD)
+## [unreleased](https://github.com/mozillazg/ptcpdump/compare/v0.37.0...HEAD)
+
+## [v0.37.0](https://github.com/mozillazg/ptcpdump/compare/v0.36.0...v0.37.0) - 2025-11-16
+
+- chore(deps): update quay.io/ptcpdump/develop docker tag to v20251115 ([#365](https://github.com/mozillazg/ptcpdump/pull/365)) (c26062f)
 
 ## [v0.36.0](https://github.com/mozillazg/ptcpdump/compare/v0.35.1...v0.36.0) - 2025-10-03
 
