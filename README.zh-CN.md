@@ -473,6 +473,11 @@ Flags:
 
 Flownix 是一款面向 Linux 系统的图形化、实时、基于流量的网络流量分析器。它使用 ptcpdump 二进制捕获数据包，提取每个流的详细元数据，将数据存储在 SQLite 中，并通过干净、响应式的 Dash Web 界面进行可视化展示。
 
+<p float="left">
+  <img src="docs/static/images/flownix_overview_1.png" width="45%" style="margin-right:5%" />
+  <img src="docs/static/images/flownix_overview_2.png" width="45%" />
+</p>
+
 **仓库**: [VISION-183/flownix](https://github.com/VISION-183/flownix)
 
 <p align="right"><a href="#top">🔝</a></p>
