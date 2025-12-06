@@ -31,6 +31,8 @@ Table of Contents
 * [Developing](#developing)
     * [Dependencies](#dependencies)
     * [Building](#building)
+* [Related Projects](#related-projects)
+    * [Flownix](#flownix)
 
 
 ## Features
@@ -725,5 +727,20 @@ After ensuring the eBPF bytecode are generated
 
 The final executable will be created in the project's root directory
 (e.g., `./ptcpdump`).
+
+<p align="right"><a href="#top">🔝</a></p>
+
+## Related Projects
+
+### Flownix
+
+Flownix is a graphical, real-time, flow-based network traffic analyzer for Linux systems. It captures packets using the ptcpdump binary, extracts detailed metadata about each flow, stores it in SQLite, and visualizes everything in a clean, responsive Dash web interface.
+
+<p float="left">
+  <img src="docs/static/images/flownix_overview_1.png" width="45%" style="margin-right:5%" alt="flownix overview 1" />
+  <img src="docs/static/images/flownix_overview_2.png" width="45%" alt="flownix overview 2" />
+</p>
+
+**Repository**: [VISION-183/flownix](https://github.com/VISION-183/flownix)
 
 <p align="right"><a href="#top">🔝</a></p>
