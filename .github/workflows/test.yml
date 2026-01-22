@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-    - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+    - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
 
     - name: Set up Go
       uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
@@ -44,7 +44,7 @@ jobs:
     timeout-minutes: 10
 
     steps:
-    - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+    - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
 
     - name: Set up Go
       uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
@@ -66,7 +66,7 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
 
       - name: test running with docker
         run: |
@@ -79,7 +79,7 @@ jobs:
       GOCOVERDIR: '${{ github.workspace }}/coverage'
 
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
 
       - name: Set up Go
         uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
@@ -112,7 +112,7 @@ jobs:
       GOCOVERDIR: '${{ github.workspace }}/coverage'
 
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
 
       - name: Retrieve stored ptcpdump executable
         uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
@@ -152,7 +152,7 @@ jobs:
       GOCOVERDIR: '${{ github.workspace }}/coverage'
 
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
 
       - name: Retrieve stored ptcpdump executable
         uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
@@ -201,7 +201,7 @@ jobs:
       GOCOVERDIR: '${{ github.workspace }}/coverage'
 
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
 
       - name: Retrieve stored ptcpdump executable
         uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
@@ -297,7 +297,7 @@ jobs:
     env:
       GOCOVERDIR: coverage
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
 
       - run: |
           if [ "${{ matrix.backend }}" = "tc" ]; then
@@ -661,7 +661,7 @@ jobs:
       - containerd-integration-test
       - k8s-integration-test
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
 
       - name: download coverage
         uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
