@@ -79,12 +79,12 @@ jobs:
     needs: release-test
     steps:
       - name: Retrieve stored artifact (amd64)
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         if: ${{ !contains(matrix.os, 'arm') }}
         with:
           name: ptcpdump_v0.0.0-next_linux_amd64.tar.gz
       - name: Retrieve stored artifact (arm64)
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         if: ${{ contains(matrix.os, 'arm') }}
         with:
           name: ptcpdump_v0.0.0-next_linux_arm64.tar.gz
