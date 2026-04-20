@@ -27,7 +27,10 @@
 //
 //	$ NLDEBUG=level=1 ./nlctl
 //
+//	$ NLDEBUG=level=1,format=mnl ./nlctl
+//
 // Available key/value debugger options include:
 //
 //	level=N: specify the debugging level (only "1" is currently supported)
+//	format=mnl: specify the same format used by libmnl (nft --debug=all)
 package netlink

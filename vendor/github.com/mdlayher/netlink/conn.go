@@ -1,6 +1,7 @@
 package netlink
 
 import (
+	"iter"
 	"math/rand"
 	"sync"
 	"sync/atomic"
@@ -53,6 +54,7 @@ type Socket interface {
 	Send(m Message) error
 	SendMessages(m []Message) error
 	Receive() ([]Message, error)
+	ReceiveIter() iter.Seq2[Message, error]
 }
 
 // Dial dials a connection to netlink, using the specified netlink family.
@@ -224,88 +226,126 @@ func (c *Conn) lockedSend(m Message) (Message, error) {
 //
 // If any of the messages indicate a netlink error, that error will be returned.
 func (c *Conn) Receive() ([]Message, error) {
-	// Wait for any concurrent calls to Execute to finish before proceeding.
-	c.mu.RLock()
-	defer c.mu.RUnlock()
+	// Wait for any concurrent calls to Execute and Receive to finish before
+	// proceeding.
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
 	return c.lockedReceive()
+}
+
+// ReceiveIter returns an iterator which can be used to receive messages from
+// netlink. Just like Receive, multi-part messages are handled transparently and
+// netlink errors are returned as errors from the iterator.
+//
+// If the iteration is stopped before all messages have been read and the
+// response is multi-part, the remaining messages will be discarded.
+func (c *Conn) ReceiveIter() iter.Seq2[Message, error] {
+	return func(yield func(Message, error) bool) {
+		c.mu.Lock()
+		defer c.mu.Unlock()
+
+		for msg, err := range c.lockedReceiveIter() {
+			if err != nil {
+				c.debug(func(d *debugger) {
+					d.debugf(1, "recv: err: %v", err)
+				})
+				yield(Message{}, err)
+				return
+			}
+
+			c.debug(func(d *debugger) {
+				d.debugf(1, "recv: %+v", msg)
+			})
+			if !yield(msg, nil) {
+				return
+			}
+		}
+	}
 }
 
 // lockedReceive implements Receive, but must be called with c.mu acquired for reading.
 // We rely on the kernel to deal with concurrent reads and writes to the netlink
 // socket itself.
 func (c *Conn) lockedReceive() ([]Message, error) {
-	msgs, err := c.receive()
-	if err != nil {
+	var msgs []Message
+
+	for m, err := range c.lockedReceiveIter() {
+		if err != nil {
+			c.debug(func(d *debugger) {
+				d.debugf(1, "recv: err: %v", err)
+			})
+			return nil, err
+		}
+
 		c.debug(func(d *debugger) {
-			d.debugf(1, "recv: err: %v", err)
+			d.debugf(1, "recv: %+v", m)
 		})
 
-		return nil, err
-	}
-
-	c.debug(func(d *debugger) {
-		for _, m := range msgs {
-			d.debugf(1, "recv: %+v", m)
-		}
-	})
-
-	// When using nltest, it's possible for zero messages to be returned by receive.
-	if len(msgs) == 0 {
-		return msgs, nil
-	}
-
-	// Trim the final message with multi-part done indicator if
-	// present.
-	if m := msgs[len(msgs)-1]; m.Header.Flags&Multi != 0 && m.Header.Type == Done {
-		return msgs[:len(msgs)-1], nil
+		msgs = append(msgs, m)
 	}
 
 	return msgs, nil
 }
 
-// receive is the internal implementation of Conn.Receive, which can be called
-// recursively to handle multi-part messages.
-func (c *Conn) receive() ([]Message, error) {
-	// NB: All non-nil errors returned from this function *must* be of type
-	// OpError in order to maintain the appropriate contract with callers of
-	// this package.
-	//
-	// This contract also applies to functions called within this function,
-	// such as checkMessage.
+// lockedReceiveIter returns an iterator which can be used to receive messages
+// from netlink, but must be called with c.mu acquired for the duration of the
+// iteration.
+func (c *Conn) lockedReceiveIter() iter.Seq2[Message, error] {
+	return func(yield func(Message, error) bool) {
+		// NB: All non-nil errors returned from this function *must* be of type
+		// OpError in order to maintain the appropriate contract with callers of
+		// this package.
+		//
+		// This contract also applies to functions called within this function,
+		// such as checkMessage.
 
-	var res []Message
-	for {
-		msgs, err := c.sock.Receive()
-		if err != nil {
-			return nil, newOpError("receive", err)
+		var more, stopped bool
+		// send is a helper function to prevent yielding messages after the user
+		// has stopped iterating
+		var send = func(m Message, err error) {
+			if stopped {
+				return
+			}
+			if !yield(m, err) {
+				stopped = true
+			}
 		}
 
-		// If this message is multi-part, we will need to continue looping to
-		// drain all the messages from the socket.
-		var multi bool
+		for {
+			for m, err := range c.sock.ReceiveIter() {
+				if err != nil {
+					send(Message{}, newOpError("receive", err))
+					return
+				}
 
-		for _, m := range msgs {
-			if err := checkMessage(m); err != nil {
-				return nil, err
+				if err := checkMessage(m); err != nil {
+					send(Message{}, err)
+					return
+				}
+
+				// Exit early if we encounter a multi-part done message.
+				// This should be safe to do since messages of type Done should always
+				// be the last message in a datagram.
+				if m.Header.Type == Done && m.Header.Flags&Multi != 0 {
+					return
+				}
+
+				if m.Header.Flags&Multi != 0 {
+					more = true
+				}
+
+				send(m, nil)
+				if stopped && !more {
+					// The user has stopped iterating and there are no more messages
+					// to read.
+					return
+				}
 			}
 
-			// Does this message indicate a multi-part message?
-			if m.Header.Flags&Multi == 0 {
-				// No, check the next messages.
-				continue
+			if !more {
+				return
 			}
-
-			// Does this message indicate the last message in a series of
-			// multi-part messages from a single read?
-			multi = m.Header.Type != Done
-		}
-
-		res = append(res, msgs...)
-
-		if !multi {
-			// No more messages coming.
-			return res, nil
 		}
 	}
 }
@@ -434,17 +474,20 @@ func (c *Conn) SetOption(option ConnOption, enable bool) error {
 	return newOpError("set-option", conn.SetOption(option, enable))
 }
 
-// A bufferSetter is a Socket that supports setting connection buffer sizes.
-type bufferSetter interface {
+// A bufferedSocket is a Socket that supports getting & setting connection
+// buffer sizes.
+type bufferedSocket interface {
 	Socket
 	SetReadBuffer(bytes int) error
 	SetWriteBuffer(bytes int) error
+	ReadBuffer() (int, error)
+	WriteBuffer() (int, error)
 }
 
 // SetReadBuffer sets the size of the operating system's receive buffer
 // associated with the Conn.
 func (c *Conn) SetReadBuffer(bytes int) error {
-	conn, ok := c.sock.(bufferSetter)
+	conn, ok := c.sock.(bufferedSocket)
 	if !ok {
 		return notSupported("set-read-buffer")
 	}
@@ -455,12 +498,50 @@ func (c *Conn) SetReadBuffer(bytes int) error {
 // SetWriteBuffer sets the size of the operating system's transmit buffer
 // associated with the Conn.
 func (c *Conn) SetWriteBuffer(bytes int) error {
-	conn, ok := c.sock.(bufferSetter)
+	conn, ok := c.sock.(bufferedSocket)
 	if !ok {
 		return notSupported("set-write-buffer")
 	}
 
 	return newOpError("set-write-buffer", conn.SetWriteBuffer(bytes))
+}
+
+// ReadBuffer reads the size of the operating system's receive buffer
+// associated with the Conn.
+func (c *Conn) ReadBuffer() (int, error) {
+	conn, ok := c.sock.(bufferedSocket)
+	if !ok {
+		return 0, notSupported("get-read-buffer")
+	}
+
+	buff, err := conn.ReadBuffer()
+	if err != nil {
+		return 0, newOpError("get-read-buffer", err)
+	}
+	return buff, nil
+}
+
+// WriteBuffer reads the size of the operating system's transmit buffer
+// associated with the Conn.
+func (c *Conn) WriteBuffer() (int, error) {
+	conn, ok := c.sock.(bufferedSocket)
+	if !ok {
+		return 0, notSupported("get-write-buffer")
+	}
+
+	buff, err := conn.WriteBuffer()
+	if err != nil {
+		return 0, newOpError("get-write-buffer", err)
+	}
+
+	return buff, nil
+}
+
+// PID returns the PID associated with the Conn. It is also known as
+// the port ID in netlink terminology.
+// https://docs.kernel.org/userspace-api/netlink/intro.html#nlmsg-pid
+func (c *Conn) PID() uint32 {
+	return c.pid
 }
 
 // A syscallConner is a Socket that supports syscall.Conn.
@@ -590,4 +671,21 @@ type Config struct {
 	// When possible, setting Strict to true is recommended for applications
 	// running on modern Linux kernels.
 	Strict bool
+
+	// MessageBufferSize specifies a fixed buffer size for receiving netlink
+	// messages. When set, the connection will reuse a single pre-allocated
+	// buffer of this size instead of peeking at each message to determine
+	// the exact size needed.
+	//
+	// This is useful for high-throughput applications where the overhead of
+	// peeking at each message is undesirable and the maximum message size
+	// is known in advance.
+	//
+	// If set to 0 (the default), the connection will peek at the upcoming
+	// message before allocating a buffer for it.
+	//
+	// Note: this is not the same as the kernel socket receive buffer which
+	// can be configured using SetReadBuffer. MessageBufferSize only controls
+	// the userspace buffer passed to recvmsg.
+	MessageBufferSize int
 }

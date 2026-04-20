@@ -1,11 +1,12 @@
 //go:build linux
-// +build linux
 
 package netlink
 
 import (
 	"context"
+	"iter"
 	"os"
+	"sync"
 	"syscall"
 	"time"
 	"unsafe"
@@ -19,7 +20,8 @@ var _ Socket = &conn{}
 
 // A conn is the Linux implementation of a netlink sockets connection.
 type conn struct {
-	s *socket.Conn
+	s    *socket.Conn
+	pool *sync.Pool
 }
 
 // dial is the entry point for Dial. dial opens a netlink socket using
@@ -71,6 +73,16 @@ func newConn(s *socket.Conn, config *Config) (*conn, uint32, error) {
 	}
 
 	c := &conn{s: s}
+
+	if config.MessageBufferSize > 0 {
+		c.pool = &sync.Pool{
+			New: func() any {
+				b := make([]byte, config.MessageBufferSize)
+				return &b
+			},
+		}
+	}
+
 	if config.Strict {
 		// The caller has requested the strict option set. Historically we have
 		// recommended checking for ENOPROTOOPT if the kernel does not support
@@ -121,48 +133,89 @@ func (c *conn) Send(m Message) error {
 
 // Receive receives one or more Messages from netlink.
 func (c *conn) Receive() ([]Message, error) {
-	b := make([]byte, os.Getpagesize())
-	for {
-		// Peek at the buffer to see how many bytes are available.
-		//
-		// TODO(mdlayher): deal with OOB message data if available, such as
-		// when PacketInfo ConnOption is true.
-		n, _, _, _, err := c.s.Recvmsg(context.Background(), b, nil, unix.MSG_PEEK)
+	var msgs []Message
+	for msg, err := range c.ReceiveIter() {
 		if err != nil {
 			return nil, err
 		}
-
-		// Break when we can read all messages
-		if n < len(b) {
-			break
-		}
-
-		// Double in size if not enough bytes
-		b = make([]byte, len(b)*2)
-	}
-
-	// Read out all available messages
-	n, _, _, _, err := c.s.Recvmsg(context.Background(), b, nil, 0)
-	if err != nil {
-		return nil, err
-	}
-
-	raw, err := syscall.ParseNetlinkMessage(b[:nlmsgAlign(n)])
-	if err != nil {
-		return nil, err
-	}
-
-	msgs := make([]Message, 0, len(raw))
-	for _, r := range raw {
-		m := Message{
-			Header: sysToHeader(r.Header),
-			Data:   r.Data,
-		}
-
-		msgs = append(msgs, m)
+		msgs = append(msgs, msg)
 	}
 
 	return msgs, nil
+}
+
+// getBuffer returns the buffer to use for receiving messages and a function to
+// release it back to the pool if applicable. If the pool is not configured, a
+// new buffer is allocated by peeking the size of the next message to be
+// received. The buffer size is aligned to the next multiple of the alignment of a netlink
+// message, to avoid panic when parsing messages from the buffer.
+func (c *conn) getBuffer() ([]byte, func(), error) {
+	if c.pool != nil {
+		bp := c.pool.Get().(*[]byte)
+		return *bp, func() { c.pool.Put(bp) }, nil
+	}
+
+	n, _, _, _, err := c.s.Recvmsg(context.Background(), nil, nil, unix.MSG_PEEK|unix.MSG_TRUNC)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return make([]byte, nlmsgAlign(n)), func() {}, nil
+}
+
+// ownedBuffer trims b to the aligned size of the received datagram and, when
+// using pooled buffers, copies it to memory owned by the caller.
+func (c *conn) ownedBuffer(b []byte, n int) []byte {
+	aligned := nlmsgAlign(n)
+	if c.pool == nil {
+		return b[:aligned]
+	}
+
+	// A pooled buffer may not have an aligned length. Copy the received bytes
+	// to an aligned buffer and let the zero-value tail bytes act as padding.
+	out := make([]byte, aligned)
+	copy(out, b[:n])
+	return out
+}
+
+// ReceiveIter returns an iterator over Messages received from netlink.
+func (c *conn) ReceiveIter() iter.Seq2[Message, error] {
+	return func(yield func(Message, error) bool) {
+		b, release, err := c.getBuffer()
+		if err != nil {
+			yield(Message{}, err)
+			return
+		}
+		defer release()
+
+		// Read out all available messages
+		// TODO(mdlayher): deal with OOB message data if available, such as
+		// when PacketInfo ConnOption is true.
+		n, _, flags, _, err := c.s.Recvmsg(context.Background(), b, nil, 0)
+		if err != nil {
+			yield(Message{}, err)
+			return
+		}
+
+		if flags&unix.MSG_TRUNC != 0 {
+			// Our buffer was too small to read the entire message,
+			// this should not happen since we peeked above, but if it does,
+			// return an error.
+			yield(Message{}, errMessageTruncated)
+			return
+		}
+
+		for msg, err := range parseMessagesIter(c.ownedBuffer(b, n)) {
+			if err != nil {
+				yield(Message{}, err)
+				return
+			}
+
+			if !yield(msg, nil) {
+				return
+			}
+		}
+	}
 }
 
 // Close closes the connection.
@@ -211,6 +264,14 @@ func (c *conn) SetReadBuffer(bytes int) error { return c.s.SetReadBuffer(bytes) 
 // SetReadBuffer sets the size of the operating system's transmit buffer
 // associated with the Conn.
 func (c *conn) SetWriteBuffer(bytes int) error { return c.s.SetWriteBuffer(bytes) }
+
+// ReadBuffer reads the size of the operating system's receive buffer
+// associated with the Conn.
+func (c *conn) ReadBuffer() (int, error) { return c.s.ReadBuffer() }
+
+// WriteBuffer reads the size of the operating system's transmit buffer
+// associated with the Conn.
+func (c *conn) WriteBuffer() (int, error) { return c.s.WriteBuffer() }
 
 // SyscallConn returns a raw network connection.
 func (c *conn) SyscallConn() (syscall.RawConn, error) { return c.s.SyscallConn() }
