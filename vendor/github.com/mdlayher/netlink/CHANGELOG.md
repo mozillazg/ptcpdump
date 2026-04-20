@@ -1,5 +1,88 @@
 # CHANGELOG
 
+## v1.11.1
+- [Bug Fix]: [#283](https://github.com/mdlayher/netlink/pull/283) fixed a bug
+where `netlink.Conn.Receive` would reject valid netlink messages whose header
+length is not aligned. This is common with nfqueue, nflog and conntrack events.
+- [Bug Fix]: [#284](https://github.com/mdlayher/netlink/pull/284) fixed a bug
+where `netlink.Message.Data` could be silently overwritten by subsequent
+`netlink.Conn.Receive` calls when `netlink.Config.MessageBufferSize` is enabled,
+due to pooled buffer reuse.
+- [Improvement]: [#282](https://github.com/mdlayher/netlink/pull/282) improved
+error handling by usage of `errors` package.
+
+## v1.11.0
+
+**This is the first release of package netlink that only supports Go 1.25+.**
+
+- [Bug Fix]: [#280](https://github.com/mdlayher/netlink/pull/280) fixed a
+critical bug where `netlink.Conn.Receive` and `netlink.Conn.ReceiveIter` would
+panic if the received message was unaligned.
+- [Improvement]: [#277](https://github.com/mdlayher/netlink/pull/277) added
+big-endian test fixtures for nlenc and deprecated endian helpers in favor of
+binary.NativeEndian.
+- [Improvement]: [#276](https://github.com/mdlayher/netlink/pull/276) fixed
+skipping of tests on big-endian hosts.
+- [Improvement]: [#273](https://github.com/mdlayher/netlink/pull/273) added
+golangci-lint to the CI pipeline and fixed all existing lint issues.
+- [Improvement]: [#272](https://github.com/mdlayher/netlink/pull/272) updated
+dependencies and Go version to 1.25.
+
+## v1.10.0
+
+**Users of this version should upgrade to v1.11.0 as this version contains a
+critical bug.**
+
+- [New API]: [#270](https://github.com/mdlayher/netlink/pull/270) added
+  `MessageBufferSize` option to `netlink.Config` for configuring the size of the
+  copy buffer used for receiving messages. This can improve performance in
+  high-throughput applications by reducing the number of syscalls needed to
+  receive messages.
+- [Improvement]: [#219](https://github.com/mdlayher/netlink/pull/219) added
+  debug logging inspired by libmnl. This is now the new default when setting
+  `NLDEBUG` in the environment.
+- [New API]: [#258](https://github.com/mdlayher/netlink/pull/258) added
+  `netlink.Conn.ReceiveIter` for iterating over responses without collecting
+  them into a slice. It also optimized `netlink.Conn.Receive` to use this new
+  API internally so that less memory is used.
+- [Improvement]: [#269](https://github.com/mdlayher/netlink/pull/269) made it so
+  `nltest.Conn.Receive` can be used to test that multi-part messages are drained
+  properly.
+- [Improvement]: [#266](https://github.com/mdlayher/netlink/pull/266) optimized
+  the initial parsing of netlink messages in `netlink.Socket.Receive` by adding
+  an iterator for parsing messages directly from the receive buffer.
+- [Improvement]: [#267](https://github.com/mdlayher/netlink/pull/267) added
+  integration test benchmarks for multi-part dumps.
+- [Improvement]: [#215](https://github.com/mdlayher/netlink/pull/215) optimized
+  the internal peek/allocate logic in `netlink.Socket.Receive`. Messages are
+  no longer being copied during peeking and the buffer is allocated to the exact
+  size of the upcoming message.
+- [Bug Fix]: [#265](https://github.com/mdlayher/netlink/pull/265) fixed a bug
+  where concurrent calls to `netlink.Conn.Receive` could race with each other
+  when handling multi-part messages. Calls to `Receive` are now serialized.
+- [Improvement]: [#264](https://github.com/mdlayher/netlink/pull/264) added
+  handling for truncated messages in `netlink.Socket.Receive`.
+
+## v1.9.0
+
+**This is the first release of package netlink that only supports Go 1.24+.**
+
+- [Improvement]: updated dependencies and Go version to 1.24; tests now run on
+  Go 1.24-1.26.
+- [New API]: [#236](https://github.com/mdlayher/netlink/pull/236) introduced
+  `Sequence` field to `OpError` for better error correlation.
+- [New API]: [#237](https://github.com/mdlayher/netlink/pull/237) added
+  `netlink.Conn.PID` method to retrieve the connection's PID, also known as port
+  ID.
+- [Improvement]: [#228](https://github.com/mdlayher/netlink/pull/228) fixed
+  skipping of specific tests on big-endian hosts.
+
+## v1.8.0
+
+- [Improvement]: Updated dependencies, test with Go 1.23 to 1.25.
+- [Improvement]: Use Go 1.21's binary.NativeEndian (#220)
+- [Improvement]: Expose socket ReadBuffer & WriteBuffer functions (#223)
+
 ## v1.7.2
 
 - [Improvement]: updated dependencies, test with Go 1.20.
@@ -29,7 +112,7 @@ Users on older versions of Go must use v1.6.2.**
 
 ## v1.6.1
 
-- [Deprecation] [commit](https://github.com/mdlayher/netlink/commit/d1b69ea8697d721415c259ef8513ab699c6d3e96): 
+- [Deprecation] [commit](https://github.com/mdlayher/netlink/commit/d1b69ea8697d721415c259ef8513ab699c6d3e96):
   the `netlink.Socket` interface has been marked as deprecated. The abstraction
   is awkward to use properly and disables much of the functionality of the Conn
   type when the basic interface is implemented. Do not use.

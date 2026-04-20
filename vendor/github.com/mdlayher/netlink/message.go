@@ -1,11 +1,11 @@
 package netlink
 
 import (
+	"encoding/binary"
 	"errors"
 	"fmt"
+	"iter"
 	"unsafe"
-
-	"github.com/mdlayher/netlink/nlenc"
 )
 
 // Flags which may apply to netlink attribute types when communicating with
@@ -211,11 +211,11 @@ func (m Message) MarshalBinary() ([]byte, error) {
 
 	b := make([]byte, ml)
 
-	nlenc.PutUint32(b[0:4], m.Header.Length)
-	nlenc.PutUint16(b[4:6], uint16(m.Header.Type))
-	nlenc.PutUint16(b[6:8], uint16(m.Header.Flags))
-	nlenc.PutUint32(b[8:12], m.Header.Sequence)
-	nlenc.PutUint32(b[12:16], m.Header.PID)
+	binary.NativeEndian.PutUint32(b[0:], m.Header.Length)
+	binary.NativeEndian.PutUint16(b[4:], uint16(m.Header.Type))
+	binary.NativeEndian.PutUint16(b[6:], uint16(m.Header.Flags))
+	binary.NativeEndian.PutUint32(b[8:], m.Header.Sequence)
+	binary.NativeEndian.PutUint32(b[12:], m.Header.PID)
 	copy(b[16:], m.Data)
 
 	return b, nil
@@ -231,16 +231,16 @@ func (m *Message) UnmarshalBinary(b []byte) error {
 	}
 
 	// Don't allow misleading length
-	m.Header.Length = nlenc.Uint32(b[0:4])
-	if int(m.Header.Length) != len(b) {
+	m.Header.Length = binary.NativeEndian.Uint32(b[0:])
+	if int(m.Header.Length) < nlmsgHeaderLen || int(m.Header.Length) > len(b) {
 		return errShortMessage
 	}
 
-	m.Header.Type = HeaderType(nlenc.Uint16(b[4:6]))
-	m.Header.Flags = HeaderFlags(nlenc.Uint16(b[6:8]))
-	m.Header.Sequence = nlenc.Uint32(b[8:12])
-	m.Header.PID = nlenc.Uint32(b[12:16])
-	m.Data = b[16:]
+	m.Header.Type = HeaderType(binary.NativeEndian.Uint16(b[4:]))
+	m.Header.Flags = HeaderFlags(binary.NativeEndian.Uint16(b[6:]))
+	m.Header.Sequence = binary.NativeEndian.Uint32(b[8:])
+	m.Header.PID = binary.NativeEndian.Uint32(b[12:])
+	m.Data = b[nlmsgHeaderLen:m.Header.Length]
 
 	return nil
 }
@@ -282,7 +282,7 @@ func checkMessage(m Message) error {
 		return newOpError("receive", errShortErrorMessage)
 	}
 
-	c := nlenc.Int32(m.Data[:endErrno])
+	c := int32(binary.NativeEndian.Uint32(m.Data[:endErrno]))
 	if c == 0 {
 		// 0 indicates no error.
 		return nil
@@ -293,7 +293,8 @@ func checkMessage(m Message) error {
 		// Error code is a negative integer, convert it into an OS-specific raw
 		// system call error, but do not wrap with os.NewSyscallError to signify
 		// that this error was produced by a netlink message; not a system call.
-		Err: newError(-1 * int(c)),
+		Err:      newError(-1 * int(c)),
+		Sequence: m.Header.Sequence,
 	}
 
 	// TODO(mdlayher): investigate the Capped flag.
@@ -344,4 +345,42 @@ func checkMessage(m Message) error {
 	// Explicitly ignore ad.Err: malformed TLVs, just return the OpError with
 	// the info we have.
 	return oerr
+}
+
+// parseMessagesIter returns an iterator over netlink messages in b.
+// Each iteration yields a Message and any error encountered during parsing.
+// The iterator stops on the first error or when all messages are parsed.
+//
+// If b is less that NLMSG_HDRLEN bytes, no error or messages will be returned.
+// The same applies for any trailing bytes whose length is less than
+// NLMSG_HDRLEN.
+func parseMessagesIter(b []byte) iter.Seq2[Message, error] {
+	return func(yield func(Message, error) bool) {
+		for len(b) >= nlmsgHeaderLen {
+			length := binary.NativeEndian.Uint32(b[0:])
+			if int(length) < nlmsgHeaderLen {
+				yield(Message{}, errIncorrectMessageLength)
+				return
+			}
+
+			alength := nlmsgAlign(int(length))
+			if alength > len(b) {
+				yield(Message{}, errShortMessage)
+				return
+			}
+
+			var message Message
+			if err := message.UnmarshalBinary(b[:alength]); err != nil {
+				yield(Message{}, err)
+				return
+			}
+
+			// Return if the consumer has stopped iterating.
+			if !yield(message, nil) {
+				return
+			}
+
+			b = b[alength:]
+		}
+	}
 }
