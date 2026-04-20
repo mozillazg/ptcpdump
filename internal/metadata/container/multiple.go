@@ -18,7 +18,7 @@ func NewMultipleEngineMetaData(dockerEndpoint, containerdEndpoint string) *Multi
 
 	dr, err := docker.NewMetaData(dockerEndpoint)
 	if err != nil {
-		log.Infof(err.Error())
+		log.Info(err.Error())
 		log.Warnf("skip Docker Engine integration due to %s", err.Error())
 	} else {
 		m.engines = append(m.engines, dr)
@@ -26,7 +26,7 @@ func NewMultipleEngineMetaData(dockerEndpoint, containerdEndpoint string) *Multi
 
 	cd, err := containerd.NewMultipleNamespacesMetaData(containerdEndpoint, "")
 	if err != nil {
-		log.Infof(err.Error())
+		log.Info(err.Error())
 		log.Warnf("skip containerd integration due to %s", err.Error())
 	} else {
 		for _, c := range cd {
