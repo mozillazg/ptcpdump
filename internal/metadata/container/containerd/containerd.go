@@ -334,7 +334,7 @@ func (d *MetaData) handleContainerEvent(ctx context.Context, containerId string)
 func (d *MetaData) saveContainer(ctx context.Context, container containerd.Container) {
 	cr, err := d.inspectContainer(ctx, container)
 	if err != nil {
-		log.Errorf(err.Error())
+		log.Error(err.Error())
 		return
 	}
 

@@ -110,7 +110,7 @@ func getRuntimeService(criRuntimeEndpoint string) (res cri.RuntimeService, errs 
 		res, err = remote.NewRemoteRuntimeService(endPoint, t)
 		path := strings.TrimPrefix(endPoint, "unix://")
 		if err != nil {
-			log.Infof(err.Error())
+			log.Info(err.Error())
 			err = utils.UnwrapErr(err)
 			if os.IsNotExist(err) || strings.Contains(err.Error(), "no such file or directory") {
 				err = errors.New("no such file or directory")
