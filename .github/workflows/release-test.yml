@@ -48,8 +48,8 @@ jobs:
       - name: Run govulncheck for binary
         run: |
           set -xe
-          govulncheck -mode=binary -show verbose -scan module ./amd64/ptcpdump
-          govulncheck -mode=binary -show verbose -scan module ./arm64/ptcpdump
+          govulncheck -mode=binary -show verbose -scan symbol ./amd64/ptcpdump
+          govulncheck -mode=binary -show verbose -scan symbol ./arm64/ptcpdump
 
       - name: Store Releases
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7

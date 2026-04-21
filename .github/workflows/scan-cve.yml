@@ -31,10 +31,10 @@ jobs:
       run: go install golang.org/x/vuln/cmd/govulncheck@latest
 
     - name: Run govulncheck for project
-      run: govulncheck -show verbose -scan module
+      run: govulncheck -show verbose -scan symbol
 
     - name: Build binary
       run: make build-via-docker
 
     - name: Run govulncheck for binary
-      run: govulncheck -mode=binary -show verbose -scan module ./ptcpdump
+      run: govulncheck -mode=binary -show verbose -scan symbol ./ptcpdump
