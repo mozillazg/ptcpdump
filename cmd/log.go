@@ -44,6 +44,11 @@ func silenceKlog() {
 	klog.SetOutput(io.Discard)
 	flags := &flag.FlagSet{}
 	klog.InitFlags(flags)
+	// Opt into the new klog behavior so that -stderrthreshold is honored even
+	// when -logtostderr=true (the default).
+	// Ref: kubernetes/klog#212, kubernetes/klog#432
+	_ = flags.Set("legacy_stderr_threshold_behavior", "false")
+	_ = flags.Set("stderrthreshold", "INFO")
 	flags.Set("logtostderr", "false")
 	flags.Set("alsologtostderr", "false")
 }
