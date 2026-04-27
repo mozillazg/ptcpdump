@@ -44,6 +44,6 @@ func silenceKlog() {
 	klog.SetOutput(io.Discard)
 	flags := &flag.FlagSet{}
 	klog.InitFlags(flags)
-	flags.Set("logtostderr", "false")
-	flags.Set("alsologtostderr", "false")
+	_ = flags.Set("logtostderr", "false")
+	_ = flags.Set("alsologtostderr", "false")
 }

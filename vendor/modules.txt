@@ -635,8 +635,8 @@ k8s.io/cri-api/pkg/apis/runtime/v1alpha2
 ## explicit; go 1.23.0
 k8s.io/cri-client/pkg
 k8s.io/cri-client/pkg/util
-# k8s.io/klog/v2 v2.130.1
-## explicit; go 1.18
+# k8s.io/klog/v2 v2.140.0
+## explicit; go 1.21
 k8s.io/klog/v2
 k8s.io/klog/v2/internal/buffer
 k8s.io/klog/v2/internal/clock
