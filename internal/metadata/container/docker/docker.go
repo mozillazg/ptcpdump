@@ -10,10 +10,8 @@ import (
 	"sync"
 	"time"
 
-	containertypes "github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/events"
-	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/client"
+	"github.com/moby/moby/api/types/events"
+	"github.com/moby/moby/client"
 	"github.com/mozillazg/ptcpdump/internal/log"
 	"github.com/mozillazg/ptcpdump/internal/types"
 	"github.com/mozillazg/ptcpdump/internal/utils"
@@ -51,7 +49,7 @@ func NewMetaData(host string) (*MetaData, error) {
 
 	ctx, cancel := context.WithTimeout(context.TODO(), time.Second*5)
 	defer cancel()
-	if _, err := c.Info(ctx); err != nil {
+	if _, err := c.Info(ctx, client.InfoOptions{}); err != nil {
 		return nil, err
 	}
 
@@ -207,13 +205,13 @@ func (d *MetaData) init(ctx context.Context) error {
 	d.hostNetNs = utils.GetNetworkNamespaceFromPid(1)
 
 	c := d.client
-	containers, err := c.ContainerList(ctx, containertypes.ListOptions{
-		Filters: filters.NewArgs(filters.Arg("status", "running")),
+	res, err := c.ContainerList(ctx, client.ContainerListOptions{
+		Filters: client.Filters{}.Add("status", "running"),
 	})
 	if err != nil {
 		return fmt.Errorf("list containers: %w", err)
 	}
-	for _, cr := range containers {
+	for _, cr := range res.Items {
 		d.handleContainerEvent(ctx, cr.ID)
 	}
 	return nil
@@ -240,7 +238,9 @@ func (d *MetaData) watchContainerEvents(ctx context.Context) {
 	var chErr <-chan error
 	var msg events.Message
 
-	chMsg, chErr = c.Events(ctx, events.ListOptions{})
+	res := c.Events(ctx, client.EventsListOptions{})
+	chMsg = res.Messages
+	chErr = res.Err
 
 	for {
 		select {
@@ -288,10 +288,11 @@ func (d *MetaData) setContainer(c types.Container) {
 func (d *MetaData) inspectContainer(ctx context.Context, containerId string) (*types.Container, error) {
 	c := d.client
 
-	data, err := c.ContainerInspect(ctx, containerId)
+	res, err := c.ContainerInspect(ctx, containerId, client.ContainerInspectOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("inspect container %s: %w", containerId, err)
 	}
+	data := res.Container
 
 	cr := &types.Container{
 		Id:          containerId,
