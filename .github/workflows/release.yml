@@ -27,7 +27,7 @@ jobs:
           GOPATH: ${{ env.HOME }}
 
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a # v6
+        uses: goreleaser/goreleaser-action@e24998b8b67b290c2fa8b7c14fcfa7de2c5c9b8c # v7
         with:
           version: '~> v2'
           args: release --clean -p 1
