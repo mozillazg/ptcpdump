@@ -4,7 +4,7 @@ go 1.24.0
 
 require (
 	github.com/cilium/ebpf v0.18.0
-	github.com/containerd/containerd v1.7.29
+	github.com/containerd/containerd/v2 v2.2.0
 	github.com/containerd/typeurl/v2 v2.2.3
 	github.com/florianl/go-tc v0.4.6
 	github.com/gopacket/gopacket v1.3.1
