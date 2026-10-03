@@ -14,21 +14,29 @@
    limitations under the License.
 */
 
-package version
+package oci
 
-import "runtime"
-
-var (
-	// Package is filled at linking time
-	Package = "github.com/containerd/containerd"
-
-	// Version holds the complete version number. Filled in at linking time.
-	Version = "1.7.36+unknown"
-
-	// Revision is filled with the VCS (e.g. git) revision being used to build
-	// the program at linking time.
-	Revision = ""
-
-	// GoVersion is Go tree's version.
-	GoVersion = runtime.Version()
+import (
+	"fmt"
+	"os"
+	"strings"
+	"sync"
 )
+
+var possibleCPUsParsed = sync.OnceValues(func() ([]int, error) {
+	data, err := os.ReadFile("/sys/devices/system/cpu/possible")
+	if err != nil {
+		return nil, err
+	}
+	return parsePossibleCPUs(strings.TrimSpace(string(data)))
+})
+
+func appendCPUThrottlePaths(paths []string, cpus []int) []string {
+	for _, cpu := range cpus {
+		path := fmt.Sprintf("/sys/devices/system/cpu/cpu%d/thermal_throttle", cpu)
+		if _, err := os.Stat(path); err == nil {
+			paths = append(paths, path)
+		}
+	}
+	return paths
+}
