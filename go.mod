@@ -1,6 +1,6 @@
 module github.com/mozillazg/ptcpdump
 
-go 1.24.0
+go 1.25.0
 
 require (
 	github.com/cilium/ebpf v0.18.0
@@ -13,7 +13,7 @@ require (
 	github.com/shirou/gopsutil/v4 v4.25.9
 	github.com/spf13/cobra v1.9.1
 	github.com/x-way/pktdump v0.0.6
-	golang.org/x/sys v0.39.0
+	golang.org/x/sys v0.45.0
 )
 
 require (
@@ -94,9 +94,9 @@ require (
 	go.opentelemetry.io/otel/metric v1.41.0 // indirect
 	go.opentelemetry.io/otel/trace v1.41.0 // indirect
 	golang.org/x/exp v0.0.0-20230811145659-89c5cff77bcb // indirect
-	golang.org/x/net v0.48.0 // indirect
-	golang.org/x/sync v0.19.0 // indirect
-	golang.org/x/text v0.32.0 // indirect
+	golang.org/x/net v0.55.0 // indirect
+	golang.org/x/sync v0.20.0 // indirect
+	golang.org/x/text v0.37.0 // indirect
 	google.golang.org/genproto v0.0.0-20231211222908-989df2bf70f3 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251202230838-ff82c1b0f217 // indirect
 	google.golang.org/grpc v1.79.3 // indirect
