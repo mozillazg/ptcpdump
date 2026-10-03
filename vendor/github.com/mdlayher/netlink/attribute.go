@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/josharian/native"
 	"github.com/mdlayher/netlink/nlenc"
 )
 
@@ -35,8 +34,8 @@ func (a *Attribute) marshal(b []byte) (int, error) {
 		return 0, errInvalidAttribute
 	}
 
-	nlenc.PutUint16(b[0:2], a.Length)
-	nlenc.PutUint16(b[2:4], a.Type)
+	binary.NativeEndian.PutUint16(b[0:], a.Length)
+	binary.NativeEndian.PutUint16(b[2:], a.Type)
 	n := copy(b[nlaHeaderLen:], a.Data)
 
 	return nlaHeaderLen + nlaAlign(n), nil
@@ -48,8 +47,8 @@ func (a *Attribute) unmarshal(b []byte) error {
 		return errInvalidAttribute
 	}
 
-	a.Length = nlenc.Uint16(b[0:2])
-	a.Type = nlenc.Uint16(b[2:4])
+	a.Length = binary.NativeEndian.Uint16(b[0:])
+	a.Type = binary.NativeEndian.Uint16(b[2:])
 
 	if int(a.Length) > len(b) {
 		return errInvalidAttribute
@@ -168,7 +167,7 @@ type AttributeDecoder struct {
 func NewAttributeDecoder(b []byte) (*AttributeDecoder, error) {
 	ad := &AttributeDecoder{
 		// By default, use native byte order.
-		ByteOrder: native.Endian,
+		ByteOrder: binary.NativeEndian,
 
 		b: b,
 	}
@@ -244,7 +243,7 @@ func (ad *AttributeDecoder) available() (int, error) {
 		}
 
 		// Extract the length of the attribute.
-		l := int(nlenc.Uint16(ad.b[i : i+2]))
+		l := int(binary.NativeEndian.Uint16(ad.b[i:]))
 
 		// Ignore zero-length attributes.
 		if l != 0 {
@@ -485,7 +484,7 @@ type AttributeEncoder struct {
 
 // NewAttributeEncoder creates an AttributeEncoder that encodes Attributes.
 func NewAttributeEncoder() *AttributeEncoder {
-	return &AttributeEncoder{ByteOrder: native.Endian}
+	return &AttributeEncoder{ByteOrder: binary.NativeEndian}
 }
 
 // Uint8 encodes uint8 data into an Attribute specified by typ.
