@@ -1,5 +1,3 @@
-//go:build go1.21
-
 package log
 
 import (
@@ -8,6 +6,7 @@ import (
 	"log/slog"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
@@ -77,6 +76,9 @@ func (h slogJSONHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	if len(attrs) == 0 {
 		return &h
 	}
+	// Drop the spare capacity of the parent buffer, so that two handlers
+	// derived from the same parent do not append into the same backing array.
+	h.entry.buf = h.entry.buf[:len(h.entry.buf):len(h.entry.buf)]
 	i := len(h.entry.buf)
 	for _, attr := range attrs {
 		h.entry = *slogJSONAttrEval(&h.entry, attr)
@@ -92,6 +94,7 @@ func (h slogJSONHandler) WithGroup(name string) slog.Handler {
 	if name == "" {
 		return &h
 	}
+	h.entry.buf = h.entry.buf[:len(h.entry.buf):len(h.entry.buf)]
 	if h.grouping {
 		h.entry.buf = append(h.entry.buf, '{')
 	} else {
@@ -103,6 +106,19 @@ func (h slogJSONHandler) WithGroup(name string) slog.Handler {
 	h.grouping = true
 	h.groups++
 	return &h
+}
+
+// slogTimeHeader holds the "YYYY-MM-DDTHH:MM:SS." rendering of a single
+// absolute second. Consecutive log lines almost always share the same second,
+// so caching lets header skip absDateTime and the 19 digit writes.
+type slogTimeHeader struct {
+	sec int64
+	b   [20]byte // "2006-01-02T15:04:05."
+}
+
+var slogTimeHeaderPointers struct {
+	utc   atomic.Pointer[slogTimeHeader]
+	local atomic.Pointer[slogTimeHeader]
 }
 
 func (h *slogJSONHandler) Handle(_ context.Context, r slog.Record) error {
@@ -118,13 +134,16 @@ func (h *slogJSONHandler) Handle(_ context.Context, r slog.Record) error {
 		e.buf = append(e.buf, `":"`...)
 		if timeOffset == 0 || r.Time.Location() == time.Local {
 			sec, nsec := r.Time.Unix(), r.Time.Nanosecond()
+			var tp *atomic.Pointer[slogTimeHeader]
 			var tmp [35]byte
 			var buf []byte
 			if timeOffset == 0 {
+				tp = &slogTimeHeaderPointers.utc
 				// 2006-01-02T15:04:05.999Z
 				tmp[29] = 'Z'
 				buf = tmp[:30]
 			} else {
+				tp = &slogTimeHeaderPointers.local
 				// 2006-01-02T15:04:05.999999999Z07:00
 				tmp[34] = timeZone[5]
 				tmp[33] = timeZone[4]
@@ -134,61 +153,71 @@ func (h *slogJSONHandler) Handle(_ context.Context, r slog.Record) error {
 				tmp[29] = timeZone[0]
 				buf = tmp[:35]
 			}
-			// date time
-			sec += 9223372028715321600 + timeOffset // unixToInternal + internalToAbsolute + timeOffset
-			year, month, day, _ := absDate(uint64(sec), true)
-			hour, minute, second := absClock(uint64(sec))
-			// year
-			a := year / 100 * 2
-			b := year % 100 * 2
-			tmp[0] = smallsString[a]
-			tmp[1] = smallsString[a+1]
-			tmp[2] = smallsString[b]
-			tmp[3] = smallsString[b+1]
-			// month
-			month *= 2
-			tmp[4] = '-'
-			tmp[5] = smallsString[month]
-			tmp[6] = smallsString[month+1]
-			// day
-			day *= 2
-			tmp[7] = '-'
-			tmp[8] = smallsString[day]
-			tmp[9] = smallsString[day+1]
-			// hour
-			hour *= 2
-			tmp[10] = 'T'
-			tmp[11] = smallsString[hour]
-			tmp[12] = smallsString[hour+1]
-			// minute
-			minute *= 2
-			tmp[13] = ':'
-			tmp[14] = smallsString[minute]
-			tmp[15] = smallsString[minute+1]
-			// second
-			second *= 2
-			tmp[16] = ':'
-			tmp[17] = smallsString[second]
-			tmp[18] = smallsString[second+1]
-			tmp[19] = '.'
+			if c := tp.Load(); c != nil && c.sec == sec {
+				copy(tmp[:20], c.b[:])
+			} else {
+				// date time
+				abs := uint64(sec + 9223372028715321600 + timeOffset) // unixToInternal + internalToAbsolute + timeOffset
+				year, month, day, hour, minute, second := absDateTime(abs)
+				// year
+				a := year / 100 * 2
+				b := year % 100 * 2
+				tmp[0] = smallsString[a]
+				tmp[1] = smallsString[a+1]
+				tmp[2] = smallsString[b]
+				tmp[3] = smallsString[b+1]
+				// month
+				month *= 2
+				tmp[4] = '-'
+				tmp[5] = smallsString[month]
+				tmp[6] = smallsString[month+1]
+				// day
+				day *= 2
+				tmp[7] = '-'
+				tmp[8] = smallsString[day]
+				tmp[9] = smallsString[day+1]
+				// hour
+				hour *= 2
+				tmp[10] = 'T'
+				tmp[11] = smallsString[hour]
+				tmp[12] = smallsString[hour+1]
+				// minute
+				minute *= 2
+				tmp[13] = ':'
+				tmp[14] = smallsString[minute]
+				tmp[15] = smallsString[minute+1]
+				// second
+				second *= 2
+				tmp[16] = ':'
+				tmp[17] = smallsString[second]
+				tmp[18] = smallsString[second+1]
+				tmp[19] = '.'
+				// publish for the next line
+				nc := &slogTimeHeader{sec: sec}
+				copy(nc.b[:], tmp[:20])
+				tp.Store(nc)
+			}
 			// nano seconds
-			a = int(nsec)
-			b = a % 100 * 2
-			a /= 100
+			// unsigned, so the divisions by constants need no sign fixups
+			// and the table indexes no bounds checks, and split into two
+			// independent chains of 4 and 5 digits
+			hi, lo := uint32(nsec)/100000, uint32(nsec)%100000
+			b := hi % 100 * 2
+			hi /= 100
+			tmp[23] = smallsString[b+1]
+			tmp[22] = smallsString[b]
+			b = hi * 2
+			tmp[21] = smallsString[b+1]
+			tmp[20] = smallsString[b]
+			b = lo % 100 * 2
+			lo /= 100
 			tmp[28] = smallsString[b+1]
 			tmp[27] = smallsString[b]
-			b = a % 100 * 2
-			a /= 100
+			b = lo % 100 * 2
+			lo /= 100
 			tmp[26] = smallsString[b+1]
 			tmp[25] = smallsString[b]
-			b = a % 100 * 2
-			a /= 100
-			tmp[24] = smallsString[b+1]
-			tmp[23] = smallsString[b]
-			b = a % 100 * 2
-			tmp[22] = smallsString[b+1]
-			tmp[21] = smallsString[b]
-			tmp[20] = byte('0' + a/100)
+			tmp[24] = byte('0' + lo)
 			// append to e.buf
 			e.buf = append(e.buf, buf...)
 		} else {
@@ -290,7 +319,7 @@ func (h *slogJSONHandler) Handle(_ context.Context, r slog.Record) error {
 	case 4:
 		e.buf = append(e.buf, '}', '}', '}', '}', '}', '\n')
 	default:
-		for i := 0; i <= h.groups; i++ {
+		for range h.groups + 1 {
 			e.buf = append(e.buf, '}')
 		}
 		e.buf = append(e.buf, '\n')

@@ -195,6 +195,7 @@ type Attribute struct {
 	// Classless qdiscs
 	Cake    *Cake
 	FqCodel *FqCodel
+	FqPie   *FqPie
 	Codel   *Codel
 	Fq      *Fq
 	Pie     *Pie
@@ -237,6 +238,7 @@ type XStats struct {
 	Hhf     *HhfXStats
 	Pie     *PieXStats
 	FqCodel *FqCodelXStats
+	FqPie   *FqPieXStats
 	Fq      *FqQdStats
 	Hfsc    *HfscXStats
 }
@@ -262,6 +264,8 @@ func marshalXStats(v XStats) ([]byte, error) {
 		return marshalStruct(v.Pie)
 	} else if v.FqCodel != nil {
 		return marshalFqCodelXStats(v.FqCodel)
+	} else if v.FqPie != nil {
+		return marshalStruct(v.FqPie)
 	}
 	return []byte{}, fmt.Errorf("could not marshal XStat")
 }

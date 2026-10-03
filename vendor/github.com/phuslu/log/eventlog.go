@@ -22,7 +22,7 @@ type EventlogWriter struct {
 	Host string
 
 	mu     sync.Mutex
-	handle uintptr
+	handle atomic.Uintptr
 }
 
 var (
@@ -35,7 +35,7 @@ var (
 // Write implements io.Closer.
 func (w *EventlogWriter) Close() (err error) {
 	var ret uintptr
-	ret, _, err = syscall.Syscall(procDeregisterEventSource.Addr(), 1, w.handle, 0, 0)
+	ret, _, err = syscall.Syscall(procDeregisterEventSource.Addr(), 1, w.handle.Load(), 0, 0)
 	if ret > 0 {
 		err = nil
 	}
@@ -43,9 +43,9 @@ func (w *EventlogWriter) Close() (err error) {
 }
 
 func (w *EventlogWriter) connect() (err error) {
-	if w.handle != 0 {
+	if w.handle.Load() != 0 {
 		w.Close()
-		w.handle = 0
+		w.handle.Store(0)
 	}
 
 	if w.ID == 0 {
@@ -75,7 +75,7 @@ func (w *EventlogWriter) connect() (err error) {
 	var handle uintptr
 	handle, _, err = syscall.Syscall(procRegisterEventSourceW.Addr(), 2, uintptr(unsafe.Pointer(host)), uintptr(unsafe.Pointer(source)), 0)
 	if handle != 0 {
-		atomic.StoreUintptr(&w.handle, handle)
+		w.handle.Store(handle)
 		err = nil
 	}
 
@@ -84,9 +84,9 @@ func (w *EventlogWriter) connect() (err error) {
 
 // WriteEntry implements Writer.
 func (w *EventlogWriter) WriteEntry(e *Entry) (n int, err error) {
-	if atomic.LoadUintptr(&w.handle) != 0 {
+	if w.handle.Load() == 0 {
 		w.mu.Lock()
-		if w.handle == 0 {
+		if w.handle.Load() == 0 {
 			err = w.connect()
 			if err != nil {
 				w.mu.Unlock()
@@ -135,7 +135,7 @@ func (w *EventlogWriter) WriteEntry(e *Entry) (n int, err error) {
 	}
 
 	var ret uintptr
-	ret, _, err = syscall.Syscall9(procReportEventW.Addr(), 9, w.handle, uintptr(etype), ecat, eid, 0, 1, 0, uintptr(unsafe.Pointer(&ss[0])), 0)
+	ret, _, err = syscall.Syscall9(procReportEventW.Addr(), 9, w.handle.Load(), uintptr(etype), ecat, eid, 0, 1, 0, uintptr(unsafe.Pointer(&ss[0])), 0)
 	if ret > 0 {
 		err = nil
 	}

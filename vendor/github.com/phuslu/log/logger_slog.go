@@ -1,11 +1,11 @@
-//go:build go1.21
-
 package log
 
 import (
 	"context"
+	stdLog "log"
 	"log/slog"
 	"os"
+	"sync/atomic"
 	"time"
 )
 
@@ -65,10 +65,25 @@ type stdSlogHandler struct {
 	groups   int
 }
 
+// stdSlogTimeHeader holds the "YYYY-MM-DDTHH:MM:SS." rendering of a single
+// absolute second. Consecutive log lines almost always share the same second,
+// so caching lets header skip absDateTime and the 19 digit writes.
+type stdSlogTimeHeader struct {
+	sec int64
+	b   [20]byte // "2006-01-02T15:04:05."
+}
+
+var stdSlogTimeHeaderPointers struct {
+	utc   atomic.Pointer[stdSlogTimeHeader]
+	local atomic.Pointer[stdSlogTimeHeader]
+}
+
 func (h stdSlogHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	if len(attrs) == 0 {
 		return &h
 	}
+	// See slogJSONHandler.WithAttrs.
+	h.entry.buf = h.entry.buf[:len(h.entry.buf):len(h.entry.buf)]
 	i := len(h.entry.buf)
 	for _, attr := range attrs {
 		h.entry = *stdSlogAttrEval(&h.entry, attr)
@@ -84,6 +99,7 @@ func (h stdSlogHandler) WithGroup(name string) slog.Handler {
 	if name == "" {
 		return &h
 	}
+	h.entry.buf = h.entry.buf[:len(h.entry.buf):len(h.entry.buf)]
 	if h.grouping {
 		h.entry.buf = append(h.entry.buf, '{')
 	} else {
@@ -121,7 +137,9 @@ func (h *stdSlogHandler) header(now time.Time) *Entry {
 	}
 	// time
 	if h.logger.TimeField == "" {
-		e.buf = append(e.buf, "{\"time\":"...)
+		e.buf = append(e.buf, "{\""...)
+		e.buf = append(e.buf, TimeKey...)
+		e.buf = append(e.buf, "\":"...)
 	} else {
 		e.buf = append(e.buf, '{', '"')
 		e.buf = append(e.buf, h.logger.TimeField...)
@@ -133,68 +151,78 @@ func (h *stdSlogHandler) header(now time.Time) *Entry {
 	switch h.logger.TimeFormat {
 	case "":
 		sec, nsec := now.Unix(), now.Nanosecond()
+		var tp *atomic.Pointer[stdSlogTimeHeader]
 		var tmp [32]byte
 		var buf []byte
 		if timeOffset == 0 {
 			// "2006-01-02T15:04:05.999Z"
-			tmp[25] = '"'
+			tp = &stdSlogTimeHeaderPointers.utc
 			tmp[24] = 'Z'
+			tmp[25] = '"'
 			buf = tmp[:26]
 		} else {
 			// "2006-01-02T15:04:05.999Z07:00"
-			tmp[30] = '"'
+			tp = &stdSlogTimeHeaderPointers.local
 			tmp[29] = timeZone[5]
 			tmp[28] = timeZone[4]
 			tmp[27] = timeZone[3]
 			tmp[26] = timeZone[2]
 			tmp[25] = timeZone[1]
 			tmp[24] = timeZone[0]
+			tmp[30] = '"'
 			buf = tmp[:31]
 		}
-		// date time
-		sec += 9223372028715321600 + timeOffset // unixToInternal + internalToAbsolute + timeOffset
-		year, month, day, _ := absDate(uint64(sec), true)
-		hour, minute, second := absClock(uint64(sec))
-		// year
-		a := year / 100 * 2
-		b := year % 100 * 2
 		tmp[0] = '"'
-		tmp[1] = smallsString[a]
-		tmp[2] = smallsString[a+1]
-		tmp[3] = smallsString[b]
-		tmp[4] = smallsString[b+1]
-		// month
-		month *= 2
-		tmp[5] = '-'
-		tmp[6] = smallsString[month]
-		tmp[7] = smallsString[month+1]
-		// day
-		day *= 2
-		tmp[8] = '-'
-		tmp[9] = smallsString[day]
-		tmp[10] = smallsString[day+1]
-		// hour
-		hour *= 2
-		tmp[11] = 'T'
-		tmp[12] = smallsString[hour]
-		tmp[13] = smallsString[hour+1]
-		// minute
-		minute *= 2
-		tmp[14] = ':'
-		tmp[15] = smallsString[minute]
-		tmp[16] = smallsString[minute+1]
-		// second
-		second *= 2
-		tmp[17] = ':'
-		tmp[18] = smallsString[second]
-		tmp[19] = smallsString[second+1]
+		if c := tp.Load(); c != nil && c.sec == sec {
+			copy(tmp[1:21], c.b[:])
+		} else {
+			// date time
+			abs := uint64(sec + 9223372028715321600 + timeOffset) // unixToInternal + internalToAbsolute + timeOffset
+			year, month, day, hour, minute, second := absDateTime(abs)
+			nc := &stdSlogTimeHeader{sec: sec}
+			// year
+			a := year / 100 * 2
+			b := year % 100 * 2
+			nc.b[0] = smallsString[a]
+			nc.b[1] = smallsString[a+1]
+			nc.b[2] = smallsString[b]
+			nc.b[3] = smallsString[b+1]
+			// month
+			month *= 2
+			nc.b[4] = '-'
+			nc.b[5] = smallsString[month]
+			nc.b[6] = smallsString[month+1]
+			// day
+			day *= 2
+			nc.b[7] = '-'
+			nc.b[8] = smallsString[day]
+			nc.b[9] = smallsString[day+1]
+			// hour
+			hour *= 2
+			nc.b[10] = 'T'
+			nc.b[11] = smallsString[hour]
+			nc.b[12] = smallsString[hour+1]
+			// minute
+			minute *= 2
+			nc.b[13] = ':'
+			nc.b[14] = smallsString[minute]
+			nc.b[15] = smallsString[minute+1]
+			// second
+			second *= 2
+			nc.b[16] = ':'
+			nc.b[17] = smallsString[second]
+			nc.b[18] = smallsString[second+1]
+			nc.b[19] = '.'
+			// publish for the next line
+			copy(tmp[1:21], nc.b[:])
+			tp.Store(nc)
+		}
 		// milli seconds
-		a = int(nsec) / 1000000
-		b = a % 100 * 2
-		tmp[20] = '.'
-		tmp[21] = byte('0' + a/100)
-		tmp[22] = smallsString[b]
-		tmp[23] = smallsString[b+1]
+		ms := uint32(nsec) / 1000000
+		mb := ms % 100 * 2
+		tmp[21] = byte('0' + ms/100)
+		tmp[22] = smallsString[mb]
+		tmp[23] = smallsString[mb+1]
 		// append to e.buf
 		e.buf = append(e.buf, buf...)
 	case TimeFormatUnix:
@@ -304,16 +332,32 @@ func (h *stdSlogHandler) Handle(_ context.Context, r slog.Record) error {
 	switch r.Level {
 	case slog.LevelDebug:
 		e.Level = DebugLevel
-		e.buf = append(e.buf, ",\"level\":\"debug\""...)
+		e.buf = append(e.buf, ",\""...)
+		e.buf = append(e.buf, LevelKey...)
+		e.buf = append(e.buf, "\":\""...)
+		e.buf = append(e.buf, DebugLevelString...)
+		e.buf = append(e.buf, '"')
 	case slog.LevelInfo:
 		e.Level = InfoLevel
-		e.buf = append(e.buf, ",\"level\":\"info\""...)
+		e.buf = append(e.buf, ",\""...)
+		e.buf = append(e.buf, LevelKey...)
+		e.buf = append(e.buf, "\":\""...)
+		e.buf = append(e.buf, InfoLevelString...)
+		e.buf = append(e.buf, '"')
 	case slog.LevelWarn:
 		e.Level = WarnLevel
-		e.buf = append(e.buf, ",\"level\":\"warn\""...)
+		e.buf = append(e.buf, ",\""...)
+		e.buf = append(e.buf, LevelKey...)
+		e.buf = append(e.buf, "\":\""...)
+		e.buf = append(e.buf, WarnLevelString...)
+		e.buf = append(e.buf, '"')
 	case slog.LevelError:
 		e.Level = ErrorLevel
-		e.buf = append(e.buf, ",\"level\":\"error\""...)
+		e.buf = append(e.buf, ",\""...)
+		e.buf = append(e.buf, LevelKey...)
+		e.buf = append(e.buf, "\":\""...)
+		e.buf = append(e.buf, ErrorLevelString...)
+		e.buf = append(e.buf, '"')
 	default:
 		e.Level = noLevel
 	}
@@ -328,7 +372,7 @@ func (h *stdSlogHandler) Handle(_ context.Context, r slog.Record) error {
 	}
 
 	// msg
-	e = e.Str("message", r.Message)
+	e = e.Str(MessageKey, r.Message)
 
 	// with
 	if b := h.entry.buf; len(b) != 0 {
@@ -382,7 +426,7 @@ func (h *stdSlogHandler) Handle(_ context.Context, r slog.Record) error {
 	case 4:
 		e.buf = append(e.buf, '}', '}', '}', '}')
 	default:
-		for i := 0; i < h.groups; i++ {
+		for range h.groups {
 			e.buf = append(e.buf, '}')
 		}
 	}
@@ -394,4 +438,29 @@ func (h *stdSlogHandler) Handle(_ context.Context, r slog.Record) error {
 // Slog wraps the Logger to provide *slog.Logger
 func (l *Logger) Slog() *slog.Logger {
 	return slog.New(&stdSlogHandler{logger: *l})
+}
+
+type stdLogWriter struct {
+	Logger
+}
+
+func (w *stdLogWriter) Write(p []byte) (int, error) {
+	if w.Logger.silent(w.Logger.Level) {
+		return 0, nil
+	}
+	e := w.Logger.header(w.Level)
+	if caller, full := w.Logger.Caller, false; caller != 0 {
+		if caller < 0 {
+			caller, full = -caller, true
+		}
+		var pc uintptr
+		e.caller(caller1(caller+2, &pc, 1, 1), pc, full)
+	}
+	e.Msg(b2s(p))
+	return len(p), nil
+}
+
+// Std wraps the Logger to provide *stdLog.Logger
+func (l *Logger) Std(prefix string, flag int) *stdLog.Logger {
+	return stdLog.New(&stdLogWriter{*l}, prefix, flag)
 }

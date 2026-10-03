@@ -143,6 +143,11 @@ func extractTCAOptions(data []byte, tc *Attribute, kind string) error {
 		err := unmarshalFq(data, info)
 		multiError = concatError(multiError, err)
 		tc.Fq = info
+	case "fq_pie":
+		info := &FqPie{}
+		err := unmarshalFqPie(data, info)
+		multiError = concatError(multiError, err)
+		tc.FqPie = info
 	case "pie":
 		info := &Pie{}
 		err := unmarshalPie(data, info)
@@ -374,6 +379,11 @@ func extractXStats(data []byte, tc *XStats, kind string) error {
 		err := unmarshalStruct(data, info)
 		multiError = concatError(multiError, err)
 		tc.Pie = info
+	case "fq_pie":
+		info := &FqPieXStats{}
+		err := unmarshalStruct(data, info)
+		multiError = concatError(multiError, err)
+		tc.FqPie = info
 	case "fq_codel":
 		info := &FqCodelXStats{}
 		err := unmarshalFqCodelXStats(data, info)

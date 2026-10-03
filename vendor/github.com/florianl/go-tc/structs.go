@@ -290,3 +290,15 @@ type FqQdStats struct {
 	BandPktCount        [3]uint32 // FQ_BANDS = 3
 	_                   uint32    // padding
 }
+
+// FqPieXStats from include/uapi/linux/pkt_sched.h
+type FqPieXStats struct {
+	PacketsIn     uint32
+	Dropped       uint32
+	OverLimit     uint32
+	OverMemory    uint32
+	EcnMark       uint32
+	NewFlowsCount uint32
+	OldFlowsCount uint32
+	MemoryUsage   uint32
+}

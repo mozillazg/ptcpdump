@@ -6,7 +6,6 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-	"unsafe"
 )
 
 // SyslogWriter is an Writer that writes logs to a syslog server..
@@ -30,7 +29,7 @@ type SyslogWriter struct {
 	Dial func(network, addr string) (net.Conn, error)
 
 	mu    sync.Mutex
-	conn  *net.Conn
+	conn  atomic.Pointer[net.Conn]
 	local bool
 }
 
@@ -39,9 +38,9 @@ func (w *SyslogWriter) Close() (err error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	if w.conn != nil {
-		err = (*w.conn).Close()
-		w.conn = nil
+	if c := w.conn.Load(); c != nil {
+		err = (*c).Close()
+		w.conn.Store(nil)
 		return
 	}
 	return
@@ -49,9 +48,9 @@ func (w *SyslogWriter) Close() (err error) {
 
 // connect makes a connection to the syslog server.
 func (w *SyslogWriter) connect() (err error) {
-	if w.conn != nil {
-		(*w.conn).Close()
-		w.conn = nil
+	if c := w.conn.Load(); c != nil {
+		(*c).Close()
+		w.conn.Store(nil)
 	}
 
 	var dial = w.Dial
@@ -64,7 +63,7 @@ func (w *SyslogWriter) connect() (err error) {
 	if err != nil {
 		return
 	}
-	atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(&w.conn)), unsafe.Pointer(&conn))
+	w.conn.Store(&conn)
 
 	w.local = w.Address != "" && w.Address[0] == '/'
 
@@ -72,7 +71,7 @@ func (w *SyslogWriter) connect() (err error) {
 		if w.local {
 			w.Hostname = hostname
 		} else {
-			w.Hostname, _, _ = net.SplitHostPort((*w.conn).LocalAddr().String())
+			w.Hostname, _, _ = net.SplitHostPort(conn.LocalAddr().String())
 		}
 	}
 
@@ -81,9 +80,9 @@ func (w *SyslogWriter) connect() (err error) {
 
 // WriteEntry implements Writer, sends logs with priority to the syslog server.
 func (w *SyslogWriter) WriteEntry(e *Entry) (n int, err error) {
-	if atomic.LoadPointer((*unsafe.Pointer)(unsafe.Pointer(&w.conn))) == nil {
+	if w.conn.Load() == nil {
 		w.mu.Lock()
-		if w.conn == nil {
+		if w.conn.Load() == nil {
 			err = w.connect()
 			if err != nil {
 				w.mu.Unlock()
@@ -127,9 +126,9 @@ func (w *SyslogWriter) WriteEntry(e *Entry) (n int, err error) {
 		// Compared to the network form below, the changes are:
 		//	1. Use time.Stamp instead of time.RFC3339.
 		//	2. Drop the hostname field.
-		e1.buf = timeNow().AppendFormat(e1.buf, time.Stamp)
+		e1.buf = Now().AppendFormat(e1.buf, time.Stamp)
 	} else {
-		e1.buf = timeNow().AppendFormat(e1.buf, time.RFC3339)
+		e1.buf = Now().AppendFormat(e1.buf, time.RFC3339)
 		e1.buf = append(e1.buf, ' ')
 		e1.buf = append(e1.buf, w.Hostname...)
 	}
@@ -144,15 +143,16 @@ func (w *SyslogWriter) WriteEntry(e *Entry) (n int, err error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	if w.conn != nil {
-		if n, err := (*w.conn).Write(e1.buf); err == nil {
+	if c := w.conn.Load(); c != nil {
+		if n, err := (*c).Write(e1.buf); err == nil {
 			return n, err
 		}
 	}
 	if err := w.connect(); err != nil {
 		return 0, err
 	}
-	return (*w.conn).Write(e1.buf)
+	c := w.conn.Load()
+	return (*c).Write(e1.buf)
 }
 
 var _ Writer = (*SyslogWriter)(nil)

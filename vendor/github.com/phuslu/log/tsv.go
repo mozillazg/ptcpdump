@@ -47,7 +47,16 @@ func (l *TSVLogger) New() (e *TSVEntry) {
 // Timestamp adds the current time as UNIX timestamp
 func (e *TSVEntry) Timestamp() *TSVEntry {
 	var tmp [11]byte
-	sec, _, _ := now()
+	var sec int64
+	if tt := timestampCachePointer.Load(); tt != nil {
+		sec = tt.sec
+	}
+	if sec == 0 {
+		sec, _ = walltime()
+	}
+	if sec == 0 {
+		sec, _, _ = now()
+	}
 	// separator
 	tmp[10] = e.sep
 	// seconds
@@ -78,7 +87,17 @@ func (e *TSVEntry) Timestamp() *TSVEntry {
 // TimestampMS adds the current time with milliseconds as UNIX timestamp
 func (e *TSVEntry) TimestampMS() *TSVEntry {
 	var tmp [14]byte
-	sec, nsec, _ := now()
+	var sec int64
+	var nsec int32
+	if tt := timestampCachePointer.Load(); tt != nil {
+		sec, nsec = tt.sec, tt.nsec
+	}
+	if sec == 0 {
+		sec, nsec = walltime()
+	}
+	if sec == 0 {
+		sec, nsec, _ = now()
+	}
 	// separator
 	tmp[13] = e.sep
 	// milli seconds

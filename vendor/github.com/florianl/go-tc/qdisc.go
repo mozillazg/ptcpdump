@@ -137,6 +137,8 @@ func validateQdiscObject(action int, info *Object) ([]tcOption, error) {
 		data, err = marshalAtm(info.Atm)
 	case "fq_codel":
 		data, err = marshalFqCodel(info.FqCodel)
+	case "fq_pie":
+		data, err = marshalFqPie(info.FqPie)
 	case "htb":
 		data, err = marshalHtb(info.Htb)
 	case "netem":

@@ -6,20 +6,20 @@ require (
 	github.com/cilium/ebpf v0.18.0
 	github.com/containerd/containerd v1.7.29
 	github.com/containerd/typeurl/v2 v2.2.3
-	github.com/florianl/go-tc v0.4.6
+	github.com/florianl/go-tc v0.4.8
 	github.com/gopacket/gopacket v1.3.1
 	github.com/jschwinger233/elibpcap v1.1.0
-	github.com/phuslu/log v1.0.120
-	github.com/shirou/gopsutil/v4 v4.25.9
+	github.com/phuslu/log v1.0.137
+	github.com/shirou/gopsutil/v4 v4.25.12
 	github.com/spf13/cobra v1.9.1
-	github.com/x-way/pktdump v0.0.6
+	github.com/x-way/pktdump v0.0.7
 	golang.org/x/sys v0.39.0
 )
 
 require (
 	github.com/containerd/containerd/api v1.9.0
 	github.com/containerd/errdefs v1.0.0
-	github.com/go-logr/logr v1.4.3
+	github.com/go-logr/logr v1.4.4
 	github.com/mandiant/GoReSym v1.7.2-0.20240819162932-534ca84b42d5
 	github.com/mdlayher/netlink v1.7.2
 	github.com/moby/moby/api v1.54.2
@@ -28,8 +28,8 @@ require (
 	github.com/stretchr/testify v1.11.1
 	github.com/vishvananda/netns v0.0.5
 	golang.org/x/arch v0.18.0
-	k8s.io/cri-api v0.33.5
-	k8s.io/cri-client v0.33.5
+	k8s.io/cri-api v0.33.13
+	k8s.io/cri-client v0.33.13
 	k8s.io/klog/v2 v2.140.0
 )
 
@@ -54,7 +54,7 @@ require (
 	github.com/docker/go-connections v0.7.0 // indirect
 	github.com/docker/go-events v0.0.0-20190806004212-e31b211e4f1c // indirect
 	github.com/docker/go-units v0.5.0 // indirect
-	github.com/ebitengine/purego v0.9.0 // indirect
+	github.com/ebitengine/purego v0.9.1 // indirect
 	github.com/elliotchance/orderedmap v1.4.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -84,8 +84,8 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spf13/pflag v1.0.6 // indirect
-	github.com/tklauser/go-sysconf v0.3.15 // indirect
-	github.com/tklauser/numcpus v0.10.0 // indirect
+	github.com/tklauser/go-sysconf v0.3.16 // indirect
+	github.com/tklauser/numcpus v0.11.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
