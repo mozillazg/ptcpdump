@@ -36,10 +36,6 @@ func (*Process) NumCtxSwitchesWithContext(_ context.Context) (*NumCtxSwitchesSta
 	return nil, common.ErrNotImplementedError
 }
 
-func (*Process) NumFDsWithContext(_ context.Context) (int32, error) {
-	return 0, common.ErrNotImplementedError
-}
-
 func (*Process) CPUAffinityWithContext(_ context.Context) ([]int32, error) {
 	return nil, common.ErrNotImplementedError
 }
@@ -61,10 +57,6 @@ func (*Process) MemoryMapsWithContext(_ context.Context, _ bool) (*[]MemoryMapsS
 }
 
 func (*Process) ThreadsWithContext(_ context.Context) (map[int32]*cpu.TimesStat, error) {
-	return nil, common.ErrNotImplementedError
-}
-
-func (*Process) EnvironWithContext(_ context.Context) ([]string, error) {
 	return nil, common.ErrNotImplementedError
 }
 

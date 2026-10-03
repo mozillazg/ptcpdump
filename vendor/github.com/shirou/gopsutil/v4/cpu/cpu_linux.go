@@ -131,7 +131,7 @@ func TimesWithContext(ctx context.Context, percpu bool) ([]TimesStat, error) {
 		if err != nil {
 			continue
 		}
-		ret = append(ret, *ct)
+		ret = append(ret, ct.ToTimesStat())
 
 	}
 	return ret, nil
@@ -195,7 +195,7 @@ func InfoWithContext(ctx context.Context) ([]InfoStat, error) {
 
 	c := InfoStat{CPU: -1, Cores: 1}
 	for _, line := range lines {
-		fields := strings.Split(line, ":")
+		fields := strings.SplitN(line, ":", 2)
 		if len(fields) < 2 {
 			continue
 		}
@@ -220,6 +220,25 @@ func InfoWithContext(ctx context.Context) ([]InfoStat, error) {
 			c.VendorID = value
 			if strings.Contains(value, "S390") {
 				processorName = "S390"
+			}
+		case "mvendorid":
+			if !strings.HasPrefix(value, "0x") {
+				continue
+			}
+
+			if v, err := strconv.ParseUint(value[2:], 16, 32); err == nil {
+				switch v {
+				case 0x31e:
+					c.VendorID = "Andes"
+				case 0x029:
+					c.VendorID = "Microchip"
+				case 0x127:
+					c.VendorID = "MIPS"
+				case 0x489:
+					c.VendorID = "SiFive"
+				case 0x5b7:
+					c.VendorID = "T-Head"
+				}
 			}
 		case "CPU implementer":
 			if v, err := strconv.ParseUint(value, 0, 8); err == nil {
@@ -256,9 +275,9 @@ func InfoWithContext(ctx context.Context) ([]InfoStat, error) {
 					c.VendorID = "Ampere"
 				}
 			}
-		case "cpu family":
+		case "cpu family", "marchid":
 			c.Family = value
-		case "model", "CPU part":
+		case "model", "CPU part", "mimpid":
 			c.Model = value
 			// if CPU is arm based, model name is found via model number. refer to: arch/arm64/kernel/cpuinfo.c
 			if c.VendorID == "ARM" {
@@ -271,7 +290,7 @@ func InfoWithContext(ctx context.Context) ([]InfoStat, error) {
 					}
 				}
 			}
-		case "Model Name", "model name", "cpu":
+		case "Model Name", "model name", "cpu", "uarch":
 			c.ModelName = value
 			if strings.Contains(value, "POWER") {
 				c.Model = strings.Split(value, " ")[0]
@@ -305,7 +324,7 @@ func InfoWithContext(ctx context.Context) ([]InfoStat, error) {
 				return ret, err
 			}
 			c.CacheSize = int32(t)
-		case "physical id":
+		case "physical id", "hart":
 			c.PhysicalID = value
 		case "core id":
 			c.CoreID = value
@@ -313,6 +332,11 @@ func InfoWithContext(ctx context.Context) ([]InfoStat, error) {
 			c.Flags = strings.FieldsFunc(value, func(r rune) bool {
 				return r == ',' || r == ' '
 			})
+		case "isa", "hart isa":
+			if len(c.Flags) != 0 || !strings.HasPrefix(value, "rv64") {
+				continue
+			}
+			c.Flags = riscvISAParse(value)
 		case "microcode":
 			c.Microcode = value
 		}
@@ -324,83 +348,39 @@ func InfoWithContext(ctx context.Context) ([]InfoStat, error) {
 	return ret, nil
 }
 
-func parseStatLine(line string) (*TimesStat, error) {
+// parseStatLine parses a /proc/stat CPU line for both Times and ExLinux.Times.
+func parseStatLine(line string) (ExTimesStat, error) {
 	fields := strings.Fields(line)
 
+	// The name and the seven counters present since Linux 2.6 are required.
 	if len(fields) < 8 {
-		return nil, errors.New("stat does not contain cpu info")
+		return ExTimesStat{}, errors.New("stat does not contain cpu info")
 	}
 
 	if !strings.HasPrefix(fields[0], "cpu") {
-		return nil, errors.New("not contain cpu")
+		return ExTimesStat{}, errors.New("not contain cpu")
 	}
 
-	cpu := fields[0]
-	if cpu == "cpu" {
-		cpu = "cpu-total"
+	stat := ExTimesStat{CPU: fields[0]}
+	if stat.CPU == "cpu" {
+		stat.CPU = "cpu-total"
 	}
-	user, err := strconv.ParseFloat(fields[1], 64)
-	if err != nil {
-		return nil, err
+	// Steal, Guest and GuestNice are optional, and later columns are ignored.
+	counters := []*uint64{
+		&stat.User, &stat.Nice, &stat.System, &stat.Idle, &stat.Iowait,
+		&stat.Irq, &stat.Softirq, &stat.Steal, &stat.Guest, &stat.GuestNice,
 	}
-	nice, err := strconv.ParseFloat(fields[2], 64)
-	if err != nil {
-		return nil, err
-	}
-	system, err := strconv.ParseFloat(fields[3], 64)
-	if err != nil {
-		return nil, err
-	}
-	idle, err := strconv.ParseFloat(fields[4], 64)
-	if err != nil {
-		return nil, err
-	}
-	iowait, err := strconv.ParseFloat(fields[5], 64)
-	if err != nil {
-		return nil, err
-	}
-	irq, err := strconv.ParseFloat(fields[6], 64)
-	if err != nil {
-		return nil, err
-	}
-	softirq, err := strconv.ParseFloat(fields[7], 64)
-	if err != nil {
-		return nil, err
-	}
-
-	ct := &TimesStat{
-		CPU:     cpu,
-		User:    user / ClocksPerSec,
-		Nice:    nice / ClocksPerSec,
-		System:  system / ClocksPerSec,
-		Idle:    idle / ClocksPerSec,
-		Iowait:  iowait / ClocksPerSec,
-		Irq:     irq / ClocksPerSec,
-		Softirq: softirq / ClocksPerSec,
-	}
-	if len(fields) > 8 { // Linux >= 2.6.11
-		steal, err := strconv.ParseFloat(fields[8], 64)
-		if err != nil {
-			return nil, err
+	for i, counter := range counters {
+		if i+1 >= len(fields) {
+			break
 		}
-		ct.Steal = steal / ClocksPerSec
-	}
-	if len(fields) > 9 { // Linux >= 2.6.24
-		guest, err := strconv.ParseFloat(fields[9], 64)
+		value, err := strconv.ParseUint(fields[i+1], 10, 64)
 		if err != nil {
-			return nil, err
+			return ExTimesStat{}, fmt.Errorf("parse CPU time field %d for %s: %w", i+1, stat.CPU, err)
 		}
-		ct.Guest = guest / ClocksPerSec
+		*counter = value
 	}
-	if len(fields) > 10 { // Linux >= 3.2.0
-		guestNice, err := strconv.ParseFloat(fields[10], 64)
-		if err != nil {
-			return nil, err
-		}
-		ct.GuestNice = guestNice / ClocksPerSec
-	}
-
-	return ct, nil
+	return stat, nil
 }
 
 func CountsWithContext(ctx context.Context, logical bool) (int, error) {
@@ -476,7 +456,7 @@ func CountsWithContext(ctx context.Context, logical bool) (int, error) {
 			currentInfo = make(map[string]int)
 			continue
 		}
-		fields := strings.Split(line, ":")
+		fields := strings.SplitN(line, ":", 2)
 		if len(fields) < 2 {
 			continue
 		}
@@ -494,4 +474,14 @@ func CountsWithContext(ctx context.Context, logical bool) (int, error) {
 		ret += v
 	}
 	return ret, nil
+}
+
+func riscvISAParse(s string) []string {
+	ext := strings.Split(s, "_")
+	if len(ext[0]) <= 4 {
+		return nil
+	}
+	// the base extensions must "rv64" prefix
+	base := strings.Split(ext[0][4:], "")
+	return append(base, ext[1:]...)
 }

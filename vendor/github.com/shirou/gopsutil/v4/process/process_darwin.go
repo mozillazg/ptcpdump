@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"path/filepath"
 	"runtime"
@@ -133,7 +132,7 @@ func (p *Process) GidsWithContext(_ context.Context) ([]uint32, error) {
 	}
 
 	gids := make([]uint32, 0, 3)
-	gids = append(gids, uint32(k.Eproc.Pcred.P_rgid), uint32(k.Eproc.Pcred.P_rgid), uint32(k.Eproc.Pcred.P_svgid))
+	gids = append(gids, uint32(k.Eproc.Pcred.P_rgid), uint32(k.Eproc.Ucred.Groups[0]), uint32(k.Eproc.Pcred.P_svgid))
 
 	return gids, nil
 }
@@ -179,8 +178,72 @@ func (p *Process) NiceWithContext(_ context.Context) (int32, error) {
 	return int32(k.Proc.P_nice), nil
 }
 
-func (*Process) IOCountersWithContext(_ context.Context) (*IOCountersStat, error) {
-	return nil, common.ErrNotImplementedError
+// rusageInfoV2 mirrors Darwin's struct rusage_info_v2 from sys/resource.h.
+// Only DiskIOBytesRead / DiskIOBytesWritten are used for IOCounters.
+type rusageInfoV2 struct {
+	UUID                [16]byte
+	UserTime            uint64
+	SystemTime          uint64
+	PkgIdleWkups        uint64
+	InterruptWkups      uint64
+	Pageins             uint64
+	WiredSize           uint64
+	ResidentSize        uint64
+	PhysFootprint       uint64
+	ProcStartAbstime    uint64
+	ProcExitAbstime     uint64
+	ChildUserTime       uint64
+	ChildSystemTime     uint64
+	ChildPkgIdleWkups   uint64
+	ChildInterruptWkups uint64
+	ChildPageins        uint64
+	ChildElapsedAbstime uint64
+	DiskIOBytesRead     uint64
+	DiskIOBytesWritten  uint64
+}
+
+// IOCountersWithContext returns cumulative disk I/O bytes for the process via
+// proc_pid_rusage(RUSAGE_INFO_V2).
+//
+// Darwin only reports disk I/O, so only DiskReadBytes and DiskWriteBytes are
+// populated. ReadBytes/WriteBytes count all I/O including that served from
+// cache on other platforms, which has no Darwin equivalent, and ReadCount /
+// WriteCount are not exposed at all; all four stay zero.
+//
+// Access may fail with ErrorNotPermitted for protected processes.
+func (p *Process) IOCountersWithContext(_ context.Context) (*IOCountersStat, error) {
+	funcs, err := loadProcFuncs()
+	if err != nil {
+		return nil, err
+	}
+	defer funcs.Close()
+
+	// Lock the OS thread so that errno, which is thread-local, still belongs to
+	// the thread that made the call below by the time it is read.
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+
+	// Resolve the errno location up front: doing it after the call would run a
+	// dlsym and allocate in between, either of which can overwrite errno.
+	errnoPtr := funcs.lib.ErrnoLocation()
+
+	var usage rusageInfoV2
+	ret := funcs.lib.ProcPidRusage(p.Pid, common.RUSAGE_INFO_V2, unsafe.Pointer(&usage))
+	if ret != 0 {
+		switch errno := unix.Errno(*errnoPtr); errno {
+		case unix.EPERM:
+			return nil, ErrorNotPermitted
+		case unix.ESRCH:
+			return nil, ErrorProcessNotRunning
+		default:
+			return nil, fmt.Errorf("proc_pid_rusage failed for pid %d: %w", p.Pid, errno)
+		}
+	}
+
+	return &IOCountersStat{
+		DiskReadBytes:  usage.DiskIOBytesRead,
+		DiskWriteBytes: usage.DiskIOBytesWritten,
+	}, nil
 }
 
 func (p *Process) ChildrenWithContext(ctx context.Context) ([]*Process, error) {
@@ -237,7 +300,7 @@ func (p *Process) getKProc() (*unix.KinfoProc, error) {
 
 // call ps command.
 // Return value deletes Header line(you must not input wrong arg).
-// And splited by Space. Caller have responsibility to manage.
+// And split by Space. Caller have responsibility to manage.
 // If passed arg pid is 0, get information from all process.
 func callPsWithContext(ctx context.Context, arg string, pid int32, threadOption, nameOption bool) ([][]string, error) {
 	var cmd []string
@@ -280,31 +343,21 @@ func callPsWithContext(ctx context.Context, arg string, pid int32, threadOption,
 }
 
 type dlFuncs struct {
-	lib *common.Library
-
-	procPidPath      common.ProcPidPathFunc
-	procPidInfo      common.ProcPidInfoFunc
-	machTimeBaseInfo common.MachTimeBaseInfoFunc
+	lib *common.SystemLib
 }
 
 func loadProcFuncs() (*dlFuncs, error) {
-	lib, err := common.NewLibrary(common.System)
+	lib, err := common.NewSystemLib()
 	if err != nil {
 		return nil, err
 	}
-
-	return &dlFuncs{
-		lib:              lib,
-		procPidPath:      common.GetFunc[common.ProcPidPathFunc](lib, common.ProcPidPathSym),
-		procPidInfo:      common.GetFunc[common.ProcPidInfoFunc](lib, common.ProcPidInfoSym),
-		machTimeBaseInfo: common.GetFunc[common.MachTimeBaseInfoFunc](lib, common.MachTimeBaseInfoSym),
-	}, nil
+	return &dlFuncs{lib}, err
 }
 
 func (f *dlFuncs) getTimeScaleToNanoSeconds() float64 {
 	var timeBaseInfo common.MachTimeBaseInfo
 
-	f.machTimeBaseInfo(uintptr(unsafe.Pointer(&timeBaseInfo)))
+	f.lib.MachTimeBaseInfo(unsafe.Pointer(&timeBaseInfo))
 
 	return float64(timeBaseInfo.Numer) / float64(timeBaseInfo.Denom)
 }
@@ -321,20 +374,13 @@ func (p *Process) ExeWithContext(_ context.Context) (string, error) {
 	defer funcs.Close()
 
 	buf := common.NewCStr(common.PROC_PIDPATHINFO_MAXSIZE)
-	ret := funcs.procPidPath(p.Pid, buf.Addr(), common.PROC_PIDPATHINFO_MAXSIZE)
+	ret := funcs.lib.ProcPidPath(p.Pid, unsafe.Pointer(buf.Ptr()), common.PROC_PIDPATHINFO_MAXSIZE)
 
 	if ret <= 0 {
 		return "", fmt.Errorf("unknown error: proc_pidpath returned %d", ret)
 	}
 
 	return buf.GoString(), nil
-}
-
-// sys/proc_info.h
-type vnodePathInfo struct {
-	_       [152]byte
-	vipPath [common.MAXPATHLEN]byte
-	_       [1176]byte
 }
 
 // CwdWithContext retrieves the Current Working Directory for the given process.
@@ -349,31 +395,35 @@ func (p *Process) CwdWithContext(_ context.Context) (string, error) {
 	}
 	defer funcs.Close()
 
-	// Lock OS thread to ensure the errno does not change
+	// Lock the OS thread so that errno, which is thread-local, still belongs to
+	// the thread that made the call below by the time it is read.
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
+	// Resolve the errno location up front: doing it after the call would run a
+	// dlsym and allocate in between, either of which can overwrite errno.
+	errnoPtr := funcs.lib.ErrnoLocation()
+
 	var vpi vnodePathInfo
 	const vpiSize = int32(unsafe.Sizeof(vpi))
-	ret := funcs.procPidInfo(p.Pid, common.PROC_PIDVNODEPATHINFO, 0, uintptr(unsafe.Pointer(&vpi)), vpiSize)
-	errno, _ := funcs.lib.Dlsym("errno")
-	err = *(**unix.Errno)(unsafe.Pointer(&errno))
-	if errors.Is(err, unix.EPERM) {
-		return "", ErrorNotPermitted
-	}
-
+	ret := funcs.lib.ProcPidInfo(p.Pid, common.PROC_PIDVNODEPATHINFO, 0, unsafe.Pointer(&vpi), vpiSize)
 	if ret <= 0 {
+		// errno is only meaningful once the call has reported failure; reading it
+		// unconditionally can surface a stale value from an earlier call.
+		if errno := unix.Errno(*errnoPtr); errno == unix.EPERM {
+			return "", ErrorNotPermitted
+		}
 		return "", fmt.Errorf("unknown error: proc_pidinfo returned %d", ret)
 	}
 
 	if ret != vpiSize {
 		return "", fmt.Errorf("too few bytes; expected %d, got %d", vpiSize, ret)
 	}
-	return common.GoString(&vpi.vipPath[0]), nil
+	return common.GoString((*byte)(unsafe.Pointer(&vpi.Cdir.Path[0]))), nil
 }
 
 func procArgs(pid int32) ([]byte, int, error) {
-	procargs, _, err := common.CallSyscall([]int32{common.CTL_KERN, common.KERN_PROCARGS2, pid})
+	procargs, err := unix.SysctlRaw("kern.procargs2", int(pid))
 	if err != nil {
 		return nil, 0, err
 	}
@@ -392,29 +442,49 @@ func (p *Process) cmdlineSlice() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	// The first bytes hold the nargs int, skip it.
-	args := bytes.Split((pargs)[unsafe.Sizeof(int(0)):], []byte{0})
-	var argStr string
-	// The first element is the actual binary/command path.
-	// command := args[0]
-	var argSlice []string
-	// var envSlice []string
-	// All other, non-zero elements are arguments. The first "nargs" elements
-	// are the arguments. Everything else in the slice is then the environment
-	// of the process.
-	for _, arg := range args[1:] {
-		argStr = string(arg)
-		if argStr != "" {
-			if nargs > 0 {
-				argSlice = append(argSlice, argStr)
-				nargs--
-				continue
-			}
-			break
-			// envSlice = append(envSlice, argStr)
-		}
+	// procArgs reads nargs as a 4-byte uint32; skip exactly those 4 bytes
+	// (matches Apple's ps using sizeof(nargs)). The previous code used
+	// unsafe.Sizeof(int(0)) which is 8 on 64-bit and would discard the
+	// first 4 bytes of exec_path — harmless only because chunks[0] is
+	// dropped, but logically wrong.
+	return parseCmdline(pargs[4:], nargs), nil
+}
+
+// parseCmdline extracts argv from the kern.procargs2 buffer with the leading
+// nargs int already stripped. Layout:
+//
+//	exec_path \0 [padding \0...] argv[0] \0 ... argv[nargs-1] \0 envp[0] \0 ...
+//
+// Empty argv elements within the nargs count are preserved — skipping them
+// would advance past argv[nargs-1] into envp, leaking environment values
+// (potentially secrets) into Cmdline output.
+//
+// Known limitation: a process whose argv[0] is itself an empty string is
+// indistinguishable from padding by this parser, since XNU does not expose
+// the exec/argv alignment boundary. Such a process will still see one envp
+// entry leak. Fixing it requires libgetargv-style alignment math against
+// the XNU exec layout, which is out of scope for this change.
+func parseCmdline(args []byte, nargs int) []string {
+	chunks := bytes.Split(args, []byte{0})
+	if len(chunks) <= 1 {
+		return nil
 	}
-	return argSlice, err
+	// Skip exec_path (chunks[0]) and any padding NULs before argv[0].
+	i := 1
+	for ; i < len(chunks) && len(chunks[i]) == 0; i++ {
+	}
+	if nargs > len(chunks)-i {
+		nargs = len(chunks) - i
+	}
+	if nargs < 0 {
+		nargs = 0
+	}
+	argSlice := make([]string, 0, nargs)
+	for ; nargs > 0; nargs-- {
+		argSlice = append(argSlice, string(chunks[i]))
+		i++
+	}
+	return argSlice
 }
 
 // cmdNameWithContext returns the command name (including spaces) without any arguments
@@ -447,7 +517,7 @@ func (p *Process) NumThreadsWithContext(_ context.Context) (int32, error) {
 	defer funcs.Close()
 
 	var ti ProcTaskInfo
-	funcs.procPidInfo(p.Pid, common.PROC_PIDTASKINFO, 0, uintptr(unsafe.Pointer(&ti)), int32(unsafe.Sizeof(ti)))
+	funcs.lib.ProcPidInfo(p.Pid, common.PROC_PIDTASKINFO, 0, unsafe.Pointer(&ti), int32(unsafe.Sizeof(ti)))
 
 	return int32(ti.Threadnum), nil
 }
@@ -460,7 +530,7 @@ func (p *Process) TimesWithContext(_ context.Context) (*cpu.TimesStat, error) {
 	defer funcs.Close()
 
 	var ti ProcTaskInfo
-	funcs.procPidInfo(p.Pid, common.PROC_PIDTASKINFO, 0, uintptr(unsafe.Pointer(&ti)), int32(unsafe.Sizeof(ti)))
+	funcs.lib.ProcPidInfo(p.Pid, common.PROC_PIDTASKINFO, 0, unsafe.Pointer(&ti), int32(unsafe.Sizeof(ti)))
 
 	timescaleToNanoSeconds := funcs.getTimeScaleToNanoSeconds()
 	ret := &cpu.TimesStat{
@@ -479,12 +549,141 @@ func (p *Process) MemoryInfoWithContext(_ context.Context) (*MemoryInfoStat, err
 	defer funcs.Close()
 
 	var ti ProcTaskInfo
-	funcs.procPidInfo(p.Pid, common.PROC_PIDTASKINFO, 0, uintptr(unsafe.Pointer(&ti)), int32(unsafe.Sizeof(ti)))
+	funcs.lib.ProcPidInfo(p.Pid, common.PROC_PIDTASKINFO, 0, unsafe.Pointer(&ti), int32(unsafe.Sizeof(ti)))
 
 	ret := &MemoryInfoStat{
-		RSS:  uint64(ti.Resident_size),
-		VMS:  uint64(ti.Virtual_size),
-		Swap: uint64(ti.Pageins),
+		RSS: uint64(ti.Resident_size),
+		VMS: uint64(ti.Virtual_size),
 	}
 	return ret, nil
+}
+
+// procFDInfo represents a file descriptor entry from sys/proc_info.h
+type procFDInfo struct {
+	ProcFd     int32
+	ProcFdtype uint32
+}
+
+// NumFDsWithContext returns the number of file descriptors used by the process.
+// It uses proc_pidinfo with PROC_PIDLISTFDS to query the kernel for the count
+// of open file descriptors. The method makes a single syscall and calculates
+// the count from the buffer size returned by the kernel.
+func (p *Process) NumFDsWithContext(_ context.Context) (int32, error) {
+	funcs, err := loadProcFuncs()
+	if err != nil {
+		return 0, err
+	}
+	defer funcs.Close()
+
+	// First call: get required buffer size
+	bufferSize := funcs.lib.ProcPidInfo(
+		p.Pid,
+		common.PROC_PIDLISTFDS,
+		0,
+		nil, // NULL buffer
+		0,   // 0 size
+	)
+	if bufferSize <= 0 {
+		return 0, fmt.Errorf("unknown error: proc_pidinfo returned %d", bufferSize)
+	}
+
+	// Allocate buffer of the required size
+	const sizeofProcFDInfo = int32(unsafe.Sizeof(procFDInfo{}))
+	numEntries := bufferSize / sizeofProcFDInfo
+	buf := make([]procFDInfo, numEntries)
+
+	// Second call: get actual data
+	ret := funcs.lib.ProcPidInfo(
+		p.Pid,
+		common.PROC_PIDLISTFDS,
+		0,
+		unsafe.Pointer(&buf[0]), // Real buffer
+		bufferSize,              // Size from first call
+	)
+	if ret <= 0 {
+		return 0, fmt.Errorf("unknown error: proc_pidinfo returned %d", ret)
+	}
+
+	// Calculate actual number of FDs returned
+	numFDs := ret / sizeofProcFDInfo
+	return numFDs, nil
+}
+
+// EnvironWithContext returns the environment variables for the process.
+//
+// Known limitation: the returned slice can still contain XNU's "apple" strings
+// rather than only environment variables; see parseEnviron.
+//
+// For a cs_restricted process, the kernel truncates the buffer at the end of
+// argv, so this will return an empty slice with a nil error, indistinguishable
+// from a process with no environment. (Reading another user's process needs
+// root, but that already applies to Cmdline().)
+func (p *Process) EnvironWithContext(_ context.Context) ([]string, error) {
+	pargs, nargs, err := procArgs(p.Pid)
+	if err != nil {
+		return nil, err
+	}
+	// procArgs reads nargs as a 4-byte uint32; skip exactly those 4 bytes, the
+	// same way cmdlineSlice does.
+	return parseEnviron(pargs[4:], nargs), nil
+}
+
+// parseEnviron extracts envp from the kern.procargs2 buffer with the leading
+// nargs int already stripped. Layout:
+//
+//	exec_path \0 [padding \0...] argv[0] \0 ... argv[nargs-1] \0 envp[0] \0 ... envp[n] \0 [padding \0...] apple[0] \0 ...
+//
+// The buffer does not stop at the end of envp: XNU appends its own "apple"
+// strings (pfz=, stack_guard=, malloc_entropy=, ptr_munge=, main_stack=,
+// th_port= and friends) after it and p_argslen covers them too. Every one of
+// them is shaped KEY=VALUE, so they cannot be told apart from real environment
+// variables by content, and the end of envp has to be found positionally.
+//
+// Known limitation: the only boundary XNU leaves behind is the pointer
+// alignment padding it writes between envp and the apple strings, and that
+// padding is 0-7 bytes on a 64-bit process — zero whenever argv+envp already
+// ends aligned. Stopping at the first empty entry therefore drops the apple
+// strings in the common case but not always; psutil's psutil_proc_environ()
+// keys off the same boundary and has the same gap. Conversely an envp entry
+// that is itself an empty string leaves that same single NUL, so anything
+// behind it is dropped. Closing either half requires libgetargv-style
+// alignment math against the XNU exec layout, which is out of scope here.
+func parseEnviron(args []byte, nargs int) []string {
+	chunks := bytes.Split(args, []byte{0})
+	if len(chunks) <= 1 {
+		return nil
+	}
+
+	// Skip exec_path (chunks[0]) and the padding that follows it.
+	i := 1
+	for ; i < len(chunks) && len(chunks[i]) == 0; i++ {
+	}
+
+	if nargs > len(chunks)-i {
+		nargs = len(chunks) - i
+	}
+	if nargs < 0 {
+		nargs = 0
+	}
+
+	// Skip argv, leaving i at envp[0].
+	i += nargs
+	if i >= len(chunks) {
+		return nil
+	}
+
+	var envSlice []string
+	for ; i < len(chunks); i++ {
+		if len(chunks[i]) == 0 {
+			// Alignment padding: the end of envp, as far as it can be seen
+			// from here. See the known limitation above.
+			break
+		}
+		// An environment variable is KEY=VALUE, with a non-empty KEY.
+		if bytes.IndexByte(chunks[i], '=') > 0 {
+			envSlice = append(envSlice, string(chunks[i]))
+		}
+	}
+
+	return envSlice
 }
