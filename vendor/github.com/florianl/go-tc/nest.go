@@ -11,7 +11,8 @@ import (
 type valueType int
 
 const (
-	vtUint8 valueType = iota
+	vtUnspec valueType = iota
+	vtUint8
 	vtUint16
 	vtUint32
 	vtUint64
@@ -40,7 +41,6 @@ func marshalAttributes(options []tcOption) ([]byte, error) {
 	if len(options) == 0 {
 		return []byte{}, nil
 	}
-	var multiError error
 	ad := netlink.NewAttributeEncoder()
 
 	for _, option := range options {
@@ -74,12 +74,10 @@ func marshalAttributes(options []tcOption) ([]byte, error) {
 		case vtInt16Be:
 			ad.Uint16(option.Type, endianSwapUint16(uint16((option.Data).(int16))))
 		default:
-			multiError = fmt.Errorf("unknown interpretation (%d)", option.Interpretation)
+			return []byte{}, fmt.Errorf("unknown interpretation (%d)", option.Interpretation)
 		}
 	}
-	if multiError != nil {
-		return []byte{}, multiError
-	}
+
 	return ad.Encode()
 }
 

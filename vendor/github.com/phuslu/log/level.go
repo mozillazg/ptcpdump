@@ -22,23 +22,34 @@ const (
 	noLevel Level = 8
 )
 
-// String return lowe case string of Level
+// XXXLevelString defines the string representation.
+var (
+	TraceLevelString = "trace"
+	DebugLevelString = "debug"
+	InfoLevelString  = "info"
+	WarnLevelString  = "warn"
+	ErrorLevelString = "error"
+	FatalLevelString = "fatal"
+	PanicLevelString = "panic"
+)
+
+// String returns the string representation of the Level.
 func (l Level) String() (s string) {
 	switch l {
 	case TraceLevel:
-		s = "trace"
+		s = TraceLevelString
 	case DebugLevel:
-		s = "debug"
+		s = DebugLevelString
 	case InfoLevel:
-		s = "info"
+		s = InfoLevelString
 	case WarnLevel:
-		s = "warn"
+		s = WarnLevelString
 	case ErrorLevel:
-		s = "error"
+		s = ErrorLevelString
 	case FatalLevel:
-		s = "fatal"
+		s = FatalLevelString
 	case PanicLevel:
-		s = "panic"
+		s = PanicLevelString
 	default:
 		s = "????"
 	}

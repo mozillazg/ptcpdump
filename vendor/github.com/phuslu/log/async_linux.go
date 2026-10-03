@@ -3,8 +3,14 @@
 package log
 
 import (
+	"errors"
 	"syscall"
+	"time"
 )
+
+// maxWritevRetries bounds how often a retryable writev error is retried before
+// the writer gives up, latches the error and stops serving entries.
+const maxWritevRetries = 3
 
 func (w *AsyncWriter) writever() {
 	// https://github.com/golang/go/blob/master/src/internal/poll/writev.go#L29
@@ -12,41 +18,89 @@ func (w *AsyncWriter) writever() {
 
 	var es [IOV_MAX]*Entry
 	var iovs [IOV_MAX]syscall.Iovec
-	var err error
-	var quit bool
-	for !quit {
-		// wait an item from channel
-		es[0] = <-w.ch
-		if es[0] == nil {
-			break
+
+	var (
+		pending int
+		retries int
+		aborted bool
+	)
+
+	for {
+		// once aborted, discard the leftover and every following entry
+		if aborted {
+			for i := range pending {
+				w.recycle(es[i])
+				es[i] = nil
+				iovs[i].Base = nil
+			}
+			pending = 0
 		}
-		iovs[0].Base = &es[0].buf[0]
-		iovs[0].Len = uint64(len(es[0].buf))
-		// drain the channel
-		length := len(w.ch)
-		if length > IOV_MAX-1 {
-			length = IOV_MAX - 1
+
+		// top up the batch with everything queued, blocking only when there
+		// is nothing left to write
+		n, done := w.queue.get(es[pending:], pending == 0)
+		end := pending + n
+		for _, e := range es[pending:end] {
+			if aborted || len(e.buf) == 0 {
+				w.recycle(e)
+				continue
+			}
+			iovs[pending].Base = &e.buf[0]
+			iovs[pending].SetLen(len(e.buf))
+			es[pending] = e
+			pending++
 		}
-		n := 1
-		for n <= length {
-			es[n] = <-w.ch
-			if es[n] == nil {
-				quit = true
+		// drop the slots left behind by skipped entries
+		clear(es[pending:end])
+
+		if pending == 0 {
+			if done {
 				break
 			}
-			iovs[n].Base = &es[n].buf[0]
-			iovs[n].Len = uint64(len(es[n].buf))
-			n++
+			continue
 		}
-		// writev
-		_, err = w.file.WriteV(iovs[:n])
-		// quit = err != nil
-		// return entries to pool
-		for i := 0; i < n; i++ {
-			epool.Put(es[i])
+
+		// write the batch; the iovecs are advanced in place so each Entry is
+		// reclaimed exactly when its bytes were handed to the kernel
+		_, remaining, err := w.file.writevAll(iovs[:pending])
+		completed := pending - len(remaining)
+		for i := range completed {
+			w.recycle(es[i])
 			es[i] = nil
 			iovs[i].Base = nil
 		}
+		copy(iovs[:], remaining)
+		copy(es[:], es[completed:completed+len(remaining)])
+		pending = len(remaining)
+
+		if err == nil {
+			retries = 0
+			continue
+		}
+		if len(remaining) == 0 {
+			// every byte reached the kernel, the error came from rotation or
+			// other housekeeping: remember it and keep serving entries
+			w.latchErr(err)
+			retries = 0
+			continue
+		}
+		if retries < maxWritevRetries && isRetryableWritevError(err) {
+			retries++
+			time.Sleep(time.Duration(retries) * time.Millisecond)
+			continue
+		}
+		w.latchErr(err)
+		aborted = true
 	}
-	w.chClose <- err
+
+	close(w.done)
+}
+
+// isRetryableWritevError reports whether err is a transient writev failure
+// worth retrying instead of giving up on the batch.  EINTR is absent on
+// purpose: writevFullWith already retries it, so it never gets this far.
+func isRetryableWritevError(err error) bool {
+	return errors.Is(err, syscall.EAGAIN) ||
+		errors.Is(err, syscall.ENOBUFS) ||
+		errors.Is(err, syscall.ENOMEM)
 }

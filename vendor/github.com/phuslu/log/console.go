@@ -1,7 +1,6 @@
 package log
 
 import (
-	"fmt"
 	"io"
 	"runtime"
 	"strconv"
@@ -112,73 +111,78 @@ func (w *ConsoleWriter) format(out io.Writer, args *FormatterArgs) (n int, err e
 	}
 
 	// pretty console writer
+	ab := appendablebytes(b.B)
 	if w.ColorOutput {
 		// header
-		fmt.Fprintf(b, "%s%s%s %s%s%s ", Gray, args.Time, Reset, color, three, Reset)
+		ab = ab.Str(Gray).Str(args.Time).Str(Reset).Str(" ").Str(color).Str(three).Str(Reset).Str(" ")
 		if args.Caller != "" {
-			fmt.Fprintf(b, "%s %s %s>%s", args.Goid, args.Caller, Cyan, Reset)
+			ab = ab.Str(args.Goid).Str(" ").Str(args.Caller).Str(" ").Str(Cyan).Str(">").Str(Reset)
 		} else {
-			fmt.Fprintf(b, "%s>%s", Cyan, Reset)
+			ab = ab.Str(Cyan).Str(">").Str(Reset)
 		}
 		if !w.EndWithMessage {
-			fmt.Fprintf(b, " %s", args.Message)
+			ab = ab.Str(" ").Str(args.Message)
 		}
 		// key and values
 		for _, kv := range args.KeyValues {
-			if w.QuoteString && kv.ValueType == 's' {
-				kv.Value = strconv.Quote(kv.Value)
-			}
-			if kv.Key == "error" && kv.Value != "null" {
-				fmt.Fprintf(b, " %s%s=%s%s", Red, kv.Key, kv.Value, Reset)
+			// a quoted value is never the bare null, so a quoted null error
+			// value takes the colored branch, same as the fmt version did
+			quoted := w.QuoteString && kv.ValueType == 's'
+			if kv.Key == "error" && (quoted || kv.Value != "null") {
+				ab = ab.Str(" ").Str(Red).Str(kv.Key).Str("=")
 			} else {
-				fmt.Fprintf(b, " %s%s=%s%s%s", Cyan, kv.Key, Gray, kv.Value, Reset)
+				ab = ab.Str(" ").Str(Cyan).Str(kv.Key).Str("=").Str(Gray)
 			}
+			if quoted {
+				ab = ab.Quote(kv.Value)
+			} else {
+				ab = ab.Str(kv.Value)
+			}
+			ab = ab.Str(Reset)
 		}
 		// message
 		if w.EndWithMessage {
-			fmt.Fprintf(b, "%s %s", Reset, args.Message)
+			ab = ab.Str(Reset).Str(" ").Str(args.Message)
 		}
 	} else {
 		// header
-		fmt.Fprintf(b, "%s %s ", args.Time, three)
+		ab = ab.Str(args.Time).Str(" ").Str(three).Str(" ")
 		if args.Caller != "" {
-			fmt.Fprintf(b, "%s %s >", args.Goid, args.Caller)
+			ab = ab.Str(args.Goid).Str(" ").Str(args.Caller).Str(" >")
 		} else {
-			fmt.Fprint(b, ">")
+			ab = ab.Str(">")
 		}
 		if !w.EndWithMessage {
-			fmt.Fprintf(b, " %s", args.Message)
+			ab = ab.Str(" ").Str(args.Message)
 		}
 		// key and values
 		for _, kv := range args.KeyValues {
 			if w.QuoteString && kv.ValueType == 's' {
-				b.B = append(b.B, ' ')
-				b.B = append(b.B, kv.Key...)
-				b.B = append(b.B, '=')
-				b.B = strconv.AppendQuote(b.B, kv.Value)
+				ab = ab.Byte(' ').Str(kv.Key).Byte('=').Quote(kv.Value)
 			} else {
-				fmt.Fprintf(b, " %s=%s", kv.Key, kv.Value)
+				ab = ab.Str(" ").Str(kv.Key).Str("=").Str(kv.Value)
 			}
 		}
 		// message
 		if w.EndWithMessage {
-			fmt.Fprintf(b, " %s", args.Message)
+			ab = ab.Str(" ").Str(args.Message)
 		}
 	}
 
 	// add line break if needed
-	if b.B[len(b.B)-1] != '\n' {
-		b.B = append(b.B, '\n')
+	if ab[len(ab)-1] != '\n' {
+		ab = ab.Byte('\n')
 	}
 
 	// stack
 	if args.Stack != "" {
-		b.B = append(b.B, args.Stack...)
+		ab = ab.Str(args.Stack)
 		if args.Stack[len(args.Stack)-1] != '\n' {
-			b.B = append(b.B, '\n')
+			ab = ab.Byte('\n')
 		}
 	}
 
+	b.B = ab
 	return out.Write(b.B)
 }
 
@@ -191,45 +195,75 @@ func (f LogfmtFormatter) Formatter(out io.Writer, args *FormatterArgs) (n int, e
 	b.B = b.B[:0]
 	defer bbpool.Put(b)
 
-	fmt.Fprintf(b, "%s=%s ", f.TimeField, args.Time)
+	ab := appendablebytes(b.B).Str(f.TimeField).Str("=").Str(args.Time).Str(" ")
 	if args.Level != "" && args.Level[0] != '?' {
-		fmt.Fprintf(b, "level=%s ", args.Level)
+		ab = ab.Str("level=").Str(args.Level).Str(" ")
 	}
 	if args.Caller != "" {
-		fmt.Fprintf(b, "goid=%s caller=", args.Goid)
-		b.B = strconv.AppendQuote(b.B, args.Caller)
-		b.B = append(b.B, ' ')
+		ab = ab.Str("goid=").Str(args.Goid).Str(" caller=").Quote(args.Caller).Byte(' ')
 	}
 	if args.Stack != "" {
-		b.B = append(b.B, "stack="...)
-		b.B = strconv.AppendQuote(b.B, args.Stack)
-		b.B = append(b.B, ' ')
+		ab = ab.Str("stack=").Quote(args.Stack).Byte(' ')
 	}
 	// key and values
 	for _, kv := range args.KeyValues {
 		switch kv.ValueType {
 		case 't':
-			fmt.Fprintf(b, "%s ", kv.Key)
+			ab = ab.Str(kv.Key).Byte(' ')
 		case 'f':
-			fmt.Fprintf(b, "%s=false ", kv.Key)
+			ab = ab.Str(kv.Key).Str("=false ")
 		case 'n':
-			fmt.Fprintf(b, "%s=%s ", kv.Key, kv.Value)
+			ab = ab.Str(kv.Key).Str("=").Str(kv.Value).Byte(' ')
 		case 'S':
-			fmt.Fprintf(b, "%s=%s ", kv.Key, kv.Value)
+			ab = ab.Str(kv.Key).Str("=").Str(kv.Value).Byte(' ')
 		case 's':
 			fallthrough
 		default:
-			b.B = append(b.B, kv.Key...)
-			b.B = append(b.B, '=')
-			b.B = strconv.AppendQuote(b.B, kv.Value)
-			b.B = append(b.B, ' ')
+			ab = ab.Str(kv.Key).Byte('=').Quote(kv.Value).Byte(' ')
 		}
 	}
 	// message
-	b.B = strconv.AppendQuote(b.B, args.Message)
-	b.B = append(b.B, '\n')
+	ab = ab.Quote(args.Message).Byte('\n')
 
+	b.B = ab
 	return out.Write(b.B)
 }
 
 var _ Writer = (*ConsoleWriter)(nil)
+
+// appendablebytes is a byte slice with append helpers, it builds output
+// without the fmt reflection overhead, for example:
+//
+//	b := appendablebytes(make([]byte, 0, 1024))
+//	b = b.Str("GET ").Str(req.RequestURI).Str(" HTTP/1.1\r\n")
+//	for key, values := range req.Header {
+//		for _, value := range values {
+//			b = b.Str(key).Str(": ").Str(value).Str("\r\n")
+//		}
+//	}
+//	b = b.Str("\r\n")
+type appendablebytes []byte
+
+func (b appendablebytes) Str(s string) appendablebytes {
+	return append(b, s...)
+}
+
+func (b appendablebytes) Bytes(s []byte) appendablebytes {
+	return append(b, s...)
+}
+
+func (b appendablebytes) Byte(c byte) appendablebytes {
+	return append(b, c)
+}
+
+func (b appendablebytes) Quote(s string) appendablebytes {
+	return strconv.AppendQuote(b, s)
+}
+
+func (b appendablebytes) Uint64(i uint64, base int) appendablebytes {
+	return strconv.AppendUint(b, i, base)
+}
+
+func (b appendablebytes) Int64(i int64, base int) appendablebytes {
+	return strconv.AppendInt(b, i, base)
+}

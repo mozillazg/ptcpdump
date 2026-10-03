@@ -1,6 +1,7 @@
 package log
 
 import (
+	"encoding/binary"
 	"sync/atomic"
 	"time"
 )
@@ -20,29 +21,21 @@ func NewXID() XID {
 
 // NewXIDWithTime generates a globally unique XID with unix timestamp
 func NewXIDWithTime(timestamp int64) (x XID) {
-	// timestamp
-	x[0] = byte(timestamp >> 24)
-	x[1] = byte(timestamp >> 16)
-	x[2] = byte(timestamp >> 8)
-	x[3] = byte(timestamp)
-	// machine
-	x[4] = machine[0]
-	x[5] = machine[1]
-	x[6] = machine[2]
-	// pid
-	x[7] = byte(pid >> 8)
-	x[8] = byte(pid)
-	// counter
+	binary.BigEndian.PutUint32(x[0:4], uint32(timestamp)) // timestamp
+	copy(x[4:7], machine[:])                              // machine
 	i := atomic.AddUint32(&counter, 1)
-	x[9] = byte(i >> 16)
-	x[10] = byte(i >> 8)
+	// The pid takes x[7:9] and the low 24 bits of the counter take x[9:12], so
+	// the first four of those bytes go out in a single store. Only the low 24
+	// bits of i are kept, so the high bits must be masked off, otherwise they
+	// would bleed into the pid field.
+	binary.BigEndian.PutUint32(x[7:11], uint32(pid)<<16|(i>>8)&0xffff)
 	x[11] = byte(i)
 	return
 }
 
 // Time returns the timestamp part of the id.
 func (x XID) Time() time.Time {
-	return time.Unix(int64(x[0])<<32|int64(x[1])<<16|int64(x[2])<<8|int64(x[3]), 0)
+	return time.Unix(int64(x[0])<<24|int64(x[1])<<16|int64(x[2])<<8|int64(x[3]), 0)
 }
 
 // Machine returns the 3-byte machine id part of the id.
@@ -159,7 +152,7 @@ func ParseXID(s string) (x XID, err error) {
 		return
 	}
 	_ = s[19]
-	for i := 0; i < 20; i++ {
+	for i := range 20 {
 		if base32r[s[i]] == 0xff {
 			err = ErrInvalidXID
 			return

@@ -163,7 +163,7 @@ func isVirtualTerminal() bool {
 	if err != nil {
 		return false
 	}
-	for i := 0; i < len(b); i++ {
+	for i := range len(b) {
 		if b[i] == 0 {
 			break
 		}

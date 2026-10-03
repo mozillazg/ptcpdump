@@ -1,6 +1,7 @@
 package log
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -461,6 +462,76 @@ var timeOffset, timeZone = func() (int64, string) {
 	return int64(n), s
 }()
 
+// timeHeader holds the "YYYY-MM-DDTHH:MM:SS" rendering of a single absolute
+// second. Consecutive log lines almost always share the same second, so
+// caching the date-time prefix lets the time formatting skip absDateTime
+// and the 19 digit writes, and lets several TimeFormat values (the empty
+// default, time.RFC3339 and time.RFC3339Nano) share the same cache slot since
+// only the fractional part and the timezone differ between them.
+type timeHeader struct {
+	sec int64
+	b   [19]byte // "2006-01-02T15:04:05"
+}
+
+var timeHeaderPointers struct {
+	utc   atomic.Pointer[timeHeader]
+	local atomic.Pointer[timeHeader]
+}
+
+type timestampCache struct {
+	sec  int64
+	nsec int32
+}
+
+var timestampCachePointer atomic.Pointer[timestampCache]
+var timestampCacheMu sync.Mutex
+var timestampCacheStop, timestampCacheDone chan struct{}
+
+// EnableTimeCache caches timestamps for every logger, refreshing the cache about
+// every interval. The interval is a target refresh period, not a bound on the
+// timestamp error: a delayed refresh leaves logged times stale for longer than one
+// interval. It trades timestamp precision for fewer clock reads. An interval of
+// zero disables caching and restores live timestamps.
+func EnableTimeCache(interval time.Duration) {
+	timestampCacheMu.Lock()
+	defer timestampCacheMu.Unlock()
+	if timestampCacheStop != nil {
+		close(timestampCacheStop)
+		<-timestampCacheDone
+		timestampCacheStop = nil
+	}
+	if interval <= 0 {
+		return
+	}
+	stop, done := make(chan struct{}), make(chan struct{})
+	timestampCacheStop, timestampCacheDone = stop, done
+	ticker := time.NewTicker(interval)
+	var tc timestampCache
+	tc.sec, tc.nsec = walltime()
+	if tc.sec == 0 {
+		tc.sec, tc.nsec, _ = now()
+	}
+	timestampCachePointer.Store(&tc)
+	go func() {
+		defer close(done)
+		defer timestampCachePointer.Store(nil)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-stop:
+				return
+			case <-ticker.C:
+				var tc timestampCache
+				tc.sec, tc.nsec = walltime()
+				if tc.sec == 0 {
+					tc.sec, tc.nsec, _ = now()
+				}
+				timestampCachePointer.Store(&tc)
+			}
+		}
+	}()
+}
+
 func (l *Logger) header(level Level) *Entry {
 	e := epool.Get().(*Entry)
 	e.buf = e.buf[:0]
@@ -472,7 +543,9 @@ func (l *Logger) header(level Level) *Entry {
 	}
 	// time
 	if l.TimeField == "" {
-		e.buf = append(e.buf, "{\"time\":"...)
+		e.buf = append(e.buf, "{\""...)
+		e.buf = append(e.buf, TimeKey...)
+		e.buf = append(e.buf, "\":"...)
 	} else {
 		e.buf = append(e.buf, '{', '"')
 		e.buf = append(e.buf, l.TimeField...)
@@ -487,83 +560,157 @@ func (l *Logger) header(level Level) *Entry {
 		} else {
 			format := l.TimeFormat
 			if format == "" {
-				format = "2006-01-02T15:04:05.999Z07:00"
+				format = "2006-01-02T15:04:05.000Z07:00"
+			}
+			var now time.Time
+			if tt := timestampCachePointer.Load(); tt != nil {
+				now = time.Unix(tt.sec, int64(tt.nsec))
+			} else {
+				now = Now()
 			}
 			e.buf = append(e.buf, '"')
-			e.buf = timeNow().In(l.TimeLocation).AppendFormat(e.buf, format)
+			e.buf = now.In(l.TimeLocation).AppendFormat(e.buf, format)
 			e.buf = append(e.buf, '"')
 			goto headerlevel
 		}
 	}
 	switch l.TimeFormat {
-	case "":
-		sec, nsec, _ := now()
-		var tmp [32]byte
-		var buf []byte
-		if offset == 0 {
-			// "2006-01-02T15:04:05.999Z"
-			tmp[25] = '"'
-			tmp[24] = 'Z'
-			buf = tmp[:26]
-		} else {
-			// "2006-01-02T15:04:05.999Z07:00"
-			tmp[30] = '"'
-			tmp[29] = timeZone[5]
-			tmp[28] = timeZone[4]
-			tmp[27] = timeZone[3]
-			tmp[26] = timeZone[2]
-			tmp[25] = timeZone[1]
-			tmp[24] = timeZone[0]
-			buf = tmp[:31]
+	case "", time.RFC3339, time.RFC3339Nano:
+		var sec int64
+		var nsec int32
+		if tt := timestampCachePointer.Load(); tt != nil {
+			sec, nsec = tt.sec, tt.nsec
 		}
-		// date time
-		sec += 9223372028715321600 + offset // unixToInternal + internalToAbsolute + timeOffset
-		year, month, day, _ := absDate(uint64(sec), true)
-		hour, minute, second := absClock(uint64(sec))
-		// year
-		a := year / 100 * 2
-		b := year % 100 * 2
+		if sec == 0 {
+			sec, nsec = walltime()
+		}
+		if sec == 0 {
+			sec, nsec, _ = now()
+		}
+		var tp *atomic.Pointer[timeHeader]
+		if offset == 0 {
+			tp = &timeHeaderPointers.utc
+		} else {
+			tp = &timeHeaderPointers.local
+		}
+		var tmp [40]byte // up to 37 bytes, e.g. "2006-01-02T15:04:05.999999999Z07:00"
 		tmp[0] = '"'
-		tmp[1] = smallsString[a]
-		tmp[2] = smallsString[a+1]
-		tmp[3] = smallsString[b]
-		tmp[4] = smallsString[b+1]
-		// month
-		month *= 2
-		tmp[5] = '-'
-		tmp[6] = smallsString[month]
-		tmp[7] = smallsString[month+1]
-		// day
-		day *= 2
-		tmp[8] = '-'
-		tmp[9] = smallsString[day]
-		tmp[10] = smallsString[day+1]
-		// hour
-		hour *= 2
-		tmp[11] = 'T'
-		tmp[12] = smallsString[hour]
-		tmp[13] = smallsString[hour+1]
-		// minute
-		minute *= 2
-		tmp[14] = ':'
-		tmp[15] = smallsString[minute]
-		tmp[16] = smallsString[minute+1]
-		// second
-		second *= 2
-		tmp[17] = ':'
-		tmp[18] = smallsString[second]
-		tmp[19] = smallsString[second+1]
-		// milli seconds
-		a = int(nsec) / 1000000
-		b = a % 100 * 2
-		tmp[20] = '.'
-		tmp[21] = byte('0' + a/100)
-		tmp[22] = smallsString[b]
-		tmp[23] = smallsString[b+1]
+		if c := tp.Load(); c != nil && c.sec == sec {
+			copy(tmp[1:20], c.b[:])
+		} else {
+			// date time
+			abs := uint64(sec + 9223372028715321600 + offset) // unixToInternal + internalToAbsolute + timeOffset
+			year, month, day, hour, minute, second := absDateTime(abs)
+			nc := &timeHeader{sec: sec}
+			// year
+			a := year / 100 * 2
+			b := year % 100 * 2
+			nc.b[0] = smallsString[a]
+			nc.b[1] = smallsString[a+1]
+			nc.b[2] = smallsString[b]
+			nc.b[3] = smallsString[b+1]
+			// month
+			month *= 2
+			nc.b[4] = '-'
+			nc.b[5] = smallsString[month]
+			nc.b[6] = smallsString[month+1]
+			// day
+			day *= 2
+			nc.b[7] = '-'
+			nc.b[8] = smallsString[day]
+			nc.b[9] = smallsString[day+1]
+			// hour
+			hour *= 2
+			nc.b[10] = 'T'
+			nc.b[11] = smallsString[hour]
+			nc.b[12] = smallsString[hour+1]
+			// minute
+			minute *= 2
+			nc.b[13] = ':'
+			nc.b[14] = smallsString[minute]
+			nc.b[15] = smallsString[minute+1]
+			// second
+			second *= 2
+			nc.b[16] = ':'
+			nc.b[17] = smallsString[second]
+			nc.b[18] = smallsString[second+1]
+			// publish for the next line
+			copy(tmp[1:20], nc.b[:])
+			tp.Store(nc)
+		}
+		// fractional seconds and timezone, which differ between formats
+		i := 20
+		switch l.TimeFormat {
+		case time.RFC3339:
+			// "2006-01-02T15:04:05Z07:00", no fractional seconds
+		case time.RFC3339Nano:
+			// "2006-01-02T15:04:05.999999999Z07:00", trailing zeros dropped
+			// unsigned, so the divisions by constants need no sign fixups
+			// and the table indexes no bounds checks, and split into two
+			// independent chains of 4 and 5 digits
+			var fd [9]byte
+			hi, lo := uint32(nsec)/100000, uint32(nsec)%100000
+			b := hi % 100 * 2
+			hi /= 100
+			fd[3] = smallsString[b+1]
+			fd[2] = smallsString[b]
+			b = hi * 2
+			fd[1] = smallsString[b+1]
+			fd[0] = smallsString[b]
+			b = lo % 100 * 2
+			lo /= 100
+			fd[8] = smallsString[b+1]
+			fd[7] = smallsString[b]
+			b = lo % 100 * 2
+			lo /= 100
+			fd[6] = smallsString[b+1]
+			fd[5] = smallsString[b]
+			fd[4] = byte('0' + lo)
+			n := 9
+			for n > 0 && fd[n-1] == '0' {
+				n--
+			}
+			if n > 0 {
+				tmp[i] = '.'
+				copy(tmp[i+1:], fd[:n])
+				i += n + 1
+			}
+		default: // "", "2006-01-02T15:04:05.000Z07:00", always 3 digits
+			f := uint32(nsec) / 1000000
+			mb := f % 100 * 2
+			tmp[i] = '.'
+			tmp[i+1] = byte('0' + f/100)
+			tmp[i+2] = smallsString[mb]
+			tmp[i+3] = smallsString[mb+1]
+			i += 4
+		}
+		if offset == 0 {
+			tmp[i] = 'Z'
+			i++
+		} else {
+			tmp[i] = timeZone[0]
+			tmp[i+1] = timeZone[1]
+			tmp[i+2] = timeZone[2]
+			tmp[i+3] = timeZone[3]
+			tmp[i+4] = timeZone[4]
+			tmp[i+5] = timeZone[5]
+			i += 6
+		}
+		tmp[i] = '"'
+		i++
 		// append to e.buf
-		e.buf = append(e.buf, buf...)
+		e.buf = append(e.buf, tmp[:i]...)
 	case TimeFormatUnix:
-		sec, _, _ := now()
+		var sec int64
+		if tt := timestampCachePointer.Load(); tt != nil {
+			sec = tt.sec
+		}
+		if sec == 0 {
+			sec, _ = walltime()
+		}
+		if sec == 0 {
+			sec, _, _ = now()
+		}
 		// 1595759807
 		var tmp [10]byte
 		// seconds
@@ -589,7 +736,17 @@ func (l *Logger) header(level Level) *Entry {
 		// append to e.buf
 		e.buf = append(e.buf, tmp[:]...)
 	case TimeFormatUnixMs:
-		sec, nsec, _ := now()
+		var sec int64
+		var nsec int32
+		if tt := timestampCachePointer.Load(); tt != nil {
+			sec, nsec = tt.sec, tt.nsec
+		}
+		if sec == 0 {
+			sec, nsec = walltime()
+		}
+		if sec == 0 {
+			sec, nsec, _ = now()
+		}
 		// 1595759807105
 		var tmp [13]byte
 		// milli seconds
@@ -621,7 +778,17 @@ func (l *Logger) header(level Level) *Entry {
 		// append to e.buf
 		e.buf = append(e.buf, tmp[:]...)
 	case TimeFormatUnixWithMs:
-		sec, nsec, _ := now()
+		var sec int64
+		var nsec int32
+		if tt := timestampCachePointer.Load(); tt != nil {
+			sec, nsec = tt.sec, tt.nsec
+		}
+		if sec == 0 {
+			sec, nsec = walltime()
+		}
+		if sec == 0 {
+			sec, nsec, _ = now()
+		}
 		// 1595759807.105
 		var tmp [14]byte
 		// milli seconds
@@ -654,11 +821,17 @@ func (l *Logger) header(level Level) *Entry {
 		// append to e.buf
 		e.buf = append(e.buf, tmp[:]...)
 	default:
+		var now time.Time
+		if tt := timestampCachePointer.Load(); tt != nil {
+			now = time.Unix(tt.sec, int64(tt.nsec))
+		} else {
+			now = Now()
+		}
 		e.buf = append(e.buf, '"')
 		if l.TimeLocation == time.UTC {
-			e.buf = timeNow().UTC().AppendFormat(e.buf, l.TimeFormat)
+			e.buf = now.UTC().AppendFormat(e.buf, l.TimeFormat)
 		} else {
-			e.buf = timeNow().AppendFormat(e.buf, l.TimeFormat)
+			e.buf = now.AppendFormat(e.buf, l.TimeFormat)
 		}
 		e.buf = append(e.buf, '"')
 	}
@@ -666,19 +839,47 @@ headerlevel:
 	// level
 	switch level {
 	case DebugLevel:
-		e.buf = append(e.buf, ",\"level\":\"debug\""...)
+		e.buf = append(e.buf, ",\""...)
+		e.buf = append(e.buf, LevelKey...)
+		e.buf = append(e.buf, "\":\""...)
+		e.buf = append(e.buf, DebugLevelString...)
+		e.buf = append(e.buf, '"')
 	case InfoLevel:
-		e.buf = append(e.buf, ",\"level\":\"info\""...)
+		e.buf = append(e.buf, ",\""...)
+		e.buf = append(e.buf, LevelKey...)
+		e.buf = append(e.buf, "\":\""...)
+		e.buf = append(e.buf, InfoLevelString...)
+		e.buf = append(e.buf, '"')
 	case WarnLevel:
-		e.buf = append(e.buf, ",\"level\":\"warn\""...)
+		e.buf = append(e.buf, ",\""...)
+		e.buf = append(e.buf, LevelKey...)
+		e.buf = append(e.buf, "\":\""...)
+		e.buf = append(e.buf, WarnLevelString...)
+		e.buf = append(e.buf, '"')
 	case ErrorLevel:
-		e.buf = append(e.buf, ",\"level\":\"error\""...)
+		e.buf = append(e.buf, ",\""...)
+		e.buf = append(e.buf, LevelKey...)
+		e.buf = append(e.buf, "\":\""...)
+		e.buf = append(e.buf, ErrorLevelString...)
+		e.buf = append(e.buf, '"')
 	case TraceLevel:
-		e.buf = append(e.buf, ",\"level\":\"trace\""...)
+		e.buf = append(e.buf, ",\""...)
+		e.buf = append(e.buf, LevelKey...)
+		e.buf = append(e.buf, "\":\""...)
+		e.buf = append(e.buf, TraceLevelString...)
+		e.buf = append(e.buf, '"')
 	case FatalLevel:
-		e.buf = append(e.buf, ",\"level\":\"fatal\""...)
+		e.buf = append(e.buf, ",\""...)
+		e.buf = append(e.buf, LevelKey...)
+		e.buf = append(e.buf, "\":\""...)
+		e.buf = append(e.buf, FatalLevelString...)
+		e.buf = append(e.buf, '"')
 	case PanicLevel:
-		e.buf = append(e.buf, ",\"level\":\"panic\""...)
+		e.buf = append(e.buf, ",\""...)
+		e.buf = append(e.buf, LevelKey...)
+		e.buf = append(e.buf, "\":\""...)
+		e.buf = append(e.buf, PanicLevelString...)
+		e.buf = append(e.buf, '"')
 	}
 	// context
 	if l.Context != nil {
@@ -943,10 +1144,22 @@ func (e *Entry) AnErr(key string, err error) *Entry {
 	e.buf = append(e.buf, key...)
 	e.buf = append(e.buf, '"', ':')
 	if o, ok := err.(ObjectMarshaler); ok {
+		n := len(e.buf)
 		o.MarshalObject(e)
+		if n < len(e.buf) {
+			e.buf[n] = '{'
+			e.buf = append(e.buf, '}')
+		} else {
+			e.buf = append(e.buf, "null"...)
+		}
 	} else {
 		e.buf = append(e.buf, '"')
-		e.string(err.Error())
+		s := err.Error()
+		if !hasSIMDEscape || len(s) <= simdEscapeThreshold {
+			e.buf = appendLoggerString(e.buf, s)
+		} else {
+			e.buf = appendLoggerString2(e.buf, s)
+		}
 		e.buf = append(e.buf, '"')
 	}
 	return e
@@ -969,7 +1182,12 @@ func (e *Entry) Errs(key string, errs []error) *Entry {
 			e.buf = append(e.buf, "null"...)
 		} else {
 			e.buf = append(e.buf, '"')
-			e.string(err.Error())
+			s := err.Error()
+			if !hasSIMDEscape || len(s) <= simdEscapeThreshold {
+				e.buf = appendLoggerString(e.buf, s)
+			} else {
+				e.buf = appendLoggerString2(e.buf, s)
+			}
 			e.buf = append(e.buf, '"')
 		}
 	}
@@ -988,6 +1206,18 @@ func appendFloat(b []byte, f float64, bits int) []byte {
 		return append(b, `"-Inf"`...)
 	}
 	abs := math.Abs(f)
+	// Fast path for integral values: sizes, counters, ids and nanosecond
+	// durations are usually whole numbers and strconv.AppendInt is about four
+	// times faster than strconv.AppendFloat. Restrict it to exactly
+	// representable float64 integers: for float32 strconv prints the shortest
+	// decimal that round trips, which is not the exact integer for values like
+	// float32(1e15). Keep negative zero on the slow path because it must
+	// render as "-0".
+	if bits == 64 && abs <= 1<<53 && (f != 0 || !math.Signbit(f)) {
+		if i := int64(f); float64(i) == f {
+			return strconv.AppendInt(b, i, 10)
+		}
+	}
 	fmt := byte('f')
 	// Note: Must use float32 comparisons for underlying float32 value to get precise cutoffs right.
 	if abs != 0 {
@@ -1423,11 +1653,17 @@ func (e *Entry) Str(key string, val string) *Entry {
 		return nil
 	}
 
-	e.buf = append(e.buf, ',', '"')
-	e.buf = append(e.buf, key...)
-	e.buf = append(e.buf, '"', ':', '"')
-	e.string(val)
-	e.buf = append(e.buf, '"')
+	buf := e.buf
+	buf = append(buf, ',', '"')
+	buf = append(buf, key...)
+	buf = append(buf, '"', ':', '"')
+	if !hasSIMDEscape || len(val) <= simdEscapeThreshold {
+		buf = appendLoggerString(buf, val)
+	} else {
+		buf = appendLoggerString2(buf, val)
+	}
+	buf = append(buf, '"')
+	e.buf = buf
 	return e
 }
 
@@ -1456,7 +1692,12 @@ func (e *Entry) Stringer(key string, val fmt.Stringer) *Entry {
 	e.buf = append(e.buf, '"', ':')
 	if val != nil {
 		e.buf = append(e.buf, '"')
-		e.string(val.String())
+		s := val.String()
+		if !hasSIMDEscape || len(s) <= simdEscapeThreshold {
+			e.buf = appendLoggerString(e.buf, s)
+		} else {
+			e.buf = appendLoggerString2(e.buf, s)
+		}
 		e.buf = append(e.buf, '"')
 	} else {
 		e.buf = append(e.buf, "null"...)
@@ -1475,7 +1716,12 @@ func (e *Entry) GoStringer(key string, val fmt.GoStringer) *Entry {
 	e.buf = append(e.buf, '"', ':')
 	if val != nil {
 		e.buf = append(e.buf, '"')
-		e.string(val.GoString())
+		s := val.GoString()
+		if !hasSIMDEscape || len(s) <= simdEscapeThreshold {
+			e.buf = appendLoggerString(e.buf, s)
+		} else {
+			e.buf = appendLoggerString2(e.buf, s)
+		}
 		e.buf = append(e.buf, '"')
 	} else {
 		e.buf = append(e.buf, "null"...)
@@ -1497,7 +1743,11 @@ func (e *Entry) Strs(key string, vals []string) *Entry {
 			e.buf = append(e.buf, ',')
 		}
 		e.buf = append(e.buf, '"')
-		e.string(val)
+		if !hasSIMDEscape || len(val) <= simdEscapeThreshold {
+			e.buf = appendLoggerString(e.buf, val)
+		} else {
+			e.buf = appendLoggerString2(e.buf, val)
+		}
 		e.buf = append(e.buf, '"')
 	}
 	e.buf = append(e.buf, ']')
@@ -1532,10 +1782,13 @@ func (e *Entry) Byte(key string, val byte) *Entry {
 		e.buf = append(e.buf, "\"\\u003c\""...)
 	case '\'':
 		e.buf = append(e.buf, "\"\\u0027\""...)
-	case 0:
-		e.buf = append(e.buf, "\"\\u0000\""...)
 	default:
-		e.buf = append(e.buf, '"', val, '"')
+		// JSON requires every C0 control byte to be escaped.
+		if val < 0x20 {
+			e.buf = append(e.buf, '"', '\\', 'u', '0', '0', hex[val>>4], hex[val&0xf], '"')
+		} else {
+			e.buf = append(e.buf, '"', val, '"')
+		}
 	}
 	return e
 }
@@ -1546,11 +1799,17 @@ func (e *Entry) Bytes(key string, val []byte) *Entry {
 		return nil
 	}
 
-	e.buf = append(e.buf, ',', '"')
-	e.buf = append(e.buf, key...)
-	e.buf = append(e.buf, '"', ':', '"')
-	e.bytes(val)
-	e.buf = append(e.buf, '"')
+	buf := e.buf
+	buf = append(buf, ',', '"')
+	buf = append(buf, key...)
+	buf = append(buf, '"', ':', '"')
+	if !hasSIMDEscape || len(val) <= simdEscapeThreshold {
+		buf = appendLoggerBytes(buf, val)
+	} else {
+		buf = appendLoggerBytes2(buf, val)
+	}
+	buf = append(buf, '"')
+	e.buf = buf
 	return e
 }
 
@@ -1567,7 +1826,11 @@ func (e *Entry) BytesOrNil(key string, val []byte) *Entry {
 		e.buf = append(e.buf, "null"...)
 	} else {
 		e.buf = append(e.buf, '"')
-		e.bytes(val)
+		if !hasSIMDEscape || len(val) <= simdEscapeThreshold {
+			e.buf = appendLoggerBytes(e.buf, val)
+		} else {
+			e.buf = appendLoggerBytes2(e.buf, val)
+		}
 		e.buf = append(e.buf, '"')
 	}
 	return e
@@ -1587,6 +1850,34 @@ func (e *Entry) Hex(key string, val []byte) *Entry {
 	for _, v := range val {
 		e.buf = append(e.buf, hex[v>>4], hex[v&0x0f])
 	}
+	e.buf = append(e.buf, '"')
+	return e
+}
+
+// Base64 adds base64 encoding of the value to the entry.
+func (e *Entry) Base64(key string, value []byte) *Entry {
+	if e == nil {
+		return nil
+	}
+
+	e.buf = append(e.buf, ',', '"')
+	e.buf = append(e.buf, key...)
+	e.buf = append(e.buf, '"', ':', '"')
+	e.buf = base64.StdEncoding.AppendEncode(e.buf, value)
+	e.buf = append(e.buf, '"')
+	return e
+}
+
+// Base64URL adds base64 url encoding of the value to the entry.
+func (e *Entry) Base64URL(key string, value []byte) *Entry {
+	if e == nil {
+		return nil
+	}
+
+	e.buf = append(e.buf, ',', '"')
+	e.buf = append(e.buf, key...)
+	e.buf = append(e.buf, '"', ':', '"')
+	e.buf = base64.URLEncoding.AppendEncode(e.buf, value)
 	e.buf = append(e.buf, '"')
 	return e
 }
@@ -1793,7 +2084,7 @@ func (e *Entry) NetIPPrefix(key string, pfx netip.Prefix) *Entry {
 
 // Type adds type of the key using reflection to the entry.
 func (e *Entry) Type(key string, v any) *Entry {
-	if e == nil {
+	if e == nil || (*[2]uintptr)(unsafe.Pointer(&v))[1] == 0 {
 		return nil
 	}
 
@@ -1827,8 +2118,15 @@ func (e *Entry) Stack() *Entry {
 		return nil
 	}
 
-	e.buf = append(e.buf, ",\"stack\":\""...)
-	e.bytes(stacks(false))
+	e.buf = append(e.buf, ",\""...)
+	e.buf = append(e.buf, StackKey...)
+	e.buf = append(e.buf, "\":\""...)
+	b := stacks(false)
+	if !hasSIMDEscape || len(b) <= simdEscapeThreshold {
+		e.buf = appendLoggerBytes(e.buf, b)
+	} else {
+		e.buf = appendLoggerBytes2(e.buf, b)
+	}
 	e.buf = append(e.buf, '"')
 	return e
 }
@@ -1852,6 +2150,27 @@ func (e *Entry) Discard() *Entry {
 
 var notTest = true
 
+// TimeKey defines the field name for the time field.
+var TimeKey = "time"
+
+// MessageKey defines the field name for the message field.
+var MessageKey = "message"
+
+// LevelKey defines the field name for the level field.
+var LevelKey = "level"
+
+// CallerKey defines the field name for the caller field.
+var CallerKey = "caller"
+
+// CallerFuncKey defines the field name for the caller function field.
+var CallerFuncKey = "callerfunc"
+
+// GoidKey defines the field name for the goroutine id field.
+var GoidKey = "goid"
+
+// StackKey defines the field name for the stack field.
+var StackKey = "stack"
+
 // Msg sends the entry with msg added as the message field if not empty.
 func (e *Entry) Msg(msg string) {
 	if e == nil {
@@ -1859,8 +2178,14 @@ func (e *Entry) Msg(msg string) {
 	}
 
 	if msg != "" {
-		e.buf = append(e.buf, ",\"message\":\""...)
-		e.string(msg)
+		e.buf = append(e.buf, ",\""...)
+		e.buf = append(e.buf, MessageKey...)
+		e.buf = append(e.buf, "\":\""...)
+		if !hasSIMDEscape || len(msg) <= simdEscapeThreshold {
+			e.buf = appendLoggerString(e.buf, msg)
+		} else {
+			e.buf = appendLoggerString2(e.buf, msg)
+		}
 		e.buf = append(e.buf, "\"}\n"...)
 	} else {
 		e.buf = append(e.buf, '}', '\n')
@@ -1888,7 +2213,25 @@ func (b *bb) Write(p []byte) (int, error) {
 
 var bbpool = sync.Pool{
 	New: func() any {
-		return new(bb)
+		return &bb{B: make([]byte, 0, 512)}
+	},
+}
+
+// jsonenc pairs a json.Encoder with the bb it writes to. encoding/json is
+// implemented on top of encoding/json/v2 since go1.27, where SetEscapeHTML
+// joins options into a freshly allocated jsonopts.Struct, so the option is
+// applied once at construction and the encoder is recycled through the pool.
+type jsonenc struct {
+	enc *json.Encoder
+	b   *bb
+}
+
+var jsonencpool = sync.Pool{
+	New: func() any {
+		b := &bb{B: make([]byte, 0, 512)}
+		enc := json.NewEncoder(b)
+		enc.SetEscapeHTML(false)
+		return &jsonenc{enc: enc, b: b}
 	},
 }
 
@@ -1900,9 +2243,15 @@ func (e *Entry) Msgf(format string, v ...any) {
 
 	b := bbpool.Get().(*bb)
 	b.B = b.B[:0]
-	e.buf = append(e.buf, ",\"message\":\""...)
+	e.buf = append(e.buf, ",\""...)
+	e.buf = append(e.buf, MessageKey...)
+	e.buf = append(e.buf, "\":\""...)
 	fmt.Fprintf(b, format, v...)
-	e.bytes(b.B)
+	if !hasSIMDEscape || len(b.B) <= simdEscapeThreshold {
+		e.buf = appendLoggerBytes(e.buf, b.B)
+	} else {
+		e.buf = appendLoggerBytes2(e.buf, b.B)
+	}
 	e.buf = append(e.buf, '"')
 	if cap(b.B) <= bbcap {
 		bbpool.Put(b)
@@ -1918,9 +2267,15 @@ func (e *Entry) Msgs(args ...any) {
 
 	b := bbpool.Get().(*bb)
 	b.B = b.B[:0]
-	e.buf = append(e.buf, ",\"message\":\""...)
+	e.buf = append(e.buf, ",\""...)
+	e.buf = append(e.buf, MessageKey...)
+	e.buf = append(e.buf, "\":\""...)
 	fmt.Fprint(b, args...)
-	e.bytes(b.B)
+	if !hasSIMDEscape || len(b.B) <= simdEscapeThreshold {
+		e.buf = appendLoggerBytes(e.buf, b.B)
+	} else {
+		e.buf = appendLoggerBytes2(e.buf, b.B)
+	}
 	e.buf = append(e.buf, '"')
 	if cap(b.B) <= bbcap {
 		bbpool.Put(b)
@@ -1935,8 +2290,11 @@ func (e *Entry) caller(n int, pc uintptr, fullpath bool) {
 
 	file, line, name := pcFileLineName(pc)
 	if !fullpath {
-		var i, j int
-		for i = len(file) - 1; i >= 0; i-- {
+		var i, j, k int
+		if k = strings.IndexByte(file, '@'); k <= 0 {
+			k = len(file) - 1
+		}
+		for i = k; i >= 0; i-- {
 			if file[i] == '/' {
 				break
 			}
@@ -1957,154 +2315,20 @@ func (e *Entry) caller(n int, pc uintptr, fullpath bool) {
 		}
 	}
 
-	e.buf = append(e.buf, ",\"caller\":\""...)
+	e.buf = append(e.buf, ",\""...)
+	e.buf = append(e.buf, CallerKey...)
+	e.buf = append(e.buf, "\":\""...)
 	e.buf = append(e.buf, file...)
 	e.buf = append(e.buf, ':')
 	e.buf = strconv.AppendInt(e.buf, int64(line), 10)
-	e.buf = append(e.buf, "\",\"callerfunc\":\""...)
+	e.buf = append(e.buf, "\",\""...)
+	e.buf = append(e.buf, CallerFuncKey...)
+	e.buf = append(e.buf, "\":\""...)
 	e.buf = append(e.buf, name...)
-	e.buf = append(e.buf, "\",\"goid\":"...)
+	e.buf = append(e.buf, "\",\""...)
+	e.buf = append(e.buf, GoidKey...)
+	e.buf = append(e.buf, "\":"...)
 	e.buf = strconv.AppendInt(e.buf, int64(goid()), 10)
-}
-
-var escapes = [256]bool{
-	'"':  true,
-	'<':  true,
-	'\'': true,
-	'\\': true,
-	'\b': true,
-	'\f': true,
-	'\n': true,
-	'\r': true,
-	'\t': true,
-}
-
-func (e *Entry) escapeb(b []byte) {
-	n := len(b)
-	j := 0
-	if n > 0 {
-		// Hint the compiler to remove bounds checks in the loop below.
-		_ = b[n-1]
-	}
-	for i := 0; i < n; i++ {
-		switch b[i] {
-		case '"':
-			e.buf = append(e.buf, b[j:i]...)
-			e.buf = append(e.buf, '\\', '"')
-			j = i + 1
-		case '\\':
-			e.buf = append(e.buf, b[j:i]...)
-			e.buf = append(e.buf, '\\', '\\')
-			j = i + 1
-		case '\n':
-			e.buf = append(e.buf, b[j:i]...)
-			e.buf = append(e.buf, '\\', 'n')
-			j = i + 1
-		case '\r':
-			e.buf = append(e.buf, b[j:i]...)
-			e.buf = append(e.buf, '\\', 'r')
-			j = i + 1
-		case '\t':
-			e.buf = append(e.buf, b[j:i]...)
-			e.buf = append(e.buf, '\\', 't')
-			j = i + 1
-		case '\f':
-			e.buf = append(e.buf, b[j:i]...)
-			e.buf = append(e.buf, '\\', 'u', '0', '0', '0', 'c')
-			j = i + 1
-		case '\b':
-			e.buf = append(e.buf, b[j:i]...)
-			e.buf = append(e.buf, '\\', 'u', '0', '0', '0', '8')
-			j = i + 1
-		case '<':
-			e.buf = append(e.buf, b[j:i]...)
-			e.buf = append(e.buf, '\\', 'u', '0', '0', '3', 'c')
-			j = i + 1
-		case '\'':
-			e.buf = append(e.buf, b[j:i]...)
-			e.buf = append(e.buf, '\\', 'u', '0', '0', '2', '7')
-			j = i + 1
-		case 0:
-			e.buf = append(e.buf, b[j:i]...)
-			e.buf = append(e.buf, '\\', 'u', '0', '0', '0', '0')
-			j = i + 1
-		}
-	}
-	e.buf = append(e.buf, b[j:]...)
-}
-
-func (e *Entry) escapes(s string) {
-	n := len(s)
-	j := 0
-	if n > 0 {
-		// Hint the compiler to remove bounds checks in the loop below.
-		_ = s[n-1]
-	}
-	for i := 0; i < n; i++ {
-		switch s[i] {
-		case '"':
-			e.buf = append(e.buf, s[j:i]...)
-			e.buf = append(e.buf, '\\', '"')
-			j = i + 1
-		case '\\':
-			e.buf = append(e.buf, s[j:i]...)
-			e.buf = append(e.buf, '\\', '\\')
-			j = i + 1
-		case '\n':
-			e.buf = append(e.buf, s[j:i]...)
-			e.buf = append(e.buf, '\\', 'n')
-			j = i + 1
-		case '\r':
-			e.buf = append(e.buf, s[j:i]...)
-			e.buf = append(e.buf, '\\', 'r')
-			j = i + 1
-		case '\t':
-			e.buf = append(e.buf, s[j:i]...)
-			e.buf = append(e.buf, '\\', 't')
-			j = i + 1
-		case '\f':
-			e.buf = append(e.buf, s[j:i]...)
-			e.buf = append(e.buf, '\\', 'u', '0', '0', '0', 'c')
-			j = i + 1
-		case '\b':
-			e.buf = append(e.buf, s[j:i]...)
-			e.buf = append(e.buf, '\\', 'u', '0', '0', '0', '8')
-			j = i + 1
-		case '<':
-			e.buf = append(e.buf, s[j:i]...)
-			e.buf = append(e.buf, '\\', 'u', '0', '0', '3', 'c')
-			j = i + 1
-		case '\'':
-			e.buf = append(e.buf, s[j:i]...)
-			e.buf = append(e.buf, '\\', 'u', '0', '0', '2', '7')
-			j = i + 1
-		case 0:
-			e.buf = append(e.buf, s[j:i]...)
-			e.buf = append(e.buf, '\\', 'u', '0', '0', '0', '0')
-			j = i + 1
-		}
-	}
-	e.buf = append(e.buf, s[j:]...)
-}
-
-func (e *Entry) string(s string) {
-	for _, c := range []byte(s) {
-		if escapes[c] {
-			e.escapes(s)
-			return
-		}
-	}
-	e.buf = append(e.buf, s...)
-}
-
-func (e *Entry) bytes(b []byte) {
-	for _, c := range b {
-		if escapes[c] {
-			e.escapeb(b)
-			return
-		}
-	}
-	e.buf = append(e.buf, b...)
 }
 
 // Interface adds the field key with i marshaled using reflection.
@@ -2120,20 +2344,27 @@ func (e *Entry) Interface(key string, i any) *Entry {
 	e.buf = append(e.buf, ',', '"')
 	e.buf = append(e.buf, key...)
 	e.buf = append(e.buf, '"', ':')
-	b := bbpool.Get().(*bb)
+	je := jsonencpool.Get().(*jsonenc)
+	b := je.b
 	b.B = b.B[:0]
-	enc := json.NewEncoder(b)
-	enc.SetEscapeHTML(false)
-	err := enc.Encode(i)
+	err := je.enc.Encode(i)
 	if err != nil {
+		je = nil // the encoder keeps a sticky error, so do not reuse it
 		b.B = b.B[:0]
 		fmt.Fprintf(b, `marshaling error: %+v`, err)
 		e.buf = append(e.buf, '"')
-		e.bytes(b.B)
+		if !hasSIMDEscape || len(b.B) <= simdEscapeThreshold {
+			e.buf = appendLoggerBytes(e.buf, b.B)
+		} else {
+			e.buf = appendLoggerBytes2(e.buf, b.B)
+		}
 		e.buf = append(e.buf, '"')
 	} else {
 		b.B = b.B[:len(b.B)-1]
 		e.buf = append(e.buf, b.B...)
+	}
+	if je != nil && cap(b.B) <= bbcap {
+		jsonencpool.Put(je)
 	}
 
 	return e
@@ -2182,12 +2413,12 @@ func (e *Entry) Objects(key string, objects any) *Entry {
 	e.buf = append(e.buf, ',', '"')
 	e.buf = append(e.buf, key...)
 	e.buf = append(e.buf, '"', ':', '[')
-	for i := 0; i < values.Len(); i++ {
+	for i := range values.Len() {
 		if i != 0 {
 			e.buf = append(e.buf, ',')
 		}
 		value := values.Index(i)
-		if value.Kind() == reflect.Ptr && value.IsNil() {
+		if value.Kind() == reflect.Pointer && value.IsNil() {
 			e.buf = append(e.buf, "null"...)
 		} else if obj, ok := value.Interface().(ObjectMarshaler); ok {
 			i := len(e.buf)
@@ -2239,10 +2470,7 @@ func (e *Entry) Any(key string, value any) *Entry {
 	}
 	switch value := value.(type) {
 	case ObjectMarshaler:
-		e.buf = append(e.buf, ',', '"')
-		e.buf = append(e.buf, key...)
-		e.buf = append(e.buf, '"', ':')
-		value.MarshalObject(e)
+		e.Object(key, value)
 	case Context:
 		e.Dict(key, value)
 	case []time.Duration:
@@ -2310,23 +2538,27 @@ func (e *Entry) Any(key string, value any) *Entry {
 		e.buf = append(e.buf, ',', '"')
 		e.buf = append(e.buf, key...)
 		e.buf = append(e.buf, '"', ':')
-		b := bbpool.Get().(*bb)
+		je := jsonencpool.Get().(*jsonenc)
+		b := je.b
 		b.B = b.B[:0]
-		enc := json.NewEncoder(b)
-		enc.SetEscapeHTML(false)
-		err := enc.Encode(value)
+		err := je.enc.Encode(value)
 		if err != nil {
+			je = nil // the encoder keeps a sticky error, so do not reuse it
 			b.B = b.B[:0]
-			fmt.Fprintf(b, `marshaling error: %+v`, err)
+			fmt.Fprintf(b, `%+v`, value)
 			e.buf = append(e.buf, '"')
-			e.bytes(b.B)
+			if !hasSIMDEscape || len(b.B) <= simdEscapeThreshold {
+				e.buf = appendLoggerBytes(e.buf, b.B)
+			} else {
+				e.buf = appendLoggerBytes2(e.buf, b.B)
+			}
 			e.buf = append(e.buf, '"')
 		} else {
 			b.B = b.B[:len(b.B)-1]
 			e.buf = append(e.buf, b.B...)
 		}
-		if cap(b.B) <= bbcap {
-			bbpool.Put(b)
+		if je != nil && cap(b.B) <= bbcap {
+			jsonencpool.Put(je)
 		}
 	}
 	return e
@@ -2410,6 +2642,36 @@ func (e *Entry) Dict(key string, ctx Context) *Entry {
 	return e
 }
 
+var categorizedLoggers sync.Map // key: string, value: *Logger
+
+type CategorizedLogger struct {
+	Logger
+	Category string
+}
+
+// Categorized returns a cloned logger for category `name`.
+func (l *Logger) Categorized(name string) *CategorizedLogger {
+	// Inherit logger with added context
+	v, ok := categorizedLoggers.Load(name)
+	if ok {
+		return v.(*CategorizedLogger)
+	}
+	n := &CategorizedLogger{
+		Logger{
+			Level:        l.Level,
+			Caller:       l.Caller,
+			TimeField:    l.TimeField,
+			TimeFormat:   l.TimeFormat,
+			TimeLocation: l.TimeLocation,
+			Context:      NewContext(l.Context).Str("category", name).Value(),
+			Writer:       l.Writer,
+		},
+		name,
+	}
+	categorizedLoggers.Store(name, n)
+	return n
+}
+
 // stacks is a wrapper for runtime.Stack that attempts to recover the data for all goroutines.
 func stacks(all bool) (trace []byte) {
 	// We don't know how big the traces are, so grow a few times if they don't fit. Start large, though.
@@ -2417,7 +2679,7 @@ func stacks(all bool) (trace []byte) {
 	if all {
 		n = 100000
 	}
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		trace = make([]byte, n)
 		nbytes := runtime.Stack(trace, all)
 		if nbytes < len(trace) {
@@ -2429,28 +2691,100 @@ func stacks(all bool) (trace []byte) {
 	return
 }
 
+// entrybuf is a helper function for otel sub module
+//
+//nolint:unused
+//go:linkname entrybuf
+func entrybuf(e *Entry) *[]byte { return &e.buf }
+
 // wlprintf is a helper function for tests
 func wlprintf(w Writer, level Level, format string, args ...any) (int, error) {
 	return w.WriteEntry(&Entry{
 		Level: level,
-		buf:   []byte(fmt.Sprintf(format, args...)),
+		buf:   fmt.Appendf(nil, format, args...),
 	})
 }
 
-func b2s(b []byte) string { return *(*string)(unsafe.Pointer(&b)) }
+// Calendar math for turning an absolute second into a date and a clock time.
+// The days-per-cycle constants and the algorithm are the ones Go's time
+// package uses in time.absDate and time.absClock; they are spelled out here
+// instead of pulled in with //go:linkname so the header formatting does not
+// depend on time package internals.
+//
+// absDateTime returns the same year/month/day/time.absDate(abs, true) and
+// time.absClock(abs) do, in a single call so that the day and the second of
+// the day share one division.
+
+const (
+	secondsPerMinute = 60
+	secondsPerHour   = 60 * secondsPerMinute
+	secondsPerDay    = 24 * secondsPerHour
+	daysPer400Years  = 365*400 + 97
+	daysPer100Years  = 365*100 + 24
+	daysPer4Years    = 365*4 + 1
+	absoluteZeroYear = -292277022399
+)
+
+var absDateTimeDaysBefore = [...]int32{0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365}
+
+// BSD-3-Clause, copied from Go's time.absDate
+func absDateTime(abs uint64) (year int, month time.Month, day, hour, min, sec int) {
+	d := abs / secondsPerDay
+	s := abs - d*secondsPerDay
+	n := d / daysPer400Years
+	y := 400 * n
+	d -= daysPer400Years * n
+	n = d / daysPer100Years
+	n -= n >> 2
+	y += 100 * n
+	d -= daysPer100Years * n
+	n = d / daysPer4Years
+	y += 4 * n
+	d -= daysPer4Years * n
+	n = d / 365
+	n -= n >> 2
+	y += n
+	d -= 365 * n
+	year = int(int64(y) + absoluteZeroYear)
+
+	hour = int(s / secondsPerHour)
+	s -= uint64(hour) * secondsPerHour
+	min = int(s / secondsPerMinute)
+	sec = int(s - uint64(min)*secondsPerMinute)
+
+	day = int(d)
+	if year%4 == 0 && (year%100 != 0 || year%400 == 0) {
+		switch {
+		case day > 31+29-1:
+			day--
+		case day == 31+29-1:
+			return year, time.February, 29, hour, min, sec
+		}
+	}
+
+	month = time.Month(day / 31)
+	begin := int(absDateTimeDaysBefore[month])
+	if end := int(absDateTimeDaysBefore[month+1]); day >= end {
+		month++
+		begin = end
+	}
+	month++
+	day = day - begin + 1
+	return
+}
+
+// Fastrandn returns a pseudorandom uint32 in [0,n).
+//
+//go:noescape
+//go:linkname Fastrandn runtime.cheaprandn
+func Fastrandn(n uint32) uint32
 
 //go:noescape
 //go:linkname now time.now
 func now() (sec int64, nsec int32, mono int64)
 
 //go:noescape
-//go:linkname absDate time.absDate
-func absDate(abs uint64, full bool) (year int, month time.Month, day int, yday int)
-
-//go:noescape
-//go:linkname absClock time.absClock
-func absClock(abs uint64) (hour, min, sec int)
-
-//go:noescape
 //go:linkname caller1 runtime.callers
 func caller1(skip int, pc *uintptr, len, cap int) int
+
+func b2s(b []byte) string { return *(*string)(unsafe.Pointer(&b)) }
