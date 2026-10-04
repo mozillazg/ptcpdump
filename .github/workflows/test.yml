@@ -16,10 +16,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-    - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
     - name: Set up Go
-      uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+      uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
       with:
         # renovate: datasource=golang-version depName=golang
         go-version: '1.27.1'
@@ -44,10 +44,10 @@ jobs:
     timeout-minutes: 10
 
     steps:
-    - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
     - name: Set up Go
-      uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+      uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
       with:
         # renovate: datasource=golang-version depName=golang
         go-version: '1.27.1'
@@ -56,7 +56,7 @@ jobs:
       run: make build-via-docker COVERAGE_FLAG='-cover'
 
     - name: Store executable
-      uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
       with:
         name: ptcpdump
         path: ptcpdump
@@ -66,7 +66,7 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: test running with docker
         run: |
@@ -79,10 +79,10 @@ jobs:
       GOCOVERDIR: '${{ github.workspace }}/coverage'
 
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Set up Go
-        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
           # renovate: datasource=golang-version depName=golang
           go-version: '1.27.1'
@@ -98,7 +98,7 @@ jobs:
           make test COVERAGE_FLAG='-cover' COVERAGE_ARGS='-args -test.gocoverdir=${{ env.GOCOVERDIR }}'
 
       - name: Store coverage
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: coverage.ut.out
           path: |
@@ -112,7 +112,7 @@ jobs:
       GOCOVERDIR: '${{ github.workspace }}/coverage'
 
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Retrieve stored ptcpdump executable
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
@@ -138,7 +138,7 @@ jobs:
           sudo GOCOVERDIR=${{ env.GOCOVERDIR }} bash testdata/test_docker_container_name_filter.sh ./ptcpdump
 
       - name: Store coverage
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: coverage.docker.out
           path: |
@@ -152,7 +152,7 @@ jobs:
       GOCOVERDIR: '${{ github.workspace }}/coverage'
 
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Retrieve stored ptcpdump executable
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
@@ -187,7 +187,7 @@ jobs:
           sudo GOCOVERDIR=${{ env.GOCOVERDIR }} bash testdata/test_containerd_container_name_filter.sh ./ptcpdump
 
       - name: Store coverage
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: coverage.containerd.out
           path: |
@@ -201,7 +201,7 @@ jobs:
       GOCOVERDIR: '${{ github.workspace }}/coverage'
 
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Retrieve stored ptcpdump executable
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
@@ -255,7 +255,7 @@ jobs:
           fi
 
       - name: Store coverage
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: coverage.k8s.out
           path: |
@@ -297,7 +297,7 @@ jobs:
     env:
       GOCOVERDIR: coverage
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - run: |
           if [ "${{ matrix.backend }}" = "tc" ]; then
@@ -644,7 +644,7 @@ jobs:
             bash /host/testdata/retry.sh 8 bash /host/testdata/test_gotls_keylog.sh /host/ptcpdump/ptcpdump gohttpapp_stripped_pie
 
       - name: upload coverage
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         if: ${{ startsWith(matrix.backend, 'tc') || (startsWith(matrix.backend, 'socket-filter') && !startsWith(matrix.kernel, '4.') ) || !(startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) }}
         with:
           name: coverage.e2e.${{ matrix.backend }}.${{ matrix.kernel }}.out
@@ -661,7 +661,7 @@ jobs:
       - containerd-integration-test
       - k8s-integration-test
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: download coverage
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
