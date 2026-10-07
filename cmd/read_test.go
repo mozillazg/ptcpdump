@@ -336,7 +336,7 @@ func TestFormat(t *testing.T) {
 				printDataAsHexASCII:        1,
 				absoluteTcpSequenceNumbers: true,
 			},
-			expectedOutFile: "../testdata/format/tcp.pcapng.-X.-S.out.txt",
+			expectedOutFile: "../testdata/format/tcp.pcapng.-X.ascii.-S.out.txt",
 		},
 		{
 			name: "tcp -X",
@@ -344,7 +344,7 @@ func TestFormat(t *testing.T) {
 				readFilePath:        "../testdata/format/tcp.pcapng",
 				printDataAsHexASCII: 1,
 			},
-			expectedOutFile: "../testdata/format/tcp.pcapng.-X.out.txt",
+			expectedOutFile: "../testdata/format/tcp.pcapng.-X.ascii.out.txt",
 		},
 		{
 			name: "tcp -XX + -S",
@@ -353,7 +353,7 @@ func TestFormat(t *testing.T) {
 				printDataAsHexASCII:        2,
 				absoluteTcpSequenceNumbers: true,
 			},
-			expectedOutFile: "../testdata/format/tcp.pcapng.-XX.-S.out.txt",
+			expectedOutFile: "../testdata/format/tcp.pcapng.-XX.ascii.-S.out.txt",
 		},
 		{
 			name: "tcp -XX",
@@ -361,7 +361,7 @@ func TestFormat(t *testing.T) {
 				readFilePath:        "../testdata/format/tcp.pcapng",
 				printDataAsHexASCII: 2,
 			},
-			expectedOutFile: "../testdata/format/tcp.pcapng.-XX.out.txt",
+			expectedOutFile: "../testdata/format/tcp.pcapng.-XX.ascii.out.txt",
 		},
 		{
 			name: "mptcp + -S",
