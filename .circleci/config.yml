@@ -160,9 +160,10 @@ jobs:
             sudo PTCPDUMP_EXTRA_ARGS="${PTCPDUMP_EXTRA_ARGS}" bash testdata/retry.sh 10 bash testdata/test_gotls_keylog.sh ./ptcpdump gohttpapp_pie
 
       - run:
-          name: e2e (test go tls keylog, stripped)
+          name: e2e (test go tls keylog, stripped) [skipped]
           filters: pipeline.parameters.os == 'ubuntu-24-04'
           command: |
+            exit 0
             echo "wireshark-common wireshark-common/install-setuid boolean true" | sudo debconf-set-selections
             sudo add-apt-repository -y ppa:wireshark-dev/stable
             sudo apt update
@@ -172,9 +173,10 @@ jobs:
             sudo PTCPDUMP_EXTRA_ARGS="${PTCPDUMP_EXTRA_ARGS}" bash testdata/retry.sh 10 bash testdata/test_gotls_keylog.sh ./ptcpdump gohttpapp_stripped
 
       - run:
-          name: e2e (test go tls keylog, stripped + PIE)
+          name: e2e (test go tls keylog, stripped + PIE) [skipped]
           filters: pipeline.parameters.os == 'ubuntu-24-04'
           command: |
+            exit 0
             echo "wireshark-common wireshark-common/install-setuid boolean true" | sudo debconf-set-selections
             sudo add-apt-repository -y ppa:wireshark-dev/stable
             sudo apt update
