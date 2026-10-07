@@ -1,3 +1,5 @@
+//go:build windows
+
 package wclayer
 
 import (
@@ -5,15 +7,14 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"syscall"
 
 	"github.com/Microsoft/hcsshim/internal/hcserror"
 	"github.com/Microsoft/hcsshim/internal/longpath"
-	"github.com/Microsoft/hcsshim/internal/oc"
+	"github.com/Microsoft/hcsshim/internal/ot"
 	"github.com/Microsoft/hcsshim/internal/safefile"
 	"github.com/Microsoft/hcsshim/internal/winapi"
 	"github.com/pkg/errors"
-	"go.opencensus.io/trace"
+	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/sys/windows"
 )
 
@@ -37,7 +38,7 @@ func ensureHive(path string, root *os.File) (err error) {
 		return fmt.Errorf("getting path: %w", err)
 	}
 
-	var key syscall.Handle
+	var key winapi.ORHKey
 	err = winapi.ORCreateHive(&key)
 	if err != nil {
 		return fmt.Errorf("creating hive: %w", err)
@@ -72,7 +73,7 @@ func ensureBaseLayer(root *os.File) (hasUtilityVM bool, err error) {
 		}
 	}
 
-	stat, err := safefile.LstatRelative(utilityVMFilesPath, root)
+	stat, err := safefile.LstatRelative(UtilityVMFilesPath, root)
 
 	if os.IsNotExist(err) {
 		return false, nil
@@ -83,7 +84,7 @@ func ensureBaseLayer(root *os.File) (hasUtilityVM bool, err error) {
 	}
 
 	if !stat.Mode().IsDir() {
-		fullPath := filepath.Join(root.Name(), utilityVMFilesPath)
+		fullPath := filepath.Join(root.Name(), UtilityVMFilesPath)
 		return false, errors.Errorf("%s has unexpected file mode %s", fullPath, stat.Mode().String())
 	}
 
@@ -92,7 +93,7 @@ func ensureBaseLayer(root *os.File) (hasUtilityVM bool, err error) {
 	// Just check that this exists as a regular file. If it exists but is not a valid registry hive,
 	// ProcessUtilityVMImage will complain:
 	// "The registry could not read in, or write out, or flush, one of the files that contain the system's image of the registry."
-	bcdPath := filepath.Join(utilityVMFilesPath, bcdRelativePath)
+	bcdPath := filepath.Join(UtilityVMFilesPath, bcdRelativePath)
 
 	stat, err = safefile.LstatRelative(bcdPath, root)
 	if err != nil {
@@ -122,12 +123,12 @@ func convertToBaseLayer(ctx context.Context, root *os.File) error {
 		return nil
 	}
 
-	err = safefile.EnsureNotReparsePointRelative(utilityVMPath, root)
+	err = safefile.EnsureNotReparsePointRelative(UtilityVMPath, root)
 	if err != nil {
 		return err
 	}
 
-	utilityVMPath := filepath.Join(root.Name(), utilityVMPath)
+	utilityVMPath := filepath.Join(root.Name(), UtilityVMPath)
 	return ProcessUtilityVMImage(ctx, utilityVMPath)
 }
 
@@ -136,10 +137,10 @@ func convertToBaseLayer(ctx context.Context, root *os.File) error {
 // desired file content for a UtilityVM under UtilityVM/Files/
 func ConvertToBaseLayer(ctx context.Context, path string) (err error) {
 	title := "hcsshim::ConvertToBaseLayer"
-	ctx, span := trace.StartSpan(ctx, title)
+	ctx, span := ot.StartSpan(ctx, title)
 	defer span.End()
-	defer func() { oc.SetSpanStatus(span, err) }()
-	span.AddAttributes(trace.StringAttribute("path", path))
+	defer func() { ot.SetSpanStatus(span, err) }()
+	span.SetAttributes(attribute.String("path", path))
 
 	root, err := safefile.OpenRoot(path)
 	if err != nil {

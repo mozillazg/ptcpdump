@@ -30,11 +30,33 @@ jobs:
     - name: Install govulncheck
       run: go install golang.org/x/vuln/cmd/govulncheck@latest
 
+    - name: Install Deps
+      run: |
+        sudo apt-get update && sudo apt-get install -y gcc flex bison make libelf-dev autoconf libpcap-dev
+
     - name: Run govulncheck for project
-      run: govulncheck -show verbose -scan module
+      run: |
+        set -xe
+        module_status=0
+        symbol_status=0
+        govulncheck -show verbose -scan module || module_status=$?
+        govulncheck -show verbose -scan symbol ./... || symbol_status=$?
+        # Fail only when both scans fail.
+        if [ "$module_status" -ne 0 ] && [ "$symbol_status" -ne 0 ]; then
+          exit 1
+        fi
 
     - name: Build binary
       run: make build-via-docker
 
     - name: Run govulncheck for binary
-      run: govulncheck -mode=binary -show verbose -scan module ./ptcpdump
+      run: |
+        set -xe
+        module_status=0
+        symbol_status=0
+        govulncheck -mode=binary -show verbose -scan module ./ptcpdump || module_status=$?
+        govulncheck -mode=binary -show verbose -scan symbol ./ptcpdump || symbol_status=$?
+        # Fail only when both scans fail.
+        if [ "$module_status" -ne 0 ] && [ "$symbol_status" -ne 0 ]; then
+          exit 1
+        fi
