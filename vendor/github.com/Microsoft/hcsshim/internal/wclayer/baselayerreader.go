@@ -1,3 +1,5 @@
+//go:build windows
+
 package wclayer
 
 import (
@@ -10,12 +12,12 @@ import (
 
 	"github.com/Microsoft/go-winio"
 	"github.com/Microsoft/hcsshim/internal/longpath"
-	"github.com/Microsoft/hcsshim/internal/oc"
-	"go.opencensus.io/trace"
+	"github.com/Microsoft/hcsshim/internal/ot"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type baseLayerReader struct {
-	s            *trace.Span
+	s            trace.Span
 	root         string
 	result       chan *fileEntry
 	proceed      chan bool
@@ -23,7 +25,7 @@ type baseLayerReader struct {
 	backupReader *winio.BackupFileReader
 }
 
-func newBaseLayerReader(root string, s *trace.Span) (r *baseLayerReader) {
+func newBaseLayerReader(root string, s trace.Span) (r *baseLayerReader) {
 	r = &baseLayerReader{
 		s:       s,
 		root:    root,
@@ -64,7 +66,7 @@ func (r *baseLayerReader) walkUntilCancelled() error {
 		return nil
 	})
 
-	if err == errorIterationCanceled {
+	if err == errorIterationCanceled { //nolint:errorlint // explicitly returned
 		return nil
 	}
 
@@ -72,8 +74,8 @@ func (r *baseLayerReader) walkUntilCancelled() error {
 		return err
 	}
 
-	utilityVMAbsPath := filepath.Join(r.root, utilityVMPath)
-	utilityVMFilesAbsPath := filepath.Join(r.root, utilityVMFilesPath)
+	utilityVMAbsPath := filepath.Join(r.root, UtilityVMPath)
+	utilityVMFilesAbsPath := filepath.Join(r.root, UtilityVMFilesPath)
 
 	// Ignore a UtilityVM without Files, that's not _really_ a UtiltyVM
 	if _, err = os.Lstat(utilityVMFilesAbsPath); err != nil {
@@ -103,7 +105,7 @@ func (r *baseLayerReader) walkUntilCancelled() error {
 		return nil
 	})
 
-	if err == errorIterationCanceled {
+	if err == errorIterationCanceled { //nolint:errorlint // explicitly returned
 		return nil
 	}
 
@@ -205,7 +207,7 @@ func (r *baseLayerReader) Read(b []byte) (int, error) {
 func (r *baseLayerReader) Close() (err error) {
 	defer r.s.End()
 	defer func() {
-		oc.SetSpanStatus(r.s, err)
+		ot.SetSpanStatus(r.s, err)
 		close(r.proceed)
 	}()
 	r.proceed <- false
