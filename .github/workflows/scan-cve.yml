@@ -30,6 +30,10 @@ jobs:
     - name: Install govulncheck
       run: go install golang.org/x/vuln/cmd/govulncheck@latest
 
+    - name: Install Deps
+      run: |
+        sudo apt-get update && sudo apt-get install -y gcc flex bison make libelf-dev autoconf libpcap-dev
+
     - name: Run govulncheck for project
       run: |
         set -xe
