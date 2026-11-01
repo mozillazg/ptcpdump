@@ -221,8 +221,15 @@ jobs:
           sudo docker pull busybox:1
           
           sudo kind create cluster
-          sudo kind load docker-image alpine:3.18
-          sudo kind load docker-image busybox:1
+          # Docker's containerd image store makes `docker save` include a
+          # multi-platform index whose other-platform blobs are not present,
+          # which breaks `kind load`/`ctr import` with "content digest ...:
+          # not found". Export only the runner platform instead.
+          for image in alpine:3.18 busybox:1; do
+            sudo docker save --platform linux/amd64 "${image}" | \
+              sudo docker exec -i kind-control-plane \
+                ctr --namespace=k8s.io images import --platform linux/amd64 -
+          done
           sudo kind export kubeconfig
           sleep 30
           sudo kubectl get sa default
