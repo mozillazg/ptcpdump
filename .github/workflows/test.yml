@@ -56,7 +56,7 @@ jobs:
       run: make build-via-docker COVERAGE_FLAG='-cover'
 
     - name: Store executable
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
       with:
         name: ptcpdump
         path: ptcpdump
@@ -98,7 +98,7 @@ jobs:
           make test COVERAGE_FLAG='-cover' COVERAGE_ARGS='-args -test.gocoverdir=${{ env.GOCOVERDIR }}'
 
       - name: Store coverage
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: coverage.ut.out
           path: |
@@ -115,7 +115,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Retrieve stored ptcpdump executable
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           name: ptcpdump
           path: ./
@@ -138,7 +138,7 @@ jobs:
           sudo GOCOVERDIR=${{ env.GOCOVERDIR }} bash testdata/test_docker_container_name_filter.sh ./ptcpdump
 
       - name: Store coverage
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: coverage.docker.out
           path: |
@@ -155,7 +155,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Retrieve stored ptcpdump executable
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           name: ptcpdump
           path: ./
@@ -187,7 +187,7 @@ jobs:
           sudo GOCOVERDIR=${{ env.GOCOVERDIR }} bash testdata/test_containerd_container_name_filter.sh ./ptcpdump
 
       - name: Store coverage
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: coverage.containerd.out
           path: |
@@ -204,7 +204,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Retrieve stored ptcpdump executable
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           name: ptcpdump
           path: ./
@@ -255,7 +255,7 @@ jobs:
           fi
 
       - name: Store coverage
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: coverage.k8s.out
           path: |
@@ -314,7 +314,7 @@ jobs:
           echo "PTCPDUMP_EXTRA_ARGS=${PTCPDUMP_EXTRA_ARGS}" >> $GITHUB_ENV
           mkdir $GOCOVERDIR
       - name: Retrieve stored ptcpdump executable
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           name: ptcpdump
           path: ptcpdump
@@ -644,7 +644,7 @@ jobs:
             bash /host/testdata/retry.sh 8 bash /host/testdata/test_gotls_keylog.sh /host/ptcpdump/ptcpdump gohttpapp_stripped_pie
 
       - name: upload coverage
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: ${{ startsWith(matrix.backend, 'tc') || (startsWith(matrix.backend, 'socket-filter') && !startsWith(matrix.kernel, '4.') ) || !(startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) }}
         with:
           name: coverage.e2e.${{ matrix.backend }}.${{ matrix.kernel }}.out
@@ -664,7 +664,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: download coverage
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           pattern: 'coverage.*'
           merge-multiple: true
