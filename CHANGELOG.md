@@ -1,6 +1,38 @@
 # CHANGELOG
 
-## [unreleased](https://github.com/mozillazg/ptcpdump/compare/v0.37.0...HEAD)
+## [unreleased](https://github.com/mozillazg/ptcpdump/compare/v0.37.1...HEAD)
+
+## [v0.37.1](https://github.com/mozillazg/ptcpdump/compare/v0.37.0...v0.37.1) - 2026-11-08
+
+- fix(ci): update Go to 1.27.3 and x/net for govulncheck ([#413](https://github.com/mozillazg/ptcpdump/pull/413)) (3ac3e1f)
+- chore(deps): update golang docker tag to v1.27.3 ([#412](https://github.com/mozillazg/ptcpdump/pull/412)) (c53d772)
+- chore(deps): update golang docker tag to v1.27.2 ([#409](https://github.com/mozillazg/ptcpdump/pull/409)) (59e839e)
+- chore(deps): update docker base images to latest ([#408](https://github.com/mozillazg/ptcpdump/pull/408)) (8600ef2)
+- test: avoid case-only filename collisions in testdata fixtures ([#407](https://github.com/mozillazg/ptcpdump/pull/407)) (418dc52)
+- chore(deps): update all github action dependencies to v7 ([#378](https://github.com/mozillazg/ptcpdump/pull/378)) (ad2003d)
+- chore(deps): update module google.golang.org/grpc to v1.83.2 [security] ([#404](https://github.com/mozillazg/ptcpdump/pull/404)) (c0d9f89)
+- chore(deps): update all github action dependencies ([#393](https://github.com/mozillazg/ptcpdump/pull/393)) (a72875b)
+- fix(deps): update module github.com/containerd/containerd to v1.7.36 [security] ([#397](https://github.com/mozillazg/ptcpdump/pull/397)) (b81cd0a)
+- chore(deps): update module golang.org/x/net to v0.55.0 [security] ([#398](https://github.com/mozillazg/ptcpdump/pull/398)) (0042ad4)
+- chore(deps): update module google.golang.org/grpc to v1.83.1 [security] ([#399](https://github.com/mozillazg/ptcpdump/pull/399)) (5649835)
+- chore(deps): update golang docker tag to v1.27.1 ([#402](https://github.com/mozillazg/ptcpdump/pull/402)) (ef3d44d)
+- chore(deps): update all github action dependencies ([#381](https://github.com/mozillazg/ptcpdump/pull/381)) (ecdbe62)
+- chore(deps): bump picomatch in /docs ([#392](https://github.com/mozillazg/ptcpdump/pull/392)) (5eac274)
+- chore(deps-dev): bump postcss from 8.5.6 to 8.5.14 in /docs ([#391](https://github.com/mozillazg/ptcpdump/pull/391)) (d1782a8)
+- build(deps): bump k8s.io/klog/v2 from v2.130.1 to v2.140.0 ([#385](https://github.com/mozillazg/ptcpdump/pull/385)) (6e371a2)
+- chore(deps): update golang:1.26.3-bookworm docker digest to 252599a ([#390](https://github.com/mozillazg/ptcpdump/pull/390)) (dd0e5e1)
+- chore(deps): update golang docker tag to v1.26.3 ([#389](https://github.com/mozillazg/ptcpdump/pull/389)) (2c287e6)
+- chore(deps): update all github action dependencies to v4 ([#386](https://github.com/mozillazg/ptcpdump/pull/386)) (28df610)
+- chore(deps): replace github.com/docker/docker with moby/moby modules ([#388](https://github.com/mozillazg/ptcpdump/pull/388)) (5b1a25a)
+- chore(deps): update module go.opentelemetry.io/otel to v1.41.0 [security] ([#387](https://github.com/mozillazg/ptcpdump/pull/387)) (64b35f5)
+- chore(deps): update module google.golang.org/grpc to v1.79.3 [security] ([#380](https://github.com/mozillazg/ptcpdump/pull/380)) (bf2a069)
+- chore(deps): update actions/download-artifact action to v8 ([#383](https://github.com/mozillazg/ptcpdump/pull/383)) (83ad9f5)
+- chore(deps): update all github action dependencies ([#368](https://github.com/mozillazg/ptcpdump/pull/368)) (758a6ad)
+- chore(deps): update golang docker tag to v1.26.2 ([#382](https://github.com/mozillazg/ptcpdump/pull/382)) (9474634)
+- chore(deps): update quay.io/ptcpdump/develop docker tag to v20251206 ([#376](https://github.com/mozillazg/ptcpdump/pull/376)) (2297bda)
+- chore(deps): update golang docker tag to v1.25.5 ([#373](https://github.com/mozillazg/ptcpdump/pull/373)) (789abf9)
+- chore(deps): update dependency golang to v1.25.5 ([#375](https://github.com/mozillazg/ptcpdump/pull/375)) (75e7a20)
+- docs: Added a "Related Projects" section introducing Flownix ([#374](https://github.com/mozillazg/ptcpdump/pull/374)) (8119e1b)
 
 ## [v0.37.0](https://github.com/mozillazg/ptcpdump/compare/v0.36.0...v0.37.0) - 2025-11-16
 
