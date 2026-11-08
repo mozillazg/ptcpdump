@@ -1,9 +1,9 @@
 # .github/build.Dockerfile
-FROM quay.io/ptcpdump/develop:20251206.054007@sha256:043bfa0c026e694d440b32e1ded04b88ca13dd094179efabc1977c3a41330f15 AS build
+FROM quay.io/ptcpdump/develop:20261003.144200@sha256:82e9cb1a0bc41b4f61bdf6f0b27f901602b911b5367db477eac19adad7cbe892 AS build
 WORKDIR /app
 COPY . .
 RUN make build
 
-FROM busybox:latest@sha256:d82f458899c9696cb26a7c02d5568f81c8c8223f8661bb2a7988b269c8b9051e
+FROM busybox:latest@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e
 WORKDIR /ptcpdump
 COPY --from=build /app/ptcpdump /usr/local/bin/

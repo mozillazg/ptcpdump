@@ -28,7 +28,7 @@ const (
 // https://docs.microsoft.com/en-us/windows/win32/procthread/job-object-security-and-access-rights
 const (
 	JOB_OBJECT_QUERY      = 0x0004
-	JOB_OBJECT_ALL_ACCESS = 0x1F001F
+	JOB_OBJECT_ALL_ACCESS = 0x1F003F
 )
 
 // IO limit flags
@@ -98,6 +98,26 @@ type JOBOBJECT_BASIC_PROCESS_ID_LIST struct {
 	ProcessIdList             [1]uintptr
 }
 
+// GROUP_AFFINITY specifies a processor group and an affinity mask for that group.
+// Mirrors the Win32 _GROUP_AFFINITY structure.
+//
+// Processor group support was introduced in Windows 7 / Windows Server 2008 R2
+// to handle machines with more than 64 logical processors. The structure is used
+// with SetInformationJobObject(JobObjectGroupInformationEx) and
+// QueryInformationJobObject(JobObjectGroupInformationEx), both available since
+// Windows 7 / Windows Server 2008 R2.
+//
+// For job object silos (containers), multi-processor-group affinity requires
+// Windows Server 2022 (build 20348) or later.
+//
+// https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/miniport/ns-miniport-_group_affinity
+// https://learn.microsoft.com/en-us/windows/win32/procthread/processor-groups
+type GROUP_AFFINITY struct {
+	Mask     uintptr   // KAFFINITY = ULONG_PTR: bitmask of processors in Group
+	Group    uint16    // Processor group number
+	Reserved [3]uint16 // Must be zero
+}
+
 // AllPids returns all the process Ids in the job object.
 func (p *JOBOBJECT_BASIC_PROCESS_ID_LIST) AllPids() []uintptr {
 	return (*[(1 << 27) - 1]uintptr)(unsafe.Pointer(&p.ProcessIdList[0]))[:p.NumberOfProcessIdsInList:p.NumberOfProcessIdsInList]
@@ -160,6 +180,21 @@ type JOBOBJECT_ASSOCIATE_COMPLETION_PORT struct {
 	CompletionPort windows.Handle
 }
 
+//	typedef struct _SILOOBJECT_BASIC_INFORMATION {
+//	    DWORD SiloId;
+//	    DWORD SiloParentId;
+//	    DWORD NumberOfProcesses;
+//	    BOOLEAN IsInServerSilo;
+//	    BYTE  Reserved[3];
+//	} SILOOBJECT_BASIC_INFORMATION, *PSILOOBJECT_BASIC_INFORMATION;
+type SILOOBJECT_BASIC_INFORMATION struct {
+	SiloID            uint32
+	SiloParentID      uint32
+	NumberOfProcesses uint32
+	IsInServerSilo    bool
+	Reserved          [3]uint8
+}
+
 // BOOL IsProcessInJob(
 // 		HANDLE ProcessHandle,
 // 		HANDLE JobHandle,
@@ -184,7 +219,7 @@ type JOBOBJECT_ASSOCIATE_COMPLETION_PORT struct {
 //		LPCWSTR lpName
 // );
 //
-//sys OpenJobObject(desiredAccess uint32, inheritHandle int32, lpName *uint16) (handle windows.Handle, err error) = kernel32.OpenJobObjectW
+//sys OpenJobObject(desiredAccess uint32, inheritHandle bool, lpName *uint16) (handle windows.Handle, err error) = kernel32.OpenJobObjectW
 
 // DWORD SetIoRateControlInformationJobObject(
 //		HANDLE                                hJob,

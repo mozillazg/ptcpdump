@@ -10,7 +10,9 @@
 package hcsschema
 
 import (
-	v1 "github.com/containerd/cgroups/stats/v1"
+	"encoding/json"
+
+	v1 "github.com/containerd/cgroups/v3/cgroup1/stats"
 )
 
 type Properties struct {
@@ -25,6 +27,8 @@ type Properties struct {
 	Owner string `json:"Owner,omitempty"`
 
 	RuntimeId string `json:"RuntimeId,omitempty"`
+
+	SystemGUID string `json:"SystemGUID,omitempty"`
 
 	RuntimeTemplateId string `json:"RuntimeTemplateId,omitempty"`
 
@@ -48,7 +52,15 @@ type Properties struct {
 
 	GuestConnectionInfo *GuestConnectionInfo `json:"GuestConnectionInfo,omitempty"`
 
+	// PropertyResponses maps requested property names to their associated response objects.
+	PropertyResponses map[string]PropertyResponse `json:"PropertyResponses,omitempty"`
+
 	// Metrics is not part of the API for HCS but this is used for LCOW v2 to
 	// return the full cgroup metrics from the guest.
 	Metrics *v1.Metrics `json:"LCOWMetrics,omitempty"`
+}
+
+// PropertyResponse is the response object associated with a property query.
+type PropertyResponse struct {
+	Response json.RawMessage `json:"Response,omitempty"`
 }

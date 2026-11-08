@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/containerd/containerd"
 	apievents "github.com/containerd/containerd/api/events"
-	"github.com/containerd/containerd/events"
+	"github.com/containerd/containerd/v2/client"
+	"github.com/containerd/containerd/v2/core/events"
 	"github.com/containerd/errdefs"
 	"github.com/containerd/typeurl/v2"
 	"github.com/mozillazg/ptcpdump/internal/log"
@@ -31,7 +31,7 @@ var containerNameLabels = []string{
 }
 
 type MetaData struct {
-	client *containerd.Client
+	client *client.Client
 
 	containerById map[string]types.Container
 	mux           sync.RWMutex
@@ -50,11 +50,11 @@ func NewMetaData(host string, namespace string) (*MetaData, error) {
 	}
 
 	log.Infof("init containerd metadata with host=%s, namespace=%s", host, namespace)
-	opts := []containerd.ClientOpt{
-		containerd.WithDefaultNamespace(namespace),
-		containerd.WithTimeout(time.Second * 2),
+	opts := []client.Opt{
+		client.WithDefaultNamespace(namespace),
+		client.WithTimeout(time.Second * 2),
 	}
-	c, err := containerd.New(host, opts...)
+	c, err := client.New(host, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -331,7 +331,7 @@ func (d *MetaData) handleContainerEvent(ctx context.Context, containerId string)
 	}
 }
 
-func (d *MetaData) saveContainer(ctx context.Context, container containerd.Container) {
+func (d *MetaData) saveContainer(ctx context.Context, container client.Container) {
 	cr, err := d.inspectContainer(ctx, container)
 	if err != nil {
 		log.Error(err.Error())
@@ -350,7 +350,7 @@ func (d *MetaData) setContainer(c types.Container) {
 	d.containerById[c.Id] = c
 }
 
-func (d *MetaData) inspectContainer(ctx context.Context, container containerd.Container) (*types.Container, error) {
+func (d *MetaData) inspectContainer(ctx context.Context, container client.Container) (*types.Container, error) {
 	info, err := container.Info(ctx)
 	if err != nil {
 		return nil, err

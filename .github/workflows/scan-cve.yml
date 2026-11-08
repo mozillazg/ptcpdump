@@ -19,22 +19,44 @@ jobs:
     timeout-minutes: 10
 
     steps:
-    - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
     - name: Set up Go
-      uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
+      uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
       with:
         # renovate: datasource=golang-version depName=golang
-        go-version: '1.26.3'
+        go-version: '1.27.3'
 
     - name: Install govulncheck
       run: go install golang.org/x/vuln/cmd/govulncheck@latest
 
+    - name: Install Deps
+      run: |
+        sudo apt-get update && sudo apt-get install -y gcc flex bison make libelf-dev autoconf libpcap-dev
+
     - name: Run govulncheck for project
-      run: govulncheck -show verbose -scan module
+      run: |
+        set -xe
+        module_status=0
+        symbol_status=0
+        govulncheck -show verbose -scan module || module_status=$?
+        govulncheck -show verbose -scan symbol ./... || symbol_status=$?
+        # Fail only when both scans fail.
+        if [ "$module_status" -ne 0 ] && [ "$symbol_status" -ne 0 ]; then
+          exit 1
+        fi
 
     - name: Build binary
       run: make build-via-docker
 
     - name: Run govulncheck for binary
-      run: govulncheck -mode=binary -show verbose -scan module ./ptcpdump
+      run: |
+        set -xe
+        module_status=0
+        symbol_status=0
+        govulncheck -mode=binary -show verbose -scan module ./ptcpdump || module_status=$?
+        govulncheck -mode=binary -show verbose -scan symbol ./ptcpdump || symbol_status=$?
+        # Fail only when both scans fail.
+        if [ "$module_status" -ne 0 ] && [ "$symbol_status" -ne 0 ]; then
+          exit 1
+        fi

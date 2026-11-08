@@ -37,20 +37,25 @@ func errnoErr(e syscall.Errno) error {
 }
 
 var (
-	modadvapi32   = windows.NewLazySystemDLL("advapi32.dll")
-	modbindfltapi = windows.NewLazySystemDLL("bindfltapi.dll")
-	modcfgmgr32   = windows.NewLazySystemDLL("cfgmgr32.dll")
-	modiphlpapi   = windows.NewLazySystemDLL("iphlpapi.dll")
-	modkernel32   = windows.NewLazySystemDLL("kernel32.dll")
-	modnetapi32   = windows.NewLazySystemDLL("netapi32.dll")
-	modntdll      = windows.NewLazySystemDLL("ntdll.dll")
-	modoffreg     = windows.NewLazySystemDLL("offreg.dll")
+	modadvapi32     = windows.NewLazySystemDLL("advapi32.dll")
+	modamdsnppspapi = windows.NewLazySystemDLL("amdsnppspapi.dll")
+	modbindfltapi   = windows.NewLazySystemDLL("bindfltapi.dll")
+	modcfgmgr32     = windows.NewLazySystemDLL("cfgmgr32.dll")
+	modiphlpapi     = windows.NewLazySystemDLL("iphlpapi.dll")
+	modkernel32     = windows.NewLazySystemDLL("kernel32.dll")
+	modnetapi32     = windows.NewLazySystemDLL("netapi32.dll")
+	modntdll        = windows.NewLazySystemDLL("ntdll.dll")
+	modoffreg       = windows.NewLazySystemDLL("offreg.dll")
 
 	procLogonUserW                             = modadvapi32.NewProc("LogonUserW")
+	procSnpPspFetchAttestationReport           = modamdsnppspapi.NewProc("SnpPspFetchAttestationReport")
+	procSnpPspIsSnpMode                        = modamdsnppspapi.NewProc("SnpPspIsSnpMode")
 	procBfSetupFilter                          = modbindfltapi.NewProc("BfSetupFilter")
 	procCM_Get_DevNode_PropertyW               = modcfgmgr32.NewProc("CM_Get_DevNode_PropertyW")
 	procCM_Get_Device_ID_ListA                 = modcfgmgr32.NewProc("CM_Get_Device_ID_ListA")
 	procCM_Get_Device_ID_List_SizeA            = modcfgmgr32.NewProc("CM_Get_Device_ID_List_SizeA")
+	procCM_Get_Device_Interface_ListW          = modcfgmgr32.NewProc("CM_Get_Device_Interface_ListW")
+	procCM_Get_Device_Interface_List_SizeW     = modcfgmgr32.NewProc("CM_Get_Device_Interface_List_SizeW")
 	procCM_Locate_DevNodeW                     = modcfgmgr32.NewProc("CM_Locate_DevNodeW")
 	procSetJobCompartmentId                    = modiphlpapi.NewProc("SetJobCompartmentId")
 	procClosePseudoConsole                     = modkernel32.NewProc("ClosePseudoConsole")
@@ -58,6 +63,9 @@ var (
 	procCreatePseudoConsole                    = modkernel32.NewProc("CreatePseudoConsole")
 	procCreateRemoteThread                     = modkernel32.NewProc("CreateRemoteThread")
 	procGetActiveProcessorCount                = modkernel32.NewProc("GetActiveProcessorCount")
+	procGetActiveProcessorGroupCount           = modkernel32.NewProc("GetActiveProcessorGroupCount")
+	procGetProcessAffinityMask                 = modkernel32.NewProc("GetProcessAffinityMask")
+	procGetProcessGroupAffinity                = modkernel32.NewProc("GetProcessGroupAffinity")
 	procIsProcessInJob                         = modkernel32.NewProc("IsProcessInJob")
 	procLocalAlloc                             = modkernel32.NewProc("LocalAlloc")
 	procLocalFree                              = modkernel32.NewProc("LocalFree")
@@ -73,6 +81,7 @@ var (
 	procNetUserDel                             = modnetapi32.NewProc("NetUserDel")
 	procNtCreateFile                           = modntdll.NewProc("NtCreateFile")
 	procNtCreateJobObject                      = modntdll.NewProc("NtCreateJobObject")
+	procNtFsControlFile                        = modntdll.NewProc("NtFsControlFile")
 	procNtOpenDirectoryObject                  = modntdll.NewProc("NtOpenDirectoryObject")
 	procNtOpenJobObject                        = modntdll.NewProc("NtOpenJobObject")
 	procNtQueryDirectoryObject                 = modntdll.NewProc("NtQueryDirectoryObject")
@@ -81,13 +90,47 @@ var (
 	procNtSetInformationFile                   = modntdll.NewProc("NtSetInformationFile")
 	procRtlNtStatusToDosError                  = modntdll.NewProc("RtlNtStatusToDosError")
 	procORCloseHive                            = modoffreg.NewProc("ORCloseHive")
+	procORCloseKey                             = modoffreg.NewProc("ORCloseKey")
 	procORCreateHive                           = modoffreg.NewProc("ORCreateHive")
+	procORCreateKey                            = modoffreg.NewProc("ORCreateKey")
+	procORDeleteKey                            = modoffreg.NewProc("ORDeleteKey")
+	procORGetValue                             = modoffreg.NewProc("ORGetValue")
+	procORMergeHives                           = modoffreg.NewProc("ORMergeHives")
+	procOROpenHive                             = modoffreg.NewProc("OROpenHive")
+	procOROpenKey                              = modoffreg.NewProc("OROpenKey")
 	procORSaveHive                             = modoffreg.NewProc("ORSaveHive")
+	procORSetValue                             = modoffreg.NewProc("ORSetValue")
 )
 
 func LogonUser(username *uint16, domain *uint16, password *uint16, logonType uint32, logonProvider uint32, token *windows.Token) (err error) {
 	r1, _, e1 := syscall.SyscallN(procLogonUserW.Addr(), uintptr(unsafe.Pointer(username)), uintptr(unsafe.Pointer(domain)), uintptr(unsafe.Pointer(password)), uintptr(logonType), uintptr(logonProvider), uintptr(unsafe.Pointer(token)))
 	if r1 == 0 {
+		err = errnoErr(e1)
+	}
+	return
+}
+
+func SnpPspFetchAttestationReport(reportData *uint8, guestRequestResult *SNPPSPGuestRequestResult, report *uint8) (ret uint32, err error) {
+	err = procSnpPspFetchAttestationReport.Find()
+	if err != nil {
+		return
+	}
+	r0, _, e1 := syscall.SyscallN(procSnpPspFetchAttestationReport.Addr(), uintptr(unsafe.Pointer(reportData)), uintptr(unsafe.Pointer(guestRequestResult)), uintptr(unsafe.Pointer(report)))
+	ret = uint32(r0)
+	if ret > 0 {
+		err = errnoErr(e1)
+	}
+	return
+}
+
+func SnpPspIsSnpMode(snpMode *uint8) (ret uint32, err error) {
+	err = procSnpPspIsSnpMode.Find()
+	if err != nil {
+		return
+	}
+	r0, _, e1 := syscall.SyscallN(procSnpPspIsSnpMode.Addr(), uintptr(unsafe.Pointer(snpMode)))
+	ret = uint32(r0)
+	if ret > 0 {
 		err = errnoErr(e1)
 	}
 	return
@@ -132,6 +175,28 @@ func CMGetDeviceIDList(pszFilter *byte, buffer *byte, bufferLen uint32, uFlags u
 
 func CMGetDeviceIDListSize(pulLen *uint32, pszFilter *byte, uFlags uint32) (hr error) {
 	r0, _, _ := syscall.SyscallN(procCM_Get_Device_ID_List_SizeA.Addr(), uintptr(unsafe.Pointer(pulLen)), uintptr(unsafe.Pointer(pszFilter)), uintptr(uFlags))
+	if int32(r0) < 0 {
+		if r0&0x1fff0000 == 0x00070000 {
+			r0 &= 0xffff
+		}
+		hr = syscall.Errno(r0)
+	}
+	return
+}
+
+func CMGetDeviceInterfaceList(classGUID *GUID, deviceID *uint16, buffer *uint16, bufLen uint32, ulFlags uint32) (hr error) {
+	r0, _, _ := syscall.SyscallN(procCM_Get_Device_Interface_ListW.Addr(), uintptr(unsafe.Pointer(classGUID)), uintptr(unsafe.Pointer(deviceID)), uintptr(unsafe.Pointer(buffer)), uintptr(bufLen), uintptr(ulFlags))
+	if int32(r0) < 0 {
+		if r0&0x1fff0000 == 0x00070000 {
+			r0 &= 0xffff
+		}
+		hr = syscall.Errno(r0)
+	}
+	return
+}
+
+func CMGetDeviceInterfaceListSize(listlen *uint32, classGUID *GUID, deviceID *uint16, ulFlags uint32) (hr error) {
+	r0, _, _ := syscall.SyscallN(procCM_Get_Device_Interface_List_SizeW.Addr(), uintptr(unsafe.Pointer(listlen)), uintptr(unsafe.Pointer(classGUID)), uintptr(unsafe.Pointer(deviceID)), uintptr(ulFlags))
 	if int32(r0) < 0 {
 		if r0&0x1fff0000 == 0x00070000 {
 			r0 &= 0xffff
@@ -208,6 +273,28 @@ func GetActiveProcessorCount(groupNumber uint16) (amount uint32) {
 	return
 }
 
+func GetActiveProcessorGroupCount() (amount uint16) {
+	r0, _, _ := syscall.SyscallN(procGetActiveProcessorGroupCount.Addr())
+	amount = uint16(r0)
+	return
+}
+
+func GetProcessAffinityMask(process windows.Handle, processAffinityMask *uintptr, systemAffinityMask *uintptr) (err error) {
+	r1, _, e1 := syscall.SyscallN(procGetProcessAffinityMask.Addr(), uintptr(process), uintptr(unsafe.Pointer(processAffinityMask)), uintptr(unsafe.Pointer(systemAffinityMask)))
+	if r1 == 0 {
+		err = errnoErr(e1)
+	}
+	return
+}
+
+func GetProcessGroupAffinity(process windows.Handle, groupCount *uint16, groupArray *uint16) (err error) {
+	r1, _, e1 := syscall.SyscallN(procGetProcessGroupAffinity.Addr(), uintptr(process), uintptr(unsafe.Pointer(groupCount)), uintptr(unsafe.Pointer(groupArray)))
+	if r1 == 0 {
+		err = errnoErr(e1)
+	}
+	return
+}
+
 func IsProcessInJob(procHandle windows.Handle, jobHandle windows.Handle, result *int32) (err error) {
 	r1, _, e1 := syscall.SyscallN(procIsProcessInJob.Addr(), uintptr(procHandle), uintptr(jobHandle), uintptr(unsafe.Pointer(result)))
 	if r1 == 0 {
@@ -227,8 +314,12 @@ func LocalFree(ptr uintptr) {
 	return
 }
 
-func OpenJobObject(desiredAccess uint32, inheritHandle int32, lpName *uint16) (handle windows.Handle, err error) {
-	r0, _, e1 := syscall.SyscallN(procOpenJobObjectW.Addr(), uintptr(desiredAccess), uintptr(inheritHandle), uintptr(unsafe.Pointer(lpName)))
+func OpenJobObject(desiredAccess uint32, inheritHandle bool, lpName *uint16) (handle windows.Handle, err error) {
+	var _p0 uint32
+	if inheritHandle {
+		_p0 = 1
+	}
+	r0, _, e1 := syscall.SyscallN(procOpenJobObjectW.Addr(), uintptr(desiredAccess), uintptr(_p0), uintptr(unsafe.Pointer(lpName)))
 	handle = windows.Handle(r0)
 	if handle == 0 {
 		err = errnoErr(e1)
@@ -326,6 +417,20 @@ func NtCreateJobObject(jobHandle *windows.Handle, desiredAccess uint32, objAttri
 	return
 }
 
+func NtFsControlFile(file windows.Handle, event windows.Handle, apcRoutine uintptr, apcCtx uintptr, iosb *IOStatusBlock, fsControlCode uint32, in []byte, out []byte) (status uint32) {
+	var _p0 *byte
+	if len(in) > 0 {
+		_p0 = &in[0]
+	}
+	var _p1 *byte
+	if len(out) > 0 {
+		_p1 = &out[0]
+	}
+	r0, _, _ := syscall.SyscallN(procNtFsControlFile.Addr(), uintptr(file), uintptr(event), uintptr(apcRoutine), uintptr(apcCtx), uintptr(unsafe.Pointer(iosb)), uintptr(fsControlCode), uintptr(unsafe.Pointer(_p0)), uintptr(len(in)), uintptr(unsafe.Pointer(_p1)), uintptr(len(out)))
+	status = uint32(r0)
+	return
+}
+
 func NtOpenDirectoryObject(handle *uintptr, accessMask uint32, oa *ObjectAttributes) (status uint32) {
 	r0, _, _ := syscall.SyscallN(procNtOpenDirectoryObject.Addr(), uintptr(unsafe.Pointer(handle)), uintptr(accessMask), uintptr(unsafe.Pointer(oa)))
 	status = uint32(r0)
@@ -378,35 +483,162 @@ func RtlNtStatusToDosError(status uint32) (winerr error) {
 	return
 }
 
-func ORCloseHive(key syscall.Handle) (regerrno error) {
-	r0, _, _ := syscall.SyscallN(procORCloseHive.Addr(), uintptr(key))
+func ORCloseHive(handle ORHKey) (win32err error) {
+	r0, _, _ := syscall.SyscallN(procORCloseHive.Addr(), uintptr(handle))
 	if r0 != 0 {
-		regerrno = syscall.Errno(r0)
+		win32err = syscall.Errno(r0)
 	}
 	return
 }
 
-func ORCreateHive(key *syscall.Handle) (regerrno error) {
+func ORCloseKey(handle ORHKey) (win32err error) {
+	r0, _, _ := syscall.SyscallN(procORCloseKey.Addr(), uintptr(handle))
+	if r0 != 0 {
+		win32err = syscall.Errno(r0)
+	}
+	return
+}
+
+func ORCreateHive(key *ORHKey) (win32err error) {
 	r0, _, _ := syscall.SyscallN(procORCreateHive.Addr(), uintptr(unsafe.Pointer(key)))
 	if r0 != 0 {
-		regerrno = syscall.Errno(r0)
+		win32err = syscall.Errno(r0)
 	}
 	return
 }
 
-func ORSaveHive(key syscall.Handle, file string, OsMajorVersion uint32, OsMinorVersion uint32) (regerrno error) {
+func ORCreateKey(handle ORHKey, subKey string, class uintptr, options uint32, securityDescriptor uintptr, result *ORHKey, disposition *uint32) (win32err error) {
 	var _p0 *uint16
-	_p0, regerrno = syscall.UTF16PtrFromString(file)
-	if regerrno != nil {
+	_p0, win32err = syscall.UTF16PtrFromString(subKey)
+	if win32err != nil {
 		return
 	}
-	return _ORSaveHive(key, _p0, OsMajorVersion, OsMinorVersion)
+	return _ORCreateKey(handle, _p0, class, options, securityDescriptor, result, disposition)
 }
 
-func _ORSaveHive(key syscall.Handle, file *uint16, OsMajorVersion uint32, OsMinorVersion uint32) (regerrno error) {
-	r0, _, _ := syscall.SyscallN(procORSaveHive.Addr(), uintptr(key), uintptr(unsafe.Pointer(file)), uintptr(OsMajorVersion), uintptr(OsMinorVersion))
+func _ORCreateKey(handle ORHKey, subKey *uint16, class uintptr, options uint32, securityDescriptor uintptr, result *ORHKey, disposition *uint32) (win32err error) {
+	r0, _, _ := syscall.SyscallN(procORCreateKey.Addr(), uintptr(handle), uintptr(unsafe.Pointer(subKey)), uintptr(class), uintptr(options), uintptr(securityDescriptor), uintptr(unsafe.Pointer(result)), uintptr(unsafe.Pointer(disposition)))
 	if r0 != 0 {
-		regerrno = syscall.Errno(r0)
+		win32err = syscall.Errno(r0)
+	}
+	return
+}
+
+func ORDeleteKey(handle ORHKey, subKey string) (win32err error) {
+	var _p0 *uint16
+	_p0, win32err = syscall.UTF16PtrFromString(subKey)
+	if win32err != nil {
+		return
+	}
+	return _ORDeleteKey(handle, _p0)
+}
+
+func _ORDeleteKey(handle ORHKey, subKey *uint16) (win32err error) {
+	r0, _, _ := syscall.SyscallN(procORDeleteKey.Addr(), uintptr(handle), uintptr(unsafe.Pointer(subKey)))
+	if r0 != 0 {
+		win32err = syscall.Errno(r0)
+	}
+	return
+}
+
+func ORGetValue(handle ORHKey, subKey string, value string, valueType *uint32, data *byte, dataLen *uint32) (win32err error) {
+	var _p0 *uint16
+	_p0, win32err = syscall.UTF16PtrFromString(subKey)
+	if win32err != nil {
+		return
+	}
+	var _p1 *uint16
+	_p1, win32err = syscall.UTF16PtrFromString(value)
+	if win32err != nil {
+		return
+	}
+	return _ORGetValue(handle, _p0, _p1, valueType, data, dataLen)
+}
+
+func _ORGetValue(handle ORHKey, subKey *uint16, value *uint16, valueType *uint32, data *byte, dataLen *uint32) (win32err error) {
+	r0, _, _ := syscall.SyscallN(procORGetValue.Addr(), uintptr(handle), uintptr(unsafe.Pointer(subKey)), uintptr(unsafe.Pointer(value)), uintptr(unsafe.Pointer(valueType)), uintptr(unsafe.Pointer(data)), uintptr(unsafe.Pointer(dataLen)))
+	if r0 != 0 {
+		win32err = syscall.Errno(r0)
+	}
+	return
+}
+
+func ORMergeHives(hiveHandles []ORHKey, result *ORHKey) (win32err error) {
+	var _p0 *ORHKey
+	if len(hiveHandles) > 0 {
+		_p0 = &hiveHandles[0]
+	}
+	r0, _, _ := syscall.SyscallN(procORMergeHives.Addr(), uintptr(unsafe.Pointer(_p0)), uintptr(len(hiveHandles)), uintptr(unsafe.Pointer(result)))
+	if r0 != 0 {
+		win32err = syscall.Errno(r0)
+	}
+	return
+}
+
+func OROpenHive(hivePath string, result *ORHKey) (win32err error) {
+	var _p0 *uint16
+	_p0, win32err = syscall.UTF16PtrFromString(hivePath)
+	if win32err != nil {
+		return
+	}
+	return _OROpenHive(_p0, result)
+}
+
+func _OROpenHive(hivePath *uint16, result *ORHKey) (win32err error) {
+	r0, _, _ := syscall.SyscallN(procOROpenHive.Addr(), uintptr(unsafe.Pointer(hivePath)), uintptr(unsafe.Pointer(result)))
+	if r0 != 0 {
+		win32err = syscall.Errno(r0)
+	}
+	return
+}
+
+func OROpenKey(handle ORHKey, subKey string, result *ORHKey) (win32err error) {
+	var _p0 *uint16
+	_p0, win32err = syscall.UTF16PtrFromString(subKey)
+	if win32err != nil {
+		return
+	}
+	return _OROpenKey(handle, _p0, result)
+}
+
+func _OROpenKey(handle ORHKey, subKey *uint16, result *ORHKey) (win32err error) {
+	r0, _, _ := syscall.SyscallN(procOROpenKey.Addr(), uintptr(handle), uintptr(unsafe.Pointer(subKey)), uintptr(unsafe.Pointer(result)))
+	if r0 != 0 {
+		win32err = syscall.Errno(r0)
+	}
+	return
+}
+
+func ORSaveHive(handle ORHKey, hivePath string, osMajorVersion uint32, osMinorVersion uint32) (win32err error) {
+	var _p0 *uint16
+	_p0, win32err = syscall.UTF16PtrFromString(hivePath)
+	if win32err != nil {
+		return
+	}
+	return _ORSaveHive(handle, _p0, osMajorVersion, osMinorVersion)
+}
+
+func _ORSaveHive(handle ORHKey, hivePath *uint16, osMajorVersion uint32, osMinorVersion uint32) (win32err error) {
+	r0, _, _ := syscall.SyscallN(procORSaveHive.Addr(), uintptr(handle), uintptr(unsafe.Pointer(hivePath)), uintptr(osMajorVersion), uintptr(osMinorVersion))
+	if r0 != 0 {
+		win32err = syscall.Errno(r0)
+	}
+	return
+}
+
+func ORSetValue(handle ORHKey, valueName string, valueType uint32, data *byte, dataLen uint32) (win32err error) {
+	var _p0 *uint16
+	_p0, win32err = syscall.UTF16PtrFromString(valueName)
+	if win32err != nil {
+		return
+	}
+	return _ORSetValue(handle, _p0, valueType, data, dataLen)
+}
+
+func _ORSetValue(handle ORHKey, valueName *uint16, valueType uint32, data *byte, dataLen uint32) (win32err error) {
+	r0, _, _ := syscall.SyscallN(procORSetValue.Addr(), uintptr(handle), uintptr(unsafe.Pointer(valueName)), uintptr(valueType), uintptr(unsafe.Pointer(data)), uintptr(dataLen))
+	if r0 != 0 {
+		win32err = syscall.Errno(r0)
 	}
 	return
 }
