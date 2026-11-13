@@ -282,23 +282,27 @@ jobs:
           - 'socket-filter'
         kernel:
           # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
-          - '4.19-20250630.013259'
+          - '4.19-20261021.083220'
           # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
-          - '5.4-20250630.013259'
+          - '5.4-20261021.083220'
           # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
-          - '5.10-20250630.013259'
+          - '5.10-20261021.083220'
           # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
-          - '5.15-20250630.013259'
+          - '5.15-20261021.083220'
           # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
-          - '6.1-20250630.013259'
+          - '6.1-20261021.083220'
           # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
-          - '6.6-20250630.013259'
+          - '6.6-20261021.083220'
           # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
-          - '6.12-20250630.013259'
+          - '6.12-20261021.083220'
           # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
-          - 'bpf-20250630.013259'
+          - '6.18-20261021.083220'
           # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
-          - 'bpf-next-20250630.013259'
+          - '7.2-20261021.083220'
+          # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
+          - 'bpf-20261021.083220'
+          # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
+          - 'bpf-next-20261021.083220'
     timeout-minutes: 30
     runs-on: ubuntu-latest
     env:
