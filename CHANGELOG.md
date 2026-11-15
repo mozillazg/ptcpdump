@@ -1,6 +1,15 @@
 # CHANGELOG
 
-## [unreleased](https://github.com/mozillazg/ptcpdump/compare/v0.37.1...HEAD)
+## [unreleased](https://github.com/mozillazg/ptcpdump/compare/v0.37.2...HEAD)
+
+## [v0.37.2](https://github.com/mozillazg/ptcpdump/compare/v0.37.1...v0.37.2) - 2026-11-15
+
+- fix(ci): run govulncheck with Go 1.27.4 to fix GO-2026-6859 ([#422](https://github.com/mozillazg/ptcpdump/pull/422)) (d3b80fe)
+- chore(deps): update quay.io/ptcpdump/develop docker tag to v20261108 ([#419](https://github.com/mozillazg/ptcpdump/pull/419)) (9e19c45)
+- chore(deps): update golang docker tag to v1.27.4 ([#417](https://github.com/mozillazg/ptcpdump/pull/417)) (c34a90a)
+- chore(deps): update module go.opentelemetry.io/otel/sdk to v1.47.0 [security] ([#420](https://github.com/mozillazg/ptcpdump/pull/420)) (2645dfe)
+- chore(deps): update golang:1.27.3-bookworm docker digest to b08bc99 ([#415](https://github.com/mozillazg/ptcpdump/pull/415)) (ffdfcfd)
+- chore(deps): update all lvh-images main (patch) ([#320](https://github.com/mozillazg/ptcpdump/pull/320)) (36bc559)
 
 ## [v0.37.1](https://github.com/mozillazg/ptcpdump/compare/v0.37.0...v0.37.1) - 2026-11-08
 
