@@ -1,5 +1,5 @@
 # .github/build.Dockerfile
-FROM quay.io/ptcpdump/develop:20261003.144200@sha256:82e9cb1a0bc41b4f61bdf6f0b27f901602b911b5367db477eac19adad7cbe892 AS build
+FROM quay.io/ptcpdump/develop:20261108.132522@sha256:adc707796dfe1bf9ca4b6ae4a1ef53750b63017e5860518dfa34658c1e78ec33 AS build
 WORKDIR /app
 COPY . .
 RUN make build
