@@ -32,7 +32,7 @@ jobs:
 
     - name: Install Deps
       run: |
-        sudo apt-get update && sudo apt-get install -y gcc flex bison make libelf-dev autoconf libpcap-dev
+        sudo apt-get update && sudo apt-get install -y gcc clang flex bison make libelf-dev autoconf libpcap-dev
 
     - name: Run govulncheck for project
       run: |
@@ -47,7 +47,9 @@ jobs:
         fi
 
     - name: Build binary
-      run: make build-via-docker
+      # Build with the Go toolchain installed above instead of the prebuilt
+      # dev image, so the scanned binary matches the pinned Go version.
+      run: make libpcap && make build
 
     - name: Run govulncheck for binary
       run: |
