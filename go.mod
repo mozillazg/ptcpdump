@@ -17,7 +17,7 @@ require (
 
 require (
 	github.com/containerd/containerd/api v1.12.0
-	github.com/containerd/containerd/v2 v2.4.1
+	github.com/containerd/containerd/v2 v2.4.2
 	github.com/containerd/errdefs v1.0.0
 	github.com/go-logr/logr v1.4.4
 	github.com/mandiant/GoReSym v1.7.2-0.20240819162932-534ca84b42d5
