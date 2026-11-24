@@ -3,7 +3,7 @@ module github.com/mozillazg/ptcpdump
 go 1.26.6
 
 require (
-	github.com/cilium/ebpf v0.18.0
+	github.com/cilium/ebpf v0.22.0
 	github.com/containerd/typeurl/v2 v2.3.0
 	github.com/florianl/go-tc v0.4.6
 	github.com/gopacket/gopacket v1.3.1
@@ -100,7 +100,7 @@ require (
 )
 
 replace (
-	github.com/cilium/ebpf => github.com/mozillazg/ebpf v0.17.3-0.20250621115703-9b903a327ca4
+	github.com/cilium/ebpf => github.com/mozillazg/ebpf v0.22.1-0.20261123234521-94a98494dbb3
 	// github.com/cilium/ebpf => ../../cilium/ebpf
 	github.com/gopacket/gopacket => github.com/mozillazg/gopacket v0.0.0-20250705120904-4485e52403a8
 	// github.com/gopacket/gopacket => ../../gopacket/gopacket

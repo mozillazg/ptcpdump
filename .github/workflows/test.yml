@@ -382,6 +382,21 @@ jobs:
 
             bash /host/testdata/test_default.sh /host/ptcpdump/ptcpdump
 
+      # The BTF header of the kernel only gains the layout fields when it's built
+      # with pahole >= 1.31, so the kernel version alone doesn't guarantee that
+      # the new header is covered. Patch the BTF header to always test it.
+      - name: Test BTF header with layout fields
+        uses: cilium/little-vm-helper@e249f34602b03d331320955be94cbaa2cc4fb6a8 # v0.0.29
+        if: ${{ startsWith(matrix.backend, 'tc') && !startsWith(matrix.kernel, '4.') }}
+        with:
+          provision: 'false'
+          cmd: |
+            set -ex
+            export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
+            export GOCOVERDIR="/host/${{ env.GOCOVERDIR }}"
+
+            bash /host/testdata/test_btf_layout_header.sh /host/ptcpdump/ptcpdump
+
       - name: Test base (curl)
         uses: cilium/little-vm-helper@e249f34602b03d331320955be94cbaa2cc4fb6a8 # v0.0.29
         if: ${{ startsWith(matrix.backend, 'tc') || (startsWith(matrix.backend, 'socket-filter') && !startsWith(matrix.kernel, '4.') ) || !(startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) }}
