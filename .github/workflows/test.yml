@@ -280,6 +280,9 @@ jobs:
           - 'cgroup-skb'
           - 'tp-btf'
           - 'socket-filter'
+        # NOTE: renovate only updates the date part of the existing entries
+        # (major/minor updates are disabled for these images), so a new kernel
+        # line (e.g. 8.0) has to be added here manually.
         kernel:
           # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
           - '4.19-20261021.083220'
@@ -307,6 +310,22 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GOCOVERDIR: coverage
+      # Capabilities of the (kernel, backend) combination. They are derived
+      # here once instead of being repeated in every step, so adding a new
+      # kernel to the matrix can't silently skip it because of a step
+      # condition.
+      #
+      # tc works on every kernel. socket-filter needs a kernel with BTF
+      # (>= 5.2). cgroup-skb/tp-btf need >= 5.10 and can't capture on the
+      # loopback device, so they only run the tests that use another device.
+      KERNEL_IS_4X: ${{ startsWith(matrix.kernel, '4.') }}
+      RUN_ON_LOOPBACK: ${{ matrix.backend == 'tc' || (matrix.backend == 'socket-filter' && !startsWith(matrix.kernel, '4.')) }}
+      RUN_COMMON: ${{ matrix.backend == 'tc' || (matrix.backend == 'socket-filter' && !startsWith(matrix.kernel, '4.')) || !(startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) }}
+      RUN_ARP: ${{ !startsWith(matrix.kernel, '5.4') && !startsWith(matrix.kernel, '4.') && matrix.backend != 'cgroup-skb' }}
+      RUN_TUN: ${{ !startsWith(matrix.kernel, '4.') && !startsWith(matrix.kernel, '5.') }}
+      RUN_NETNS: ${{ matrix.backend == 'tc' || (matrix.backend == 'socket-filter' && !startsWith(matrix.kernel, '4.')) || (!startsWith(matrix.kernel, '5.4') && !startsWith(matrix.kernel, '4.') && matrix.backend != 'cgroup-skb') }}
+      # The rotate test is slow, only run it on the rolling kernels.
+      RUN_ROTATE: ${{ matrix.backend == 'tc' && startsWith(matrix.kernel, 'bpf') }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
@@ -343,7 +362,7 @@ jobs:
             chmod +x /host/ptcpdump/ptcpdump
       
       - name: download btf file
-        if: ${{ startsWith(matrix.kernel, '4.') }}
+        if: env.KERNEL_IS_4X == 'true'
         run: |
           img=quay.io/lvh-images/kernel-images:${{ matrix.kernel }} 
           docker pull $img
@@ -355,7 +374,7 @@ jobs:
           find data/ -path "*btf*" -type f
       
       - name: copy btf file
-        if: ${{ startsWith(matrix.kernel, '4.') }}
+        if: env.KERNEL_IS_4X == 'true'
         uses: cilium/little-vm-helper@e249f34602b03d331320955be94cbaa2cc4fb6a8 # v0.0.29
         with:
           provision: 'false'
@@ -372,7 +391,7 @@ jobs:
 
       - name: Test default (ping)
         uses: cilium/little-vm-helper@e249f34602b03d331320955be94cbaa2cc4fb6a8 # v0.0.29
-        if: ${{ startsWith(matrix.backend, 'tc') || (startsWith(matrix.backend, 'socket-filter') && !startsWith(matrix.kernel, '4.') ) }}
+        if: env.RUN_ON_LOOPBACK == 'true'
         with:
           provision: 'false'
           cmd: |
@@ -385,9 +404,11 @@ jobs:
       # The BTF header of the kernel only gains the layout fields when it's built
       # with pahole >= 1.31, so the kernel version alone doesn't guarantee that
       # the new header is covered. Patch the BTF header to always test it.
+      # 4.x kernels have no /sys/kernel/btf/vmlinux, the test falls back to the
+      # BTF file copied into the VM above.
       - name: Test BTF header with layout fields
         uses: cilium/little-vm-helper@e249f34602b03d331320955be94cbaa2cc4fb6a8 # v0.0.29
-        if: ${{ startsWith(matrix.backend, 'tc') && !startsWith(matrix.kernel, '4.') }}
+        if: matrix.backend == 'tc'
         with:
           provision: 'false'
           cmd: |
@@ -399,7 +420,7 @@ jobs:
 
       - name: Test base (curl)
         uses: cilium/little-vm-helper@e249f34602b03d331320955be94cbaa2cc4fb6a8 # v0.0.29
-        if: ${{ startsWith(matrix.backend, 'tc') || (startsWith(matrix.backend, 'socket-filter') && !startsWith(matrix.kernel, '4.') ) || !(startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) }}
+        if: env.RUN_COMMON == 'true'
         with:
           provision: 'false'
           cmd: |
@@ -411,7 +432,7 @@ jobs:
 
       - name: Test parent info
         uses: cilium/little-vm-helper@e249f34602b03d331320955be94cbaa2cc4fb6a8 # v0.0.29
-        if: ${{ startsWith(matrix.backend, 'tc') || (startsWith(matrix.backend, 'socket-filter') && !startsWith(matrix.kernel, '4.') ) || !(startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) }}
+        if: env.RUN_COMMON == 'true'
         with:
           provision: 'false'
           cmd: |
@@ -423,7 +444,7 @@ jobs:
 
       - name: Test filter by process name
         uses: cilium/little-vm-helper@e249f34602b03d331320955be94cbaa2cc4fb6a8 # v0.0.29
-        if: ${{ startsWith(matrix.backend, 'tc') || (startsWith(matrix.backend, 'socket-filter') && !startsWith(matrix.kernel, '4.') ) || !(startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) }}
+        if: env.RUN_COMMON == 'true'
         with:
           provision: 'false'
           cmd: |
@@ -435,7 +456,7 @@ jobs:
 
       - name: Test filter by process id
         uses: cilium/little-vm-helper@e249f34602b03d331320955be94cbaa2cc4fb6a8 # v0.0.29
-        if: ${{ startsWith(matrix.backend, 'tc') || (startsWith(matrix.backend, 'socket-filter') && !startsWith(matrix.kernel, '4.') ) || !(startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) }}
+        if: env.RUN_COMMON == 'true'
         with:
           provision: 'false'
           cmd: |
@@ -447,7 +468,7 @@ jobs:
 
       - name: Test read pcap file
         uses: cilium/little-vm-helper@e249f34602b03d331320955be94cbaa2cc4fb6a8 # v0.0.29
-        if: ${{ startsWith(matrix.backend, 'tc') || (startsWith(matrix.backend, 'socket-filter') && !startsWith(matrix.kernel, '4.') ) }}
+        if: env.RUN_ON_LOOPBACK == 'true'
         with:
           provision: 'false'
           cmd: |
@@ -459,7 +480,7 @@ jobs:
 
       - name: Test write pcap file
         uses: cilium/little-vm-helper@e249f34602b03d331320955be94cbaa2cc4fb6a8 # v0.0.29
-        if: ${{ startsWith(matrix.backend, 'tc') || (startsWith(matrix.backend, 'socket-filter') && !startsWith(matrix.kernel, '4.') ) }}
+        if: env.RUN_ON_LOOPBACK == 'true'
         with:
           provision: 'false'
           cmd: |
@@ -471,7 +492,7 @@ jobs:
 
       - name: Test write to stdout
         uses: cilium/little-vm-helper@e249f34602b03d331320955be94cbaa2cc4fb6a8 # v0.0.29
-        if: ${{ startsWith(matrix.backend, 'tc') || (startsWith(matrix.backend, 'socket-filter') && !startsWith(matrix.kernel, '4.') ) }}
+        if: env.RUN_ON_LOOPBACK == 'true'
         with:
           provision: 'false'
           cmd: |
@@ -483,7 +504,7 @@ jobs:
 
       - name: Test exist connections
         uses: cilium/little-vm-helper@e249f34602b03d331320955be94cbaa2cc4fb6a8 # v0.0.29
-        if: ${{ startsWith(matrix.backend, 'tc') || (startsWith(matrix.backend, 'socket-filter') && !startsWith(matrix.kernel, '4.') ) || !(startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) }}
+        if: env.RUN_COMMON == 'true'
         with:
           provision: 'false'
           cmd: |
@@ -494,7 +515,7 @@ jobs:
             bash /host/testdata/test_exist_connection.sh /host/ptcpdump/ptcpdump
 
       - name: Test arp and icmp
-        if: ${{ (!startsWith(matrix.kernel, '5.4')) && (!startsWith(matrix.kernel, '4.')) && (!startsWith(matrix.backend, 'cgroup-skb')) }}
+        if: env.RUN_ARP == 'true'
         uses: cilium/little-vm-helper@e249f34602b03d331320955be94cbaa2cc4fb6a8 # v0.0.29
         with:
           provision: 'false'
@@ -507,7 +528,7 @@ jobs:
             bash /host/testdata/test_icmp.sh /host/ptcpdump/ptcpdump
 
       - name: Test tun interface
-        if: ${{ !startsWith(matrix.kernel, '4.') && !startsWith(matrix.kernel, '5.') }}
+        if: env.RUN_TUN == 'true'
         uses: cilium/little-vm-helper@e249f34602b03d331320955be94cbaa2cc4fb6a8 # v0.0.29
         with:
           provision: 'false'
@@ -521,7 +542,7 @@ jobs:
             bash /host/testdata/retry.sh 3 bash /host/testdata/test_tun.sh /host/ptcpdump/ptcpdump
 
       - name: Test netns
-        if: ${{ startsWith(matrix.backend, 'tc') || (startsWith(matrix.backend, 'socket-filter') && !startsWith(matrix.kernel, '4.') ) || (!startsWith(matrix.kernel, '5.4') && !startsWith(matrix.kernel, '4.') && !startsWith(matrix.backend, 'cgroup-skb')) }}
+        if: env.RUN_NETNS == 'true'
         uses: cilium/little-vm-helper@e249f34602b03d331320955be94cbaa2cc4fb6a8 # v0.0.29
         with:
           provision: 'false'
@@ -533,7 +554,7 @@ jobs:
             bash /host/testdata/retry.sh 3 bash /host/testdata/test_netns.sh /host/ptcpdump/ptcpdump
 
       - name: Test netns newly (normal)
-        if: ${{ startsWith(matrix.backend, 'tc') || (startsWith(matrix.backend, 'socket-filter') && !startsWith(matrix.kernel, '4.') ) || (!startsWith(matrix.kernel, '5.4') && !startsWith(matrix.kernel, '4.') && !startsWith(matrix.backend, 'cgroup-skb')) }}
+        if: env.RUN_NETNS == 'true'
         uses: cilium/little-vm-helper@e249f34602b03d331320955be94cbaa2cc4fb6a8 # v0.0.29
         with:
           provision: 'false'
@@ -545,7 +566,7 @@ jobs:
             bash /host/testdata/retry.sh 3 bash /host/testdata/test_netns_newly_normal.sh /host/ptcpdump/ptcpdump
 
       - name: Test netns newly (exec)
-        if: ${{ startsWith(matrix.backend, 'tc') || (startsWith(matrix.backend, 'socket-filter') && !startsWith(matrix.kernel, '4.') ) || (!startsWith(matrix.kernel, '5.4') && !startsWith(matrix.kernel, '4.') && !startsWith(matrix.backend, 'cgroup-skb')) }}
+        if: env.RUN_NETNS == 'true'
         uses: cilium/little-vm-helper@e249f34602b03d331320955be94cbaa2cc4fb6a8 # v0.0.29
         with:
           provision: 'false'
@@ -558,7 +579,7 @@ jobs:
 
       - name: Test run sub program
         uses: cilium/little-vm-helper@e249f34602b03d331320955be94cbaa2cc4fb6a8 # v0.0.29
-        if: ${{ startsWith(matrix.backend, 'tc') || (startsWith(matrix.backend, 'socket-filter') && !startsWith(matrix.kernel, '4.') ) || !(startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) }}
+        if: env.RUN_COMMON == 'true'
         with:
           provision: 'false'
           cmd: |
@@ -571,7 +592,7 @@ jobs:
 
       - name: Test NAT
         uses: cilium/little-vm-helper@e249f34602b03d331320955be94cbaa2cc4fb6a8 # v0.0.29
-        if: ${{ startsWith(matrix.backend, 'tc') || (startsWith(matrix.backend, 'socket-filter') && !startsWith(matrix.kernel, '4.') ) }}
+        if: env.RUN_ON_LOOPBACK == 'true'
         with:
           provision: 'false'
           cmd: |
@@ -583,7 +604,7 @@ jobs:
 
       - name: Test rotate
         uses: cilium/little-vm-helper@e249f34602b03d331320955be94cbaa2cc4fb6a8 # v0.0.29
-        if: ${{ (startsWith(matrix.backend, 'tc')) && (contains(matrix.kernel, 'next')) }} # no need test for all kernels
+        if: env.RUN_ROTATE == 'true'
         with:
           provision: 'false'
           cmd: |
@@ -671,7 +692,7 @@ jobs:
 
       - name: upload coverage
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        if: ${{ startsWith(matrix.backend, 'tc') || (startsWith(matrix.backend, 'socket-filter') && !startsWith(matrix.kernel, '4.') ) || !(startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) }}
+        if: env.RUN_COMMON == 'true'
         with:
           name: coverage.e2e.${{ matrix.backend }}.${{ matrix.kernel }}.out
           path: |
