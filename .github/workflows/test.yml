@@ -280,9 +280,10 @@ jobs:
           - 'cgroup-skb'
           - 'tp-btf'
           - 'socket-filter'
-        # NOTE: renovate only updates the date part of the existing entries
-        # (major/minor updates are disabled for these images), so a new kernel
-        # line (e.g. 8.0) has to be added here manually.
+        # NOTE: for the newest kernel line renovate opens a major/minor PR
+        # when lvh publishes a new one (see matchCurrentValue in
+        # .github/renovate.json5). Add the new line here, keep the previous
+        # ones, then update matchCurrentValue to the new line.
         kernel:
           # renovate: datasource=docker depName=quay.io/lvh-images/kernel-images
           - '4.19-20261021.083220'

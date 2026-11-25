@@ -47,10 +47,29 @@
   stopUpdatingLabel: 'renovate/stop-updating',
   packageRules: [
     {
+      // Kernel versions in the lvh image tags are independent lines (4.19,
+      // 5.4, ..., 7.2, bpf, bpf-next): an older line must never be bumped to
+      // the newest one, so major/minor updates are disabled by default.
       enabled: false,
       matchPackageNames: [
         'quay.io/lvh-images/kernel-images',
       ],
+      matchUpdateTypes: [
+        'major',
+        'minor',
+      ],
+    },
+    {
+      // ...except for the newest line: this way a new kernel line published by
+      // lvh (e.g. 7.3 or 8.0) shows up as a PR. The PR only touches the newest
+      // matrix entry, so add the new line to the e2e matrix yourself and keep
+      // the previous one (then update this regex to the new line).
+      // Keep in sync with .github/workflows/test.yml.
+      enabled: true,
+      matchPackageNames: [
+        'quay.io/lvh-images/kernel-images',
+      ],
+      matchCurrentValue: '/^7\\.2-/',
       matchUpdateTypes: [
         'major',
         'minor',
