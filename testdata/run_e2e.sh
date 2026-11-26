@@ -7,6 +7,7 @@ function main() {
   kubectl delete pod test-ptcpdump | true
 
   bash testdata/test_default.sh ./ptcpdump
+  bash testdata/test_btf_layout_header.sh ./ptcpdump
   bash testdata/test_base.sh ./ptcpdump
   bash testdata/test_parent_info.sh ./ptcpdump
 

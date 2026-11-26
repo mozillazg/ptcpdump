@@ -155,9 +155,12 @@ func newB2G(stdout io.Writer, args []string) (*bpf2go, error) {
 		return nil, errors.New("missing package, you should either set the go-package flag or the GOPACKAGE env")
 	}
 
-	if b2g.cc == "" {
+	// Allow CC like "ccache clang" to work.
+	ccParts := strings.Fields(b2g.cc)
+	if len(ccParts) == 0 {
 		return nil, errors.New("no compiler specified")
 	}
+	b2g.cc = ccParts[0]
 
 	args, cFlags := splitCFlagsFromArgs(fs.Args())
 
@@ -178,7 +181,7 @@ func newB2G(stdout io.Writer, args []string) (*bpf2go, error) {
 		}
 	}
 
-	b2g.cFlags = cFlags[:len(cFlags):len(cFlags)]
+	b2g.cFlags = append(ccParts[1:], cFlags[:len(cFlags):len(cFlags)]...)
 
 	if len(args) < 2 {
 		return nil, errors.New("expected at least two arguments")
@@ -208,7 +211,7 @@ func newB2G(stdout io.Writer, args []string) (*bpf2go, error) {
 	}
 
 	targetArches := make(map[gen.Target]gen.GoArches)
-	for _, tgt := range strings.Split(*flagTarget, ",") {
+	for tgt := range strings.SplitSeq(*flagTarget, ",") {
 		target, goarches, err := gen.FindTarget(tgt)
 		if err != nil {
 			if errors.Is(err, gen.ErrInvalidTarget) {
@@ -230,8 +233,8 @@ func newB2G(stdout io.Writer, args []string) (*bpf2go, error) {
 	// from the clang binary.
 	if b2g.strip == "" {
 		b2g.strip = "llvm-strip"
-		if strings.HasPrefix(b2g.cc, "clang") {
-			b2g.strip += strings.TrimPrefix(b2g.cc, "clang")
+		if after, ok := strings.CutPrefix(b2g.cc, "clang"); ok {
+			b2g.strip += after
 		}
 	}
 
@@ -527,7 +530,7 @@ func collectCTypes(types *btf.Spec, names []string) ([]btf.Type, error) {
 	for _, cType := range names {
 		typ, err := types.AnyTypeByName(cType)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("looking up type %s: %w", cType, err)
 		}
 		result = append(result, typ)
 	}
