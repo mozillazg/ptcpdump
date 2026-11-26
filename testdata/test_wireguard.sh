@@ -31,10 +31,6 @@ cleanup() {
 }
 
 setup_wireguard() {
-    if [ "$(id -u)" -ne 0 ]; then
-        echo "This script must be run as root. Please use sudo." >&2
-        exit 1
-    fi
     # leftovers of an earlier, killed run would make `ip netns add` fail
     cleanup
     which wg || (apt update || true && apt install -y wireguard-tools)
@@ -116,10 +112,23 @@ test_ingress_process_info() {
     grep -A3 -F "$PEER_IP.80 > $LOCAL_IP." "${LNAME}" | grep -E 'Process \(pid [0-9]+, cmd .*/curl'
 }
 
+supports_wireguard() {
+    modprobe wireguard 2>/dev/null && return 0
+    # kernels with CONFIG_WIREGUARD=y have no module to load, try to create a
+    # device instead
+    ip link add wg_probe_test type wireguard 2>/dev/null || return 1
+    ip link del wg_probe_test 2>/dev/null || true
+    return 0
+}
+
 main() {
     trap cleanup EXIT INT TERM
-    if ! modprobe wireguard; then
-        echo 'wireguard module not available'
+    if [ "$(id -u)" -ne 0 ]; then
+        echo "This script must be run as root. Please use sudo." >&2
+        exit 1
+    fi
+    if ! supports_wireguard; then
+        echo 'wireguard is not available'
         # skip locally, but don't let CI pass without testing anything
         [ -n "${CI:-}" ] && exit 1
         exit 0
