@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 
 # Ingress packets on an L3-only device (here: WireGuard) must carry the
-# process of the local socket, just like on Ethernet devices.  With
-# --pname, packets without process info are dropped, so the peer's reply
-# shows up only if ingress attribution works.
+# process of the local socket, just like on Ethernet devices.
+#
+# Phase 1 uses --pname: packets without process info are dropped by the BPF
+# filter, so the peer's reply shows up only if ingress attribution works.
+# Phase 2 runs without a process filter and checks that the ingress packet
+# is annotated with the curl process explicitly.
 
 set -ex
 
@@ -15,8 +18,13 @@ CMD="$1"
 FILE_PREFIX="/tmp/ptcpdump_wireguard"
 FNAME="${FILE_PREFIX}.pcapng"
 LNAME="${FILE_PREFIX}.log"
+PTCPDUMP_PID=""
 
 cleanup() {
+    if [ -n "${PTCPDUMP_PID}" ] && kill -0 "${PTCPDUMP_PID}" 2>/dev/null; then
+        kill "${PTCPDUMP_PID}" 2>/dev/null || true
+        wait "${PTCPDUMP_PID}" 2>/dev/null || true
+    fi
     ip netns del "$NS1" 2>/dev/null || true
     ip netns del "$NS2" 2>/dev/null || true
     rm -f "${FILE_PREFIX}"* || true
@@ -53,20 +61,59 @@ setup_wireguard() {
     ip -n "$NS2" link set wg0 up
 }
 
-test_ptcpdump() {
-    timeout 60s ${CMD} -i wg0 ${PTCPDUMP_EXTRA_ARGS} --netns "$NS1" -v --pname curl --print \
-        -w "${FNAME}" "tcp and host $PEER_IP" > "${LNAME}" &
+start_ptcpdump() {
+    rm -f "${FNAME}" "${LNAME}"
+    timeout 60s "${CMD}" -i wg0 ${PTCPDUMP_EXTRA_ARGS} --netns "$NS1" -v --print \
+        -w "${FNAME}" "$@" "tcp and host $PEER_IP" > "${LNAME}" &
     PTCPDUMP_PID=$!
-    sleep 20
-    # Nothing listens on the peer, so the reply is a RST.
-    ip netns exec "$NS1" curl -m 10 "http://$PEER_IP/" &>/dev/null || true
-    sleep 5
-    kill "$PTCPDUMP_PID" || true
-    wait "$PTCPDUMP_PID" 2>/dev/null || true
+}
+
+wait_for_capture() {
+    # ptcpdump creates the pcapng file before attaching the hooks
+    for _ in $(seq 1 20); do
+        [ -s "${FNAME}" ] && break
+        sleep 1
+    done
+    sleep 2
+}
+
+generate_traffic() {
+    # Nothing listens on the peer, so every attempt results in a RST.
+    # Retry so that a slow ptcpdump startup does not make the test flaky.
+    for _ in 1 2 3; do
+        ip netns exec "$NS1" curl -m 2 "http://$PEER_IP/" &>/dev/null || true
+        sleep 1
+        grep -qF "$PEER_IP.80 > $LOCAL_IP." "${LNAME}" && break
+    done
+    sleep 1
+}
+
+stop_ptcpdump() {
+    kill "${PTCPDUMP_PID}" 2>/dev/null || true
+    wait "${PTCPDUMP_PID}" 2>/dev/null || true
+    PTCPDUMP_PID=""
+}
+
+test_ingress_with_pname() {
+    start_ptcpdump --pname curl
+    wait_for_capture
+    generate_traffic
+    stop_ptcpdump
 
     cat "${LNAME}"
     grep -F " > $PEER_IP.80: Flags [S]" "${LNAME}"     # egress
     grep -F "$PEER_IP.80 > $LOCAL_IP." "${LNAME}"      # ingress
+}
+
+test_ingress_process_info() {
+    start_ptcpdump
+    wait_for_capture
+    generate_traffic
+    stop_ptcpdump
+
+    cat "${LNAME}"
+    grep -F "$PEER_IP.80 > $LOCAL_IP." "${LNAME}"      # ingress
+    grep -A3 -F "$PEER_IP.80 > $LOCAL_IP." "${LNAME}" | grep -E 'Process \(pid [0-9]+, cmd .*/curl'
 }
 
 main() {
@@ -78,7 +125,8 @@ main() {
         exit 0
     fi
     setup_wireguard
-    test_ptcpdump
+    test_ingress_with_pname
+    test_ingress_process_info
 }
 
 main
