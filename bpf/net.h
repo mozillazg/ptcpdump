@@ -184,6 +184,33 @@ static __always_inline int parse_skb_l4(struct __sk_buff *skb, u8 protocol, stru
     return 0;
 }
 
+static __always_inline bool is_ip_ethertype(u16 protocol) { return protocol == ETH_P_IP || protocol == ETH_P_IPV6; }
+
+// Some L3-only devices (e.g. tun without a protocol header) do not provide a
+// usable skb->protocol, so fall back to the IP version in the packet header.
+static __always_inline u16 sniff_l3_protocol(struct __sk_buff *skb) {
+    u8 ver = 0;
+    if (bpf_skb_load_bytes(skb, 0, &ver, sizeof(ver)) < 0) {
+        return 0;
+    }
+    switch (ver >> 4) {
+    case 4:
+        return ETH_P_IP;
+    case 6:
+        return ETH_P_IPV6;
+    default:
+        return 0;
+    }
+}
+
+static __always_inline u16 resolve_l3_protocol(struct __sk_buff *skb) {
+    u16 protocol = bpf_ntohs(skb->protocol);
+    if (is_ip_ethertype(protocol)) {
+        return protocol;
+    }
+    return sniff_l3_protocol(skb);
+}
+
 static __always_inline int parse_skb_meta(struct __sk_buff *skb, bool l2_skb, struct packet_meta_t *meta) {
     meta->ifindex = skb->ifindex;
 
@@ -192,7 +219,11 @@ static __always_inline int parse_skb_meta(struct __sk_buff *skb, bool l2_skb, st
             return -1;
         }
     } else {
-        meta->l2.h_protocol = bpf_ntohs(skb->protocol);
+        meta->l2.h_protocol = resolve_l3_protocol(skb);
+        if (!meta->l2.h_protocol) {
+            // unknown protocol: fail explicitly instead of leaking a zero tuple
+            return -1;
+        }
     }
 
     //    debug_log("[ptcpdump]meta->l2.h_protocol: 0x%x\n", meta->l2.h_protocol);
@@ -245,6 +276,20 @@ static __always_inline int parse_skb_buff_meta(struct sk_buff *skb, struct packe
             meta->l2.h_protocol = ETH_P_IP;
         } else if (ip_ver == 6) {
             meta->l2.h_protocol = ETH_P_IPV6;
+        }
+    }
+    if (!is_ip_ethertype(meta->l2.h_protocol)) {
+        // fall back to the IP version for devices without a usable protocol hint
+        u8 ver = 0;
+        if (bpf_probe_read_kernel(&ver, sizeof(ver), skb_head + l3_offset) == 0) {
+            switch (ver >> 4) {
+            case 4:
+                meta->l2.h_protocol = ETH_P_IP;
+                break;
+            case 6:
+                meta->l2.h_protocol = ETH_P_IPV6;
+                break;
+            }
         }
     }
 
