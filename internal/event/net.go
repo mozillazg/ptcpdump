@@ -68,7 +68,7 @@ func ParsePacketEvent(deviceCache *metadata.DeviceCache, event bpf.BpfPacketEven
 	ifName := utils.GoStringUint(event.Meta.Ifname[:])
 	isFromSkb := len(ifName) > 0
 	var ok bool
-	p.Device, ok = deviceCache.GetByKnownIfindex(int(ifindex))
+	p.Device, ok = deviceCache.GetByKnownIfindex(int(ifindex), uint32(p.NetNs))
 	if !ok {
 		p.Device, _ = deviceCache.GetByIfindex(int(ifindex), uint32(p.NetNs))
 	}
