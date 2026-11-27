@@ -80,6 +80,15 @@ jobs:
             sudo modprobe tun || { echo 'install tun mod failed'; exit 0; }
             sudo PTCPDUMP_EXTRA_ARGS="${PTCPDUMP_EXTRA_ARGS}" bash testdata/test_tun.sh ./ptcpdump
 
+      - run:
+          name: e2e (test_wireguard.sh)
+          command: |
+            if [ "<< parameters.backend >>" = 'socket-filter' ]; then
+              echo 'skip wireguard test for socket-filter backend'
+              exit 0
+            fi
+            sudo CI="${CI}" PTCPDUMP_EXTRA_ARGS="${PTCPDUMP_EXTRA_ARGS}" bash testdata/test_wireguard.sh ./ptcpdump
+
       - when:
           condition:
             and:

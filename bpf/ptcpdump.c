@@ -108,7 +108,7 @@ static __always_inline void fallback_pid_meta(struct process_meta_t *meta) {
     return;
 }
 
-static __always_inline int fill_packet_event_meta(struct __sk_buff *skb, bool cgroup_skb,
+static __always_inline int fill_packet_event_meta(struct __sk_buff *skb, bool cgroup_skb, bool l2,
                                                   struct packet_event_meta_t *event_meta, bool egress) {
     struct process_meta_t *pid_meta = &event_meta->process;
 
@@ -134,10 +134,7 @@ static __always_inline int fill_packet_event_meta(struct __sk_buff *skb, bool cg
 
     bool have_pid_filter = have_pid_filter_rules();
     struct packet_meta_t packet_meta = {0};
-    if (cgroup_skb) {
-        packet_meta.l2.h_protocol = bpf_ntohs(skb->protocol);
-    }
-    int ret = parse_skb_meta(skb, !cgroup_skb, &packet_meta);
+    int ret = parse_skb_meta(skb, l2, &packet_meta);
     event_meta->l3_protocol = packet_meta.l2.h_protocol;
     //     debug_log("l3_protocol: %d\n", event_meta->l3_protocol);
     if (ret < 0) {
@@ -309,7 +306,7 @@ static __always_inline void handle_skb(bool cgroup_skb, struct __sk_buff *skb, b
     __builtin_memset(&event->meta.process, 0, sizeof(event->meta.process));
     __builtin_memset(&event->meta.process.cgroup_name, 0, sizeof(event->meta.process.cgroup_name));
 
-    if (fill_packet_event_meta(skb, cgroup_skb, &event->meta, egress) < 0) {
+    if (fill_packet_event_meta(skb, cgroup_skb, l2, &event->meta, egress) < 0) {
         // debug_log("tc, not found pid\n");
         if (use_ringbuf) {
             bpf_ringbuf_discard(ringbuf, 0);

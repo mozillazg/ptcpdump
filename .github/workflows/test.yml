@@ -542,6 +542,18 @@ jobs:
 
             bash /host/testdata/retry.sh 3 bash /host/testdata/test_tun.sh /host/ptcpdump/ptcpdump
 
+      - name: Test wireguard interface
+        if: ${{ !startsWith(matrix.kernel, '4.') && !startsWith(matrix.kernel, '5.') }}
+        uses: cilium/little-vm-helper@e249f34602b03d331320955be94cbaa2cc4fb6a8 # v0.0.29
+        with:
+          provision: 'false'
+          cmd: |
+            set -ex
+            export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
+            export GOCOVERDIR="/host/${{ env.GOCOVERDIR }}"
+
+            CI=true bash /host/testdata/retry.sh 3 bash /host/testdata/test_wireguard.sh /host/ptcpdump/ptcpdump
+
       - name: Test netns
         if: env.RUN_NETNS == 'true'
         uses: cilium/little-vm-helper@e249f34602b03d331320955be94cbaa2cc4fb6a8 # v0.0.29
