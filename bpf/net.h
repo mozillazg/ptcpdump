@@ -54,6 +54,10 @@ struct flow_pid_key_t {
 
 const struct flow_pid_key_t *unused3 __attribute__((unused));
 
+static __always_inline bool is_vlan_ethertype(u16 protocol) {
+    return protocol == ETH_P_8021Q || protocol == ETH_P_8021AD;
+}
+
 static __always_inline int parse_skb_l2(struct __sk_buff *skb, struct l2_t *l2, u32 *offset) {
     if (bpf_skb_load_bytes(skb, *offset + offsetof(struct ethhdr, h_proto), &l2->h_protocol, sizeof(l2->h_protocol)) <
         0) {
@@ -62,6 +66,24 @@ static __always_inline int parse_skb_l2(struct __sk_buff *skb, struct l2_t *l2, 
     }
     l2->h_protocol = bpf_ntohs(l2->h_protocol);
     *offset += sizeof(struct ethhdr);
+
+    // The kernel pops the outer VLAN tag before most hooks, but stacked VLAN
+    // (QinQ), AF_PACKET egress taps and similar paths still leave tags in the
+    // packet data, so walk up to two of them.
+#pragma unroll
+    for (int i = 0; i < 2; i++) {
+        if (!is_vlan_ethertype(l2->h_protocol)) {
+            break;
+        }
+        u16 h_protocol = 0;
+        if (bpf_skb_load_bytes(skb, *offset + offsetof(struct vlan_hdr, h_vlan_encapsulated_proto), &h_protocol,
+                               sizeof(h_protocol)) < 0) {
+            // debug_log("parse_skb_l2 2 failed:\n");
+            return -1;
+        }
+        l2->h_protocol = bpf_ntohs(h_protocol);
+        *offset += sizeof(struct vlan_hdr);
+    }
     return 0;
 }
 
@@ -260,22 +282,25 @@ static __always_inline int parse_skb_buff_meta(struct sk_buff *skb, struct packe
     u16 l4_offset = BPF_CORE_READ(skb, transport_header);
     u16 protocol = BPF_CORE_READ(skb, protocol);
 
-    if (has_valid_mac_data(skb)) {
+    bool has_l2 = has_valid_mac_data(skb);
+    if (has_l2) {
         struct ethhdr *eth_hdr = (struct ethhdr *)(skb_head + l2_offset);
         meta->l2.h_protocol = bpf_ntohs(BPF_CORE_READ(eth_hdr, h_proto));
     }
     if (!meta->l2.h_protocol) {
-        meta->l2.h_protocol = bpf_ntohs(BPF_CORE_READ(skb, protocol));
+        meta->l2.h_protocol = bpf_ntohs(protocol);
     }
-    if (protocol == bpf_ntohs(ETH_P_8021Q) || protocol == bpf_ntohs(ETH_P_8021AD)) {
-        //        debug_log("[ptcpdump][tp-btf] parse_skb_buff_meta: vlan header\n");
-        l3_offset += sizeof(struct vlan_hdr);
-        struct iphdr *ip_hdr = (struct iphdr *)(skb_head + l3_offset);
-        u8 ip_ver = BPF_CORE_READ_BITFIELD_PROBED(ip_hdr, version);
-        if (ip_ver == 4) {
-            meta->l2.h_protocol = ETH_P_IP;
-        } else if (ip_ver == 6) {
-            meta->l2.h_protocol = ETH_P_IPV6;
+    // network_header still points at the VLAN tag(s) here (e.g. on ingress),
+    // walk them like parse_skb_l2 does.
+    if (has_l2 && l3_offset == l2_offset + sizeof(struct ethhdr)) {
+#pragma unroll
+        for (int i = 0; i < 2; i++) {
+            if (!is_vlan_ethertype(meta->l2.h_protocol)) {
+                break;
+            }
+            struct vlan_hdr *vlan_hdr = (struct vlan_hdr *)(skb_head + l3_offset);
+            meta->l2.h_protocol = bpf_ntohs(BPF_CORE_READ(vlan_hdr, h_vlan_encapsulated_proto));
+            l3_offset += sizeof(struct vlan_hdr);
         }
     }
     if (!is_ip_ethertype(meta->l2.h_protocol)) {
