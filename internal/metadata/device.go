@@ -11,6 +11,7 @@ import (
 	"math"
 	"net"
 	"runtime"
+	"sort"
 	"sync"
 )
 
@@ -149,27 +150,56 @@ func (d *DeviceCache) GetByIfindex(ifindex int, netNsInode uint32) (types.Device
 	return types.NewDummyDevice(ifindex, ns), false
 }
 
-func (d *DeviceCache) GetByKnownIfindex(ifindex int) (types.Device, bool) {
+// GetByKnownIfindex returns the known device with the given ifindex.
+//
+// The same ifindex can exist in several network namespaces and some backends
+// (tc, cgroup-skb) don't carry the network namespace of the packet in the
+// event, so devices from netNsInode are preferred and devices from other
+// network namespaces are used only as a fallback. The fallback is
+// deterministic (sorted by network namespace inode) so the same packet is
+// always annotated with the same device name.
+func (d *DeviceCache) GetByKnownIfindex(ifindex int, netNsInode uint32) (types.Device, bool) {
 	d.lock.RLock()
 	defer d.lock.RUnlock()
 
-	for inode, links := range d.allLinks {
+	if dev, ok := d.getByKnownIfindexLocked(ifindex, netNsInode, true); ok {
+		return dev, true
+	}
+	return d.getByKnownIfindexLocked(ifindex, netNsInode, false)
+}
+
+func (d *DeviceCache) getByKnownIfindexLocked(ifindex int, netNsInode uint32, onlyNetNs bool) (
+	types.Device, bool) {
+	inodes := make([]uint32, 0, len(d.allLinks))
+	for inode := range d.allLinks {
+		if onlyNetNs && inode != netNsInode {
+			continue
+		}
+		inodes = append(inodes, inode)
+	}
+	sort.Slice(inodes, func(i, j int) bool { return inodes[i] < inodes[j] })
+
+	for _, inode := range inodes {
 		ns, err := d.nscache.Get(inode)
 		if err != nil {
 			continue
 		}
-		for _, dev := range links {
-			if dev.Index == ifindex {
-				return types.Device{
-					Name:    dev.Name,
-					Ifindex: ifindex,
-					NoMac:   interfaceNoMac(dev),
-					NetNs:   ns,
-				}, true
+		for _, dev := range d.allLinks[inode] {
+			if dev.Index != ifindex {
+				continue
 			}
+			return types.Device{
+				Name:    dev.Name,
+				Ifindex: ifindex,
+				NoMac:   interfaceNoMac(dev),
+				NetNs:   ns,
+			}, true
 		}
 	}
 
+	if onlyNetNs {
+		return types.Device{}, false
+	}
 	return types.NewDummyDevice(ifindex, nil), false
 }
 

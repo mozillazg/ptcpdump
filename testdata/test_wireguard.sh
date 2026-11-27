@@ -99,6 +99,7 @@ test_ingress_with_pname() {
     cat "${LNAME}"
     grep -F " > $PEER_IP.80: Flags [S]" "${LNAME}"     # egress
     grep -F "$PEER_IP.80 > $LOCAL_IP." "${LNAME}"      # ingress
+    grep -E "wg0(@[0-9]+)? (In|Out) IP" "${LNAME}"     # device name with netns
 }
 
 test_ingress_process_info() {
@@ -110,6 +111,7 @@ test_ingress_process_info() {
     cat "${LNAME}"
     grep -F "$PEER_IP.80 > $LOCAL_IP." "${LNAME}"      # ingress
     grep -A3 -F "$PEER_IP.80 > $LOCAL_IP." "${LNAME}" | grep -E 'Process \(pid [0-9]+, cmd .*/curl'
+    grep -E "wg0(@[0-9]+)? (In|Out) IP" "${LNAME}"     # device name with netns
 }
 
 supports_wireguard() {
