@@ -89,6 +89,15 @@ jobs:
             fi
             sudo CI="${CI}" PTCPDUMP_EXTRA_ARGS="${PTCPDUMP_EXTRA_ARGS}" bash testdata/test_wireguard.sh ./ptcpdump
 
+      - run:
+          name: e2e (test_vlan.sh)
+          command: |
+            if [ "<< parameters.backend >>" = 'cgroup-skb' ] || [ "<< parameters.backend >>" = 'tp-btf' ]; then
+              echo 'skip vlan test for the << parameters.backend >> backend'
+              exit 0
+            fi
+            sudo PTCPDUMP_EXTRA_ARGS="${PTCPDUMP_EXTRA_ARGS}" bash testdata/test_vlan.sh ./ptcpdump
+
       - when:
           condition:
             and:

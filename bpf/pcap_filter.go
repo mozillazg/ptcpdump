@@ -11,7 +11,11 @@ import (
 
 type pcapFilterCase struct {
 	enabled bool
-	opts    elibpcap.Options
+	// fallbackOnCompileErr installs a reject-all filter when the expression
+	// can't be compiled for this program variant (e.g. "vlan" can't be
+	// compiled for raw IP), instead of failing the whole load.
+	fallbackOnCompileErr bool
+	opts                 elibpcap.Options
 }
 
 func (b *BPF) programSpec(progName string) (*ebpf.ProgramSpec, bool) {
@@ -32,19 +36,25 @@ func (b *BPF) injectProgramFilters(progName string, prog *ebpf.ProgramSpec, case
 		if !c.enabled {
 			continue
 		}
-		if err := injectWithFallback(prog, b.opts.pcapFilter, c.opts); err != nil {
+		if err := injectWithFallback(prog, b.opts.pcapFilter, c.opts, c.fallbackOnCompileErr); err != nil {
 			return fmt.Errorf("inject pcap filter to %s: %w", progName, err)
 		}
 	}
 	return nil
 }
 
-func injectWithFallback(prog *ebpf.ProgramSpec, filter string, opts elibpcap.Options) error {
+func injectWithFallback(prog *ebpf.ProgramSpec, filter string, opts elibpcap.Options,
+	fallbackOnCompileErr bool) error {
 	original := prog.Instructions
 	ins, err := elibpcap.Inject(filter, original, opts)
 	if err != nil {
-		if !isRejectAllPacketsErr(err) {
+		rejectAll := isRejectAllPacketsErr(err)
+		if !rejectAll && !fallbackOnCompileErr {
 			return err
+		}
+		if !rejectAll {
+			log.Warnf("the pcap filter %q can only be applied to L2 devices, ignoring L3-only devices: %s",
+				filter, err)
 		}
 		ins, err = elibpcap.Inject(elibpcap.RejectAllExpr, original, opts)
 		if err != nil {
@@ -84,7 +94,8 @@ func (b *BPF) injectPcapFilterToTcs() error {
 				},
 			},
 			pcapFilterCase{
-				enabled: strings.HasSuffix(progName, "l3"),
+				enabled:              strings.HasSuffix(progName, "l3"),
+				fallbackOnCompileErr: true,
 				opts: elibpcap.Options{
 					AtBpf2Bpf:        "pcap_filter_l3",
 					PacketAccessMode: elibpcap.Direct,
@@ -149,7 +160,8 @@ func (b *BPF) injectPcapFilterToTpBtfs() error {
 				},
 			},
 			pcapFilterCase{
-				enabled: true,
+				enabled:              true,
+				fallbackOnCompileErr: true,
 				opts: elibpcap.Options{
 					AtBpf2Bpf:        "pcap_filter_l3",
 					PacketAccessMode: elibpcap.BpfProbeReadKernel,
@@ -186,7 +198,8 @@ func (b *BPF) injectPcapFilterToSocketFilters() error {
 				},
 			},
 			pcapFilterCase{
-				enabled: strings.HasSuffix(progName, "l3"),
+				enabled:              strings.HasSuffix(progName, "l3"),
+				fallbackOnCompileErr: true,
 				opts: elibpcap.Options{
 					AtBpf2Bpf:        "pcap_filter_l3",
 					PacketAccessMode: elibpcap.BpfSkbLoadBytes,
