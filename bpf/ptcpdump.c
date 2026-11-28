@@ -41,6 +41,10 @@ struct packet_event_meta_t {
     u32 netns_id;
     u32 ifindex;
     unsigned char ifname[IFNAMESIZ];
+    // the L2 header, filled when skb->data no longer points at it (ingress
+    // on the tp_btf hooks) so the event carries the full L2 frame
+    u8 l2_hdr_len;
+    u8 l2_hdr[32];
     u64 payload_len;
     u64 packet_size;
 
@@ -57,6 +61,18 @@ struct {
     __type(key, u32);
     __type(value, u8);
 } ptcpdump_filter_ifindex_map SEC(".maps");
+
+struct netns_ifindex_key_t {
+    u32 netns_id;
+    u32 ifindex;
+};
+
+struct {
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, 100);
+    __type(key, struct netns_ifindex_key_t);
+    __type(value, u8);
+} ptcpdump_filter_netns_ifindex_map SEC(".maps");
 
 struct {
     __uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
@@ -638,7 +654,15 @@ static __always_inline void handle_skb_buff(struct sk_buff *skb, bool egress) {
     GET_CONFIG()
     if (g.filter_ifindex_enable) {
         u32 ifindex = BPF_CORE_READ(skb, dev, ifindex);
-        if (!bpf_map_lookup_elem(&ptcpdump_filter_ifindex_map, &ifindex)) {
+        // the tp_btf hooks are global, so the same ifindex can exist in
+        // several network namespaces: match (netns, ifindex) when possible
+        u32 netns_id = get_netns_id_from_skb(skb);
+        if (netns_id != 0) {
+            struct netns_ifindex_key_t key = {.netns_id = netns_id, .ifindex = ifindex};
+            if (!bpf_map_lookup_elem(&ptcpdump_filter_netns_ifindex_map, &key)) {
+                return;
+            }
+        } else if (!bpf_map_lookup_elem(&ptcpdump_filter_ifindex_map, &ifindex)) {
             return;
         }
     }
@@ -702,6 +726,21 @@ filter_ok:;
     }
     event->meta.timestamp = bpf_ktime_get_ns();
     event->meta.first_layer = has_l2 ? L2_LAYER : L3_LAYER;
+
+    // on ingress eth_type_trans() already pulled the L2 header, so skb->data
+    // starts at the network header; put the L2 header back into the event
+    u32 data_offset = (u32)((u64)(void *)BPF_CORE_READ(skb, data) - (u64)skb_head);
+    u32 tail_offset = (u32)BPF_CORE_READ(skb, tail);
+    if (has_l2 && data_offset > (u32)mac_header &&
+        (u32)mac_header + sizeof(event->meta.l2_hdr) <= tail_offset) {
+        if (bpf_probe_read_kernel(event->meta.l2_hdr, sizeof(event->meta.l2_hdr), skb_head + mac_header) == 0) {
+            u32 l2_len = (u32)BPF_CORE_READ(skb, dev, hard_header_len);
+            if (l2_len > sizeof(event->meta.l2_hdr)) {
+                l2_len = sizeof(event->meta.l2_hdr);
+            }
+            event->meta.l2_hdr_len = (u8)l2_len;
+        }
+    }
 
     u64 payload_len = (u64)skb->len;
     event->meta.packet_size = payload_len;

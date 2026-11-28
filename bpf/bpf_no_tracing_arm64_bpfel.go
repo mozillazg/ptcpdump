@@ -12,6 +12,102 @@ import (
 	"github.com/cilium/ebpf"
 )
 
+// Names of all BPF objects in the ELF.
+//
+// Used for safe lookups in a Collection or CollectionSpec.
+const (
+	bpf_no_tracingMapPtcpdumpConfigMap                             = "ptcpdump_config_map"
+	bpf_no_tracingMapPtcpdumpEnterMountBufs                        = "ptcpdump_enter_mount_bufs"
+	bpf_no_tracingMapPtcpdumpExecEventStack                        = "ptcpdump_exec_event_stack"
+	bpf_no_tracingMapPtcpdumpExecEvents                            = "ptcpdump_exec_events"
+	bpf_no_tracingMapPtcpdumpExitEventTmp                          = "ptcpdump_exit_event_tmp"
+	bpf_no_tracingMapPtcpdumpExitEvents                            = "ptcpdump_exit_events"
+	bpf_no_tracingMapPtcpdumpExitEventsRingbuf                     = "ptcpdump_exit_events_ringbuf"
+	bpf_no_tracingMapPtcpdumpFilterByKernelCount                   = "ptcpdump_filter_by_kernel_count"
+	bpf_no_tracingMapPtcpdumpFilterIfindexMap                      = "ptcpdump_filter_ifindex_map"
+	bpf_no_tracingMapPtcpdumpFilterMntnsMap                        = "ptcpdump_filter_mntns_map"
+	bpf_no_tracingMapPtcpdumpFilterNetnsIfindexMap                 = "ptcpdump_filter_netns_ifindex_map"
+	bpf_no_tracingMapPtcpdumpFilterNetnsMap                        = "ptcpdump_filter_netns_map"
+	bpf_no_tracingMapPtcpdumpFilterPidMap                          = "ptcpdump_filter_pid_map"
+	bpf_no_tracingMapPtcpdumpFilterPidnsMap                        = "ptcpdump_filter_pidns_map"
+	bpf_no_tracingMapPtcpdumpFilterUidMap                          = "ptcpdump_filter_uid_map"
+	bpf_no_tracingMapPtcpdumpFlowPidMap                            = "ptcpdump_flow_pid_map"
+	bpf_no_tracingMapPtcpdumpGoKeylogBufStorage                    = "ptcpdump_go_keylog_buf_storage"
+	bpf_no_tracingMapPtcpdumpGoKeylogEventTmp                      = "ptcpdump_go_keylog_event_tmp"
+	bpf_no_tracingMapPtcpdumpGoKeylogEvents                        = "ptcpdump_go_keylog_events"
+	bpf_no_tracingMapPtcpdumpGoKeylogEventsRingbuf                 = "ptcpdump_go_keylog_events_ringbuf"
+	bpf_no_tracingMapPtcpdumpMountEventStack                       = "ptcpdump_mount_event_stack"
+	bpf_no_tracingMapPtcpdumpMountEvents                           = "ptcpdump_mount_events"
+	bpf_no_tracingMapPtcpdumpNatFlowMap                            = "ptcpdump_nat_flow_map"
+	bpf_no_tracingMapPtcpdumpNetdeviceBufs                         = "ptcpdump_netdevice_bufs"
+	bpf_no_tracingMapPtcpdumpNetdeviceChangeEvents                 = "ptcpdump_netdevice_change_events"
+	bpf_no_tracingMapPtcpdumpNewNetdeviceEvents                    = "ptcpdump_new_netdevice_events"
+	bpf_no_tracingMapPtcpdumpPacketEventStack                      = "ptcpdump_packet_event_stack"
+	bpf_no_tracingMapPtcpdumpPacketEvents                          = "ptcpdump_packet_events"
+	bpf_no_tracingMapPtcpdumpPacketEventsRingbuf                   = "ptcpdump_packet_events_ringbuf"
+	bpf_no_tracingMapPtcpdumpPtcpdumpExecEventsRingbuf             = "ptcpdump_ptcpdump_exec_events_ringbuf"
+	bpf_no_tracingMapPtcpdumpSockCookiePidMap                      = "ptcpdump_sock_cookie_pid_map"
+	bpf_no_tracingMapPtcpdumpTidNetdeviceMap                       = "ptcpdump_tid_netdevice_map"
+	bpf_no_tracingProgPtcpdumpCgroupConnect4                       = "ptcpdump_cgroup__connect4"
+	bpf_no_tracingProgPtcpdumpCgroupConnect6                       = "ptcpdump_cgroup__connect6"
+	bpf_no_tracingProgPtcpdumpCgroupPostBind4                      = "ptcpdump_cgroup__post_bind4"
+	bpf_no_tracingProgPtcpdumpCgroupPostBind6                      = "ptcpdump_cgroup__post_bind6"
+	bpf_no_tracingProgPtcpdumpCgroupRecvmsg4                       = "ptcpdump_cgroup__recvmsg4"
+	bpf_no_tracingProgPtcpdumpCgroupRecvmsg6                       = "ptcpdump_cgroup__recvmsg6"
+	bpf_no_tracingProgPtcpdumpCgroupSendmsg4                       = "ptcpdump_cgroup__sendmsg4"
+	bpf_no_tracingProgPtcpdumpCgroupSendmsg6                       = "ptcpdump_cgroup__sendmsg6"
+	bpf_no_tracingProgPtcpdumpCgroupSockCreate                     = "ptcpdump_cgroup__sock_create"
+	bpf_no_tracingProgPtcpdumpCgroupSockRelease                    = "ptcpdump_cgroup__sock_release"
+	bpf_no_tracingProgPtcpdumpCgroupSkbEgress                      = "ptcpdump_cgroup_skb__egress"
+	bpf_no_tracingProgPtcpdumpCgroupSkbIngress                     = "ptcpdump_cgroup_skb__ingress"
+	bpf_no_tracingProgPtcpdumpKprobeAcctProcess                    = "ptcpdump_kprobe__acct_process"
+	bpf_no_tracingProgPtcpdumpKprobeDevChangeNetNamespace          = "ptcpdump_kprobe__dev_change_net_namespace"
+	bpf_no_tracingProgPtcpdumpKprobeDevChangeNetNamespaceLegacy    = "ptcpdump_kprobe__dev_change_net_namespace_legacy"
+	bpf_no_tracingProgPtcpdumpKprobeDoExit                         = "ptcpdump_kprobe__do_exit"
+	bpf_no_tracingProgPtcpdumpKprobeKfreeSkb                       = "ptcpdump_kprobe__kfree_skb"
+	bpf_no_tracingProgPtcpdumpKprobeNfNatManipPkt                  = "ptcpdump_kprobe__nf_nat_manip_pkt"
+	bpf_no_tracingProgPtcpdumpKprobeNfNatPacket                    = "ptcpdump_kprobe__nf_nat_packet"
+	bpf_no_tracingProgPtcpdumpKprobeRegisterNetdevice              = "ptcpdump_kprobe__register_netdevice"
+	bpf_no_tracingProgPtcpdumpKprobeSecuritySkClassifyFlow         = "ptcpdump_kprobe__security_sk_classify_flow"
+	bpf_no_tracingProgPtcpdumpKprobeTcpSendmsg                     = "ptcpdump_kprobe__tcp_sendmsg"
+	bpf_no_tracingProgPtcpdumpKprobeUdpSendSkb                     = "ptcpdump_kprobe__udp_send_skb"
+	bpf_no_tracingProgPtcpdumpKprobeUdpSendmsg                     = "ptcpdump_kprobe__udp_sendmsg"
+	bpf_no_tracingProgPtcpdumpKretprobeDevChangeNetNamespace       = "ptcpdump_kretprobe__dev_change_net_namespace"
+	bpf_no_tracingProgPtcpdumpKretprobeDevChangeNetNamespaceLegacy = "ptcpdump_kretprobe__dev_change_net_namespace_legacy"
+	bpf_no_tracingProgPtcpdumpKretprobeDevGetByIndex               = "ptcpdump_kretprobe__dev_get_by_index"
+	bpf_no_tracingProgPtcpdumpKretprobeDevGetByIndexLegacy         = "ptcpdump_kretprobe__dev_get_by_index_legacy"
+	bpf_no_tracingProgPtcpdumpKretprobeRegisterNetdevice           = "ptcpdump_kretprobe__register_netdevice"
+	bpf_no_tracingProgPtcpdumpRawTracepointSchedProcessExec        = "ptcpdump_raw_tracepoint__sched_process_exec"
+	bpf_no_tracingProgPtcpdumpRawTracepointSchedProcessExit        = "ptcpdump_raw_tracepoint__sched_process_exit"
+	bpf_no_tracingProgPtcpdumpRawTracepointSchedProcessFork        = "ptcpdump_raw_tracepoint__sched_process_fork"
+	bpf_no_tracingProgPtcpdumpSocketFilterEgressL2                 = "ptcpdump_socket_filter__egress_l2"
+	bpf_no_tracingProgPtcpdumpSocketFilterEgressL3                 = "ptcpdump_socket_filter__egress_l3"
+	bpf_no_tracingProgPtcpdumpSocketFilterIngressL2                = "ptcpdump_socket_filter__ingress_l2"
+	bpf_no_tracingProgPtcpdumpSocketFilterIngressL3                = "ptcpdump_socket_filter__ingress_l3"
+	bpf_no_tracingProgPtcpdumpTcEgressL2                           = "ptcpdump_tc_egress_l2"
+	bpf_no_tracingProgPtcpdumpTcEgressL3                           = "ptcpdump_tc_egress_l3"
+	bpf_no_tracingProgPtcpdumpTcIngressL2                          = "ptcpdump_tc_ingress_l2"
+	bpf_no_tracingProgPtcpdumpTcIngressL3                          = "ptcpdump_tc_ingress_l3"
+	bpf_no_tracingProgPtcpdumpTracepointSchedProcessExec           = "ptcpdump_tracepoint__sched_process_exec"
+	bpf_no_tracingProgPtcpdumpTracepointSyscallsSysEnterMount      = "ptcpdump_tracepoint__syscalls__sys_enter_mount"
+	bpf_no_tracingProgPtcpdumpTracepointSyscallsSysExitMount       = "ptcpdump_tracepoint__syscalls__sys_exit_mount"
+	bpf_no_tracingProgPtcpdumpUprobeGoBuiltinTlsWriteKeyLog        = "ptcpdump_uprobe__go_builtin__tls__write_key_log"
+	bpf_no_tracingProgPtcpdumpUprobeGoBuiltinTlsWriteKeyLogRet     = "ptcpdump_uprobe__go_builtin__tls__write_key_log__ret"
+	bpf_no_tracingVarG                                             = "g"
+	bpf_no_tracingVarUnused1                                       = "unused1"
+	bpf_no_tracingVarUnused10                                      = "unused10"
+	bpf_no_tracingVarUnused11                                      = "unused11"
+	bpf_no_tracingVarUnused12                                      = "unused12"
+	bpf_no_tracingVarUnused13                                      = "unused13"
+	bpf_no_tracingVarUnused14                                      = "unused14"
+	bpf_no_tracingVarUnused2                                       = "unused2"
+	bpf_no_tracingVarUnused3                                       = "unused3"
+	bpf_no_tracingVarUnused4                                       = "unused4"
+	bpf_no_tracingVarUnused5                                       = "unused5"
+	bpf_no_tracingVarUnused6                                       = "unused6"
+	bpf_no_tracingVarUnused7                                       = "unused7"
+)
+
 // loadBpf_no_tracing returns the embedded CollectionSpec for bpf_no_tracing.
 func loadBpf_no_tracing() (*ebpf.CollectionSpec, error) {
 	reader := bytes.NewReader(_Bpf_no_tracingBytes)
@@ -32,7 +128,7 @@ func loadBpf_no_tracing() (*ebpf.CollectionSpec, error) {
 //	*bpf_no_tracingMaps
 //
 // See ebpf.CollectionSpec.LoadAndAssign documentation for details.
-func loadBpf_no_tracingObjects(obj interface{}, opts *ebpf.CollectionOptions) error {
+func loadBpf_no_tracingObjects(obj any, opts *ebpf.CollectionOptions) error {
 	spec, err := loadBpf_no_tracing()
 	if err != nil {
 		return err
@@ -115,6 +211,7 @@ type bpf_no_tracingMapSpecs struct {
 	PtcpdumpFilterByKernelCount       *ebpf.MapSpec `ebpf:"ptcpdump_filter_by_kernel_count"`
 	PtcpdumpFilterIfindexMap          *ebpf.MapSpec `ebpf:"ptcpdump_filter_ifindex_map"`
 	PtcpdumpFilterMntnsMap            *ebpf.MapSpec `ebpf:"ptcpdump_filter_mntns_map"`
+	PtcpdumpFilterNetnsIfindexMap     *ebpf.MapSpec `ebpf:"ptcpdump_filter_netns_ifindex_map"`
 	PtcpdumpFilterNetnsMap            *ebpf.MapSpec `ebpf:"ptcpdump_filter_netns_map"`
 	PtcpdumpFilterPidMap              *ebpf.MapSpec `ebpf:"ptcpdump_filter_pid_map"`
 	PtcpdumpFilterPidnsMap            *ebpf.MapSpec `ebpf:"ptcpdump_filter_pidns_map"`
@@ -187,6 +284,7 @@ type bpf_no_tracingMaps struct {
 	PtcpdumpFilterByKernelCount       *ebpf.Map `ebpf:"ptcpdump_filter_by_kernel_count"`
 	PtcpdumpFilterIfindexMap          *ebpf.Map `ebpf:"ptcpdump_filter_ifindex_map"`
 	PtcpdumpFilterMntnsMap            *ebpf.Map `ebpf:"ptcpdump_filter_mntns_map"`
+	PtcpdumpFilterNetnsIfindexMap     *ebpf.Map `ebpf:"ptcpdump_filter_netns_ifindex_map"`
 	PtcpdumpFilterNetnsMap            *ebpf.Map `ebpf:"ptcpdump_filter_netns_map"`
 	PtcpdumpFilterPidMap              *ebpf.Map `ebpf:"ptcpdump_filter_pid_map"`
 	PtcpdumpFilterPidnsMap            *ebpf.Map `ebpf:"ptcpdump_filter_pidns_map"`
@@ -222,6 +320,7 @@ func (m *bpf_no_tracingMaps) Close() error {
 		m.PtcpdumpFilterByKernelCount,
 		m.PtcpdumpFilterIfindexMap,
 		m.PtcpdumpFilterMntnsMap,
+		m.PtcpdumpFilterNetnsIfindexMap,
 		m.PtcpdumpFilterNetnsMap,
 		m.PtcpdumpFilterPidMap,
 		m.PtcpdumpFilterPidnsMap,
