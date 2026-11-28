@@ -324,9 +324,9 @@ jobs:
       RUN_COMMON: ${{ matrix.backend == 'tc' || (matrix.backend == 'socket-filter' && !startsWith(matrix.kernel, '4.')) || !(startsWith(matrix.kernel, '5.4') || startsWith(matrix.kernel, '4.')) }}
       RUN_ARP: ${{ !startsWith(matrix.kernel, '5.4') && !startsWith(matrix.kernel, '4.') && matrix.backend != 'cgroup-skb' }}
       RUN_TUN: ${{ !startsWith(matrix.kernel, '4.') && !startsWith(matrix.kernel, '5.') }}
-      # The vlan test captures on an L2 device: cgroup-skb only sees L3 and
-      # tp-btf's ingress payload doesn't carry the L2 header yet.
-      RUN_VLAN: ${{ !startsWith(matrix.kernel, '4.') && (matrix.backend == 'tc' || matrix.backend == 'socket-filter') }}
+      # The vlan test captures on an L2 device: cgroup-skb only sees L3.
+      RUN_VLAN: ${{ !startsWith(matrix.kernel, '4.') && (matrix.backend == 'tc' || matrix.backend == 'socket-filter' || (matrix.backend == 'tp-btf' && !startsWith(matrix.kernel, '5.'))) }}
+      RUN_TPBTF: ${{ matrix.backend == 'tp-btf' && !startsWith(matrix.kernel, '4.') && !startsWith(matrix.kernel, '5.') }}
       RUN_NETNS: ${{ matrix.backend == 'tc' || (matrix.backend == 'socket-filter' && !startsWith(matrix.kernel, '4.')) || (!startsWith(matrix.kernel, '5.4') && !startsWith(matrix.kernel, '4.') && matrix.backend != 'cgroup-skb') }}
       # The rotate test is slow, only run it on the rolling kernels.
       RUN_ROTATE: ${{ matrix.backend == 'tc' && startsWith(matrix.kernel, 'bpf') }}
@@ -568,6 +568,18 @@ jobs:
             export GOCOVERDIR="/host/${{ env.GOCOVERDIR }}"
 
             CI=true bash /host/testdata/retry.sh 3 bash /host/testdata/test_vlan.sh /host/ptcpdump/ptcpdump
+
+      - name: Test tp_btf device scope and L2 header
+        if: env.RUN_TPBTF == 'true'
+        uses: cilium/little-vm-helper@e249f34602b03d331320955be94cbaa2cc4fb6a8 # v0.0.29
+        with:
+          provision: 'false'
+          cmd: |
+            set -ex
+            export PTCPDUMP_EXTRA_ARGS="${{ env.PTCPDUMP_EXTRA_ARGS }}"
+            export GOCOVERDIR="/host/${{ env.GOCOVERDIR }}"
+
+            CI=true bash /host/testdata/retry.sh 3 bash /host/testdata/test_tpbtf.sh /host/ptcpdump/ptcpdump
 
       - name: Test netns
         if: env.RUN_NETNS == 'true'

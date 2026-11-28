@@ -101,6 +101,17 @@ jobs:
       - when:
           condition:
             and:
+              - equal: [ << parameters.backend >>,'tp-btf' ]
+              - equal: [ << parameters.os >>, 'ubuntu-24-04' ]
+          steps:
+            - run:
+                name: e2e (test_tpbtf.sh)
+                command: |
+                  sudo PTCPDUMP_EXTRA_ARGS="${PTCPDUMP_EXTRA_ARGS}" bash testdata/test_tpbtf.sh ./ptcpdump
+
+      - when:
+          condition:
+            and:
               - equal: [ << parameters.backend >>,'tc' ]
               - equal: [ << parameters.os >>, 'ubuntu-24-04' ]
           steps:
