@@ -175,7 +175,7 @@ func (c *Capturer) Prepare() error {
 		WithBackend(c.opts.Backend).
 		WithKernelTypes(c.btfSpec)
 	if !c.opts.AllDev {
-		bpfopts = bpfopts.WithIfindexes(c.ifindexes())
+		bpfopts = bpfopts.WithIfindexes(c.ifindexes()).WithNetnsIfindexes(c.netnsIfindexes())
 	}
 	if c.opts.Backend != types.NetHookBackendTc && c.opts.Backend != types.NetHookBackendSocketFilter {
 		bpfopts = bpfopts.WithHookMount(false).WithHookNetDev(false)
@@ -206,6 +206,20 @@ func (c *Capturer) ifindexes() []uint32 {
 		ifindexes = append(ifindexes, uint32(dev.Ifindex))
 	}
 	return ifindexes
+}
+
+func (c *Capturer) netnsIfindexes() []bpf.BpfNetnsIfindexKeyT {
+	var items []bpf.BpfNetnsIfindexKeyT
+	for _, dev := range c.opts.Devices {
+		if dev.NetNs == nil {
+			continue
+		}
+		items = append(items, bpf.BpfNetnsIfindexKeyT{
+			NetnsId: dev.NetNs.Inode(),
+			Ifindex: uint32(dev.Ifindex),
+		})
+	}
+	return items
 }
 
 func (c *Capturer) AttachTracingHooks() error {

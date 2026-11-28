@@ -67,10 +67,16 @@ func ParsePacketEvent(deviceCache *metadata.DeviceCache, event bpf.BpfPacketEven
 	ifindex := event.Meta.Ifindex
 	ifName := utils.GoStringUint(event.Meta.Ifname[:])
 	isFromSkb := len(ifName) > 0
+	// The tp_btf hooks are global: resolve the device in the namespace it was
+	// seen in instead of the namespace of the process.
+	deviceNetns := p.NetNs
+	if event.Meta.NetnsId != 0 {
+		deviceNetns = int(event.Meta.NetnsId)
+	}
 	var ok bool
-	p.Device, ok = deviceCache.GetByKnownIfindex(int(ifindex), uint32(p.NetNs))
+	p.Device, ok = deviceCache.GetByKnownIfindex(int(ifindex), uint32(deviceNetns))
 	if !ok {
-		p.Device, _ = deviceCache.GetByIfindex(int(ifindex), uint32(p.NetNs))
+		p.Device, _ = deviceCache.GetByIfindex(int(ifindex), uint32(deviceNetns))
 	}
 	if p.Device.IsDummy() {
 		netns := event.Meta.NetnsId
@@ -91,9 +97,17 @@ func ParsePacketEvent(deviceCache *metadata.DeviceCache, event bpf.BpfPacketEven
 	log.Infof("new packet event, %d.%s firstLayer: %d thread: %s.%d, pid: %d, uid: %d, mntns: %d, netns: %d, cgroupName: %s",
 		ifindex, p.Device.Name, p.FirstLayer, p.TName, p.Tid, p.Pid, p.Uid, p.MntNs, p.NetNs, p.CgroupName)
 
+	// Some hooks (tp_btf ingress) capture the payload behind the L2 header;
+	// the BPF side fills the real header so the event is a full L2 frame.
+	var l2Header []byte
+	if n := int(event.Meta.L2HdrLen); n > 0 && n <= len(event.Meta.L2Hdr) {
+		l2Header = event.Meta.L2Hdr[:n]
+	}
+
 	var fakeEthernet []byte
 	var fakeEthernetLen int
-	if p.FirstLayer == FirstLayerL3 || (isFromSkb && noL2Data(event.Payload[:event.Meta.PayloadLen])) {
+	if len(l2Header) == 0 &&
+		(p.FirstLayer == FirstLayerL3 || (isFromSkb && noL2Data(event.Payload[:event.Meta.PayloadLen]))) {
 		if v := getL3Protocol(event.Payload[:event.Meta.PayloadLen]); v > 0 {
 			p.L3Protocol = v
 		}
@@ -102,12 +116,12 @@ func ParsePacketEvent(deviceCache *metadata.DeviceCache, event bpf.BpfPacketEven
 		log.Infof("add fake ethernet header, l3protocol: 0x%x", p.L3Protocol)
 	}
 
-	p.Data = make([]byte, event.Meta.PayloadLen+uint64(fakeEthernetLen))
-	if fakeEthernetLen > 0 {
-		copy(p.Data[:fakeEthernetLen], fakeEthernet)
-		p.Len += fakeEthernetLen
-	}
-	copy(p.Data[fakeEthernetLen:], event.Payload[:event.Meta.PayloadLen])
+	headerLen := len(l2Header) + fakeEthernetLen
+	p.Data = make([]byte, headerLen+int(event.Meta.PayloadLen))
+	copy(p.Data, l2Header)
+	copy(p.Data[len(l2Header):], fakeEthernet)
+	copy(p.Data[headerLen:], event.Payload[:event.Meta.PayloadLen])
+	p.Len += len(l2Header) + fakeEthernetLen
 
 	log.Infof("%d, %+v", p.L3Protocol, p.Data)
 

@@ -12,6 +12,89 @@ import (
 	"github.com/cilium/ebpf"
 )
 
+// Names of all BPF objects in the ELF.
+//
+// Used for safe lookups in a Collection or CollectionSpec.
+const (
+	bpf_legacyMapPtcpdumpConfigMap                             = "ptcpdump_config_map"
+	bpf_legacyMapPtcpdumpEnterMountBufs                        = "ptcpdump_enter_mount_bufs"
+	bpf_legacyMapPtcpdumpExecEventStack                        = "ptcpdump_exec_event_stack"
+	bpf_legacyMapPtcpdumpExecEvents                            = "ptcpdump_exec_events"
+	bpf_legacyMapPtcpdumpExitEventTmp                          = "ptcpdump_exit_event_tmp"
+	bpf_legacyMapPtcpdumpExitEvents                            = "ptcpdump_exit_events"
+	bpf_legacyMapPtcpdumpExitEventsRingbuf                     = "ptcpdump_exit_events_ringbuf"
+	bpf_legacyMapPtcpdumpFilterByKernelCount                   = "ptcpdump_filter_by_kernel_count"
+	bpf_legacyMapPtcpdumpFilterIfindexMap                      = "ptcpdump_filter_ifindex_map"
+	bpf_legacyMapPtcpdumpFilterMntnsMap                        = "ptcpdump_filter_mntns_map"
+	bpf_legacyMapPtcpdumpFilterNetnsIfindexMap                 = "ptcpdump_filter_netns_ifindex_map"
+	bpf_legacyMapPtcpdumpFilterNetnsMap                        = "ptcpdump_filter_netns_map"
+	bpf_legacyMapPtcpdumpFilterPidMap                          = "ptcpdump_filter_pid_map"
+	bpf_legacyMapPtcpdumpFilterPidnsMap                        = "ptcpdump_filter_pidns_map"
+	bpf_legacyMapPtcpdumpFilterUidMap                          = "ptcpdump_filter_uid_map"
+	bpf_legacyMapPtcpdumpFlowPidMap                            = "ptcpdump_flow_pid_map"
+	bpf_legacyMapPtcpdumpGoKeylogBufStorage                    = "ptcpdump_go_keylog_buf_storage"
+	bpf_legacyMapPtcpdumpGoKeylogEventTmp                      = "ptcpdump_go_keylog_event_tmp"
+	bpf_legacyMapPtcpdumpGoKeylogEvents                        = "ptcpdump_go_keylog_events"
+	bpf_legacyMapPtcpdumpGoKeylogEventsRingbuf                 = "ptcpdump_go_keylog_events_ringbuf"
+	bpf_legacyMapPtcpdumpMountEventStack                       = "ptcpdump_mount_event_stack"
+	bpf_legacyMapPtcpdumpMountEvents                           = "ptcpdump_mount_events"
+	bpf_legacyMapPtcpdumpNatFlowMap                            = "ptcpdump_nat_flow_map"
+	bpf_legacyMapPtcpdumpNetdeviceBufs                         = "ptcpdump_netdevice_bufs"
+	bpf_legacyMapPtcpdumpNetdeviceChangeEvents                 = "ptcpdump_netdevice_change_events"
+	bpf_legacyMapPtcpdumpNewNetdeviceEvents                    = "ptcpdump_new_netdevice_events"
+	bpf_legacyMapPtcpdumpPacketEventStack                      = "ptcpdump_packet_event_stack"
+	bpf_legacyMapPtcpdumpPacketEvents                          = "ptcpdump_packet_events"
+	bpf_legacyMapPtcpdumpPacketEventsRingbuf                   = "ptcpdump_packet_events_ringbuf"
+	bpf_legacyMapPtcpdumpPtcpdumpExecEventsRingbuf             = "ptcpdump_ptcpdump_exec_events_ringbuf"
+	bpf_legacyMapPtcpdumpSockCookiePidMap                      = "ptcpdump_sock_cookie_pid_map"
+	bpf_legacyMapPtcpdumpTidNetdeviceMap                       = "ptcpdump_tid_netdevice_map"
+	bpf_legacyProgPtcpdumpKprobeAcctProcess                    = "ptcpdump_kprobe__acct_process"
+	bpf_legacyProgPtcpdumpKprobeDevChangeNetNamespace          = "ptcpdump_kprobe__dev_change_net_namespace"
+	bpf_legacyProgPtcpdumpKprobeDevChangeNetNamespaceLegacy    = "ptcpdump_kprobe__dev_change_net_namespace_legacy"
+	bpf_legacyProgPtcpdumpKprobeDoExit                         = "ptcpdump_kprobe__do_exit"
+	bpf_legacyProgPtcpdumpKprobeKfreeSkb                       = "ptcpdump_kprobe__kfree_skb"
+	bpf_legacyProgPtcpdumpKprobeNfNatManipPkt                  = "ptcpdump_kprobe__nf_nat_manip_pkt"
+	bpf_legacyProgPtcpdumpKprobeNfNatPacket                    = "ptcpdump_kprobe__nf_nat_packet"
+	bpf_legacyProgPtcpdumpKprobeRegisterNetdevice              = "ptcpdump_kprobe__register_netdevice"
+	bpf_legacyProgPtcpdumpKprobeSecuritySkClassifyFlow         = "ptcpdump_kprobe__security_sk_classify_flow"
+	bpf_legacyProgPtcpdumpKprobeTcpSendmsg                     = "ptcpdump_kprobe__tcp_sendmsg"
+	bpf_legacyProgPtcpdumpKprobeUdpSendSkb                     = "ptcpdump_kprobe__udp_send_skb"
+	bpf_legacyProgPtcpdumpKprobeUdpSendmsg                     = "ptcpdump_kprobe__udp_sendmsg"
+	bpf_legacyProgPtcpdumpKretprobeDevChangeNetNamespace       = "ptcpdump_kretprobe__dev_change_net_namespace"
+	bpf_legacyProgPtcpdumpKretprobeDevChangeNetNamespaceLegacy = "ptcpdump_kretprobe__dev_change_net_namespace_legacy"
+	bpf_legacyProgPtcpdumpKretprobeDevGetByIndex               = "ptcpdump_kretprobe__dev_get_by_index"
+	bpf_legacyProgPtcpdumpKretprobeDevGetByIndexLegacy         = "ptcpdump_kretprobe__dev_get_by_index_legacy"
+	bpf_legacyProgPtcpdumpKretprobeRegisterNetdevice           = "ptcpdump_kretprobe__register_netdevice"
+	bpf_legacyProgPtcpdumpRawTracepointSchedProcessExec        = "ptcpdump_raw_tracepoint__sched_process_exec"
+	bpf_legacyProgPtcpdumpRawTracepointSchedProcessExit        = "ptcpdump_raw_tracepoint__sched_process_exit"
+	bpf_legacyProgPtcpdumpRawTracepointSchedProcessFork        = "ptcpdump_raw_tracepoint__sched_process_fork"
+	bpf_legacyProgPtcpdumpSocketFilterEgressL2                 = "ptcpdump_socket_filter__egress_l2"
+	bpf_legacyProgPtcpdumpSocketFilterEgressL3                 = "ptcpdump_socket_filter__egress_l3"
+	bpf_legacyProgPtcpdumpSocketFilterIngressL2                = "ptcpdump_socket_filter__ingress_l2"
+	bpf_legacyProgPtcpdumpSocketFilterIngressL3                = "ptcpdump_socket_filter__ingress_l3"
+	bpf_legacyProgPtcpdumpTcEgressL2                           = "ptcpdump_tc_egress_l2"
+	bpf_legacyProgPtcpdumpTcEgressL3                           = "ptcpdump_tc_egress_l3"
+	bpf_legacyProgPtcpdumpTcIngressL2                          = "ptcpdump_tc_ingress_l2"
+	bpf_legacyProgPtcpdumpTcIngressL3                          = "ptcpdump_tc_ingress_l3"
+	bpf_legacyProgPtcpdumpTracepointSchedProcessExec           = "ptcpdump_tracepoint__sched_process_exec"
+	bpf_legacyProgPtcpdumpTracepointSyscallsSysEnterMount      = "ptcpdump_tracepoint__syscalls__sys_enter_mount"
+	bpf_legacyProgPtcpdumpTracepointSyscallsSysExitMount       = "ptcpdump_tracepoint__syscalls__sys_exit_mount"
+	bpf_legacyProgPtcpdumpUprobeGoBuiltinTlsWriteKeyLog        = "ptcpdump_uprobe__go_builtin__tls__write_key_log"
+	bpf_legacyProgPtcpdumpUprobeGoBuiltinTlsWriteKeyLogRet     = "ptcpdump_uprobe__go_builtin__tls__write_key_log__ret"
+	bpf_legacyVarUnused1                                       = "unused1"
+	bpf_legacyVarUnused10                                      = "unused10"
+	bpf_legacyVarUnused11                                      = "unused11"
+	bpf_legacyVarUnused12                                      = "unused12"
+	bpf_legacyVarUnused13                                      = "unused13"
+	bpf_legacyVarUnused14                                      = "unused14"
+	bpf_legacyVarUnused2                                       = "unused2"
+	bpf_legacyVarUnused3                                       = "unused3"
+	bpf_legacyVarUnused4                                       = "unused4"
+	bpf_legacyVarUnused5                                       = "unused5"
+	bpf_legacyVarUnused6                                       = "unused6"
+	bpf_legacyVarUnused7                                       = "unused7"
+)
+
 // loadBpf_legacy returns the embedded CollectionSpec for bpf_legacy.
 func loadBpf_legacy() (*ebpf.CollectionSpec, error) {
 	reader := bytes.NewReader(_Bpf_legacyBytes)
@@ -32,7 +115,7 @@ func loadBpf_legacy() (*ebpf.CollectionSpec, error) {
 //	*bpf_legacyMaps
 //
 // See ebpf.CollectionSpec.LoadAndAssign documentation for details.
-func loadBpf_legacyObjects(obj interface{}, opts *ebpf.CollectionOptions) error {
+func loadBpf_legacyObjects(obj any, opts *ebpf.CollectionOptions) error {
 	spec, err := loadBpf_legacy()
 	if err != nil {
 		return err
@@ -103,6 +186,7 @@ type bpf_legacyMapSpecs struct {
 	PtcpdumpFilterByKernelCount       *ebpf.MapSpec `ebpf:"ptcpdump_filter_by_kernel_count"`
 	PtcpdumpFilterIfindexMap          *ebpf.MapSpec `ebpf:"ptcpdump_filter_ifindex_map"`
 	PtcpdumpFilterMntnsMap            *ebpf.MapSpec `ebpf:"ptcpdump_filter_mntns_map"`
+	PtcpdumpFilterNetnsIfindexMap     *ebpf.MapSpec `ebpf:"ptcpdump_filter_netns_ifindex_map"`
 	PtcpdumpFilterNetnsMap            *ebpf.MapSpec `ebpf:"ptcpdump_filter_netns_map"`
 	PtcpdumpFilterPidMap              *ebpf.MapSpec `ebpf:"ptcpdump_filter_pid_map"`
 	PtcpdumpFilterPidnsMap            *ebpf.MapSpec `ebpf:"ptcpdump_filter_pidns_map"`
@@ -174,6 +258,7 @@ type bpf_legacyMaps struct {
 	PtcpdumpFilterByKernelCount       *ebpf.Map `ebpf:"ptcpdump_filter_by_kernel_count"`
 	PtcpdumpFilterIfindexMap          *ebpf.Map `ebpf:"ptcpdump_filter_ifindex_map"`
 	PtcpdumpFilterMntnsMap            *ebpf.Map `ebpf:"ptcpdump_filter_mntns_map"`
+	PtcpdumpFilterNetnsIfindexMap     *ebpf.Map `ebpf:"ptcpdump_filter_netns_ifindex_map"`
 	PtcpdumpFilterNetnsMap            *ebpf.Map `ebpf:"ptcpdump_filter_netns_map"`
 	PtcpdumpFilterPidMap              *ebpf.Map `ebpf:"ptcpdump_filter_pid_map"`
 	PtcpdumpFilterPidnsMap            *ebpf.Map `ebpf:"ptcpdump_filter_pidns_map"`
@@ -209,6 +294,7 @@ func (m *bpf_legacyMaps) Close() error {
 		m.PtcpdumpFilterByKernelCount,
 		m.PtcpdumpFilterIfindexMap,
 		m.PtcpdumpFilterMntnsMap,
+		m.PtcpdumpFilterNetnsIfindexMap,
 		m.PtcpdumpFilterNetnsMap,
 		m.PtcpdumpFilterPidMap,
 		m.PtcpdumpFilterPidnsMap,

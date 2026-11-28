@@ -52,6 +52,7 @@ type Options struct {
 	pidnsIds       []uint32
 	netnsIds       []uint32
 	ifindexes      []uint32
+	netnsIfindexes []BpfNetnsIfindexKeyT
 	maxPayloadSize uint32
 	hookMount      bool
 	hookNetDev     bool
@@ -525,6 +526,13 @@ func (b *BPF) applyFilters() error {
 		}
 	}
 
+	log.Infof("start to update FilterNetnsIfindexMap with %+v", opts.netnsIfindexes)
+	for _, item := range opts.netnsIfindexes {
+		if err := b.objs.BpfMaps.PtcpdumpFilterNetnsIfindexMap.Update(item, value, ebpf.UpdateAny); err != nil {
+			return fmt.Errorf("update FilterNetnsIfindexMap: %w", err)
+		}
+	}
+
 	return nil
 }
 
@@ -653,6 +661,25 @@ func (opts *Options) WithIfindexes(ifindexes []uint32) *Options {
 			continue
 		}
 		opts.ifindexes = append(opts.ifindexes, id)
+	}
+	return opts
+}
+
+// WithNetnsIfindexes sets the (netns, ifindex) pairs of the devices to
+// capture. The tp_btf hooks are global, so filtering by ifindex alone can
+// match the same ifindex in another network namespace (e.g. the two ends of a
+// veth pair).
+func (opts *Options) WithNetnsIfindexes(items []BpfNetnsIfindexKeyT) *Options {
+	seen := make(map[BpfNetnsIfindexKeyT]bool, len(opts.netnsIfindexes))
+	for _, item := range opts.netnsIfindexes {
+		seen[item] = true
+	}
+	for _, item := range items {
+		if item.Ifindex == 0 || seen[item] {
+			continue
+		}
+		seen[item] = true
+		opts.netnsIfindexes = append(opts.netnsIfindexes, item)
 	}
 	return opts
 }

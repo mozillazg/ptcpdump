@@ -8,17 +8,20 @@ import (
 	_ "embed"
 	"fmt"
 	"io"
+	"structs"
 
 	"github.com/cilium/ebpf"
 )
 
 type BpfEnterMountBufT struct {
+	_    structs.HostLayout
 	Fs   uint64
 	Src  uint64
 	Dest uint64
 }
 
 type BpfExecEventT struct {
+	_                 structs.HostLayout
 	Meta              BpfProcessMetaT
 	FilenameTruncated uint8
 	ArgsTruncated     uint8
@@ -28,15 +31,20 @@ type BpfExecEventT struct {
 	Args              [4096]int8
 }
 
-type BpfExitEventT struct{ Pid uint32 }
+type BpfExitEventT struct {
+	_   structs.HostLayout
+	Pid uint32
+}
 
 type BpfFlowPidKeyT struct {
+	_     structs.HostLayout
 	Saddr [2]uint64
 	Sport uint16
 	_     [6]byte
 }
 
 type BpfGconfigT struct {
+	_                   structs.HostLayout
 	HaveFilter          uint8
 	FilterFollowForks   uint8
 	FilterComm          [16]int8
@@ -49,6 +57,7 @@ type BpfGconfigT struct {
 }
 
 type BpfGoKeylogBufT struct {
+	_            structs.HostLayout
 	LabelPtr     uint64
 	LabelLenPtr  uint64
 	RandomPtr    uint64
@@ -58,6 +67,7 @@ type BpfGoKeylogBufT struct {
 }
 
 type BpfGoKeylogEventT struct {
+	_               structs.HostLayout
 	Label           [32]int8
 	ClientRandom    [32]int8
 	Secret          [64]int8
@@ -67,12 +77,14 @@ type BpfGoKeylogEventT struct {
 }
 
 type BpfMountEventT struct {
+	_    structs.HostLayout
 	Fs   [8]int8
 	Src  [4096]int8
 	Dest [4096]int8
 }
 
 type BpfNatFlowT struct {
+	_     structs.HostLayout
 	Saddr [2]uint64
 	Daddr [2]uint64
 	Sport uint16
@@ -81,24 +93,37 @@ type BpfNatFlowT struct {
 }
 
 type BpfNetdeviceBufT struct {
+	_   structs.HostLayout
 	Dev uint64
 	Net uint64
 }
 
 type BpfNetdeviceChangeEventT struct {
+	_         structs.HostLayout
 	OldDevice BpfNetdeviceT
 	NewDevice BpfNetdeviceT
 }
 
 type BpfNetdeviceT struct {
+	_       structs.HostLayout
 	NetnsId uint32
 	Ifindex uint32
 	Name    [16]int8
 }
 
-type BpfNewNetdeviceEventT struct{ Dev BpfNetdeviceT }
+type BpfNetnsIfindexKeyT struct {
+	_       structs.HostLayout
+	NetnsId uint32
+	Ifindex uint32
+}
+
+type BpfNewNetdeviceEventT struct {
+	_   structs.HostLayout
+	Dev BpfNetdeviceT
+}
 
 type BpfPacketEventMetaT struct {
+	_          structs.HostLayout
 	Timestamp  uint64
 	PacketType uint8
 	FirstLayer uint8
@@ -106,16 +131,22 @@ type BpfPacketEventMetaT struct {
 	NetnsId    uint32
 	Ifindex    uint32
 	Ifname     [16]uint8
-	_          [4]byte
+	L2HdrLen   uint8
+	L2Hdr      [32]uint8
+	_          [3]byte
 	PayloadLen uint64
 	PacketSize uint64
 	Process    BpfProcessMetaT
 	_          [4]byte
 }
 
-type BpfPacketEventT struct{ Meta BpfPacketEventMetaT }
+type BpfPacketEventT struct {
+	_    structs.HostLayout
+	Meta BpfPacketEventMetaT
+}
 
 type BpfProcessMetaT struct {
+	_          structs.HostLayout
 	Ppid       uint32
 	Pid        uint32
 	PidnsId    uint32
@@ -126,6 +157,120 @@ type BpfProcessMetaT struct {
 	Tname      [16]int8
 	CgroupName [128]int8
 }
+
+// Names of all BPF objects in the ELF.
+//
+// Used for safe lookups in a Collection or CollectionSpec.
+const (
+	BpfMapPtcpdumpConfigMap                             = "ptcpdump_config_map"
+	BpfMapPtcpdumpEnterMountBufs                        = "ptcpdump_enter_mount_bufs"
+	BpfMapPtcpdumpExecEventStack                        = "ptcpdump_exec_event_stack"
+	BpfMapPtcpdumpExecEvents                            = "ptcpdump_exec_events"
+	BpfMapPtcpdumpExitEventTmp                          = "ptcpdump_exit_event_tmp"
+	BpfMapPtcpdumpExitEvents                            = "ptcpdump_exit_events"
+	BpfMapPtcpdumpExitEventsRingbuf                     = "ptcpdump_exit_events_ringbuf"
+	BpfMapPtcpdumpFilterByKernelCount                   = "ptcpdump_filter_by_kernel_count"
+	BpfMapPtcpdumpFilterIfindexMap                      = "ptcpdump_filter_ifindex_map"
+	BpfMapPtcpdumpFilterMntnsMap                        = "ptcpdump_filter_mntns_map"
+	BpfMapPtcpdumpFilterNetnsIfindexMap                 = "ptcpdump_filter_netns_ifindex_map"
+	BpfMapPtcpdumpFilterNetnsMap                        = "ptcpdump_filter_netns_map"
+	BpfMapPtcpdumpFilterPidMap                          = "ptcpdump_filter_pid_map"
+	BpfMapPtcpdumpFilterPidnsMap                        = "ptcpdump_filter_pidns_map"
+	BpfMapPtcpdumpFilterUidMap                          = "ptcpdump_filter_uid_map"
+	BpfMapPtcpdumpFlowPidMap                            = "ptcpdump_flow_pid_map"
+	BpfMapPtcpdumpGoKeylogBufStorage                    = "ptcpdump_go_keylog_buf_storage"
+	BpfMapPtcpdumpGoKeylogEventTmp                      = "ptcpdump_go_keylog_event_tmp"
+	BpfMapPtcpdumpGoKeylogEvents                        = "ptcpdump_go_keylog_events"
+	BpfMapPtcpdumpGoKeylogEventsRingbuf                 = "ptcpdump_go_keylog_events_ringbuf"
+	BpfMapPtcpdumpMountEventStack                       = "ptcpdump_mount_event_stack"
+	BpfMapPtcpdumpMountEvents                           = "ptcpdump_mount_events"
+	BpfMapPtcpdumpNatFlowMap                            = "ptcpdump_nat_flow_map"
+	BpfMapPtcpdumpNetdeviceBufs                         = "ptcpdump_netdevice_bufs"
+	BpfMapPtcpdumpNetdeviceChangeEvents                 = "ptcpdump_netdevice_change_events"
+	BpfMapPtcpdumpNewNetdeviceEvents                    = "ptcpdump_new_netdevice_events"
+	BpfMapPtcpdumpPacketEventStack                      = "ptcpdump_packet_event_stack"
+	BpfMapPtcpdumpPacketEvents                          = "ptcpdump_packet_events"
+	BpfMapPtcpdumpPacketEventsRingbuf                   = "ptcpdump_packet_events_ringbuf"
+	BpfMapPtcpdumpPtcpdumpExecEventsRingbuf             = "ptcpdump_ptcpdump_exec_events_ringbuf"
+	BpfMapPtcpdumpSockCookiePidMap                      = "ptcpdump_sock_cookie_pid_map"
+	BpfMapPtcpdumpTidNetdeviceMap                       = "ptcpdump_tid_netdevice_map"
+	BpfProgPtcpdumpCgroupConnect4                       = "ptcpdump_cgroup__connect4"
+	BpfProgPtcpdumpCgroupConnect6                       = "ptcpdump_cgroup__connect6"
+	BpfProgPtcpdumpCgroupPostBind4                      = "ptcpdump_cgroup__post_bind4"
+	BpfProgPtcpdumpCgroupPostBind6                      = "ptcpdump_cgroup__post_bind6"
+	BpfProgPtcpdumpCgroupRecvmsg4                       = "ptcpdump_cgroup__recvmsg4"
+	BpfProgPtcpdumpCgroupRecvmsg6                       = "ptcpdump_cgroup__recvmsg6"
+	BpfProgPtcpdumpCgroupSendmsg4                       = "ptcpdump_cgroup__sendmsg4"
+	BpfProgPtcpdumpCgroupSendmsg6                       = "ptcpdump_cgroup__sendmsg6"
+	BpfProgPtcpdumpCgroupSockCreate                     = "ptcpdump_cgroup__sock_create"
+	BpfProgPtcpdumpCgroupSockRelease                    = "ptcpdump_cgroup__sock_release"
+	BpfProgPtcpdumpCgroupSkbEgress                      = "ptcpdump_cgroup_skb__egress"
+	BpfProgPtcpdumpCgroupSkbIngress                     = "ptcpdump_cgroup_skb__ingress"
+	BpfProgPtcpdumpFentryAcctProcess                    = "ptcpdump_fentry__acct_process"
+	BpfProgPtcpdumpFentryDoExit                         = "ptcpdump_fentry__do_exit"
+	BpfProgPtcpdumpFentryKfreeSkb                       = "ptcpdump_fentry__kfree_skb"
+	BpfProgPtcpdumpFentryNfNatManipPkt                  = "ptcpdump_fentry__nf_nat_manip_pkt"
+	BpfProgPtcpdumpFentryNfNatPacket                    = "ptcpdump_fentry__nf_nat_packet"
+	BpfProgPtcpdumpFentrySecuritySkClassifyFlow         = "ptcpdump_fentry__security_sk_classify_flow"
+	BpfProgPtcpdumpFentryTcpSendmsg                     = "ptcpdump_fentry__tcp_sendmsg"
+	BpfProgPtcpdumpFentryUdpSendSkb                     = "ptcpdump_fentry__udp_send_skb"
+	BpfProgPtcpdumpFentryUdpSendmsg                     = "ptcpdump_fentry__udp_sendmsg"
+	BpfProgPtcpdumpKprobeAcctProcess                    = "ptcpdump_kprobe__acct_process"
+	BpfProgPtcpdumpKprobeDevChangeNetNamespace          = "ptcpdump_kprobe__dev_change_net_namespace"
+	BpfProgPtcpdumpKprobeDevChangeNetNamespaceLegacy    = "ptcpdump_kprobe__dev_change_net_namespace_legacy"
+	BpfProgPtcpdumpKprobeDoExit                         = "ptcpdump_kprobe__do_exit"
+	BpfProgPtcpdumpKprobeKfreeSkb                       = "ptcpdump_kprobe__kfree_skb"
+	BpfProgPtcpdumpKprobeNfNatManipPkt                  = "ptcpdump_kprobe__nf_nat_manip_pkt"
+	BpfProgPtcpdumpKprobeNfNatPacket                    = "ptcpdump_kprobe__nf_nat_packet"
+	BpfProgPtcpdumpKprobeRegisterNetdevice              = "ptcpdump_kprobe__register_netdevice"
+	BpfProgPtcpdumpKprobeSecuritySkClassifyFlow         = "ptcpdump_kprobe__security_sk_classify_flow"
+	BpfProgPtcpdumpKprobeTcpSendmsg                     = "ptcpdump_kprobe__tcp_sendmsg"
+	BpfProgPtcpdumpKprobeUdpSendSkb                     = "ptcpdump_kprobe__udp_send_skb"
+	BpfProgPtcpdumpKprobeUdpSendmsg                     = "ptcpdump_kprobe__udp_sendmsg"
+	BpfProgPtcpdumpKretprobeDevChangeNetNamespace       = "ptcpdump_kretprobe__dev_change_net_namespace"
+	BpfProgPtcpdumpKretprobeDevChangeNetNamespaceLegacy = "ptcpdump_kretprobe__dev_change_net_namespace_legacy"
+	BpfProgPtcpdumpKretprobeDevGetByIndex               = "ptcpdump_kretprobe__dev_get_by_index"
+	BpfProgPtcpdumpKretprobeDevGetByIndexLegacy         = "ptcpdump_kretprobe__dev_get_by_index_legacy"
+	BpfProgPtcpdumpKretprobeRegisterNetdevice           = "ptcpdump_kretprobe__register_netdevice"
+	BpfProgPtcpdumpRawTracepointSchedProcessExec        = "ptcpdump_raw_tracepoint__sched_process_exec"
+	BpfProgPtcpdumpRawTracepointSchedProcessExit        = "ptcpdump_raw_tracepoint__sched_process_exit"
+	BpfProgPtcpdumpRawTracepointSchedProcessFork        = "ptcpdump_raw_tracepoint__sched_process_fork"
+	BpfProgPtcpdumpSocketFilterEgressL2                 = "ptcpdump_socket_filter__egress_l2"
+	BpfProgPtcpdumpSocketFilterEgressL3                 = "ptcpdump_socket_filter__egress_l3"
+	BpfProgPtcpdumpSocketFilterIngressL2                = "ptcpdump_socket_filter__ingress_l2"
+	BpfProgPtcpdumpSocketFilterIngressL3                = "ptcpdump_socket_filter__ingress_l3"
+	BpfProgPtcpdumpTcEgressL2                           = "ptcpdump_tc_egress_l2"
+	BpfProgPtcpdumpTcEgressL3                           = "ptcpdump_tc_egress_l3"
+	BpfProgPtcpdumpTcIngressL2                          = "ptcpdump_tc_ingress_l2"
+	BpfProgPtcpdumpTcIngressL3                          = "ptcpdump_tc_ingress_l3"
+	BpfProgPtcpdumpTcxEgressL2                          = "ptcpdump_tcx_egress_l2"
+	BpfProgPtcpdumpTcxEgressL3                          = "ptcpdump_tcx_egress_l3"
+	BpfProgPtcpdumpTcxIngressL2                         = "ptcpdump_tcx_ingress_l2"
+	BpfProgPtcpdumpTcxIngressL3                         = "ptcpdump_tcx_ingress_l3"
+	BpfProgPtcpdumpTpBtfNetDevQueue                     = "ptcpdump_tp_btf__net_dev_queue"
+	BpfProgPtcpdumpTpBtfNetifReceiveSkb                 = "ptcpdump_tp_btf__netif_receive_skb"
+	BpfProgPtcpdumpTpBtfSchedProcessExec                = "ptcpdump_tp_btf__sched_process_exec"
+	BpfProgPtcpdumpTpBtfSchedProcessExit                = "ptcpdump_tp_btf__sched_process_exit"
+	BpfProgPtcpdumpTpBtfSchedProcessFork                = "ptcpdump_tp_btf__sched_process_fork"
+	BpfProgPtcpdumpTracepointSchedProcessExec           = "ptcpdump_tracepoint__sched_process_exec"
+	BpfProgPtcpdumpTracepointSyscallsSysEnterMount      = "ptcpdump_tracepoint__syscalls__sys_enter_mount"
+	BpfProgPtcpdumpTracepointSyscallsSysExitMount       = "ptcpdump_tracepoint__syscalls__sys_exit_mount"
+	BpfProgPtcpdumpUprobeGoBuiltinTlsWriteKeyLog        = "ptcpdump_uprobe__go_builtin__tls__write_key_log"
+	BpfProgPtcpdumpUprobeGoBuiltinTlsWriteKeyLogRet     = "ptcpdump_uprobe__go_builtin__tls__write_key_log__ret"
+	BpfVarG                                             = "g"
+	BpfVarUnused1                                       = "unused1"
+	BpfVarUnused10                                      = "unused10"
+	BpfVarUnused11                                      = "unused11"
+	BpfVarUnused12                                      = "unused12"
+	BpfVarUnused13                                      = "unused13"
+	BpfVarUnused14                                      = "unused14"
+	BpfVarUnused2                                       = "unused2"
+	BpfVarUnused3                                       = "unused3"
+	BpfVarUnused4                                       = "unused4"
+	BpfVarUnused5                                       = "unused5"
+	BpfVarUnused6                                       = "unused6"
+	BpfVarUnused7                                       = "unused7"
+)
 
 // LoadBpf returns the embedded CollectionSpec for Bpf.
 func LoadBpf() (*ebpf.CollectionSpec, error) {
@@ -147,7 +292,7 @@ func LoadBpf() (*ebpf.CollectionSpec, error) {
 //	*BpfMaps
 //
 // See ebpf.CollectionSpec.LoadAndAssign documentation for details.
-func LoadBpfObjects(obj interface{}, opts *ebpf.CollectionOptions) error {
+func LoadBpfObjects(obj any, opts *ebpf.CollectionOptions) error {
 	spec, err := LoadBpf()
 	if err != nil {
 		return err
@@ -248,6 +393,7 @@ type BpfMapSpecs struct {
 	PtcpdumpFilterByKernelCount       *ebpf.MapSpec `ebpf:"ptcpdump_filter_by_kernel_count"`
 	PtcpdumpFilterIfindexMap          *ebpf.MapSpec `ebpf:"ptcpdump_filter_ifindex_map"`
 	PtcpdumpFilterMntnsMap            *ebpf.MapSpec `ebpf:"ptcpdump_filter_mntns_map"`
+	PtcpdumpFilterNetnsIfindexMap     *ebpf.MapSpec `ebpf:"ptcpdump_filter_netns_ifindex_map"`
 	PtcpdumpFilterNetnsMap            *ebpf.MapSpec `ebpf:"ptcpdump_filter_netns_map"`
 	PtcpdumpFilterPidMap              *ebpf.MapSpec `ebpf:"ptcpdump_filter_pid_map"`
 	PtcpdumpFilterPidnsMap            *ebpf.MapSpec `ebpf:"ptcpdump_filter_pidns_map"`
@@ -320,6 +466,7 @@ type BpfMaps struct {
 	PtcpdumpFilterByKernelCount       *ebpf.Map `ebpf:"ptcpdump_filter_by_kernel_count"`
 	PtcpdumpFilterIfindexMap          *ebpf.Map `ebpf:"ptcpdump_filter_ifindex_map"`
 	PtcpdumpFilterMntnsMap            *ebpf.Map `ebpf:"ptcpdump_filter_mntns_map"`
+	PtcpdumpFilterNetnsIfindexMap     *ebpf.Map `ebpf:"ptcpdump_filter_netns_ifindex_map"`
 	PtcpdumpFilterNetnsMap            *ebpf.Map `ebpf:"ptcpdump_filter_netns_map"`
 	PtcpdumpFilterPidMap              *ebpf.Map `ebpf:"ptcpdump_filter_pid_map"`
 	PtcpdumpFilterPidnsMap            *ebpf.Map `ebpf:"ptcpdump_filter_pidns_map"`
@@ -355,6 +502,7 @@ func (m *BpfMaps) Close() error {
 		m.PtcpdumpFilterByKernelCount,
 		m.PtcpdumpFilterIfindexMap,
 		m.PtcpdumpFilterMntnsMap,
+		m.PtcpdumpFilterNetnsIfindexMap,
 		m.PtcpdumpFilterNetnsMap,
 		m.PtcpdumpFilterPidMap,
 		m.PtcpdumpFilterPidnsMap,
